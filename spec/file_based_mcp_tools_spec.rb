@@ -91,8 +91,8 @@ RSpec.describe 'File-based MCP Tools' do
         data = JSON.parse(response.payload.first['text'])
 
         if data.key?('summary')
-          expect(data['summary']).to include('covered', 'total', 'percentage')
-          expect(data['summary']['percentage']).to be_a(Numeric)
+          expect(data['summary']).to include('covered', 'total', 'percent_covered')
+          expect(data['summary']['percent_covered']).to be_a(Numeric)
         end
       end
     end

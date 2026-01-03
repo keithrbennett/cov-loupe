@@ -131,7 +131,7 @@ clp summary app/models/order.rb -s full  # -s = --source
   "summary": {
     "covered": 6,
     "total": 7,
-    "percentage": 85.71
+    "percent_covered": 85.71
   },
   "stale": false
 }
@@ -244,7 +244,7 @@ File: app/models/order.rb
   "summary": {
     "covered": 6,
     "total": 7,
-    "percentage": 85.71
+    "percent_covered": 85.71
   },
   "stale": false
 }
@@ -610,7 +610,7 @@ clp -r coverage validate -i '->(m) { m.list.size > 0 }'
 ```ruby
 # coverage_policy.rb
 ->(model) do
-  model.list.all? { |f| f['percentage'] >= 80 }
+  model.list.all? { |f| f['percent_covered'] >= 80 }
 end
 ```
 
@@ -640,7 +640,7 @@ Machine-readable output. Paths are relative to project root.
   "summary": {
     "covered": 6,
     "total": 7,
-    "percentage": 85.71
+    "percent_covered": 85.71
   },
   "stale": false
 }

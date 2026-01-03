@@ -6,12 +6,12 @@ class AllFilesAboveThreshold
   THRESHOLD = 95
 
   def self.call(model)
-    low_files = model.list.select { |f| f['percentage'] < THRESHOLD }
+    low_files = model.list.select { |f| f['percent_covered'] < THRESHOLD }
 
     if low_files.any?
       # Can add custom logging/reporting here
       warn "Files below #{THRESHOLD}%:"
-      low_files.each { |f| warn format('%5.1f%%  %s', f['percentage'], f['name']) }
+      low_files.each { |f| warn format('%5.1f%%  %s', f['percent_covered'], f['name']) }
     end
 
     low_files.none?

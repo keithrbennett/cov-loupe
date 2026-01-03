@@ -143,7 +143,7 @@ model = CovLoupe::CoverageModel.new
 
 # Get project overview
 files = model.list
-puts "Lowest coverage: #{files.first['percentage']}%"
+puts "Lowest coverage: #{files.first['percent_covered']}%"
 
 # Focus on specific concerns
 uncovered = model.uncovered_for("lib/wifi-wand/models/ubuntu_model.rb")
@@ -166,12 +166,12 @@ require 'cov_loupe'
 files = CovLoupe::CoverageModel.new.list
 critical, other = files.partition { |f| f['file'].include?('/lib/critical/') }
 
-fails = critical.select { |f| f['percentage'] < 100.0 } + 
-        other.select { |f| f['percentage'] < 90.0 }
+fails = critical.select { |f| f['percent_covered'] < 100.0 } + 
+        other.select { |f| f['percent_covered'] < 90.0 }
 
 if fails.any?
   puts "❌ Coverage failures:"
-  fails.each { |f| puts "  #{f['file']}: #{f['percentage']}%" }
+  fails.each { |f| puts "  #{f['file']}: #{f['percent_covered']}%" }
   exit 1
 else
   puts "✅ All thresholds met!"

@@ -14,7 +14,7 @@ class DirectorySpecificThresholds
 
   def files_ok?(filemask, threshold_percentage)
     files = @files.select { |f| File.fnmatch?(filemask, f['file']) }
-    files.all? { |f| f['percentage'] >= threshold_percentage }
+    files.all? { |f| f['percent_covered'] >= threshold_percentage }
   end
 
   def call

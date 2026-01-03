@@ -16,6 +16,7 @@ This document describes the breaking changes introduced in version 4.0.0. These 
   - [Method Renamed](#method-renamed)
   - [Return Type Changed: `list` Now Returns a Hash](#return-type-changed-list-now-returns-a-hash)
   - [Return Type Changed: `project_totals` Schema Updated](#return-type-changed-project_totals-schema-updated)
+  - [Field Renamed: `percentage` → `percent_covered`](#field-renamed-percentage--percent_covered)
   - [Logger Initialization Changed](#logger-initialization-changed)
 - [Deleted Files Now Raise `FileNotFoundError`](#deleted-files-now-raise-filenotfounderror)
 - [Staleness Check Errors Now Return 'E' Marker](#staleness-check-errors-now-return-e-marker)
@@ -131,7 +132,7 @@ model = CovLoupe::CoverageModel.new(root: '.')
 files = model.list  # Returns array directly
 
 # Filter and use the array
-low_coverage = files.select { |f| f['percentage'] < 80 }
+low_coverage = files.select { |f| f['percent_covered'] < 80 }
 model.format_table(files)
 ```
 
@@ -144,7 +145,7 @@ result = model.list  # Returns hash with multiple keys
 files = result['files']
 
 # Filter and use the array
-low_coverage = files.select { |f| f['percentage'] < 80 }
+low_coverage = files.select { |f| f['percent_covered'] < 80 }
 model.format_table(files)
 
 # Access new staleness information
@@ -171,7 +172,7 @@ result = model.list
 
 # Use the files array as before
 files = result['files']
-low_coverage = files.select { |f| f['percentage'] < 80 }
+low_coverage = files.select { |f| f['percent_covered'] < 80 }
 
 # Now you can also:
 if result['skipped_files'].any?
@@ -234,7 +235,7 @@ totals = model.project_totals
 ```
 
 #### Migration Steps
-- Replace `totals['percentage']` with `totals['lines']['percent_covered']`.
+- Replace `totals['percent_covered']` with `totals['lines']['percent_covered']`.
 - Replace `totals['files']['ok']` and `totals['files']['stale']` with
   `totals['files']['with_coverage']['ok']` and `totals['files']['with_coverage']['stale']['total']`.
 - If you relied on `excluded_files`, use `files.with_coverage.stale.by_type` and
@@ -260,6 +261,43 @@ logger = CovLoupe::Logger.new(target: 'cov_loupe.log', mcp_mode: false)
 logger = CovLoupe::Logger.new(target: 'cov_loupe.log', mode: :mcp)
 logger = CovLoupe::Logger.new(target: 'cov_loupe.log', mode: :cli)     # or :library
 ```
+
+[↑ Back to top](#table-of-contents)
+
+### Field Renamed: `percentage` → `percent_covered`
+
+**Breaking Change**: The `percentage` field in file-level coverage data has been renamed to `percent_covered` for consistency with project-level totals.
+
+This affects all file-level coverage data returned by:
+- `CoverageModel#summary_for(path)`
+- `CoverageModel#uncovered_for(path)`
+- `CoverageModel#detailed_for(path)`
+- `CoverageModel#list` (in the `files` array)
+
+#### Previous Behavior (v3.x)
+```ruby
+summary = model.summary_for('lib/foo.rb')
+# => { 'file' => '/path/to/lib/foo.rb', 'summary' => { 'covered' => 4, 'total' => 6, 'percentage' => 66.67 } }
+puts summary['summary']['percentage']  # => 66.67
+
+list_result = model.list
+list_result['files'].first['percentage']  # => 85.71
+```
+
+#### New Behavior (v4.0)
+```ruby
+summary = model.summary_for('lib/foo.rb')
+# => { 'file' => '/path/to/lib/foo.rb', 'summary' => { 'covered' => 4, 'total' => 6, 'percent_covered' => 66.67 } }
+puts summary['summary']['percent_covered']  # => 66.67
+
+list_result = model.list
+list_result['files'].first['percent_covered']  # => 85.71
+```
+
+#### Migration Steps
+- Replace all `['percentage']` with `['percent_covered']` in your code
+- Update predicates in `validate` command / `ValidateTool`
+- Update any custom scripts that parse CLI JSON output (` --format json`)
 
 [↑ Back to top](#table-of-contents)
 

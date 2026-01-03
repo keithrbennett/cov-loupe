@@ -223,7 +223,7 @@ Returns `Hash` with file data and staleness metadata:
       'file' => String,       # Absolute file path
       'covered' => Integer,   # Number of covered lines
       'total' => Integer,     # Total relevant lines
-      'percentage' => Float,  # Coverage percentage (0.00-100.00)
+      'percent_covered' => Float,  # Coverage percentage (0.00-100.00)
       'stale' => false | String  # Staleness indicator: false, 'E', 'M', 'T', or 'L'
     }
   ],
@@ -246,7 +246,7 @@ Returns `Hash`:
   'summary' => {
     'covered' => Integer, # Number of covered lines
     'total' => Integer,   # Total relevant lines
-    'percentage' => Float        # Coverage percentage (0.00-100.00)
+    'percent_covered' => Float        # Coverage percentage (0.00-100.00)
   }
 }
 ```
@@ -263,7 +263,7 @@ Returns `Hash`:
   'summary' => {
     'covered' => Integer,
     'total' => Integer,
-    'percentage' => Float
+    'percent_covered' => Float
   }
 }
 ```
@@ -279,7 +279,7 @@ Returns `Hash`:
   'summary' => {
     'covered' => Integer,
     'total' => Integer,
-    'percentage' => Float
+    'percent_covered' => Float
   }
 }
 ```
@@ -368,7 +368,7 @@ require "cov_loupe"
 begin
   model = CovLoupe::CoverageModel.new
   summary = model.summary_for("lib/foo.rb")
-  puts "Coverage: #{summary['summary']['percentage']}%"
+  puts "Coverage: #{summary['summary']['percent_covered']}%"
 rescue CovLoupe::FileError => e
   puts "File not in coverage data: #{e.message}"
 rescue CovLoupe::ResultsetNotFoundError => e
@@ -427,7 +427,7 @@ summary = find_coverage(model, [
 ])
 
 if summary
-  puts "Coverage: #{summary['summary']['percentage']}%"
+  puts "Coverage: #{summary['summary']['percent_covered']}%"
 else
   puts "File not found in coverage data"
 end
@@ -454,8 +454,8 @@ results = files_to_check.map do |path|
     summary = model.summary_for(path)
     {
       file: path,
-      coverage: summary['summary']['percentage'],
-      status: summary['summary']['percentage'] >= 80 ? :ok : :low
+      coverage: summary['summary']['percent_covered'],
+      status: summary['summary']['percent_covered'] >= 80 ? :ok : :low
     }
   rescue CovLoupe::FileError
     {
@@ -497,12 +497,12 @@ class CoverageValidator
       threshold = threshold_for(file['file'])
       next unless threshold
 
-      if file['percentage'] < threshold
+      if file['percent_covered'] < threshold
         failures << {
           file: file['file'],
-          actual: file['percentage'],
+          actual: file['percent_covered'],
           required: threshold,
-          gap: threshold - file['percentage']
+          gap: threshold - file['percent_covered']
         }
       end
     end
@@ -595,20 +595,20 @@ class CoverageDeltaTracker
       baseline_file = baseline.find { |f| f['file'] == file['file'] }
       next unless baseline_file
 
-      delta = file['percentage'] - baseline_file['percentage']
+      delta = file['percent_covered'] - baseline_file['percent_covered']
 
       if delta > 0.1
         improved << {
           file: file['file'],
-          before: baseline_file['percentage'],
-          after: file['percentage'],
+          before: baseline_file['percent_covered'],
+          after: file['percent_covered'],
           delta: delta
         }
       elsif delta < -0.1
         regressed << {
           file: file['file'],
-          before: baseline_file['percentage'],
-          after: file['percentage'],
+          before: baseline_file['percent_covered'],
+          after: file['percent_covered'],
           delta: delta
         }
       end
@@ -663,14 +663,14 @@ class CoverageReporter
 
     # Files below threshold
     threshold = 80.0
-    low_coverage = files.select { |file| file['percentage'] < threshold }
+    low_coverage = files.select { |file| file['percent_covered'] < threshold }
 
     # Build low coverage table
     low_coverage_section = if low_coverage.any?
-      rows = low_coverage.sort_by { |file| file['percentage'] }.map do |file|
+      rows = low_coverage.sort_by { |file| file['percent_covered'] }.map do |file|
         uncovered = @model.uncovered_for(file['file'])
         missing_count = uncovered['uncovered'].length
-        "| #{file['file']} | #{file['percentage']}% | #{missing_count} |"
+        "| #{file['file']} | #{file['percent_covered']}% | #{missing_count} |"
       end.join("\n")
 
       <<~LOW_COVERAGE_TABLE
@@ -686,8 +686,8 @@ class CoverageReporter
     end
 
     # Build top performers table
-    top_rows = files.sort_by { |file| -file['percentage'] }.take(10).map do |file|
-      "| #{file['file']} | #{file['percentage']}% |"
+    top_rows = files.sort_by { |file| -file['percent_covered'] }.take(10).map do |file|
+      "| #{file['file']} | #{file['percent_covered']}% |"
     end.join("\n")
 
     # Generate report

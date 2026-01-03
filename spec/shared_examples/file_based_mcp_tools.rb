@@ -68,13 +68,13 @@ FILE_BASED_TOOL_CONFIGS = {
     description: 'coverage summary data',
     mock_data: {
       'file' => '/abs/path/lib/foo.rb',
-      'summary' => { 'covered' => 10, 'total' => 12, 'percentage' => 83.33 }
+      'summary' => { 'covered' => 10, 'total' => 12, 'percent_covered' => 83.33 }
     },
     additional_validations: ->(data, _item) {
-      expect(data['summary']).to include('covered', 'total', 'percentage')
+      expect(data['summary']).to include('covered', 'total', 'percent_covered')
     },
     tool_specific_examples: {
-      'includes percentage in summary data' => ->(config) {
+      'includes percent_covered in summary data' => ->(config) {
         stub_coverage_model(
           model_method: :summary_for,
           mock_data: config[:mock_data],
@@ -86,7 +86,7 @@ FILE_BASED_TOOL_CONFIGS = {
           server_context: null_server_context)
         data, = expect_mcp_text_json(response)
 
-        expect(data['summary']['percentage']).to be_a(Float)
+        expect(data['summary']['percent_covered']).to be_a(Float)
       }
     }
   },
@@ -115,7 +115,7 @@ FILE_BASED_TOOL_CONFIGS = {
     mock_data: {
       'file' => '/abs/path/lib/foo.rb',
       'uncovered' => [5, 9, 12],
-      'summary' => { 'covered' => 10, 'total' => 12, 'percentage' => 83.33 }
+      'summary' => { 'covered' => 10, 'total' => 12, 'percent_covered' => 83.33 }
     },
     additional_validations: ->(data, _item) {
       expect(data['uncovered']).to eq([5, 9, 12])
@@ -134,7 +134,7 @@ FILE_BASED_TOOL_CONFIGS = {
         data, = expect_mcp_text_json(response)
 
         expect(data['uncovered']).to be_an(Array)
-        expect(data['summary']).to include('covered', 'total', 'percentage')
+        expect(data['summary']).to include('covered', 'total', 'percent_covered')
       }
     }
   },
@@ -151,7 +151,7 @@ FILE_BASED_TOOL_CONFIGS = {
         { 'line' => 1, 'hits' => 1, 'covered' => true },
         { 'line' => 2, 'hits' => 0, 'covered' => false }
       ],
-      'summary' => { 'covered' => 1, 'total' => 2, 'percentage' => 50.0 }
+      'summary' => { 'covered' => 1, 'total' => 2, 'percent_covered' => 50.0 }
     },
     additional_validations: ->(data, _item) {
       expect(data['lines']).to be_an(Array)

@@ -31,7 +31,7 @@ RSpec.describe CovLoupe::Commands::UncoveredCommand do
           absolute_payload: {
             'file' => 'lib/perfect.rb',
             'uncovered' => [],
-            'summary' => { 'covered' => 10, 'total' => 10, 'percentage' => 100.0 }
+            'summary' => { 'covered' => 10, 'total' => 10, 'percent_covered' => 100.0 }
           },
           relative_path: 'lib/perfect.rb'
         )

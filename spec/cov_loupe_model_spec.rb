@@ -96,7 +96,7 @@ RSpec.describe CovLoupe::CoverageModel do
       aggregate_failures 'Descending sort' do
         expect(files.first).to include(
           'file' => File.expand_path('lib/foo.rb', root),
-          'percentage' => a_value_within(0.01).of(66.67)
+          'percent_covered' => a_value_within(0.01).of(66.67)
         )
         expect(files.last).to include('file' => File.expand_path('lib/bar.rb', root))
       end
@@ -105,7 +105,7 @@ RSpec.describe CovLoupe::CoverageModel do
       aggregate_failures 'Ascending sort' do
         expect(files_asc.first).to include(
           'file' => File.expand_path('lib/bar.rb', root),
-          'percentage' => a_value_within(0.01).of(33.33)
+          'percent_covered' => a_value_within(0.01).of(33.33)
         )
         expect(files_asc.last).to include('file' => File.expand_path('lib/foo.rb', root))
       end
@@ -366,7 +366,7 @@ RSpec.describe CovLoupe::CoverageModel do
         expect(model.format_table([])).to eq('No coverage data found')
 
         # Custom rows
-        custom = [{ 'file' => 'test.rb', 'percentage' => 100, 'covered' => 1, 'total' => 1,
+        custom = [{ 'file' => 'test.rb', 'percent_covered' => 100, 'covered' => 1, 'total' => 1,
                     'stale' => false }]
         expect(model.format_table(custom)).to include('test.rb')
 

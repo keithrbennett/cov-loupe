@@ -211,7 +211,7 @@ module CovLoupe
           'file' => abs_path,
           'covered' => summary['covered'],
           'total' => summary['total'],
-          'percentage' => summary['percentage'],
+          'percent_covered' => summary['percent_covered'],
 
           # We set 'stale' => false as a placeholder, then in list we overwrite it
           # with the true status from the project report.
@@ -267,8 +267,8 @@ module CovLoupe
 
     private def sort_rows(rows, sort_order: :descending)
       percent_comparator = sort_order == :descending \
-        ? ->(a, b) { b['percentage'] <=> a['percentage'] }
-        : ->(a, b) { a['percentage'] <=> b['percentage'] }
+        ? ->(a, b) { b['percent_covered'] <=> a['percent_covered'] }
+        : ->(a, b) { a['percent_covered'] <=> b['percent_covered'] }
 
       comparator = ->(a, b) do
         percent_comp_result = percent_comparator.(a, b)

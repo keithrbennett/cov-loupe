@@ -7,10 +7,10 @@ RSpec.describe CovLoupe::CoverageReporter do
   # Data is pre-sorted by percentage ascending (as model.list returns)
   let(:files_data) do
     [
-      { 'file' => '/project/lib/zero.rb',   'percentage' =>  0.0, 'covered' =>  0, 'total' => 10 },
-      { 'file' => '/project/lib/low.rb',    'percentage' => 25.0, 'covered' =>  5, 'total' => 20 },
-      { 'file' => '/project/lib/medium.rb', 'percentage' => 60.0, 'covered' => 12, 'total' => 20 },
-      { 'file' => '/project/lib/high.rb',   'percentage' => 95.0, 'covered' => 19, 'total' => 20 }
+      { 'file' => '/project/lib/zero.rb',   'percent_covered' =>  0.0, 'covered' =>  0, 'total' => 10 },
+      { 'file' => '/project/lib/low.rb',    'percent_covered' => 25.0, 'covered' =>  5, 'total' => 20 },
+      { 'file' => '/project/lib/medium.rb', 'percent_covered' => 60.0, 'covered' => 12, 'total' => 20 },
+      { 'file' => '/project/lib/high.rb',   'percent_covered' => 95.0, 'covered' => 19, 'total' => 20 }
     ]
   end
 

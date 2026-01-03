@@ -10,21 +10,21 @@ RSpec.describe CovLoupe::CoverageTableFormatter do
         [
           {
             'file' => 'lib/foo.rb',
-            'percentage' => 100.0,
+            'percent_covered' => 100.0,
             'covered' => 10,
             'total' => 10,
             'stale' => false
           },
           {
             'file' => 'lib/bar.rb',
-            'percentage' => 50.0,
+            'percent_covered' => 50.0,
             'covered' => 5,
             'total' => 10,
             'stale' => 'M'
           },
           {
             'file' => 'lib/baz.rb',
-            'percentage' => 75.0,
+            'percent_covered' => 75.0,
             'covered' => 15,
             'total' => 20,
             'stale' => 'T'
@@ -108,7 +108,7 @@ RSpec.describe CovLoupe::CoverageTableFormatter do
         non_stale_rows = [
           {
             'file' => 'lib/foo.rb',
-            'percentage' => 100.0,
+            'percent_covered' => 100.0,
             'covered' => 10,
             'total' => 10,
             'stale' => false
@@ -134,14 +134,14 @@ RSpec.describe CovLoupe::CoverageTableFormatter do
         [
           {
             'file' => 'short.rb',
-            'percentage' => 100.0,
+            'percent_covered' => 100.0,
             'covered' => 10,
             'total' => 10,
             'stale' => false
           },
           {
             'file' => 'very/long/path/to/some/deeply/nested/file.rb',
-            'percentage' => 50.0,
+            'percent_covered' => 50.0,
             'covered' => 5,
             'total' => 10,
             'stale' => false
@@ -166,14 +166,14 @@ RSpec.describe CovLoupe::CoverageTableFormatter do
         [
           {
             'file' => 'file1.rb',
-            'percentage' => 99.99,
+            'percent_covered' => 99.99,
             'covered' => 9999,
             'total' => 10_000,
             'stale' => false
           },
           {
             'file' => 'file2.rb',
-            'percentage' => 1.0,
+            'percent_covered' => 1.0,
             'covered' => 1,
             'total' => 100,
             'stale' => false

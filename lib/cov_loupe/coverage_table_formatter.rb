@@ -88,7 +88,7 @@ module CovLoupe
       Kernel.format(
         "│ %-#{widths[:file]}s │ %#{widths[:pct] - 1}.2f%% │ %#{widths[:covered]}d │ %#{widths[:total]}d │ %#{widths[:stale]}s │",
         file_data['file'],
-        file_data['percentage'],
+        file_data['percent_covered'],
         file_data['covered'],
         file_data['total'],
         stale_text_str.center(widths[:stale])

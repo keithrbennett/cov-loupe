@@ -10,7 +10,7 @@ RSpec.describe CovLoupe::CoverageCLI, 'format option' do
   describe 'format normalization' do
     it 'normalizes short format aliases' do
       output = run_cli('--format', 'j', 'list')
-      expect(output).to include('"files":', '"percentage":')
+      expect(output).to include('"files":', '"percent_covered":')
       data = JSON.parse(output)
       expect(data['files']).to be_an(Array)
     end

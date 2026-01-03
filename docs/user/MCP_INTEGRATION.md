@@ -183,7 +183,7 @@ These tools analyze individual files. All require `path` parameter.
 
 **`coverage_summary_tool`** - Covered/total/percentage summary
 ```json
-{"file": "...", "summary": {"covered": 12, "total": 14, "percentage": 85.71}, "stale": false}
+{"file": "...", "summary": {"covered": 12, "total": 14, "percent_covered": 85.71}, "stale": false}
 ```
 
 **`uncovered_lines_tool`** - List uncovered line numbers
@@ -225,7 +225,7 @@ These tools analyze individual files. All require `path` parameter.
 - Returns: `{"result": Boolean}` where `true` means policy passed, `false` means failed
 - Security Warning: Predicates execute as arbitrary Ruby code with full system privileges. Only use predicate files from trusted sources.
 - Examples:
-  - Check if all files have at least 80% coverage: `{"code": "->(m) { m.list.all? { |f| f['percentage'] >= 80 } }"}`
+  - Check if all files have at least 80% coverage: `{"code": "->(m) { m.list.all? { |f| f['percent_covered'] >= 80 } }"}`
   - Run coverage policy from file: `{"file": "coverage_policy.rb"}`
 
 #### Utility Tools

@@ -22,7 +22,7 @@ module CovLoupe
           stale_marker = data['stale'] ? 'Yes' : ''
           rows = [[
             relative_path,
-            format('%.2f%%', summary['percentage']),
+            format('%.2f%%', summary['percent_covered']),
             summary['covered'].to_s,
             summary['total'].to_s,
             stale_marker

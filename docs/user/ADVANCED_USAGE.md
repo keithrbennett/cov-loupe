@@ -307,7 +307,7 @@ clp validate -i '->(m) { m.list["files"].all? { |f| f["percentage"] >= 80 } }'
 # coverage_policy.rb
 ->(model) do
   # All files must have >= 80% coverage
-  model.list['files'].all? { |f| f['percentage'] >= 80 }
+  model.list['files'].all? { |f| f['percent_covered'] >= 80 }
 end
 ```
 
@@ -318,14 +318,14 @@ end
 class CoveragePolicy
   def call(model)
     threshold = 80
-    low_files = model.list['files'].select { |f| f['percentage'] < threshold }
+    low_files = model.list['files'].select { |f| f['percent_covered'] < threshold }
 
     if low_files.empty?
       puts "✓ All files have >= #{threshold}% coverage"
       true
     else
       warn "✗ Files below #{threshold}%:"
-      low_files.each { |f| warn "  #{f['file']}: #{f['percentage']}%" }
+      low_files.each { |f| warn "  #{f['file']}: #{f['percent_covered']}%" }
       false
     end
   end
@@ -608,7 +608,7 @@ CSV.open('coverage.csv', 'w') do |csv|
   files.each do |f|
     csv << [
       model.relativize(f)['file'],
-      f['percentage'],
+      f['percent_covered'],
       f['covered'],
       f['total'],
       f['stale']
@@ -631,9 +631,9 @@ template = ERB.new(<<~HTML)
           <th>File</th><th>Coverage</th><th>Covered</th><th>Total</th>
         </tr>
         <% files.each do |f| %>
-          <tr class="<%= f['percentage'] < 80 ? 'low' : 'ok' %>">
+          <tr class="<%= f['percent_covered'] < 80 ? 'low' : 'ok' %>">
             <td><%= f['file'] %></td>
-            <td><%= f['percentage'].round(2) %>%</td>
+            <td><%= f['percent_covered'].round(2) %>%</td>
             <td><%= f['covered'] %></td>
             <td><%= f['total'] %></td>
           </tr>

@@ -16,7 +16,7 @@ module CovLoupe
       model ||= CoverageModel.new
       list_result = model.list(sort_order: :ascending)
       file_list = list_result['files']
-        .select { |f| f['percentage'] < threshold }
+        .select { |f| f['percent_covered'] < threshold }
         .first(count)
       file_list = model.relativize(file_list)
 
@@ -24,7 +24,7 @@ module CovLoupe
 
       lines = ["\nLowest coverage files (< #{threshold}%):"]
       file_list.each do |f|
-        lines << format('  %5.1f%%  %s', f['percentage'], f['file'])
+        lines << format('  %5.1f%%  %s', f['percent_covered'], f['file'])
       end
       lines.join("\n")
     end

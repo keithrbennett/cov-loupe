@@ -105,7 +105,7 @@ def output_examples
   DOC
 
   # Execute the code
-  high_coverage_files = files_data.select { |file| file['percentage'] >= 50.0 }
+  high_coverage_files = files_data.select { |file| file['percent_covered'] >= 50.0 }
   high_coverage_table = model.format_table(high_coverage_files)
   puts <<~DOC
     Result:

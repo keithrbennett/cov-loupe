@@ -70,7 +70,7 @@ RSpec.describe CovLoupe::Tools::ValidateTool do
         response = call_with_predicate(<<~RUBY)
           ->(m) do
             foo_file = m.list["files"].detect { |f| f["file"].include?("foo.rb") }
-            foo_coverage = foo_file["percentage"] if foo_file
+            foo_coverage = foo_file["percent_covered"] if foo_file
             foo_coverage && foo_coverage >= 50.0
           end
         RUBY

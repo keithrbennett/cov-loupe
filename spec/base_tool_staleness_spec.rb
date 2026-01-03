@@ -51,7 +51,7 @@ RSpec.describe CovLoupe::Tools::CoverageSummaryTool do
 
     # Mock summary_for to return dummy data
     allow(cached_model).to receive(:summary_for).and_return(
-      { 'file' => file_path, 'summary' => { 'covered' => 0, 'total' => 0, 'percentage' => 0.0 } }
+      { 'file' => file_path, 'summary' => { 'covered' => 0, 'total' => 0, 'percent_covered' => 0.0 } }
     )
 
     # 2. Second call: raise_on_stale: true
@@ -80,7 +80,7 @@ RSpec.describe CovLoupe::Tools::CoverageSummaryTool do
 
     cached_model = fetch_cached_model(context)
     allow(cached_model).to receive(:summary_for).and_return(
-      { 'file' => file_path, 'summary' => { 'covered' => 0, 'total' => 0, 'percentage' => 0.0 } }
+      { 'file' => file_path, 'summary' => { 'covered' => 0, 'total' => 0, 'percent_covered' => 0.0 } }
     )
 
     # 2. Second call: raise_on_stale: false

@@ -18,7 +18,7 @@ module CovLoupe
           summary = data['summary']
 
           puts "File: #{relative_path}"
-          puts "Coverage: #{format('%.2f%%', summary['percentage'])} " \
+          puts "Coverage: #{format('%.2f%%', summary['percent_covered'])} " \
                "(#{summary['covered']}/#{summary['total']} lines)"
           puts
 

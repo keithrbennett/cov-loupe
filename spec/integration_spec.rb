@@ -29,8 +29,8 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
 
         foo = files_by_name.fetch('foo.rb')
         bar = files_by_name.fetch('bar.rb')
-        expect(foo['percentage']).to be_within(0.01).of(66.67)
-        expect(bar['percentage']).to be_within(0.01).of(33.33)
+        expect(foo['percent_covered']).to be_within(0.01).of(66.67)
+        expect(bar['percent_covered']).to be_within(0.01).of(33.33)
 
         raw = model.raw_for('lib/foo.rb')
         expect(raw['lines']).to eq([nil, nil, 1, 0, nil, 2])
@@ -198,7 +198,7 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
       aggregate_failures do
         # Verify range of coverage
         files = model.list['files']
-        coverages = files.map { |f| f['percentage'] }
+        coverages = files.map { |f| f['percent_covered'] }
 
         expect(coverages.min).to be < 50
         expect(coverages.max).to be > 50

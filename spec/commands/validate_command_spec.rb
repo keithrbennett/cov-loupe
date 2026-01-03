@@ -88,7 +88,7 @@ RSpec.describe CovLoupe::Commands::ValidateCommand do
         ->(model) do
           # Access coverage data via the model
           summary = model.summary_for('lib/foo.rb')
-          summary['summary']['percentage'] > 50  # Should be true for foo.rb
+          summary['summary']['percent_covered'] > 50  # Should be true for foo.rb
         end
       RUBY
         _out, _err, status = run_fixture_cli_with_status(
@@ -140,7 +140,7 @@ RSpec.describe CovLoupe::Commands::ValidateCommand do
 
     it 'provides model to predicate that can query coverage' do
       code = <<~RUBY.strip
-        ->(model) { model.summary_for('lib/foo.rb')['summary']['percentage'] > 50 }
+        ->(model) { model.summary_for('lib/foo.rb')['summary']['percent_covered'] > 50 }
       RUBY
       _out, _err, status = run_fixture_cli_with_status(
         'validate', '-i', code

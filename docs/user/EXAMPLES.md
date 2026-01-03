@@ -55,7 +55,7 @@ clp -s u -c 3 uncovered app/controllers/orders_controller.rb  # -s = --source (u
 clp list | tail -12
 
 # Only show files below 80%
-clp -fJ list | jq '.files[] | select(.percentage < 80)'
+clp -fJ list | jq '.files[] | select(.percent_covered < 80)'
 
 # Ruby alternative:
 clp -fJ list | ruby -r json -e '
@@ -95,7 +95,7 @@ Here are some examples:
 **Parse and filter:**
 ```bash
 # Files below threshold
-clp -fJ list | jq '.files[] | select(.percentage < 80) | {file, coverage: .percentage}'
+clp -fJ list | jq '.files[] | select(.percent_covered < 80) | {file, coverage: .percent_covered}'
 
 # Ruby alternative:
 clp -fJ list | ruby -r json -e '
@@ -128,7 +128,7 @@ clp -fJ list |
       | map(. + {dir: (.file | split("/") | .[0:-1] | join("/"))})
       | sort_by(.dir)
       | group_by(.dir)
-      | map({dir: .[0].dir, avg: (map(.percentage) | add / length)})'
+      | map({dir: .[0].dir, avg: (map(.percent_covered) | add / length)})'
 
 # Ruby alternative:
 clp -fJ list | ruby -r json -e '
@@ -159,7 +159,7 @@ clp -fJ list | rexe -ij -mb -oJ '
 # Create markdown table
 echo "| Coverage | File |" > report.md
 echo "|----------|------|" >> report.md
-clp -fJ list | jq -r '.files[] | "| \(.percentage)% | \(.file) |"' >> report.md
+clp -fJ list | jq -r '.files[] | "| \(.percent_covered)% | \(.file) |"' >> report.md
 
 # Ruby alternative:
 clp -fJ list | ruby -r json -e '
@@ -174,7 +174,7 @@ clp -fJ list | rexe -ij -mb '
 ' >> report.md
 
 # Export for spreadsheet
-clp -fJ list | jq -r '.files[] | [.file, .percentage] | @csv' > coverage.csv
+clp -fJ list | jq -r '.files[] | [.file, .percent_covered] | @csv' > coverage.csv
 
 # Ruby alternative:
 clp -fJ list | ruby -r json -r csv -e '
@@ -206,7 +206,7 @@ puts "Average coverage: #{totals['lines']['percent_covered']}%"
 
 # Check specific file
 summary = model.summary_for("app/models/order.rb")
-puts "Coverage: #{summary['summary']['percentage']}%"
+puts "Coverage: #{summary['summary']['percent_covered']}%"
 
 # Find uncovered lines
 uncovered = model.uncovered_for("lib/payments/refund_service.rb")
@@ -224,12 +224,12 @@ list = model.list['files']
 
 # Find files below threshold
 THRESHOLD = 80.0
-low_coverage = list.select { |f| f['percentage'] < THRESHOLD }
+low_coverage = list.select { |f| f['percent_covered'] < THRESHOLD }
 
 if low_coverage.any?
   puts "Files below #{THRESHOLD}%:"
   low_coverage.each do |file|
-    puts "  #{file['file']}: #{file['percentage']}%"
+    puts "  #{file['file']}: #{file['percent_covered']}%"
   end
 end
 
@@ -262,9 +262,9 @@ puts table
 
 # Or create your own format
 lib_files.each do |file|
-  status = file['percentage'] >= 90 ? '✓' : '⚠'
+  status = file['percent_covered'] >= 90 ? '✓' : '⚠'
   relative_path = Pathname.new(file['file']).relative_path_from(Pathname.pwd)
-  puts "#{status} #{relative_path}: #{file['percentage']}%"
+  puts "#{status} #{relative_path}: #{file['percent_covered']}%"
 end
 ```
 
@@ -449,7 +449,7 @@ test:
   return false if totals['lines']['percent_covered'] < 80.0
 
   # No files below 60%
-  return false if list.any? { |f| f['percentage'] < 60.0 }
+  return false if list.any? { |f| f['percent_covered'] < 60.0 }
 
   # lib/ files must average 90%
   lib_totals = model.project_totals(tracked_globs: ['lib/**/*.rb'])
@@ -519,7 +519,7 @@ puts "|------|----------|--------|"
 changed_files.each do |file|
   begin
     summary = model.summary_for(file)
-    percentage = summary['summary']['percentage']
+    percentage = summary['summary']['percent_covered']
     status = percentage >= 80 ? '✅' : '⚠️'
     puts "| #{file} | #{percentage}% | #{status} |"
   rescue

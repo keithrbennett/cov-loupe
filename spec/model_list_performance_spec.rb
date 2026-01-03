@@ -27,7 +27,7 @@ RSpec.describe CovLoupe::CoverageModel, 'list performance' do
 
       # Verify each file has expected structure
       files.each do |file_data|
-        expect(file_data).to include('file', 'covered', 'total', 'percentage')
+        expect(file_data).to include('file', 'covered', 'total', 'percent_covered')
         expect(file_data['total']).to be > 0
       end
     end

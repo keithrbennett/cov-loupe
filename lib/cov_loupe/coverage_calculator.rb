@@ -8,7 +8,7 @@ module CovLoupe
     #
     # @param coverage_lines [Array<Integer, nil>] SimpleCov coverage array where each element
     #   represents a line: Integer for hit count, nil for non-code lines
-    # @return [Hash] summary with 'covered', 'total', and 'percentage' keys
+    # @return [Hash] summary with 'covered', 'total', and 'percent_covered' keys
     def self.summary(coverage_lines)
       total = 0
       covered = 0
@@ -16,8 +16,8 @@ module CovLoupe
         total += 1
         covered += 1 if hits.to_i > 0
       end
-      percentage = total.zero? ? 100.0 : ((covered.to_f * 100.0 / total) * 100).round / 100.0
-      { 'covered' => covered, 'total' => total, 'percentage' => percentage }
+      percent_covered = total.zero? ? 100.0 : ((covered.to_f * 100.0 / total) * 100).round / 100.0
+      { 'covered' => covered, 'total' => total, 'percent_covered' => percent_covered }
     end
 
     # Identifies uncovered line numbers from a coverage array.

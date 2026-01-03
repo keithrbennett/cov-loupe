@@ -15,7 +15,7 @@ module CovLoupe
         On error (syntax error, file not found, etc.), returns an MCP error response.
         Security Warning: Predicates execute as arbitrary Ruby code with full system privileges.
         Examples:
-        - "Check if all files have at least 80% coverage" → {"code": "->(m) { m.list.all? { |f| f['percentage'] >= 80 } }"}
+        - "Check if all files have at least 80% coverage" → {"code": "->(m) { m.list['files'].all? { |f| f['percent_covered'] >= 80 } }"}
         - "Run coverage policy from file" → {"file": "coverage_policy.rb"}
       DESC
 

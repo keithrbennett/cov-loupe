@@ -11,7 +11,7 @@ RSpec.describe CovLoupe::Presenters::CoveragePayloadPresenter do
       model_method: :summary_for,
       payload: {
         'file' => '/abs/path/lib/foo.rb',
-        'summary' => { 'covered' => 8, 'total' => 10, 'percentage' => 80.0 }
+        'summary' => { 'covered' => 8, 'total' => 10, 'percent_covered' => 80.0 }
       },
       stale: false,
       expected_keys: ['summary']
@@ -37,7 +37,7 @@ RSpec.describe CovLoupe::Presenters::CoveragePayloadPresenter do
           { 'line' => 1, 'hits' => 1, 'covered' => true },
           { 'line' => 2, 'hits' => 0, 'covered' => false }
         ],
-        'summary' => { 'covered' => 1, 'total' => 2, 'percentage' => 50.0 }
+        'summary' => { 'covered' => 1, 'total' => 2, 'percent_covered' => 50.0 }
       },
       stale: 'L',
       expected_keys: %w[lines summary]
@@ -49,7 +49,7 @@ RSpec.describe CovLoupe::Presenters::CoveragePayloadPresenter do
       payload: {
         'file' => '/abs/path/lib/foo.rb',
         'uncovered' => [2, 4],
-        'summary' => { 'covered' => 2, 'total' => 4, 'percentage' => 50.0 }
+        'summary' => { 'covered' => 2, 'total' => 4, 'percent_covered' => 50.0 }
       },
       stale: 'M',
       expected_keys: %w[uncovered summary]
