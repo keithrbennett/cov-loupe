@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'pathname'
+require_relative 'resolvers/resolver_helpers'
 
 module CovLoupe
   # Centralized path handling utilities providing consistent normalization,
@@ -154,9 +155,15 @@ module CovLoupe
 
     # Checks if volume is case-sensitive
     #
+    # @param path [String, nil] path to test (defaults to current directory)
     # @return [Boolean] true if volume is case-sensitive
-    def self.volume_case_sensitive?
-      @volume_case_sensitive ||= !windows?
+    def self.volume_case_sensitive?(path = nil)
+      test_path = path ? File.absolute_path(path) : Dir.pwd
+      normalized_path = File.absolute_path(test_path)
+
+      @volume_case_sensitivity_cache ||= {}
+      @volume_case_sensitivity_cache[normalized_path] ||=
+        Resolvers::ResolverHelpers.volume_case_sensitive?(normalized_path)
     end
 
     # Returns root path with trailing separator for prefix matching

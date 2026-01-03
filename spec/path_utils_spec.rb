@@ -495,17 +495,54 @@ RSpec.describe CovLoupe::PathUtils do
   end
 
   describe '.volume_case_sensitive?' do
-    it 'caches result' do
-      # Call twice to ensure caching works
+    before do
+      # Clear the cache before each test to ensure isolation
+      described_class.instance_variable_set(:@volume_case_sensitivity_cache, nil)
+    end
+
+    it 'caches result per path' do
+      allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:volume_case_sensitive?)
+        .with(Dir.pwd).and_return(true)
+
+      # Call twice to ensure caching works for same path
       result1 = described_class.volume_case_sensitive?
       result2 = described_class.volume_case_sensitive?
       expect(result1).to eq(result2)
+      expect(CovLoupe::Resolvers::ResolverHelpers).to have_received(:volume_case_sensitive?).once
     end
 
-    it 'detects case sensitivity based on platform' do
-      # Just verify it returns a boolean and doesn't crash
+    it 'delegates to ResolverHelpers.volume_case_sensitive?' do
+      test_path = '/some/test/path'
+      allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:volume_case_sensitive?)
+        .with(test_path).and_return(false)
+
+      result = described_class.volume_case_sensitive?(test_path)
+      expect(result).to be false
+      expect(CovLoupe::Resolvers::ResolverHelpers).to have_received(:volume_case_sensitive?)
+        .with(test_path)
+    end
+
+    it 'uses current directory when no path provided' do
+      allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:volume_case_sensitive?)
+        .with(Dir.pwd).and_return(true)
+
       result = described_class.volume_case_sensitive?
-      expect([true, false].include?(result)).to be true
+      expect(result).to be true
+      expect(CovLoupe::Resolvers::ResolverHelpers).to have_received(:volume_case_sensitive?)
+        .with(Dir.pwd)
+    end
+
+    it 'normalizes paths before caching' do
+      test_path = '/some/test/path'
+      allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:volume_case_sensitive?)
+        .with(test_path).and_return(true)
+
+      # Call with different representations of the same path
+      described_class.volume_case_sensitive?(test_path)
+      described_class.volume_case_sensitive?(test_path)
+
+      # Should only call the helper once due to caching
+      expect(CovLoupe::Resolvers::ResolverHelpers).to have_received(:volume_case_sensitive?).once
     end
   end
 
