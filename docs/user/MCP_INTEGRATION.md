@@ -81,6 +81,16 @@ env_vars = ["GEM_HOME", "GEM_PATH"]  # Add this line manually
 You'll need to manually add it back after running `codex mcp add` again.
 To avoid this, consider editing `~/.codex/config.toml` directly instead of using `remove`/`add` commands.
 
+If Codex starts `cov-loupe` in a fresh repo and you see `Resolving dependencies...` before the MCP handshake, point Codex at a small wrapper script instead of `cov-loupe` directly:
+
+```sh
+#!/usr/bin/env bash
+export NOEXEC_DISABLE=1
+exec cov-loupe -m mcp "$@"
+```
+
+That disables `rubygems-bundler`'s `noexec` hook before the RubyGems launcher runs, which keeps `stdout` clean for MCP startup.
+
 ### Gemini
 
 `mcp add` expects first the display name, then the executable (filename or path). The executable's filename is sufficient if it is in the PATH, but you may also specify the fully qualified path if necessary (e.g. `/a/b/cov-loupe`).
@@ -129,7 +139,7 @@ MCP over stdio is strict: the server must not print anything to `stdout` before 
 This matters for `cov-loupe` because there are two common launch paths:
 
 - The gem's real executable, [`exe/cov-loupe`](../../exe/cov-loupe), which simply loads `cov_loupe` and calls `CovLoupe.run(ARGV)`.
-- The RubyGems-installed `cov-loupe` stub, which is generated outside this repository and typically calls `Gem.use_gemdeps` before activating the gem.
+- The RubyGems-installed `cov-loupe` stub and wrapper stack, which are generated outside this repository and may call `Gem.use_gemdeps` and `rubygems-bundler` hooks before activating the gem.
 
 On systems where the installed stub includes:
 
@@ -138,9 +148,11 @@ require 'rubygems'
 Gem.use_gemdeps
 ```
 
-the stub consults the current working directory's Bundler context before `cov-loupe` itself starts. If you launch the MCP server from a directory that has a `Gemfile`, RubyGems/Bundler may try to use that project's dependency definition. When that bundle is unresolved or incomplete, Bundler may resolve dependencies and emit progress text such as `Resolving dependencies...` before `cov-loupe` has a chance to start the MCP transport.
+the launcher may consult the current working directory's Bundler context before `cov-loupe` itself starts. On setups that also use `ruby_executable_hooks` plus the `rubygems-bundler` plugin, that wrapper stack can walk up from the current directory, inspect `Gemfile`, and call Bundler before `cov-loupe` runs. When that bundle is unresolved or incomplete, Bundler may resolve dependencies and emit progress text such as `Resolving dependencies...` before `cov-loupe` has a chance to start the MCP transport.
 
 That output does not come from `cov-loupe`'s own [`exe/cov-loupe`](../../exe/cov-loupe). It happens earlier, in the generated launcher and the dependency tooling it invokes.
+
+The upstream tracking issue for this RVM launcher-stack behavior is [rvm/rvm#5649](https://github.com/rvm/rvm/issues/5649).
 
 ### Why One Project Can Fail While Another Works
 
@@ -161,10 +173,21 @@ This can make the issue look intermittent, but the underlying cause is consisten
 
 For MCP usage, start with the normal launch path and only bypass the RubyGems stub if you still need to.
 
+- Most reliable workaround for wrapper-heavy Ruby environments: launch through a tiny shell wrapper that exports `NOEXEC_DISABLE=1` before calling `cov-loupe -m mcp`.
 - Preferred fix: in the current project, run `bundle install` so the bundle is settled, then retry normal `cov-loupe -m mcp` startup.
 - Good follow-up check: confirm `Gemfile.lock` exists and `bundle check` succeeds before retrying the MCP client.
 - Fallback: if you cannot settle the bundle or still need a launch path that does not depend on the working directory's bundle state, invoke the real executable directly instead of the RubyGems wrapper.
 - Good for local development from a checkout: point the MCP client at the checkout's [`exe/cov-loupe`](../../exe/cov-loupe) directly.
+
+Example wrapper:
+
+```sh
+#!/usr/bin/env bash
+export NOEXEC_DISABLE=1
+exec cov-loupe -m mcp "$@"
+```
+
+This works because `rubygems-bundler` checks `NOEXEC_DISABLE` before it tries to load the current directory's bundle, so the wrapper keeps `stdout` clean for MCP startup.
 
 To find the real executable path for an installed gem:
 
@@ -203,7 +226,7 @@ Running `cov-loupe -m mcp` through the RubyGems-installed stub is the normal sup
 - the current directory has no interfering `Gemfile`, or
 - the current directory's bundle is already settled and quiet at startup.
 
-If startup fails in a repo with a `Gemfile`, first settle that repo's bundle with `bundle install`, then retry normal `cov-loupe -m mcp` startup. Only if that is not practical, or if you need a launch path insulated from the working directory's Bundler state, should you bypass the stub and point your MCP client at the real executable.
+If startup fails in a repo with a `Gemfile`, first try either a wrapper that exports `NOEXEC_DISABLE=1` or settling that repo's bundle with `bundle install`, then retry normal `cov-loupe -m mcp` startup. Only if that is not practical, or if you need a launch path insulated from the working directory's Bundler state, should you bypass the stub and point your MCP client at the real executable. If you need to follow upstream progress, see [rvm/rvm#5649](https://github.com/rvm/rvm/issues/5649).
 
 ## Available MCP Tools (Functions)
 
