@@ -116,9 +116,8 @@ module CovLoupe
       # @param existing_file [String] name of existing file
       # @return [Boolean] true if case-sensitive, false if case-insensitive
       def detect_case_sensitive_using_existing_file?(abs_path, existing_file)
-        require 'securerandom'
-
         original = File.join(abs_path, existing_file)
+        # tr('A-Za-z', 'a-zA-Z') swaps the case of every letter in the filename
         alternate_name = existing_file.tr('A-Za-z', 'a-zA-Z')
         alternate = File.join(abs_path, alternate_name)
 
@@ -126,6 +125,9 @@ module CovLoupe
           # Same file -> case-insensitive, different files -> case-sensitive
           !File.identical?(original, alternate)
         else
+          # On a case-insensitive filesystem, File.exist? for the alternate-cased name would
+          # resolve to the same inode and return true. Reaching this branch means the filesystem
+          # treats the two paths as distinct entries, confirming case-sensitivity.
           true
         end
       end

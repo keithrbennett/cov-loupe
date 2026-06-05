@@ -115,6 +115,8 @@ module CovLoupe
     end
 
     private def compute_combined_timestamp(suites)
+      # compact removes suites with nil timestamps; max on an empty array returns nil,
+      # and nil.to_i => 0, which is the sentinel meaning "no timestamp — skip staleness checks".
       suites.map(&:timestamp).compact.max.to_i
     end
 

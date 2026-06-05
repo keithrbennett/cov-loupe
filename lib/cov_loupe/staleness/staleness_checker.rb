@@ -240,6 +240,8 @@ module CovLoupe
     end
 
     private def resultset_path
+      # Only used for error message context; if the path can't be resolved,
+      # nil omits it from the message rather than raising a secondary error.
       @resultset_path ||= Resolvers::ResolverHelpers.find_resultset(@root, resultset: @resultset)
     rescue
       nil
