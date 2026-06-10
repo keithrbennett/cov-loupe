@@ -43,6 +43,24 @@ RSpec.describe CovLoupe do
     end
   end
 
+  describe 'executable' do
+    it 'exits with code 130 and shows a friendly message when interrupted' do
+      allow(described_class).to receive(:run).and_raise(Interrupt)
+      original_handler = Signal.trap('INT', 'DEFAULT')
+      Signal.trap('INT', original_handler)
+
+      result, _out, err = capture_io(swallow_exit: true) do
+        load File.expand_path('../exe/cov-loupe', __dir__)
+      end
+
+      expect(result).to be_a(SystemExit)
+      expect(result.status).to eq(130)
+      expect(err).to eq("\nInterrupted. Exiting.\n")
+    ensure
+      Signal.trap('INT', original_handler) if original_handler
+    end
+  end
+
   # When no thread-local context exists, active_log_file= creates one
   # from the default context rather than modifying an existing one.
   describe '.active_log_file=' do
