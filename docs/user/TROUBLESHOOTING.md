@@ -141,7 +141,7 @@ when merging resultsets.
 
 **Root cause:**
 
-The generated RubyGems-installed `cov-loupe` launcher is not the same file as this repository's [`exe/cov-loupe`](../../exe/cov-loupe). A typical RubyGems stub looks like this:
+The generated RubyGems-installed `cov-loupe` launcher is not the same file as this repository's [`exe/cov-loupe`](https://github.com/keithrbennett/cov-loupe/blob/main/exe/cov-loupe). A typical RubyGems stub looks like this:
 
 ```ruby
 require 'rubygems'
@@ -212,7 +212,7 @@ This does not change MCP itself. It only changes whether the RubyGems wrapper st
   ruby -e 'spec = Gem::Specification.find_by_name("cov-loupe"); puts File.join(spec.full_gem_path, "exe", "cov-loupe")'
   ```
   Then use that path in your MCP config with `-m mcp`.
-- For local development from a checkout, another fallback is to point the MCP client directly at the checkout's [`exe/cov-loupe`](../../exe/cov-loupe) instead of the RubyGems stub.
+- For local development from a checkout, another fallback is to point the MCP client directly at the checkout's [`exe/cov-loupe`](https://github.com/keithrbennett/cov-loupe/blob/main/exe/cov-loupe) instead of the RubyGems stub.
 
 **Recommendation:**
 

@@ -138,7 +138,7 @@ MCP over stdio is strict: the server must not print anything to `stdout` before 
 
 This matters for `cov-loupe` because there are two common launch paths:
 
-- The gem's real executable, [`exe/cov-loupe`](../../exe/cov-loupe), which simply loads `cov_loupe` and calls `CovLoupe.run(ARGV)`.
+- The gem's real executable, [`exe/cov-loupe`](https://github.com/keithrbennett/cov-loupe/blob/main/exe/cov-loupe), which simply loads `cov_loupe` and calls `CovLoupe.run(ARGV)`.
 - The RubyGems-installed `cov-loupe` stub and wrapper stack, which are generated outside this repository and may call `Gem.use_gemdeps` and `rubygems-bundler` hooks before activating the gem.
 
 On systems where the installed stub includes:
@@ -150,7 +150,7 @@ Gem.use_gemdeps
 
 the launcher may consult the current working directory's Bundler context before `cov-loupe` itself starts. On setups that also use `ruby_executable_hooks` plus the `rubygems-bundler` plugin, that wrapper stack can walk up from the current directory, inspect `Gemfile`, and call Bundler before `cov-loupe` runs. When that bundle is unresolved or incomplete, Bundler may resolve dependencies and emit progress text such as `Resolving dependencies...` before `cov-loupe` has a chance to start the MCP transport.
 
-That output does not come from `cov-loupe`'s own [`exe/cov-loupe`](../../exe/cov-loupe). It happens earlier, in the generated launcher and the dependency tooling it invokes.
+That output does not come from `cov-loupe`'s own [`exe/cov-loupe`](https://github.com/keithrbennett/cov-loupe/blob/main/exe/cov-loupe). It happens earlier, in the generated launcher and the dependency tooling it invokes.
 
 The upstream tracking issue for this RVM launcher-stack behavior is [rvm/rvm#5649](https://github.com/rvm/rvm/issues/5649).
 
@@ -177,7 +177,7 @@ For MCP usage, start with the normal launch path and only bypass the RubyGems st
 - Preferred fix: in the current project, run `bundle install` so the bundle is settled, then retry normal `cov-loupe -m mcp` startup.
 - Good follow-up check: confirm `Gemfile.lock` exists and `bundle check` succeeds before retrying the MCP client.
 - Fallback: if you cannot settle the bundle or still need a launch path that does not depend on the working directory's bundle state, invoke the real executable directly instead of the RubyGems wrapper.
-- Good for local development from a checkout: point the MCP client at the checkout's [`exe/cov-loupe`](../../exe/cov-loupe) directly.
+- Good for local development from a checkout: point the MCP client at the checkout's [`exe/cov-loupe`](https://github.com/keithrbennett/cov-loupe/blob/main/exe/cov-loupe) directly.
 
 Example wrapper:
 
