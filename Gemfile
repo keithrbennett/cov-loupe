@@ -7,8 +7,8 @@ gemspec
 # Development dependencies
 gem 'rake'
 gem 'rspec', '~> 3.0'
-gem 'rubocop', '>= 1.85', '< 2'
-gem 'rubocop-rspec', '~> 3.9'
+gem 'rubocop', '~> 1.87.0'
+gem 'rubocop-rspec', '~> 3.9.0'
 gem 'simplecov-cobertura'
 
 # Security auditing
