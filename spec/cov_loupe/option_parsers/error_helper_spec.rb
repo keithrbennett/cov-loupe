@@ -144,7 +144,7 @@ RSpec.describe CovLoupe::OptionParsers::ErrorHelper do
         end
 
         expect(stderr_output).to match(/Error:.*--summary/)
-        expect(stderr_output).to match(/Run 'cov-loupe --help'/)
+        expect(stderr_output).to include("Run 'cov-loupe --help'")
       end
     end
 
