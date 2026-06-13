@@ -54,7 +54,7 @@ jobs:
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
       with:
-        ruby-version: '4.0.3'
+        ruby-version: '4.0.5'
         bundler-cache: true
 
     - name: Audit dependencies for vulnerabilities
@@ -72,7 +72,7 @@ jobs:
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
       with:
-        ruby-version: '4.0.3'
+        ruby-version: '4.0.5'
         bundler-cache: true
 
     - name: Run RuboCop
