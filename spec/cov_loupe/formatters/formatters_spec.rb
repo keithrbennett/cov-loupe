@@ -3,19 +3,6 @@
 require 'spec_helper'
 
 RSpec.describe CovLoupe::Formatters do
-  describe '.ensure_requirements_for' do
-    it 'requires the library if needed' do
-      # We rely on the fact that 'yaml' is in FORMAT_REQUIRES
-      expect(described_class).to receive(:require).with('yaml')
-      described_class.ensure_requirements_for(:yaml)
-    end
-
-    it 'does nothing if no requirement' do
-      expect(described_class).not_to receive(:require)
-      described_class.ensure_requirements_for(:json) # JSON already required by app
-    end
-  end
-
   describe '.format' do
     let(:obj) { { 'foo' => 'bar' } }
 
@@ -50,14 +37,7 @@ RSpec.describe CovLoupe::Formatters do
 
     context 'when amazing_print is available' do
       before do
-        # Stub require on the module for ensure_requirements_for
         allow(described_class).to receive(:require).with('amazing_print')
-
-        # Stub global require for the lambda's internal require
-        allow(Kernel).to receive(:require).and_call_original
-        allow(Kernel).to receive(:require).with('amazing_print').and_return(true)
-
-        # Mock .ai on the object
         allow(obj).to receive(:ai).and_return('amazing output')
       end
 
@@ -96,8 +76,6 @@ RSpec.describe CovLoupe::Formatters do
       context 'with amazing_print' do
         before do
           allow(described_class).to receive(:require).with('amazing_print')
-          allow(Kernel).to receive(:require).and_call_original
-          allow(Kernel).to receive(:require).with('amazing_print').and_return(true)
           allow(unicode_obj).to receive(:ai).and_return('café → result')
         end
 
