@@ -176,6 +176,11 @@ Full documentation is available at **[https://keithrbennett.github.io/cov-loupe/
 - SimpleCov-generated `.resultset.json` file
 - `simplecov` gem >= 0.21
 
+### JRuby Compatibility
+
+The test suite passes on JRuby, and to the best of our knowledge the project is fully JRuby-compatible.
+If you encounter any JRuby-specific issues, please open a GitHub issue, including as much detail as possible.
+
 ## Configuring the Resultset
 
 `cov-loupe` automatically searches for `.resultset.json` in standard locations (`coverage/.resultset.json`, `.resultset.json`, `tmp/.resultset.json`). For non-standard locations:
