@@ -44,6 +44,42 @@ RSpec.describe CovLoupe do
   end
 
   describe 'executable' do
+    it 'does not require RubyGems when RubyGems starts disabled' do
+      require 'open3'
+      require 'rbconfig'
+
+      exe = File.expand_path('../exe/cov-loupe', __dir__)
+      lib_path = File.expand_path('../lib', __dir__)
+      ruby_source = <<~RUBY
+        module Kernel
+          alias __cov_loupe_original_require require
+
+          def require(path)
+            abort 'unexpected rubygems require' if path == 'rubygems'
+
+            __cov_loupe_original_require(path)
+          end
+        end
+
+        load #{exe.dump}
+      RUBY
+
+      _stdout_str, stderr_str, _status = Open3.capture3(
+        {
+          'BUNDLE_GEMFILE' => nil,
+          'GEM_HOME'       => nil,
+          'GEM_PATH'       => nil,
+          'RUBYOPT'        => nil,
+        },
+        RbConfig.ruby, '--disable-gems', '-I', lib_path, '-e', ruby_source, '--', '--version'
+      )
+
+      aggregate_failures do
+        expect(stderr_str).not_to include('unexpected rubygems require')
+        expect(stderr_str).not_to include('uninitialized constant CovLoupeExecutable::Gem')
+      end
+    end
+
     it 'exits with standard POSIX codes and a friendly message on SIGINT and SIGTERM' do
       skip 'Signal handling is Unix-specific' if described_class.windows?
 

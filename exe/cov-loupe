@@ -1,30 +1,43 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-%w[INT TERM].each do |sig|
-  Signal.trap(sig) do
-    $stderr.write "\nReceived SIG#{sig}. Exiting.\n"
-    exit(128 + Signal.list[sig])
+module CovLoupeExecutable
+  MINIMUM_RUBY_VERSION = '3.2'
+  SIGNAL_EXIT_BASE = 128
+
+  def self.run
+    install_signal_handlers
+    ensure_ruby_version!
+    run_application
   end
-end
 
-# Make it safe to run via symlink by resolving the real path
-root = File.expand_path('..', File.realpath(__FILE__))
-lib  = File.join(root, 'lib')
-$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+  def self.install_signal_handlers
+    %w[INT TERM].each do |sig|
+      Signal.trap(sig) do
+        $stderr.write "\nReceived SIG#{sig}. Exiting.\n"
+        exit(SIGNAL_EXIT_BASE + Signal.list[sig])
+      end
+    end
+  end
 
-# Fail fast with a helpful message if Ruby is too old for this gem
-begin
-  require 'rubygems'
-  if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('3.2')
-    $stderr.puts "cov-loupe requires Ruby >= 3.2 (current: #{RUBY_VERSION})."
-    $stderr.puts 'Please run with a supported Ruby version (e.g., via rbenv, rvm, asdf).'
+  def self.ensure_ruby_version!(minimum: MINIMUM_RUBY_VERSION)
+    return unless defined?(Gem::Version)
+
+    return if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new(minimum)
+
+    $stderr.puts "#{File.basename($PROGRAM_NAME)} requires Ruby >= #{minimum} (current: #{RUBY_VERSION})."
+    $stderr.puts 'Please run with a supported Ruby version (e.g., via rbenv, rvm, asdf, mise, rv).'
     exit 1
   end
-rescue
-  # If anything goes wrong, let the app load and potentially fail with a more specific error.
+
+  def self.run_application
+    root = File.expand_path('..', File.realpath(__FILE__))
+    lib  = File.join(root, 'lib')
+    $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+
+    require 'cov_loupe'
+    CovLoupe.run(ARGV)
+  end
 end
 
-require 'cov_loupe'
-
-CovLoupe.run(ARGV)
+CovLoupeExecutable.run
