@@ -19,9 +19,9 @@ class DirectorySpecificThresholds
 
   def call
     [
-      ['lib/api/**/*.rb',    90],
-      ['lib/core/**/*.rb',   85],
-      ['lib/legacy/**/*.rb', 60],
+      ['lib/api/*.rb',       85],
+      ['lib/payments/*.rb',  60],
+      ['lib/ops/jobs/*.rb',  80],
     ].map { |(filemask, threshold_pct)| files_ok?(filemask, threshold_pct) }
       .all?
   end

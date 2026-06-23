@@ -73,7 +73,7 @@ before { setup_mcp_response_stub }
 
 ## Adding Features
 
-**CLI commands:** Add a command class under `lib/cov_loupe/commands/`, register it in `Commands::CommandFactory::COMMAND_MAP`, and add tests.
+**CLI commands:** Add a command class under `lib/cov_loupe/commands/`, register it in `CovLoupe::Commands::CommandFactory::COMMAND_MAP`, and add tests.
 
 **MCP tools:** Create `*_tool.rb` in `lib/cov_loupe/tools/`, register in `mcp_server.rb`
 

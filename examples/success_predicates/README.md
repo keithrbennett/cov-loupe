@@ -53,9 +53,9 @@ cov-loupe validate examples/success_predicates/project_coverage_minimum_predicat
 
 ### `directory_specific_thresholds_predicate.rb`
 Different thresholds for different directories:
-- `lib/api/` - 90% required
-- `lib/core/` - 85% required
-- `lib/legacy/` - 60% required
+- `lib/api/` - 85% required
+- `lib/payments/` - 60% required
+- `lib/ops/jobs/` - 80% required
 
 ```sh
 cov-loupe validate examples/success_predicates/directory_specific_thresholds_predicate.rb
