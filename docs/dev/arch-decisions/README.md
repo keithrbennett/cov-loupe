@@ -43,7 +43,7 @@ ADRs are organized by topic area rather than chronologically:
 - [Coverage Data Quality](coverage-data-quality.md) - Staleness detection system
 - [Output Character Mode](output-character-mode.md) - Global ASCII vs Unicode output control
 - [Path Resolution](path-resolution.md) - Path matching strategy and cross-OS coverage support
-- [Policy Validation](policy-validation.md) - Success predicates using Ruby `instance_eval`
+- [Policy Validation](policy-validation.md) - Validation predicates using Ruby `instance_eval`
 - [SimpleCov Integration](simplecov-integration.md) - Dependency strategy and data loading (replaced)
 
 ## When to Create an ADR

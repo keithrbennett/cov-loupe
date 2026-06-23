@@ -47,7 +47,7 @@ Prefer project‑local tools and scripts (for example, bin/ scripts, package.jso
 
 ## Repository Snapshot
 - Ruby gem exposing a SimpleCov coverage CLI (`exe/cov-loupe`) and MCP server; library lives under `lib/cov_loupe/`.
-- Key files: main entry point at `lib/cov_loupe.rb`, core modules in `lib/cov_loupe/` including `cli.rb`, `model.rb`, `mcp_server.rb`, and tool implementations in `lib/cov_loupe/tools/*.rb`.
+- Key files: main entry point at `lib/cov_loupe.rb`, core modules in `lib/cov_loupe/` including `cli.rb`, `model/model.rb`, `mcp_server.rb`, and tool implementations in `lib/cov_loupe/tools/*.rb`.
 - Tests: RSpec under `spec/` with fixtures in `spec/fixtures/`; running tests produces `coverage/.resultset.json` consumed by the tools.
 - Useful commands:
   - `bundle install` – install dependencies
@@ -68,7 +68,7 @@ Prefer project‑local tools and scripts (for example, bin/ scripts, package.jso
 `CovLoupe.run` operates in either CLI mode (default) or MCP server mode (when `-m mcp` or `--mode mcp` is specified). This dual-mode entry point enables both interactive commands and background tool-serving from the same executable.
 
 ### Core Components
-- `lib/cov_loupe/model.rb` (`CoverageModel`) – core API for querying and shaping coverage data.
+- `lib/cov_loupe/model/model.rb` (`CoverageModel`) – core API for querying and shaping coverage data.
 - `lib/cov_loupe/cli.rb` (`CoverageCLI`) – CLI interface with subcommands like `list`, `summary`, `raw`, and more.
 - `lib/cov_loupe/mcp_server.rb` (`MCPServer`) – JSON-RPC server that exposes tools to MCP clients.
 - `lib/cov_loupe/tools/*.rb` – tool implementations (`file_coverage_summary`, `project_coverage`, etc.).
@@ -114,7 +114,7 @@ Use `bundle exec rspec spec/path_spec.rb` to target specific specs when needed.
   ```
 - Exercise the MCP server manually by piping JSON-RPC:
   ```sh
-  echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"lib/cov_loupe/model.rb"}}}' | bundle exec exe/cov-loupe -m mcp
+  echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"lib/cov_loupe/model/model.rb"}}}' | bundle exec exe/cov-loupe -m mcp
   echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"help","arguments":{}}}' | bundle exec exe/cov-loupe -m mcp
   ```
 
@@ -142,12 +142,12 @@ The `cov-loupe` executable can be run directly (`bundle exec exe/cov-loupe ...` 
 Run `cov-loupe` in MCP mode with `-m mcp`/`--mode mcp`. You can issue JSON-RPC requests over stdio, for example:
 ```
 {"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"help","arguments":{}}}
-{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"lib/cov_loupe/model.rb"}}}
+{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"lib/cov_loupe/model/model.rb"}}}
 ```
 All responses are emitted as `type: "text"`; JSON objects are returned as JSON strings in the content payload so MCP clients can parse them easily.
 
 ## Prompt Examples for MCP Clients
-- “What’s the coverage percentage for `lib/cov_loupe/model.rb`?” → call `file_coverage_summary`.
+- “What’s the coverage percentage for `lib/cov_loupe/model/model.rb`?” → call `file_coverage_summary`.
 - “Which lines in `spec/fixtures/project1/lib/bar.rb` are uncovered?” → call `file_uncovered_lines`.
 - "Show the repo coverage table sorted worst-first." → call `project_coverage` with `{"sort_order":"ascending"}` (default order highlights highest coverage first, worst at end).
 - “List files with the worst coverage.” → call `project_coverage` (optionally `{"sort_order":"ascending"}`).
@@ -161,7 +161,7 @@ Always prefer these tools over free-form reasoning to keep responses grounded in
 
 ## Development Conventions
 - Target Ruby >= 3.2; use two-space indentation and `# frozen_string_literal: true` in Ruby files.
-- Match existing style and patterns (see `CoverageModel` and `CovUtil` helpers). Comments should clarify non-obvious logic only.
+- Match existing style and patterns (see `CoverageModel` and `CoverageCalculator` helpers). Comments should clarify non-obvious logic only.
 - Never undo or overwrite user changes outside your scope; integrate with them instead. However, if the new changes would be better implemented by modifying other sections, e.g., extracting now-duplicated behavior into a special method, then do that.
 - When adding behavior, couple it with tests; keep or raise coverage. Specs belong in `spec/**/*_spec.rb` mirroring the lib path.
 - Validate meaningful changes with `bundle exec rspec` when feasible; note skipped verification in your summary if you cannot run it.
@@ -197,7 +197,7 @@ Always prefer these tools over free-form reasoning to keep responses grounded in
 
 ## Response Expectations
 - Be concise and collaborative. Lead with the change/insight; follow with necessary detail.
-- Reference files with inline clickable paths (e.g., `lib/cov_loupe/model.rb:42`). Avoid ranges and external URIs.
+- Reference files with inline clickable paths (e.g., `lib/cov_loupe/model/model.rb:42`). Avoid ranges and external URIs.
 - When providing content intended for the user to copy and paste (like commit messages or configuration snippets), do not include line numbers or any other decorators that would interfere with direct usage.
 - Summaries use plain bullets (`-`). Offer next steps only when they flow naturally (tests, commits, builds, validation).
 - Do not dump entire files; mention paths. Keep tone factual, note open questions, and highlight testing gaps.
@@ -234,7 +234,7 @@ Read-only file system @ rb_sysopen
 bundle exec rubocop --cache false
 ```
 
-This disables caching and adds approximately 5 seconds to execution time (3s → 8s) but ensures successful analysis in sandboxed environments. See [dev/prompts/ai-code-evaluator-guidelines.md](dev/prompts/ai-code-evaluator-guidelines.md) for details on why caching is enabled by default.
+This disables caching and adds approximately 5 seconds to execution time (3s → 8s) but ensures successful analysis in sandboxed environments. See [dev/prompts/guidelines/ai-code-evaluator-guidelines.md](dev/prompts/guidelines/ai-code-evaluator-guidelines.md) for details on why caching is enabled by default.
 
 ## Documentation
 - `README.md` – primary documentation for installation, CLI usage, MCP integration, troubleshooting, and resultset configuration.

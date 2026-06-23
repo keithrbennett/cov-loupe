@@ -15,7 +15,7 @@ cov-loupe is organized around a single coverage data model that feeds three deli
 1. **Resultset discovery** – The tool locates the `.resultset.json` file by checking a series of default paths or by using a path specified by the user. For a detailed explanation of the configuration options, see the [Configuring the Resultset](../index.md#configuring-the-resultset) section in the main README.
 2. **Parsing and normalization** – `CoverageModel` loads the chosen resultset once, extracts all test suites that expose `coverage` data (e.g., "RSpec", "Minitest"), merges them if multiple suites exist, and maps all file keys to absolute paths anchored at the configured project root. Timestamps are cached for staleness checks.
 3. **Path relativizing** – `PathRelativizer` (powered by the centralized `PathUtils` module) produces relative paths for user-facing payloads without mutating the canonical data. Tool responses pass through `CoverageModel#relativize` before leaving the process.
-4. **Derived metrics** – `CovUtil.summary`, `CovUtil.uncovered`, and `CovUtil.detailed` compute coverage stats from the raw `lines` arrays. `CoverageModel` exposes `summary_for`, `uncovered_for`, `detailed_for`, and `raw_for` helpers that wrap these utilities.
+4. **Derived metrics** – `CoverageCalculator.summary`, `CoverageCalculator.uncovered`, and `CoverageCalculator.detailed` compute coverage stats from the raw `lines` arrays. `CoverageModel` exposes `summary_for`, `uncovered_for`, `detailed_for`, and `raw_for` helpers that wrap these calculations.
 5. **Staleness detection** – `StalenessChecker` compares source mtimes/line counts to coverage metadata. CLI flags and MCP arguments can promote warnings to hard failures (`--raise-on-stale true`) or simply mark rows as stale for display.
 
 ## Interfaces
@@ -43,19 +43,19 @@ cov-loupe is organized around a single coverage data model that feeds three deli
 ## MCP Tool Stack
 
 - `CovLoupe::BaseTool` centralizes JSON schema definitions, error conversion, and response serialization for the MCP protocol.
-- Individual tools reside in `lib/cov_loupe/tools/` and follow a consistent shape: define an input schema, call into `CoverageModel`, then serialize via `respond_json`. Examples include `ListTool`, `CoverageSummaryTool`, and `UncoveredLinesTool`.
-- Tools are registered in `CovLoupe::MCPServer#run`. Adding a new tool only requires creating a subclass and appending it to that list.
+- Individual tools reside in `lib/cov_loupe/tools/` and follow a consistent shape: define an input schema, call into `CoverageModel`, then serialize via `respond_json`. Examples include `ProjectCoverageTool`, `FileCoverageSummaryTool`, and `FileUncoveredLinesTool`.
+- Tools are registered in `CovLoupe::MCPServer::TOOLSET`. Adding a new tool requires creating a subclass and appending it to that list.
 
 ## Error Handling & Logging
 
-- Custom exceptions under `lib/cov_loupe/errors.rb` capture context for configuration issues, missing files, stale coverage, and general runtime errors. Each implements `#user_friendly_message` for consistent UX.
+- Custom exceptions under `lib/cov_loupe/errors/errors.rb` capture context for configuration issues, missing files, stale coverage, and general runtime errors. Each implements `#user_friendly_message` for consistent UX.
 - `CovLoupe::ErrorHandler` encapsulates logging and severity decisions. Modes (`:off`, `:log`, `:debug`) control whether errors are recorded and whether stack traces are included.
 - Runtime configuration (error handlers, log destinations) flows through `CovLoupe::AppContext`. Entry points push a context with `CovLoupe.with_context`, which stores the active configuration in a thread-local slot (`CovLoupe.context`). Nested calls automatically restore the previous context when the block exits, ensuring isolation even when multiple callers share a process or thread.
 - Two helper accessors clarify intent:
     - `CovLoupe.default_log_file` / `default_log_file=` adjust the baseline log sink that future contexts inherit.
     - `CovLoupe.active_log_file` / `active_log_file=` mutate only the current context (or create one on demand) so the change applies immediately without touching the default.
 - `ErrorHandlerFactory` wires the appropriate handler per runtime: CLI, MCP server, or embedded library, each of which installs its handler inside a fresh `AppContext` before executing user work.
-- Diagnostics are written via `CovUtil.log` to `cov_loupe.log` in the current directory by default; override with CLI `--log-file`, set `CovLoupe.default_log_file` for future contexts, or temporarily tweak `CovLoupe.active_log_file` when a caller needs a different destination mid-run. `stdout` is never a valid log destination because it would corrupt command output.
+- Diagnostics are written through `CovLoupe::Logger` to `cov_loupe.log` in the current directory by default; override with CLI `--log-file`, set `CovLoupe.default_log_file` for future contexts, or temporarily tweak `CovLoupe.active_log_file` when a caller needs a different destination mid-run. `stdout` is never a valid log destination because it would corrupt command output.
 
 ## Output Character Mode
 
@@ -117,7 +117,7 @@ Comprehensive test coverage exists:
 
 ## Extending the System With a New Tool or Metric
 
-1. Add or update data processing inside `CoverageModel` or `CovUtil` when a new metric is needed.
+1. Add or update data processing inside `CoverageModel` or `CoverageCalculator` when a new metric is needed.
 2. Surface that metric through all interfaces: add a CLI option/subcommand, create an MCP tool, and expose a library helper method.
 3. Register the new tool in `MCPServer` and update CLI option parsing in `CoverageCLI`.
 4. Provide tests under `spec/` mirroring the lib path (`spec/lib/cov_loupe/..._spec.rb`).

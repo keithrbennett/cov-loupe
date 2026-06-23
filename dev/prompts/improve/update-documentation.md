@@ -49,7 +49,7 @@ Check internal links (relative Markdown paths) and anchor links (`#heading-id`):
 - Verify that the target file exists at the referenced path.
 - Verify that named anchors (`#section-name`) match an actual heading in the target document.
 - Check that bidirectional navigation links exist where expected (e.g., a top-level README links
-  to a specialist doc, and that doc links back with `[Back to main README](...)`).
+  to a specialist doc, and that doc links back with text like `Back to main README`).
 
 ### Duplication
 

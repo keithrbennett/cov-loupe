@@ -70,7 +70,7 @@ context = CovLoupe.create_context(error_handler: handler)
 
 CovLoupe.with_context(context) do
   model = CovLoupe::CoverageModel.new
-  model.summary_for('lib/cov_loupe/model.rb')
+  model.summary_for('lib/cov_loupe/model/model.rb')
 end
 ```
 

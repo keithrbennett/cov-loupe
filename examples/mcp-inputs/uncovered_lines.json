@@ -1,1 +1,1 @@
-{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"file_uncovered_lines","arguments":{"path":"lib/foo.rb","root":"docs/fixtures/demo_project"}}}
+{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"file_uncovered_lines","arguments":{"path":"app/models/order.rb","root":"docs/fixtures/demo_project"}}}

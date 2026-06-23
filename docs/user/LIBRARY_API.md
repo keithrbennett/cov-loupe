@@ -213,11 +213,11 @@ Converts absolute file paths in coverage data to relative paths from project roo
 
 **Example:**
 ```ruby
-summary = model.summary_for('lib/cov_loupe/model.rb')
-# => { 'file' => '/path/to/project/lib/cov_loupe/model.rb', ... }
+summary = model.summary_for('lib/cov_loupe/model/model.rb')
+# => { 'file' => '/path/to/project/lib/cov_loupe/model/model.rb', ... }
 
 relative_summary = model.relativize(summary)
-# => { 'file' => 'lib/cov_loupe/model.rb', ... }
+# => { 'file' => 'lib/cov_loupe/model/model.rb', ... }
 
 # Works with arrays too
 list_result = model.list
@@ -402,7 +402,7 @@ end
 model = CovLoupe::CoverageModel.new(raise_on_stale: false)
 files = model.list['files']
 
-stale_files = files.select { |f| f['stale'] }
+stale_files = files.select { |f| f['stale'] != 'ok' }
 if stale_files.any?
   puts "Warning: #{stale_files.length} files have stale coverage"
   stale_files.each do |f|

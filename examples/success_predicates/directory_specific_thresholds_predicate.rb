@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-# Success predicate: Different thresholds for different directories, using a `call` class method
-# Usage: cov-loupe --success-predicate examples/success_predicates/directory_specific_thresholds_predicate.rb
+# Validation predicate: Different thresholds for different directories, using a `call` class method
+# Usage: cov-loupe validate examples/success_predicates/directory_specific_thresholds_predicate.rb
 
 class DirectorySpecificThresholds
   def self.call(model)
@@ -9,7 +9,7 @@ class DirectorySpecificThresholds
   end
 
   def initialize(model)
-    @files = model.relativize(model.list)
+    @files = model.relativize(model.list)['files']
   end
 
   def files_ok?(filemask, threshold_percentage)
@@ -19,9 +19,9 @@ class DirectorySpecificThresholds
 
   def call
     [
-      ['lib/cov_loupe/**/*.rb',                 85], # global default minimum
-      ['lib/cov_loupe/option_parsers/**/*.rb',  95],
-      ['lib/cov_loupe/tools/**/*.rb',          100],
+      ['lib/api/**/*.rb',    90],
+      ['lib/core/**/*.rb',   85],
+      ['lib/legacy/**/*.rb', 60],
     ].map { |(filemask, threshold_pct)| files_ok?(filemask, threshold_pct) }
       .all?
   end

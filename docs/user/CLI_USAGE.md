@@ -91,7 +91,7 @@ Default sort order is descending (highest coverage first) so the lowest-coverage
 | `-fp`   | `--format pretty-json`   | Output as pretty-printed JSON                         |
 | `-fj`   | `--format json`          | Output as single-line JSON                            |
 | `-f y`  | `--format yaml`          | Output as YAML                                        |
-| `-f ap` | `--format amazing_print` | Output using AmazingPrint                             |                             |
+| `-f ap` | `--format amazing_print` | Output using AmazingPrint                             |
 
 **Output (table format):**
 ```
@@ -132,7 +132,7 @@ clp -s full s app/models/order.rb  # -s = --source
 | `-fp`   | `--format pretty-json` | Output as pretty-printed JSON         |
 | `-fj` | `--format json`        | Output as single-line JSON            |
 | `-f y` | `--format yaml`        | Output as YAML                        |
-| `-f ap` | `--format amazing_print` | Output using AmazingPrint                             |         |
+| `-f ap` | `--format amazing_print` | Output using AmazingPrint                             |
 | `-s`  | `--source MODE`  | Include source code (full, uncovered, or none)    |
 
 **Output (default format):**
@@ -181,7 +181,7 @@ clp -s uncovered -c 3 u app/controllers/orders_controller.rb  # -s = --source, -
 | `-fp`   | `--format pretty-json`   | Output as pretty-printed JSON                        |
 | `-fj`   | `--format json`          | Output as single-line JSON                           |
 | `-f y`  | `--format yaml`          | Output as YAML                                       |
-| `-f ap` | `--format amazing_print` | Output using AmazingPrint                             |                            |
+| `-f ap` | `--format amazing_print` | Output using AmazingPrint                             |
 
 **Output (default format):**
 ```
@@ -233,7 +233,7 @@ clp -s full d app/models/order.rb  # -s = --source
 | `-fp`   | `--format pretty-json`   | Output as pretty-printed JSON |
 | `-fj`   | `--format json`          | Output as single-line JSON    |
 | `-f y`  | `--format yaml`          | Output as YAML                |
-| `-f ap` | `--format amazing_print` | Output using AmazingPrint                             |     |
+| `-f ap` | `--format amazing_print` | Output using AmazingPrint                             |
 | `-s`    | `--source MODE`          | Include source code           |
 
 **Output (default format):**
@@ -648,7 +648,7 @@ Control output character encoding for ASCII-only environments.
 | `a`   | `ascii`     | Force ASCII-only output with transliteration      |
 
 ```sh
-# Default mode (auto-detect)
+# Default output character mode (auto-detects UTF-8 support)
 clp list
 
 # Force ASCII mode (for legacy terminals or CI)
@@ -822,7 +822,7 @@ export COV_LOUPE_OPTS="--error-mode debug"
 export COV_LOUPE_OPTS='-r "/path with spaces/coverage"'
 
 # Multiple options
-export COV_LOUPE_OPTS="-r coverage -S -fp"
+export COV_LOUPE_OPTS="-r coverage -S true -fp"
 ```
 
 

@@ -1,6 +1,6 @@
 # AI Code Evaluator Guidelines
 
-[Back to main README](../../README.md) | [Architecture](../../docs/dev/ARCHITECTURE.md)
+[Back to main README](../../../README.md) | [Architecture](../../../docs/dev/ARCHITECTURE.md)
 
 This document provides context for AI code evaluators analyzing the cov-loupe codebase. It explains design decisions that may appear problematic on surface analysis but are intentional and well-considered. AI models should consult this document before flagging potential issues.
 
@@ -203,7 +203,7 @@ AI code analysis tools may flag methods as "too long" based on line count alone.
 **When long methods are acceptable:**
 
 1. **Sequential data structure building** – Methods that build arrays or hashes through sequential operations are highly readable despite line count:
-   - `CoverageDataProjectStaleError#build_details` (22 lines, lib/cov_loupe/errors.rb:163-184) – builds error message parts in an array through simple, similar operations
+   - `CoverageDataProjectStaleError#build_details` (in `lib/cov_loupe/errors/errors.rb`) – builds error message parts in an array through simple, similar operations
    - This pattern is far clearer than extracting fragmented helper methods
 
 2. **Comprehensive conditional handling** – Methods with extensive if-elsif-else chains that handle different cases clearly:
@@ -211,11 +211,11 @@ AI code analysis tools may flag methods as "too long" based on line count alone.
    - Each branch is simple; complexity lies in coverage, not algorithmic difficulty
 
 3. **Well-documented edge case handling** – Methods handling multiple edge cases with clear inline documentation:
-   - `StalenessChecker#compute_file_staleness_details` (30 lines, lib/cov_loupe/staleness_checker.rb:160-190) – handles file existence, timestamps, and line count mismatches with inline explanations
+   - `StalenessChecker#compute_file_staleness_details` (in `lib/cov_loupe/staleness/staleness_checker.rb`) – handles file existence, timestamps, and line count mismatches with inline explanations
    - Comments clarify intent; the logic itself remains straightforward
 
 4. **Coordinated multi-step operations** – Methods that orchestrate several well-defined steps in a logical flow:
-   - While `CoverageModel#list` was previously 48 lines, it has been refactored to 16 lines (lib/cov_loupe/model.rb:80-95) by extracting helper methods
+   - While `CoverageModel#list` was previously 48 lines, it has been refactored to 16 lines (`lib/cov_loupe/model/model.rb`) by extracting helper methods
    - This demonstrates that extraction makes sense when it improves clarity, not to meet arbitrary line limits
 
 **When to refactor:**

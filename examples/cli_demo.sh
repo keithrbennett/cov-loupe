@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # Demo script for cov-loupe CLI subcommands and options
-# Runs against the included fixture project at spec/fixtures/project1.
+# Runs against the included fixture project at docs/fixtures/demo_project.
 
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
-CLI=("exe/cov-loupe")
-PROJ="examples/fixtures/demo_project"
-RESULTSET_DIR="coverage" # directory containing .resultset.json under PROJ
+CLI=("bundle" "exec" "exe/cov-loupe")
+PROJ="docs/fixtures/demo_project"
+RESULTSET_DIR="." # directory containing .resultset.json under PROJ
 
 run() {
   cat <<BANNER
@@ -28,7 +28,7 @@ cat <<INTRO
 == cov-loupe CLI demo ==
 
 Note: Project root and resultset JSON file normally do not need to be specified.
-We set --root here to use the examples/fixtures/demo_project nondefault location,
+We set --root here to use the docs/fixtures/demo_project nondefault location,
 and later demonstrate a nondefault resultset via the --resultset option.
 
 Project root:     $PROJ
@@ -37,38 +37,38 @@ Resultset (dir):  $RESULTSET_DIR
 INTRO
 
 # 1) List all files (table)
-run list --root "$PROJ"
+run --root "$PROJ" list
 
 # 2) List as JSON, descending sort
-run list --root "$PROJ" --sort-order descending --json
+run --root "$PROJ" --sort-order descending --format json list
 
 # 3) Summary for a file (text and JSON)
-run summary lib/foo.rb --root "$PROJ"
-run summary lib/foo.rb --root "$PROJ" --json
+run --root "$PROJ" summary app/models/order.rb
+run --root "$PROJ" --format json summary app/models/order.rb
 
 # 4) Include source with summary (full and uncovered-only with context)
-run summary lib/foo.rb --root "$PROJ" --source
-run summary lib/foo.rb --root "$PROJ" --source=uncovered --source-context 1
+run --root "$PROJ" --source full summary app/models/order.rb
+run --root "$PROJ" --source uncovered --context-lines 1 summary app/models/order.rb
 
 # 5) Uncovered lines (text with source and JSON)
-run uncovered lib/foo.rb --root "$PROJ" --source=uncovered --source-context 2
-run uncovered lib/foo.rb --root "$PROJ" --json
+run --root "$PROJ" --source uncovered --context-lines 2 uncovered app/models/order.rb
+run --root "$PROJ" --format json uncovered app/models/order.rb
 
 # 6) Detailed per-line data (text and JSON), with source
-run detailed lib/foo.rb --root "$PROJ" --source -C false
-run detailed lib/foo.rb --root "$PROJ" --json
+run --root "$PROJ" --source full -C false detailed app/models/order.rb
+run --root "$PROJ" --format json detailed app/models/order.rb
 
 # 7) Raw lines array (JSON)
-run raw lib/foo.rb --root "$PROJ" --json
+run --root "$PROJ" --format json raw app/models/order.rb
 
 # 8) Using environment variable for a NONDEFAULT resultset location
 #    Copy the default resultset into a simple alt directory to simulate a custom layout.
 ALT_DIR="$PROJ/alt_resultset"
 mkdir -p "$ALT_DIR"
-cp -f "$PROJ/coverage/.resultset.json" "$ALT_DIR/.resultset.json"
+cp -f "$PROJ/.resultset.json" "$ALT_DIR/.resultset.json"
 echo 
-echo "+ ${CLI[*]} list --root $PROJ --resultset $PROJ/alt_resultset"
-"${CLI[@]}" list --root "$PROJ" --resultset "$PROJ/alt_resultset"
+echo "+ ${CLI[*]} --root $PROJ --resultset $PROJ/alt_resultset list"
+"${CLI[@]}" --root "$PROJ" --resultset "$PROJ/alt_resultset" list
 
 echo
 echo "== Done =="

@@ -324,7 +324,7 @@ or `false`/`nil` for failure.
 
 > **⚠️ SECURITY WARNING**
 >
-> Success predicates execute as **arbitrary Ruby code with full system privileges**. They have unrestricted access to:
+> Validation predicates execute as **arbitrary Ruby code with full system privileges**. They have unrestricted access to:
 > - File system operations (read, write, delete)
 > - Network operations (HTTP requests, sockets)
 > - System commands (via backticks, `system()`, `exec()`, etc.)
@@ -339,7 +339,7 @@ or `false`/`nil` for failure.
 **Quick Usage:**
 ```sh
 # All files must be >= 80%
-clp validate examples/success_predicates/list_above_threshold_predicate.rb
+clp validate examples/success_predicates/all_files_above_threshold_predicate.rb
 
 # Total project coverage >= 85%
 clp validate examples/success_predicates/project_coverage_minimum_predicate.rb
@@ -422,7 +422,7 @@ The CLI is designed for CI/CD use with features that integrate naturally into pi
 - **Exit codes**: Non-zero on failure, making it suitable for pipeline failure conditions
 - **JSON output**: `-fp` format for parsing by CI tools and custom processing
 - **Staleness checking**: `--raise-on-stale true` to fail on outdated coverage data
-- **Success predicates**: Custom Ruby policies for coverage enforcement
+- **Validation predicates**: Custom Ruby policies for coverage enforcement
 
 ### Basic CI Pattern
 

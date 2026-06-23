@@ -2,9 +2,9 @@
 
 [Back to main README](../../index.md)
 
-This document describes how cov-loupe allows users to define and enforce custom coverage policies through success predicates.
+This document describes how cov-loupe allows users to define and enforce custom coverage policies through validation predicates.
 
-## Ruby `instance_eval` for Success Predicates
+## Ruby `instance_eval` for Validation Predicates
 
 ### Status
 
@@ -56,12 +56,13 @@ We chose to **evaluate Ruby files using `instance_eval`** with prominent securit
 
 #### Implementation
 
-The implementation is in `lib/cov_loupe/cli.rb` (`CoverageCLI#load_success_predicate`):
+Predicate evaluation is centralized in `lib/cov_loupe/config/predicate_evaluator.rb`.
+The CLI `validate` subcommand and the MCP `project_validate` tool both use this evaluator.
 
 ```ruby
-def load_success_predicate(path)
+def self.evaluate_file(path, model)
   unless File.exist?(path)
-    raise "Success predicate file not found: #{path}"
+    raise "Predicate file not found: #{path}"
   end
 
   content = File.read(path)
@@ -71,45 +72,46 @@ def load_success_predicate(path)
   # Only use predicate files from trusted sources.
   #
   # We evaluate in a fresh Object context to prevent accidental access to
-  # CLI internals, but this provides NO security isolation.
   evaluation_context = Object.new
   predicate = evaluation_context.instance_eval(content, path, 1)
 
-  unless predicate.respond_to?(:call)
-    raise "Success predicate must be callable (lambda, proc, or object with #call method)"
-  end
-
-  predicate
+  validate_callable(predicate)
+  predicate.call(model)
 rescue SyntaxError => e
-  raise "Syntax error in success predicate file: #{e.message}"
+  raise "Syntax error in predicate file: #{e.message}"
 end
 ```
 
-The predicate is then called with a `CoverageModel` instance:
+The CLI `validate` command exits according to the predicate result:
 
 ```ruby
-def run_success_predicate
-  predicate = load_success_predicate(config.success_predicate)
-  model = CoverageModel.new(**config.model_options)
+result = if inline_mode
+  PredicateEvaluator.evaluate_code(code, model)
+else
+  PredicateEvaluator.evaluate_file(code, model)
+end
 
-  result = predicate.call(model)
-  exit(result ? 0 : 1)  # 0 = success, 1 = failure
-rescue => e
-  warn "Success predicate error: #{e.message}"
-  warn e.backtrace.first(5).join("\n") if config.error_mode == :debug
-  exit 2  # Exit code 2 for predicate errors
+exit(result ? 0 : 1)
+```
+
+Predicate errors are converted to exit code 2:
+
+```ruby
+private def handle_predicate_error(error)
+  warn "Predicate error: #{error.message}"
+  exit 2
 end
 ```
 
 #### Security Model: Treat as Executable Code
 
-Rather than pretending to sandbox untrusted code, we treat success predicates **exactly like any other Ruby code in the project**:
+Rather than pretending to sandbox untrusted code, we treat validation predicates **exactly like any other Ruby code in the project**:
 
 1. **Prominent warnings** in documentation (highlighted near the top of `examples/success_predicates/README.md`):
    ```
    ⚠️ SECURITY WARNING
 
-   Success predicates execute as arbitrary Ruby code with full system privileges.
+   Validation predicates execute as arbitrary Ruby code with full system privileges.
    Only use predicate files from trusted sources.
    - Never use predicates from untrusted or unknown sources
    - Review predicates before use, especially in CI/CD environments
@@ -122,7 +124,7 @@ Rather than pretending to sandbox untrusted code, we treat success predicates **
 
 #### Predicate API
 
-Success predicates must be callable (lambda, proc, or object with `#call` method):
+Validation predicates must be callable (lambda, proc, or object with `#call` method):
 
 **Lambda example:**
 ```ruby
@@ -142,7 +144,7 @@ class CoveragePolicy
   end
 end
 
-AllFilesAboveThreshold.new
+CoveragePolicy.new
 ```
 
 The predicate receives a full `CoverageModel` instance with access to:
@@ -199,9 +201,9 @@ However, for the primary use case (CI/CD policy enforcement), the current approa
 
 ### References
 
-- Implementation: `lib/cov_loupe/cli.rb` (`CoverageCLI#load_success_predicate` and `#run_success_predicate`)
+- Implementation: `lib/cov_loupe/config/predicate_evaluator.rb`, `lib/cov_loupe/commands/validate_command.rb`, `lib/cov_loupe/tools/project_validate_tool.rb`
 - Security warnings: `examples/success_predicates/README.md`
 - Example predicates: `examples/success_predicates/*.rb`
-- CoverageModel API: `lib/cov_loupe/model.rb`
-- CLI config: `lib/cov_loupe/cli_config.rb` (`success_predicate` field)
-- Option parsing: `lib/cov_loupe/option_parser_builder.rb` (`--success-predicate` flag)
+- CoverageModel API: `lib/cov_loupe/model/model.rb`
+- CLI config: `lib/cov_loupe/config/app_config.rb`
+- Option parsing: `lib/cov_loupe/config/option_parser_builder.rb` and `lib/cov_loupe/commands/validate_command.rb`

@@ -199,7 +199,7 @@ Then configure the MCP client to run that path with `-m mcp`, for example:
 
 ```toml
 [mcp_servers.cov-loupe]
-command = "/absolute/path/to/gems/cov-loupe-5.0.0/exe/cov-loupe"
+command = "/absolute/path/to/gems/cov-loupe-VERSION/exe/cov-loupe"
 args = ["-m", "mcp"]
 ```
 
@@ -210,7 +210,7 @@ or:
   "mcp": {
     "cov-loupe": {
       "type": "local",
-      "command": ["/absolute/path/to/gems/cov-loupe-5.0.0/exe/cov-loupe", "-m", "mcp"],
+      "command": ["/absolute/path/to/gems/cov-loupe-VERSION/exe/cov-loupe", "-m", "mcp"],
       "enabled": true
     }
   }
@@ -385,7 +385,7 @@ Example `help` payload excerpt:
 
 ## Example Prompts for AI Assistants
 
-(Hopefully, your AI agent will not need you to explicilty specify "Using cov-loupe",
+(Hopefully, your AI agent will not need you to explicitly specify "Using cov-loupe",
 but this is included here because we have seen cases where it does not know to use cov-loupe.)
 ### Coverage Analysis
 
@@ -414,7 +414,7 @@ Using cov-loupe, find the most important uncovered code in lib/cov_loupe/tools/f
 ### Test Generation
 
 ```
-Using cov-loupe, find uncovered lines in lib/cov_loupe/staleness_checker.rb and write *meaningful* RSpec tests for them.
+Using cov-loupe, find uncovered lines in lib/cov_loupe/staleness/staleness_checker.rb and write *meaningful* RSpec tests for them.
 ```
 
 ```
@@ -445,7 +445,7 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"version","
 echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"help","arguments":{}}}' | cov-loupe -m mcp
 
 # Test summary tool (use root param if needed)
-echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"lib/cov_loupe/model.rb","root":"."}}}' | cov-loupe -m mcp
+echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"lib/cov_loupe/model/model.rb","root":"."}}}' | cov-loupe -m mcp
 
 # Test with a project-specific root
 echo '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"app/models/order.rb","root":"docs/fixtures/demo_project"}}}' | cov-loupe -m mcp

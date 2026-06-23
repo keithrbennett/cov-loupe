@@ -51,7 +51,7 @@ Codex's macOS sandbox forbids `/bin/ps`; RVM shells need it. When you run `bundl
 to the coverage snapshot and raises if stale. When it fails:
 
 - Regenerate coverage (`bundle exec rspec`) so the snapshot matches current sources.
-- Or drop back to warning-only behaviour using `--no-raise-on-stale` / `raise_on_stale: false`.
+- Or drop back to warning-only behaviour using `--raise-on-stale false` / `raise_on_stale: false`.
 
 If you only care about a subset of files, supply `-g` / `--tracked-globs` (CLI) or `tracked_globs:`
 (API) so new files outside those globs do not trigger staleness.

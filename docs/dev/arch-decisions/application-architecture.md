@@ -94,7 +94,7 @@ Prior to v4.0.0, cov-loupe used automatic mode detection based on TTY status and
 ### References
 
 - Implementation: `lib/cov_loupe.rb` (`CovLoupe.run`)
-- Configuration: `lib/cov_loupe/app_config.rb`
+- Configuration: `lib/cov_loupe/config/app_config.rb`
 - CLI implementation: `lib/cov_loupe/cli.rb`
 - MCP server implementation: `lib/cov_loupe/mcp_server.rb`
 - Related section: [Context-Aware Error Handling](#context-aware-error-handling)
@@ -185,7 +185,7 @@ We implemented a **context-aware error handling strategy** using three component
 
 #### 1. Custom Exception Hierarchy
 
-All errors inherit from `CovLoupe::Error` (lib/cov_loupe/errors.rb) with a `user_friendly_message` method:
+All errors inherit from `CovLoupe::Error` (`lib/cov_loupe/errors/errors.rb`) with a `user_friendly_message` method:
 
 ```ruby
 class Error < StandardError
@@ -302,7 +302,7 @@ The `ErrorHandler.convert_standard_error` method uses pattern matching on except
 
 ### References
 
-- Custom exceptions: `lib/cov_loupe/errors.rb`
+- Custom exceptions: `lib/cov_loupe/errors/errors.rb`
 - ErrorHandler implementation: `lib/cov_loupe/error_handler.rb`
 - ErrorHandlerFactory: `lib/cov_loupe/error_handler_factory.rb`
 - CLI error handling: `lib/cov_loupe/cli.rb` (rescue block in `CoverageCLI#run`)

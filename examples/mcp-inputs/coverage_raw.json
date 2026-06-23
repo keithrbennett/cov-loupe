@@ -1,1 +1,1 @@
-{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"file_coverage_raw","arguments":{"path":"lib/foo.rb","root":"docs/fixtures/demo_project"}}}
+{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"file_coverage_raw","arguments":{"path":"app/models/order.rb","root":"docs/fixtures/demo_project"}}}

@@ -6,7 +6,7 @@ This directory contains example coverage validation predicates for use with the 
 
 > **⚠️ SECURITY WARNING**
 >
-> Success predicates execute as **arbitrary Ruby code with full system privileges**. They have unrestricted access to:
+> Validation predicates execute as **arbitrary Ruby code with full system privileges**. They have unrestricted access to:
 > - File system operations (read, write, delete)
 > - Network operations (HTTP requests, sockets)
 > - System commands (via backticks, `system()`, `exec()`, etc.)
@@ -75,8 +75,10 @@ end
 **Class method example:**
 ```ruby
 class MyPolicy
+  THRESHOLD = 80
+
   def self.call(model)
-    model.list['files'].all? { |f| f['percentage'] >= @threshold }
+    model.list['files'].all? { |f| f['percentage'] >= THRESHOLD }
   end
 end
 
@@ -95,7 +97,7 @@ class MyPolicy
   end
 end
 
-MyPolicy
+MyPolicy.new
 
 ```
 
@@ -106,7 +108,7 @@ The `model` parameter provides:
 ```ruby
 # Get all files
 files = model.list['files']
-# => [{ "file" => "...", "covered" => 12, "total" => 14, "percentage" => 85.71, "stale" => false }, ...]
+# => [{ "file" => "...", "covered" => 12, "total" => 14, "percentage" => 85.71, "stale" => "ok" }, ...]
 
 # Filter by globs
 api_files = model.list(tracked_globs: ['lib/api/**/*.rb'])['files']

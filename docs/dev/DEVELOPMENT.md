@@ -73,11 +73,11 @@ before { setup_mcp_response_stub }
 
 ## Adding Features
 
-**CLI commands:** Add to `SUBCOMMANDS` in `cli.rb`, implement handler, add tests
+**CLI commands:** Add a command class under `lib/cov_loupe/commands/`, register it in `Commands::CommandFactory::COMMAND_MAP`, and add tests.
 
 **MCP tools:** Create `*_tool.rb` in `lib/cov_loupe/tools/`, register in `mcp_server.rb`
 
-**Coverage features:** Add to `CoverageModel` in `model.rb` or `CovUtil` in `util.rb`
+**Coverage features:** Add core data operations to `CoverageModel` in `lib/cov_loupe/model/model.rb` or pure line-counting logic to `CoverageCalculator` in `lib/cov_loupe/coverage/coverage_calculator.rb`.
 
 ## Documentation Development
 

@@ -55,11 +55,6 @@ project root.
 - **Output:** Report of working/broken code examples in documentation
 - **Time:** 15-30 minutes
 
-**[Create Screencast Outline](validate/create-screencast-outline.md)**
-- **When:** Planning marketing/demo materials
-- **Output:** Structured screencast outline with timing and key points
-- **Time:** 30-60 minutes
-
 ## Guidelines
 
 See [guidelines/ai-code-evaluator-guidelines.md](guidelines/ai-code-evaluator-guidelines.md)
@@ -74,11 +69,11 @@ flagging issues. This document explains:
 AI analysis tools should consult this document before reporting issues to avoid
 false positives on intentional design decisions.
 
-## Archive
+## Deprecated Prompts
 
-The [archive/](archive/) directory contains deprecated prompts that have been consolidated:
+The following deprecated prompts were consolidated and removed from this directory:
 - `architectural-review-and-actions-prompt.md` (merged into identify-action-items.md)
 - `investigate-and-report-issues-prompt.md` (merged into identify-action-items.md)
 - `produce-action-items-prompt.md` (merged into identify-action-items.md)
 
-These are preserved for reference but should not be used.
+Use [Identify Action Items](review/identify-action-items.md) instead.

@@ -80,9 +80,9 @@ cov-loupe l
 
 **CLI - Check Specific File:**
 ```sh
-cov-loupe summary lib/cov_loupe/model.rb
+cov-loupe summary lib/cov_loupe/model/model.rb
 # or use abbreviations: s (summary), u (uncovered)
-cov-loupe s lib/cov_loupe/model.rb
+cov-loupe s lib/cov_loupe/model/model.rb
 cov-loupe u lib/cov_loupe/cli.rb
 ```
 
@@ -109,10 +109,10 @@ require "cov_loupe"
 model = CovLoupe::CoverageModel.new
 list_result = model.list
 files = list_result["files"]
-# => [{ "file" => "lib/cov_loupe/model.rb", "covered" => 114, "total" => 118, "percentage" => 96.61, "stale" => false }, ...]
+# => [{ "file" => "lib/cov_loupe/model/model.rb", "covered" => 114, "total" => 118, "percentage" => 96.61, "stale" => "ok" }, ...]
 
-summary = model.summary_for("lib/cov_loupe/model.rb")
-# => { "file" => "lib/cov_loupe/model.rb", "summary" => { "covered" => 114, "total" => 118, "percentage" => 96.61 } }
+summary = model.summary_for("lib/cov_loupe/model/model.rb")
+# => { "file" => "lib/cov_loupe/model/model.rb", "summary" => { "covered" => 114, "total" => 118, "percentage" => 96.61 } }
 ```
 
 For advanced use cases, multiple models can each have their own data source and log file. See [Library API](docs/user/LIBRARY_API.md#per-model-context-advanced) for details.
@@ -336,7 +336,7 @@ cov-loupe -fp list > artifacts/coverage.json
 
 ```sh
 # Quick summary
-cov-loupe summary lib/cov_loupe/model.rb
+cov-loupe summary lib/cov_loupe/model/model.rb
 
 # See uncovered lines
 cov-loupe uncovered lib/cov_loupe/cli.rb
@@ -345,7 +345,7 @@ cov-loupe uncovered lib/cov_loupe/cli.rb
 cov-loupe -s u -c 3 uncovered lib/cov_loupe/cli.rb  # -s = --source (u = uncovered, n = none to disable), -c = --context-lines
 
 # Detailed hit counts
-cov-loupe detailed lib/cov_loupe/util.rb
+cov-loupe detailed lib/cov_loupe/coverage/coverage_calculator.rb
 
 # Project totals
 cov-loupe totals

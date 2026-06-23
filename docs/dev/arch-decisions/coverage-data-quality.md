@@ -185,9 +185,9 @@ before merging resultsets.
 
 ### References
 
-- Implementation: `lib/cov_loupe/staleness_checker.rb` (`StalenessChecker` class)
+- Implementation: `lib/cov_loupe/staleness/staleness_checker.rb` (`StalenessChecker` class)
 - File-level checking: `StalenessChecker#check_file!` and `#file_staleness_status`
 - Project-level checking: `StalenessChecker#check_project!`
 - Staleness detail computation: `StalenessChecker#compute_file_staleness_details`
-- Error types: `lib/cov_loupe/errors.rb` (`CoverageDataStaleError`, `CoverageDataProjectStaleError`)
-- Usage in tools: `lib/cov_loupe/tools/project_coverage_tool.rb`, `lib/cov_loupe/model.rb`
+- Error types: `lib/cov_loupe/errors/errors.rb` (`CoverageDataStaleError`, `CoverageDataProjectStaleError`)
+- Usage in tools: `lib/cov_loupe/tools/project_coverage_tool.rb`, `lib/cov_loupe/model/model.rb`
