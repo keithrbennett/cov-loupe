@@ -198,7 +198,7 @@ totals = model.project_totals
 lib_totals = model.project_totals(tracked_globs: 'lib/**/*.rb')
 ```
 
-When `raise_on_stale: true` is set, the method raises on stale coverage instead of returning totals. Otherwise, totals exclude stale files (`M`, `T`, `L`, `E`) from line counts and report stale breakdowns under `files['with_coverage']['stale']`.
+When `raise_on_stale: true` is set, the method raises on stale coverage instead of returning totals. Otherwise, totals exclude stale files (with staleness indicators `"missing"`, `"newer"`, `"length_mismatch"`, `"error"`) from line counts and report stale breakdowns under `files['with_coverage']['stale']`.
 
 Note: The `without_coverage` hash will only be present if `tracked_globs` were specified.
 

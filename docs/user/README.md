@@ -14,5 +14,5 @@ workflows.
 - [CLI Fallback for LLMs](CLI_FALLBACK_FOR_LLMS.md) – when MCP isn't available
 - [Library API](LIBRARY_API.md) – embedding the gem in Ruby code
 - [Troubleshooting](TROUBLESHOOTING.md) – diagnostics for common issues
-- [Migration Guides](migrations/README.md) – breaking change notes for v2 through v4
+- [Migration Guides](migrations/README.md) – breaking change notes for v2 through v6
 - [Prompt Library](prompts/README.md) – copy/paste instructions for MCP clients when you need coverage analyses fast

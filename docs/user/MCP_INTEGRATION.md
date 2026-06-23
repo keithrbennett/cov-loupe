@@ -500,7 +500,7 @@ To override the default log file location, specify the `--log-file` (or `-l`) ar
 
 ### CLI Fallback
 
-**Important:** If the MCP server doesn't work, you can use the CLI directly with the `-fJ` (output in JSON format) flag.
+**Important:** If the MCP server doesn't work, you can use the CLI directly with the `-fp` (output in JSON format) flag.
 
 See the **[CLI Fallback for LLMs Guide](CLI_FALLBACK_FOR_LLMS.md)** for:
 - Complete command reference and MCP tool mappings

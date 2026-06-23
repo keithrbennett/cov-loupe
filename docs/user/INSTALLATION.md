@@ -103,6 +103,8 @@ Should work with Ruby installed via RubyInstaller. PATH configuration may differ
 
 If you are upgrading from an earlier version of `cov-loupe`, please check the migration guides:
 
+- [Migrating to v6](migrations/MIGRATING_TO_V6.md)
+- [Migrating to v5](migrations/MIGRATING_TO_V5.md)
 - [Migrating to v4](migrations/MIGRATING_TO_V4.md)
 - [Migrating to v3](migrations/MIGRATING_TO_V3.md)
 - [Migrating to v2](migrations/MIGRATING_TO_V2.md)

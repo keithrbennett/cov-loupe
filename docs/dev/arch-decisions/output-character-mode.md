@@ -214,4 +214,3 @@ Comprehensive test coverage ensures correctness:
     - `spec/cov_loupe/formatters/*_spec.rb`
     - `spec/cov_loupe/cli/cli_output_chars_spec.rb`
     - `spec/cov_loupe/tools/*_spec.rb`
-- Review document: `docs/dev/output-chars-review.md`

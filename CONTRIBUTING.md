@@ -12,7 +12,7 @@ This project welcomes bug reports, improvements, and suggestions that make it mo
 ### 1. Reporting Issues
 - Check existing issues before opening a new one.  
 - Include clear reproduction steps, expected vs. actual results, and your Ruby version (`ruby -v`) and OS.  
-- Keep discussion technical and respectful — see the [Code of Conduct](docs/code_of_conduct.md).
+- Keep discussion technical and respectful — see the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ### 2. Submitting Changes
 1. **Fork** the repository on GitHub.  
@@ -94,7 +94,7 @@ For detailed platform-specific installation instructions (macOS, Linux, Windows)
 
 ## Code of Conduct
 
-Please review and follow the [Code of Conduct](docs/code_of_conduct.md). 
+Please review and follow the [Code of Conduct](CODE_OF_CONDUCT.md). 
 Instances of unacceptable behavior may be reported through GitHub’s [Report Abuse form](https://github.com/contact/report-abuse).
 
 ---

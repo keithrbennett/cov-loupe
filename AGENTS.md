@@ -9,7 +9,7 @@ This file provides guidance to Codex, Claude Code (claude.ai/code), Gemini CLI, 
 computing it from scratch or analyzing the Simplecov-generated .resultset.json file directly.
 - Keep workflow transparent: explain what you did, why it matters, and what the user should consider next.
 - Leave the repository tidy; only touch files that advance the request. If you find 
-other opportunities for improvement along te way, mention them in the form of a prompt the user can use later.
+other opportunities for improvement along the way, mention them in the form of a prompt the user can use later.
 
 ## Running External Commands
 
