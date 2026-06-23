@@ -44,20 +44,57 @@ RSpec.describe CovLoupe do
   end
 
   describe 'executable' do
-    it 'exits with code 130 and shows a friendly message when interrupted' do
-      allow(described_class).to receive(:run).and_raise(Interrupt)
-      original_handler = Signal.trap('INT', 'DEFAULT')
-      Signal.trap('INT', original_handler)
+    it 'exits with standard POSIX codes and a friendly message on SIGINT and SIGTERM' do
+      skip 'Signal handling is Unix-specific' if described_class.windows?
 
-      result, _out, err = capture_io(swallow_exit: true) do
-        load File.expand_path('../exe/cov-loupe', __dir__)
+      require 'open3'
+      require 'rbconfig'
+      require 'timeout'
+
+      exe = File.expand_path('../exe/cov-loupe', __dir__)
+      lib_path = File.expand_path('../lib', __dir__)
+
+      {
+        'INT'  => 130,
+        'TERM' => 143,
+      }.each do |sig, expected_status|
+        stdout_str = ''
+        stderr_str = ''
+        status = nil
+
+        Open3.popen3(RbConfig.ruby, '-I', lib_path, '-rbundler/setup', exe, '--mode', 'mcp',
+          '--log-file', File::NULL) do |_stdin, stdout, stderr, wait_thr|
+          pid = wait_thr.pid
+
+          # Wait for the subprocess to start, then give it a moment to install
+          # its signal traps before we signal it.
+          wait_for_process(wait_thr)
+          sleep 0.2
+
+          Process.kill(sig, pid)
+
+          Timeout.timeout(INTEGRATION_TIMEOUT) do
+            stdout_str = stdout.read
+            stderr_str = stderr.read
+            status = wait_thr.value
+          end
+        end
+
+        aggregate_failures "SIG#{sig}" do
+          expect(status.exitstatus).to eq(expected_status)
+          expect(stderr_str).to include("Received SIG#{sig}. Exiting.")
+          expect(stdout_str).to be_empty
+        end
       end
+    end
 
-      expect(result).to be_a(SystemExit)
-      expect(result.status).to eq(130)
-      expect(err).to eq("\nInterrupted. Exiting.\n")
-    ensure
-      Signal.trap('INT', original_handler) if original_handler
+    # Wait up to timeout_seconds for the subprocess to actually be running.
+    # Raises Timeout::Error if it never starts, so premature death fails loudly
+    # instead of producing confusing downstream assertions.
+    def wait_for_process(wait_thr, timeout_seconds = 5)
+      Timeout.timeout(timeout_seconds) do
+        sleep 0.01 until wait_thr.alive?
+      end
     end
   end
 

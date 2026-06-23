@@ -1,11 +1,12 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-interrupt_handler = ->(*) do
-  $stderr.write "\nInterrupted. Exiting.\n"
-  exit 130
+%w[INT TERM].each do |sig|
+  Signal.trap(sig) do
+    $stderr.write "\nReceived SIG#{sig}. Exiting.\n"
+    exit(128 + Signal.list[sig])
+  end
 end
-Signal.trap('INT', &interrupt_handler)
 
 # Make it safe to run via symlink by resolving the real path
 root = File.expand_path('..', File.realpath(__FILE__))
@@ -24,10 +25,6 @@ rescue
   # If anything goes wrong, let the app load and potentially fail with a more specific error.
 end
 
-begin
-  require 'cov_loupe'
+require 'cov_loupe'
 
-  CovLoupe.run(ARGV)
-rescue Interrupt
-  interrupt_handler.call
-end
+CovLoupe.run(ARGV)
