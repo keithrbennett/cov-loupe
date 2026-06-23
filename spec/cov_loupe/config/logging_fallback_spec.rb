@@ -25,6 +25,26 @@ RSpec.describe 'Logging Fallback Behavior' do
     yield logger, io
   end
 
+  describe 'stdout logging prohibition' do
+    it 'rejects stdout at Logger initialization' do
+      expect do
+        CovLoupe::Logger.new(target: 'stdout', mode: :library)
+      end.to raise_error(CovLoupe::ConfigurationError, /stdout.*not permitted/)
+    end
+
+    it 'rejects stdout with surrounding whitespace' do
+      expect do
+        CovLoupe::Logger.new(target: '  stdout  ', mode: :cli)
+      end.to raise_error(CovLoupe::ConfigurationError, /stdout.*not permitted/)
+    end
+
+    it 'rejects uppercase stdout' do
+      expect do
+        CovLoupe::Logger.new(target: 'STDOUT', mode: :mcp)
+      end.to raise_error(CovLoupe::ConfigurationError, /stdout.*not permitted/)
+    end
+  end
+
   describe 'CovLoupe.logger error handling' do
     context 'when file logging fails in library mode' do
       it 'writes to fallback file but suppresses stderr' do

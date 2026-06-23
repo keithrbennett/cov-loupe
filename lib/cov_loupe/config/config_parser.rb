@@ -34,7 +34,7 @@ module CovLoupe
       # stripped by the global option parser.
       parser.order!(argv)
 
-      config
+      config.validate!
     end
   end
 end

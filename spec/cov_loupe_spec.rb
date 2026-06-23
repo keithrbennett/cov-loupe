@@ -75,6 +75,12 @@ RSpec.describe CovLoupe do
     ensure
       described_class.active_log_file = File::NULL
     end
+
+    it 'rejects stdout immediately' do
+      expect do
+        described_class.active_log_file = 'stdout'
+      end.to raise_error(CovLoupe::ConfigurationError, /stdout.*not permitted/)
+    end
   end
 
   describe '.default_log_file' do
@@ -86,6 +92,14 @@ RSpec.describe CovLoupe do
       # but let's just verify it returns what we expect if we set it,
       # or just call it to ensure coverage.
       expect(described_class.default_log_file).to eq(original_default)
+    end
+  end
+
+  describe '.default_log_file=' do
+    it 'rejects stdout immediately' do
+      expect do
+        described_class.default_log_file = 'stdout'
+      end.to raise_error(CovLoupe::ConfigurationError, /stdout.*not permitted/)
     end
   end
 

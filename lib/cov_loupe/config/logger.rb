@@ -2,15 +2,18 @@
 
 require 'logger'
 require 'time'
+require_relative '../errors/errors'
 
 module CovLoupe
   # Custom logger that gracefully handles logging failures.
   #
   # Log targets:
   #   - File path (default: ./cov_loupe.log)
-  #   - 'stdout' / 'stderr' for stream output
+  #   - 'stderr' for stream output
   #   - ':off' to disable logging entirely
   #   - nil for default file logging
+  #
+  # 'stdout' is never a valid target because it would corrupt command output.
   #
   # If the primary log target fails (e.g., permission denied), the logger falls back
   # to writing to COV-LOUPE-LOG-ERROR.log and emits a one-time stderr warning in CLI mode.
@@ -22,6 +25,12 @@ module CovLoupe
     attr_reader :target
 
     def initialize(target:, mode: :library)
+      if target.to_s.strip.downcase == 'stdout'
+        raise ConfigurationError,
+          'Logging to stdout is not permitted because it corrupts command output. ' \
+          "Use 'stderr', a file path, or ':off' to disable logging."
+      end
+
       @mode = mode
       @target = target
       @init_error = nil
@@ -81,12 +90,11 @@ module CovLoupe
     end
 
     private def build_logger(target)
-      io_or_path = case target
-                   when 'stdout' then $stdout
-                   when 'stderr' then $stderr
-                   else
-                     path = target || DEFAULT_LOG_FILESPEC
-                     File.expand_path(path)
+      io_or_path = if target == 'stderr'
+        $stderr
+      else
+        path = target || DEFAULT_LOG_FILESPEC
+        File.expand_path(path)
       end
 
       ::Logger.new(io_or_path).tap do |l|

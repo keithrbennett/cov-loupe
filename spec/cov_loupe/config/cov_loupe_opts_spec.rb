@@ -44,17 +44,21 @@ RSpec.describe 'COV_LOUPE_OPTS Environment Variable' do
       expect(cli.config.resultset).to eq(test_path)
     end
 
-    it 'supports setting log-file to stdout from environment' do
+    it 'rejects setting log-file to stdout from environment' do
       ENV['COV_LOUPE_OPTS'] = '--log-file stdout'
       env_opts = CovLoupe.send(:extract_env_opts)
 
-      swallow_system_exit do
-        suppress_io do
-          cli.send(:run, env_opts + %w[--help])
-        end
-      end
+      expect do
+        CovLoupe::ConfigParser.parse(env_opts + %w[summary lib/foo.rb])
+      end.to raise_error(CovLoupe::ConfigurationError, /stdout.*not permitted/)
+    end
 
-      expect(cli.config.log_file).to eq('stdout')
+    it 'allows command-line --log-file to override stdout from environment' do
+      ENV['COV_LOUPE_OPTS'] = '--log-file stdout'
+      env_opts = CovLoupe.send(:extract_env_opts)
+
+      config = CovLoupe::ConfigParser.parse(env_opts + %w[--log-file stderr summary lib/foo.rb])
+      expect(config.log_file).to eq('stderr')
     end
 
     it 'command line arguments override environment options' do

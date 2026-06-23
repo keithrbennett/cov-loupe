@@ -7,6 +7,7 @@ require 'set' # rubocop:disable Lint/RedundantRequireStatement -- Ruby >= 3.4 re
 require 'optparse'
 
 require_relative 'cov_loupe/version'
+require_relative 'cov_loupe/config/app_config'
 require_relative 'cov_loupe/config/app_context'
 require_relative 'cov_loupe/errors/errors'
 require_relative 'cov_loupe/errors/error_handler'
@@ -84,12 +85,6 @@ module CovLoupe
         # MCP server mode: load MCP server components only
         require_relative 'cov_loupe/loaders/all_mcp'
 
-        if config.log_file == 'stdout'
-          raise ConfigurationError,
-            'Logging to stdout is not permitted in MCP server mode as it interferes with ' \
-            "the JSON-RPC protocol. Please use 'stderr' or a file path."
-        end
-
         handler = ErrorHandlerFactory.for_mcp_server(error_mode: config.error_mode)
         context = create_context(error_handler: handler, log_target: config.log_file,
           mode: :mcp, app_config: config)
@@ -126,6 +121,7 @@ module CovLoupe
     end
 
     def default_log_file=(value)
+      AppConfig.validate_log_file!(value)
       mutex.synchronize do
         previous_default = internal_default_context
         @internal_default_context = previous_default.with(log_target: value)
@@ -138,6 +134,7 @@ module CovLoupe
     end
 
     def active_log_file=(value)
+      AppConfig.validate_log_file!(value)
       current = Thread.current[THREAD_CONTEXT_KEY]
       Thread.current[THREAD_CONTEXT_KEY] = if current
         current.with(log_target: value)

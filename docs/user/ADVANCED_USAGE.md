@@ -52,7 +52,7 @@ To override the default log file location, specify the `--log-file` (or `-l`) ar
 
 **Warning:** Log files may grow unbounded in long-running or CI usage. Consider using a log rotation tool or periodically cleaning up the log file if this is a concern.
 
-**Note:** Logging to `stdout` is not permitted in MCP mode since it would interfere with the request processing.
+**Note:** Logging to `stdout` is not permitted in any mode, because it would corrupt command output or the MCP JSON-RPC protocol.
 
 ### Testing MCP Server Manually
 

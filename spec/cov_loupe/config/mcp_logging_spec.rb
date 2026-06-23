@@ -3,13 +3,12 @@
 require 'spec_helper'
 
 RSpec.describe 'MCP Mode Logging' do
-  it 'raises a configuration error when --log-file is stdout' do
+  it 'exits with an error when --log-file is stdout' do
     argv = %w[--mode mcp --log-file stdout]
 
-    expect do
-      CovLoupe.run(argv)
-    end.to raise_error(CovLoupe::ConfigurationError,
-      /Logging to stdout is not permitted in MCP server mode/)
+    _stdout, stderr, status = run_full_cli_with_status(argv)
+    expect(status).to eq(2)
+    expect(stderr).to include('stdout', 'not permitted')
   end
 
   it 'allows stderr logging in MCP mode' do

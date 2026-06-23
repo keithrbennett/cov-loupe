@@ -156,15 +156,13 @@ RSpec.describe CovLoupe::CoverageCLI do
       end
     end
 
-    it 'supports stdout logging within the CLI context' do
-      expect(CovLoupe).to receive(:create_context)
-        .and_wrap_original do |m, error_handler:, log_target:, mode:|
-        # For stdout logging, verify the context is still constructed with the expected value.
-        expect(log_target).to eq('stdout')
-        m.call(error_handler: error_handler, log_target: log_target, mode: mode)
-      end
+    it 'rejects stdout logging in the CLI context' do
       original_target = CovLoupe.active_log_file
-      run_cli('--format', 'json', '--log-file', 'stdout', 'summary', 'lib/foo.rb')
+      _stdout, stderr, status = run_cli_with_status(
+        '--format', 'json', '--log-file', 'stdout', 'summary', 'lib/foo.rb'
+      )
+      expect(status).to eq(1)
+      expect(stderr).to include('stdout', 'not permitted')
       expect(CovLoupe.active_log_file).to eq(original_target)
     end
 

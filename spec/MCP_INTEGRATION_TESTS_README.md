@@ -20,7 +20,7 @@ The integration tests spawn the actual MCP server as a subprocess and communicat
 8. **handles error responses for invalid tool calls** - Verifies graceful error handling
 9. **handles malformed JSON-RPC requests** - Tests robustness against invalid input
 10. **respects --log-file configuration in MCP mode** - Tests logging configuration
-11. **prohibits stdout logging in MCP mode** - Ensures stdout isn't corrupted
+11. **prohibits stdout logging** - Ensures stdout isn't corrupted
 12. **handles multiple sequential requests** - Tests statelessness and multi-request handling
 
 ## Why These Tests Are Critical

@@ -3,6 +3,13 @@
 [Back to main README](docs/index.md)
 
 
+## v6.0.0.pre (Breaking)
+
+- **Stdout logging is no longer permitted.** The `--log-file` / `-l` option no longer accepts `stdout` in any mode (CLI, MCP, or library). Logs are diagnostics and must not corrupt command output on `stdout` or the MCP JSON-RPC protocol stream.
+    - **Old:** `--log-file stdout` was allowed in CLI mode and rejected only in MCP mode.
+    - **New:** `--log-file stdout` raises a `ConfigurationError` during normal configuration validation. Use `--log-file stderr`, a file path, or `:off` to disable logging.
+    - See [Migrating to v6](docs/user/migrations/MIGRATING_TO_V6.md) for details.
+
 ## v5.0.1.pre
 - Extract shared RuboCop defaults into `.rubocop-shared.yml` and slim `.rubocop.yml` down to cov-loupe-specific overrides, making lint configuration easier to maintain across related projects.
 - Align the codebase and spec suite with the updated RuboCop rules, including removal of the project-specific line-length override and the corresponding style-only cleanup in Ruby sources and tests.

@@ -145,6 +145,8 @@ module CovLoupe
 
       # Any remaining arguments belong to the subcommand
       @cmd_args = argv
+
+      config.validate!
     end
 
     private def error_handler

@@ -108,7 +108,7 @@ module CovLoupe
         exit 0
       end
       parser.on('-l', '--log-file PATH', String,
-        'Log file path (default ./cov_loupe.log, use stdout/stderr for streams, :off to disable)') do |value|
+        "Log file path (default ./cov_loupe.log, use 'stderr' for stream output, :off to disable)") do |value|
         config.log_file = value
       end
       parser.on('-m', '--mode MODE', String,

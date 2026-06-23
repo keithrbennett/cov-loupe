@@ -123,6 +123,49 @@ RSpec.describe CovLoupe::AppConfig do
     end
   end
 
+  describe '#validate!' do
+    it 'accepts nil log_file' do
+      config = described_class.new
+      expect { config.validate! }.not_to raise_error
+    end
+
+    it 'accepts a file path log_file' do
+      config = described_class.new(log_file: '/tmp/cov-loupe.log')
+      expect { config.validate! }.not_to raise_error
+    end
+
+    it 'accepts stderr log_file' do
+      config = described_class.new(log_file: 'stderr')
+      expect { config.validate! }.not_to raise_error
+    end
+
+    it 'accepts :off log_file' do
+      config = described_class.new(log_file: ':off')
+      expect { config.validate! }.not_to raise_error
+    end
+
+    it 'rejects stdout log_file' do
+      config = described_class.new(log_file: 'stdout')
+      expect do
+        config.validate!
+      end.to raise_error(CovLoupe::ConfigurationError, /stdout.*not permitted/)
+    end
+
+    it 'rejects stdout with surrounding whitespace' do
+      config = described_class.new(log_file: '  stdout  ')
+      expect do
+        config.validate!
+      end.to raise_error(CovLoupe::ConfigurationError, /stdout.*not permitted/)
+    end
+
+    it 'rejects uppercase stdout' do
+      config = described_class.new(log_file: 'STDOUT')
+      expect do
+        config.validate!
+      end.to raise_error(CovLoupe::ConfigurationError, /stdout.*not permitted/)
+    end
+  end
+
   describe 'symbol enumerated values' do
     it 'uses symbols for format' do
       config = described_class.new(format: :json)

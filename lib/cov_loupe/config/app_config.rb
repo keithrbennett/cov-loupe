@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative '../errors/errors'
+
 module CovLoupe
   # Configuration container for application options.
   #
@@ -65,6 +67,22 @@ module CovLoupe
         color_enabled: color,
         output_chars:  output_chars,
       }
+    end
+
+    # Validate configuration after all options have been merged.
+    # Raises ConfigurationError for values that are unconditionally invalid.
+    def validate!
+      self.class.validate_log_file!(log_file)
+      self
+    end
+
+    # Shared validation for any log target value.
+    def self.validate_log_file!(value)
+      return unless value.to_s.strip.downcase == 'stdout'
+
+      raise ConfigurationError,
+        'Logging to stdout is not permitted because it corrupts command output. ' \
+        "Use 'stderr', a file path, or ':off' to disable logging."
     end
   end
 end

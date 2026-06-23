@@ -93,6 +93,16 @@ Gem::Specification.new do |spec|
     ┃                                                                           ┃
     ┃  📖 Migration instructions: docs/user/migrations/MIGRATING_TO_V5.md       ┃
     ┃                                                                           ┃
+    ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+    ┃ V6.0.0 BREAKING CHANGES                                                   ┃
+    ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+    ┃                                                                           ┃
+    ┃  • `--log-file stdout` / `-l stdout` is no longer permitted in any mode   ┃
+    ┃    Logs are diagnostics and must not corrupt command output on stdout.    ┃
+    ┃    Use `-l stderr`, a file path, or `-l :off` instead.                    ┃
+    ┃                                                                           ┃
+    ┃  📖 Migration instructions: docs/user/migrations/MIGRATING_TO_V6.md       ┃
+    ┃                                                                           ┃
     ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
   MESSAGE
 end
