@@ -283,19 +283,21 @@ With rexe's `-ij -mb` options, `self` automatically becomes the parsed JSON obje
 
 ### When Coverage Rows Are Skipped
 
-If a file in the resultset is missing on disk or has corrupt data, the CLI now logs and *warns* after rendering the report so operators immediately see that totals may be incomplete. Example table output:
+If a coverage row has corrupt or malformed data, the CLI now logs and *warns* after rendering the report.
+This lets operators immediately see that totals may be incomplete. Example table output:
 
 ```text
 $ cov-loupe list
-┌─────────────────────────────┬─────────┬─────────┬────────────┬───────┐
-│ File                        │ Covered │ Total   │ % Covered  │ Stale │
-├─────────────────────────────┼─────────┼─────────┼────────────┼───────┤
-│ lib/foo.rb                  │       2 │       3 │     66.67% │       │
-│ lib/bar.rb                  │       1 │       3 │     33.33% │       │
-└─────────────────────────────┴─────────┴─────────┴────────────┴───────┘
+┌─────────────────────────────┬──────────┬─────────┬───────┬───────┐
+│ File                        │        % │ Covered │ Total │ Stale │
+├─────────────────────────────┼──────────┼─────────┼───────┼───────┤
+│ lib/foo.rb                  │   66.67% │       2 │     3 │       │
+│ lib/bar.rb                  │   33.33% │       1 │     3 │       │
+└─────────────────────────────┴──────────┴─────────┴───────┴───────┘
+Files: total 2, ok 2, stale 0
 
 WARNING: 1 coverage row skipped due to errors:
-  - lib/deleted.rb: No coverage data found for file: lib/deleted.rb
+  - lib/corrupt.rb: Invalid coverage line array: contains non-integer elements: ["bad"]
 Run again with --raise-on-stale to exit when rows are skipped.
 ```
 
@@ -308,11 +310,24 @@ $ cov-loupe -fp list
     { "file": "lib/foo.rb", "covered": 2, "total": 3, "percentage": 66.67, "stale": "ok" },
     { "file": "lib/bar.rb", "covered": 1, "total": 3, "percentage": 33.33, "stale": "ok" }
   ],
+  "skipped_files": [
+    {
+      "file": "lib/corrupt.rb",
+      "error": "Invalid coverage line array: contains non-integer elements: [\"bad\"]",
+      "error_class": "CovLoupe::CoverageDataError"
+    }
+  ],
+  "missing_tracked_files": [],
+  "newer_files": [],
+  "deleted_files": [],
+  "length_mismatch_files": [],
+  "unreadable_files": [],
+  "timestamp_status": "ok",
   "counts": { "total": 2, "ok": 2, "stale": 0 }
 }
 
 WARNING: 1 coverage row skipped due to errors:
-  - lib/deleted.rb: No coverage data found for file: lib/deleted.rb
+  - lib/corrupt.rb: Invalid coverage line array: contains non-integer elements: ["bad"]
 Run again with --raise-on-stale to exit when rows are skipped.
 ```
 

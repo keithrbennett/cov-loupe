@@ -13,7 +13,7 @@ cov-loupe is organized around a single coverage data model that feeds three deli
 ## Coverage Data Pipeline
 
 1. **Resultset discovery** – The tool locates the `.resultset.json` file by checking a series of default paths or by using a path specified by the user. For a detailed explanation of the configuration options, see the [Configuring the Resultset](../index.md#configuring-the-resultset) section in the main README.
-2. **Parsing and normalization** – `CoverageModel` loads the chosen resultset once, extracts all test suites that expose `coverage` data (e.g., "RSpec", "Minitest"), merges them if multiple suites exist, and maps all file keys to absolute paths anchored at the configured project root. Timestamps are cached for staleness checks.
+2. **Parsing and normalization** – `CoverageModel` loads the chosen resultset once, extracts all test suites that expose `coverage` data (e.g., "RSpec", "Minitest"), merges them if multiple suites exist, and maps all file keys to absolute paths anchored at the configured project root. Timestamps are cached for staleness checks. SimpleCov is a runtime dependency and is loaded when multi-suite merges are required.
 3. **Path relativizing** – `PathRelativizer` (powered by the centralized `PathUtils` module) produces relative paths for user-facing payloads without mutating the canonical data. Tool responses pass through `CoverageModel#relativize` before leaving the process.
 4. **Derived metrics** – `CoverageCalculator.summary`, `CoverageCalculator.uncovered`, and `CoverageCalculator.detailed` compute coverage stats from the raw `lines` arrays. `CoverageModel` exposes `summary_for`, `uncovered_for`, `detailed_for`, and `raw_for` helpers that wrap these calculations.
 5. **Staleness detection** – `StalenessChecker` compares source mtimes/line counts to coverage metadata. CLI flags and MCP arguments can promote warnings to hard failures (`--raise-on-stale true`) or simply mark rows as stale for display.
@@ -75,7 +75,7 @@ cov-loupe provides a global output character mode that controls ASCII vs Unicode
     - JSON uses `JSON.generate(..., ascii_only: true)` for ASCII mode
     - YAML and AmazingPrint post-process output through `OutputChars.convert`
     - Tables use appropriate charset and convert cell contents
-    - Source output uses ASCII-safe markers (`+/-` instead of Unicode `✓/·`)
+    - Source output uses ASCII-safe markers (`+/X` instead of Unicode `✓/X`)
 
 ### Scope of Conversion
 

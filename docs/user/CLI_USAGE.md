@@ -137,11 +137,11 @@ clp -s full s app/models/order.rb  # -s = --source
 
 **Output (default format):**
 ```
-┌───────────────────────┬──────────┬─────────┬───────┬───────┐
-│ File                  │        % │ Covered │ Total │ Stale │
-├───────────────────────┼──────────┼─────────┼───────┼───────┤
-│ app/models/order.rb   │   85.71% │       6 │     7 │       │
-└───────────────────────┴──────────┴─────────┴───────┴───────┘
+┌─────────────────────┬────────┬─────────┬───────┬───────┐
+│ File                │      % │ Covered │ Total │ Stale │
+├─────────────────────┼────────┼─────────┼───────┼───────┤
+│ app/models/order.rb │ 85.71% │       6 │     7 │       │
+└─────────────────────┴────────┴─────────┴───────┴───────┘
 ```
 
 **Output (JSON format):**
@@ -185,31 +185,48 @@ clp -s uncovered -c 3 u app/controllers/orders_controller.rb  # -s = --source, -
 
 **Output (default format):**
 ```
-File:            app/controllers/orders_controller.rb
-Uncovered lines: 14, 15, 20
-Summary:         70.0%      7/10
+File: app/controllers/orders_controller.rb
+Coverage: 70.00% (7/10 lines)
+
+┌──────┐
+│ Line │
+├──────┤
+│   14 │
+│   15 │
+│   20 │
+└──────┘
 ```
 
 **Output (with source):**
 ```
-File:            app/controllers/orders_controller.rb
-Uncovered lines: 14, 15, 20
-Summary:         70.0%      7/10
+File: app/controllers/orders_controller.rb
+Coverage: 70.00% (7/10 lines)
 
-  Line     | Source
-  ------+-----------------------------------------------------------
-    14  · |       def show(id)
-    15  · |         @repo.find(id)
-    16  ✓ |       end
+┌──────┐
+│ Line │
+├──────┤
+│   14 │
+│   15 │
+│   20 │
+└──────┘
+
+----------+-------------------------------------------------------------
+  Line    | Source
+----------+-------------------------------------------------------------
+    12    |       end
+    13    |
+    14  X |       def show(id)
+    15  X |         @repo.find(id)
+    16    |       end
     17    |
     18  ✓ |       def cancel(id)
     19  ✓ |         order = @repo.find(id)
-    20  · |         return :missing unless order
+    20  X |         return :missing unless order
 ```
 
 **Legend:**
 - `✓` - Line is covered
-- `·` - Line is not covered
+- `X` - Line is not covered
 - ` ` - Line is not executable (comments, blank lines)
 
 ### `detailed <path>`, `d <path>`
@@ -292,7 +309,31 @@ clp -fp r app/models/order.rb
 **Output (default format):**
 ```
 File: app/models/order.rb
-[nil, nil, nil, nil, nil, 1, 1, 1, nil, nil, 1, 1, nil, nil, 1, 0, nil, nil, nil, nil]
+
+┌──────┬──────────┐
+│ Line │ Coverage │
+├──────┼──────────┤
+│    1 │      nil │
+│    2 │      nil │
+│    3 │      nil │
+│    4 │      nil │
+│    5 │      nil │
+│    6 │        1 │
+│    7 │        1 │
+│    8 │        1 │
+│    9 │      nil │
+│   10 │      nil │
+│   11 │        1 │
+│   12 │        1 │
+│   13 │      nil │
+│   14 │      nil │
+│   15 │        1 │
+│   16 │        0 │
+│   17 │      nil │
+│   18 │      nil │
+│   19 │      nil │
+│   20 │      nil │
+└──────┴──────────┘
 ```
 
 **Output (JSON format):**
@@ -322,38 +363,42 @@ clp -g "lib/ops/jobs/*.rb" t  # -g = --tracked-globs
 
 **Output (default format):**
 ```
-Tracked globs:
-  - lib/**/*.rb
-  - app/**/*.rb
-  - src/**/*.rb
+Tracked globs: (tracking disabled)
 
-Totals
-┌──────────┬───────┬─────────┬───────────┬────────┐
-│ Metric   │ Total │ Covered │ Uncovered │      % │
-├──────────┼───────┼─────────┼───────────┼────────┤
-│ Lines    │    47 │      38 │         9 │ 80.85% │
-│ Files    │     7 │       7 │         0 │        │
-└──────────┴───────┴─────────┴───────────┴────────┘
+Lines (7 ok files): 47 total, 38 covered, 9 uncovered (80.85%)
 
 File breakdown:
   With coverage: 7 total, 7 ok, 0 stale
     Stale: missing on disk = 0, newer than coverage = 0, line mismatch = 0, unreadable = 0
-  Without coverage: 0 total
-    Missing from coverage = 0, unreadable = 0, skipped (errors) = 0
 ```
 
-**Tracked globs (shown when tracking is enabled):**
+**With `--tracked-globs` enabled:**
 ```
 Tracked globs:
   - lib/**/*.rb
   - app/**/*.rb
+
+Lines (4 ok files): 24 total, 19 covered, 5 uncovered (79.17%)
+
+File breakdown:
+  With coverage: 4 total, 4 ok, 0 stale
+    Stale: missing on disk = 0, newer than coverage = 0, line mismatch = 0, unreadable = 0
+  Without coverage: 2 total
+    Missing from coverage = 2, unreadable = 0, skipped (errors) = 0
 ```
 
 **Output (JSON format):**
 ```json
 {
-  "lines": { "total": 47, "covered": 38, "uncovered": 9, "percentage": 80.85 },
-  "tracking": { "enabled": true, "globs": ["lib/**/*.rb", "app/**/*.rb"] },
+  "lines": {
+    "total": 47,
+    "covered": 38,
+    "uncovered": 9,
+    "percentage": 80.85,
+    "included_files": 7,
+    "excluded_files": 0
+  },
+  "tracking": { "enabled": false, "globs": [] },
   "files": {
     "total": 7,
     "with_coverage": {
@@ -368,21 +413,15 @@ Tracked globs:
           "unreadable": 0
         }
       }
-    },
-    "without_coverage": {
-      "total": 0,
-      "by_type": {
-        "missing_from_coverage": 0,
-        "unreadable": 0,
-        "skipped": 0
-      }
     }
-  }
+  },
+  "timestamp_status": "ok"
 }
 ```
 
 **Notes:**
 - `lines` are based on fresh coverage entries only.
+- `lines.included_files` is the count of non-stale files included in the line totals; `lines.excluded_files` is the count of stale files excluded.
 - `with_coverage.stale.by_type` uses readable labels: `missing_from_disk`, `newer`,
   `length_mismatch`, `unreadable`.
 - `without_coverage` is only present when tracking is enabled (tracked globs provided).
@@ -493,9 +532,9 @@ clp -s u -c 3 uncovered lib/api/client.rb  # -s u = uncovered, -c = --context-li
 
 ### Boolean Flags (`--color` / `-C`, `--raise-on-stale`)
 
-These options require explicit boolean values. Recognized literals:
+These options require explicit boolean values. Recognized literals (case-insensitive):
 
-| true   | false   |
+| True   | False   |
 |--------|---------|
 | `yes`  | `no`    |
 | `y`    | `n`     |
@@ -662,7 +701,7 @@ clp -O f list  # f = fancy
 
 **What gets converted in ASCII mode:**
 - Table borders (│ ─ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼ → | - + + + + + + + + +)
-- Source code markers (✓ · → + -)
+- Source code markers (covered ✓ → +; uncovered X stays X)
 - Error messages and file paths
 - All formatted output (tables, source, JSON, YAML)
 
@@ -784,7 +823,7 @@ With `--source` flag, shows annotated source code:
   Line     | Source
   ------+-----------------------------------------------------------
      1  ✓ | class User
-     2  · |   def initialize  # Not covered
+     2  X |   def initialize  # Not covered
      3  ✓ |     # ...
 ```
 

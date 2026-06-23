@@ -58,9 +58,9 @@
     - **Old**: `model.summary_for('deleted_file.rb')` would return coverage data with exit 0
     - **New**: `model.summary_for('deleted_file.rb')` raises `CovLoupe::FileNotFoundError`
     - **Rationale**: Deleted files represent stale data that pollutes metrics. The API documentation already promised `FileNotFoundError` for missing files; the implementation now matches the contract.
-- **Staleness check errors now return 'E' marker**: Previously, when staleness checking itself failed (e.g., file permission errors, resolver failures, unexpected exceptions), the `stale` field returned `false`, making errors indistinguishable from fresh files. Now returns `'E'` to explicitly indicate a failed staleness check.
+- **Staleness check errors now return `"error"` marker**: Previously, when staleness checking itself failed (e.g., file permission errors, resolver failures, unexpected exceptions), the `stale` field returned `false`, making errors indistinguishable from fresh files. Now returns `"error"` to explicitly indicate a failed staleness check.
     - **Old**: `{ "file": "...", "stale": false }` (error silently treated as fresh)
-    - **New**: `{ "file": "...", "stale": "E" }` (error explicitly flagged)
+    - **New**: `{ "file": "...", "stale": "error" }` (error explicitly flagged)
     - **Impact**: Code checking `stale == false` or using truthiness checks (`if payload['stale']`) will need updating. Error is still logged for debugging.
     - **Frequency**: Rare - only affects error conditions during staleness checking (not normal staleness detection)
 - **Path resolution now handles case-sensitivity and path separators correctly (NEW in v4.0.0)**: Path normalization now independently handles two concerns: (1) slash normalization for Windows backslashes, and (2) case-folding for case-insensitive volumes. Case-sensitivity is detected lazily on first use by testing the project root volume (prefers using existing files via `File.identical?` to avoid writes; falls back to temporary file creation if needed).

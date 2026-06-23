@@ -281,7 +281,7 @@ When the MCP server starts, you can pass CLI options via the startup command. Th
 | `--error-mode` | ✅ Yes | `error_mode` | Sets server-wide error handling; can override per tool |
 | `-l`, `--log-file` | ✅ Yes | N/A | Sets server log location (cannot override per tool) |
 | `-f`, `--format` | ❌ No | N/A | CLI-only presentation flag (not used by MCP) |
-| `-o`, `--sort-order` | ❌ No | `sort_order` | CLI flag ignored in MCP; pass per tool call (`\"ascending\"` or `\"descending\"`) |
+| `-o`, `--sort-order` | ❌ No | N/A | CLI flag ignored in MCP; pass `sort_order` per `project_coverage` tool call |
 | `-s`, `--source` | ❌ No | N/A | CLI-only presentation flag (not used by MCP) |
 | `-c`, `--context-lines` | ❌ No | N/A | CLI-only presentation flag (not used by MCP) |
 | `-C`, `--color BOOLEAN` | ❌ No | N/A | CLI-only presentation flag (not used by MCP) |
@@ -294,7 +294,7 @@ When the MCP server starts, you can pass CLI options via the startup command. Th
 
 **Precedence for MCP tool config:** `JSON request param` > `CLI args used to start MCP` (including `COV_LOUPE_OPTS`) > built-in defaults (`root: '.'`, `raise_on_stale: false`, `resultset: nil`, `tracked_globs: []` - no filtering, no tracking).
 
-CLI-only presentation flags (`-f/--format`, `-s/--source`, `-c/--context-lines`, `-C/--color`, and CLI `-o/--sort-order` defaults) never flow into MCP. Pass `sort_order` explicitly in each tool request when you need non-default ordering.
+CLI-only presentation flags (`-f/--format`, `-s/--source`, `-c/--context-lines`, `-C/--color`, and `-o/--sort-order`) never flow into MCP. Pass `sort_order` explicitly in each `project_coverage` tool request when you need non-default ordering.
 
 **Data caching:** Coverage data is cached in a global singleton (`ModelDataCache`) and shared across all `CoverageModel` instances. When the resultset file changes (based on file signature and MD5 digest), the cache automatically reloads fresh data. Model instances themselves are lightweight and created fresh for each tool request.
 
@@ -307,6 +307,9 @@ All file-specific tools accept these parameters in the JSON request:
 - `resultset` (optional) - Path to the `.resultset.json` file. See [Configuring the Resultset](../index.md#configuring-the-resultset) for details.
 - `raise_on_stale` (optional) - Raise error on staleness: `false` (default) or `true`
 - `error_mode` (optional) - Error handling: `"off"`, `"log"` (default), `"debug"` (overrides server-level setting)
+- `output_chars` (optional) - Output character mode: `"default"`, `"fancy"`, or `"ascii"`
+
+`project_coverage` additionally accepts `sort_order` (`"ascending"` or `"descending"`) and `format` (`"json"`, `"pretty_json"`, `"yaml"`, `"amazing_print"`, `"table"`).
 
 ### Tool Details
 
@@ -347,8 +350,9 @@ These tools analyze individual files. All require `path` parameter.
 
 **`project_coverage_totals`** - Aggregated line totals
 - Parameters: `tracked_globs` (array), `raise_on_stale`
-- Returns: `{"lines":{"total":N,"covered":N,"uncovered":N,"percentage":Float},"tracking":{"enabled":Boolean,"globs":[String]},"files":{"total":N,"with_coverage":{"total":N,"ok":N,"stale":{"total":N,"by_type":{"missing_from_disk":N,"newer":N,"length_mismatch":N,"unreadable":N}}},"without_coverage":{"total":N,"by_type":{"missing_from_coverage":N,"unreadable":N,"skipped":N}}}}`
+- Returns: `{"lines":{"total":N,"covered":N,"uncovered":N,"percentage":Float,"included_files":N,"excluded_files":N},"tracking":{"enabled":Boolean,"globs":[String]},"files":{"total":N,"with_coverage":{"total":N,"ok":N,"stale":{"total":N,"by_type":{"missing_from_disk":N,"newer":N,"length_mismatch":N,"unreadable":N}}},"without_coverage":{"total":N,"by_type":{"missing_from_coverage":N,"unreadable":N,"skipped":N}}},"timestamp_status":"ok|missing","warnings":[String]}`
 - `without_coverage` is only present when tracking is enabled (tracked globs provided).
+- `warnings` is present when `timestamp_status` is `"missing"`.
 
 #### Policy Validation Tools
 

@@ -100,6 +100,8 @@ summary = model.summary_for(target)
 # => { 'file' => '/abs/.../lib/foo.rb', 'summary' => {'covered'=>12, 'total'=>14, 'percentage'=>85.71} }
 ```
 
+**Note:** `CoverageModel#summary_for` returns the file path and summary only. The CLI and MCP tools add a `stale` field via `CoveragePayloadPresenter`; if you need staleness in library code, call `model.staleness_for(path)` separately.
+
 ### `uncovered_for(path)`
 
 Returns list of uncovered line numbers for a specific file.
@@ -242,12 +244,13 @@ Returns `Hash` with file data and staleness metadata:
       'stale' => String       # Staleness indicator: "ok", "error", "missing", "newer", or "length_mismatch"
     }
   ],
-  'skipped_files' => Array<String>,        # Files skipped due to coverage errors
+  'skipped_files' => Array<Hash>,          # Skipped rows; each hash has 'file', 'error', 'error_class'
   'missing_tracked_files' => Array<String>,# Tracked files missing from coverage
   'newer_files' => Array<String>,          # Files newer than coverage
   'deleted_files' => Array<String>,        # Coverage entries for deleted files
   'length_mismatch_files' => Array<String>,# Files whose line counts differ from coverage
-  'unreadable_files' => Array<String>      # Files that could not be read
+  'unreadable_files' => Array<String>,     # Files that could not be read
+  'timestamp_status' => String             # 'ok' or 'missing'
 }
 ```
 
@@ -261,10 +264,12 @@ Returns `Hash`:
   'summary' => {
     'covered' => Integer, # Number of covered lines
     'total' => Integer,   # Total relevant lines
-    'percentage' => Float        # Coverage percentage (0.00-100.00)
+    'percentage' => Float # Coverage percentage (0.00-100.00)
   }
 }
 ```
+
+The CLI and MCP responses add a `'stale'` field with values `"ok"`, `"missing"`, `"newer"`, `"length_mismatch"`, or `"error"`.
 
 ### `uncovered_for`
 
@@ -328,7 +333,9 @@ Returns `Hash`:
     'total' => Integer,            # Total relevant lines across all files
     'covered' => Integer,          # Total covered lines
     'uncovered' => Integer,        # Total uncovered lines
-    'percentage' => Float          # Overall percent covered
+    'percentage' => Float,         # Overall percent covered
+    'included_files' => Integer,   # Non-stale files included in line totals
+    'excluded_files' => Integer    # Stale files excluded from line totals
   },
   'tracking' => {
     'enabled' => Boolean,          # Whether tracked_globs are active
@@ -357,7 +364,8 @@ Returns `Hash`:
         'skipped' => Integer
       }
     }
-  }
+  },
+  'timestamp_status' => String   # 'ok' or 'missing'
 }
 ```
 

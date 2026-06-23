@@ -50,21 +50,20 @@ We initially chose to **make SimpleCov a development dependency only** and read 
 
 cov-loupe now depends on SimpleCov at runtime for the following reasons:
 
-1. **Multi-suite merging**: Projects using multiple test suites (e.g., RSpec + Minitest) produce separate coverage results that must be merged using SimpleCov's `SimpleCov::ResultMerger.merge_results`
+1. **Multi-suite merging**: Projects using multiple test suites (e.g., RSpec + Minitest) produce separate coverage results that must be merged using SimpleCov's `SimpleCov::Combine.combine` with `SimpleCov::Combine::ResultsCombiner`
 2. **Consistent calculations**: SimpleCov's coverage percentage algorithms handle edge cases that are difficult to replicate correctly
 3. **Format compatibility**: Changes to SimpleCov's internal data structures are automatically handled by using its API
 
 ### Current Implementation
 
-cov-loupe currently depends on `amazing_print`, `mcp`, and `simplecov` at runtime.
+cov-loupe currently depends on `amazing_print`, `mcp`, `logger`, and `simplecov` at runtime.
 
-Coverage data is read directly from JSON files by `CovLoupe::CoverageModel#load_coverage_data`:
+Coverage data is read directly from JSON files via `ModelDataCache` and `ResultsetLoader`:
 ```ruby
-rs = Resolvers::ResolverHelpers.find_resultset(@root, resultset: resultset)
-loaded = ResultsetLoader.load(resultset_path: rs)
-coverage_map = loaded.coverage_map or raise(CoverageDataError, "No 'coverage' key found in resultset file: #{rs}")
-@cov = coverage_map.transform_keys { |k| File.absolute_path(k, @root) }
-@cov_timestamp = loaded.timestamp
+resultset_path = Resolvers::ResolverHelpers.find_resultset(@root, resultset: resultset)
+data = ModelDataCache.instance.get(resultset_path, root: @root, logger: @logger)
+coverage_map = data.coverage_map
+coverage_timestamp = data.timestamp
 ```
 
 Coverage calculations use simple algorithms in `CovLoupe::CoverageCalculator` (`summary`, `uncovered`, `detailed`):

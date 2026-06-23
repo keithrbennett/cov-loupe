@@ -20,7 +20,7 @@ cov-loupe outputs data in multiple formats across two interfaces:
 Modern projects often contain file paths with Unicode characters (e.g., accented characters, non-Latin scripts). The original implementation used Unicode characters throughout:
 
 - Table borders using box-drawing characters (│ ─ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼)
-- Source code markers (✓ for covered, · for uncovered)
+- Source code markers (✓ for covered, X for uncovered)
 - Error messages with file paths preserved as-is
 
 This caused issues in environments that don't support Unicode:
@@ -118,7 +118,8 @@ All formatters respect the `output_chars` parameter:
 2. **YAML**: Post-processes through `OutputChars.convert`
 3. **AmazingPrint**: Post-processes through `OutputChars.convert`
 4. **Tables**: Uses appropriate charset (`OutputChars.charset_for`) and converts cell contents
-5. **Source**: Uses ASCII-safe markers (`+`/`-` instead of `✓`/`·`) and converts source code
+5. **Source**: Uses ASCII-safe markers and converts source code.
+   Covered lines use `+` instead of `✓`; the uncovered marker `X` stays unchanged.
 
 ### Error Message Integration
 

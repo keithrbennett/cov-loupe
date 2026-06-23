@@ -19,7 +19,7 @@ This document describes the breaking changes introduced in version 4.0.0. These 
     - [Return Type Changed: `project_totals` Schema Updated](#return-type-changed-project_totals-schema-updated)
     - [Logger Initialization Changed](#logger-initialization-changed)
 - [Deleted Files Now Raise `FileNotFoundError`](#deleted-files-now-raise-filenotfounderror)
-- [Staleness Indicators Changed from Strings to Symbols](#staleness-indicators-changed-from-strings-to-symbols)
+- [Staleness Indicators Changed to Readable Strings](#staleness-indicators-changed-to-readable-strings)
 - [Removed Branch-Only Coverage Support](#removed-branch-only-coverage-support)
 - [Getting Help](#getting-help)
 
@@ -297,7 +297,14 @@ totals = model.project_totals
 ```ruby
 totals = model.project_totals
 # => {
-#   "lines" => { "total" => 123, "covered" => 100, "uncovered" => 23, "percent_covered" => 81.3 },
+#   "lines" => {
+#     "total" => 123,
+#     "covered" => 100,
+#     "uncovered" => 23,
+#     "percent_covered" => 81.3,
+#     "included_files" => 4,
+#     "excluded_files" => 0
+#   },
 #   "tracking" => { "enabled" => true, "globs" => ["lib/**/*.rb"] },
 #   "files" => {
 #     "total" => 4,
@@ -310,6 +317,7 @@ totals = model.project_totals
 - Replace `totals['percentage']` with `totals['lines']['percent_covered']`.
 - Replace `totals['files']['ok']` and `totals['files']['stale']` with
   `totals['files']['with_coverage']['ok']` and `totals['files']['with_coverage']['stale']['total']`.
+- Note the new `lines['included_files']` and `lines['excluded_files']` counts.
 - If you relied on `excluded_files`, use `files.with_coverage.stale.by_type` and
   `files.without_coverage.by_type` (present only when tracking is enabled).
 
@@ -417,16 +425,16 @@ end
 
 ---
 
-## Staleness Indicators Changed from Strings to Symbols
+## Staleness Indicators Changed to Readable Strings
 
-**Breaking Change**: Staleness indicators in the `stale` field now use Ruby symbols instead of single-character strings.
+**Breaking Change**: Staleness indicators in the `stale` field now use readable strings instead of single-character codes.
 
 ### Previous Behavior (v3.x)
 ```ruby
 result = model.list
 # => { 'files' => [{ 'file' => 'lib/foo.rb', 'stale' => 'M', ... }], ... }
 
-# Staleness was indicated by strings:
+# Staleness was indicated by single-character strings:
 # 'M' - Missing file
 # 'T' - Timestamp mismatch
 # 'L' - Line count mismatch
@@ -439,53 +447,43 @@ result = model.list
 result = model.list
 # => { 'files' => [{ 'file' => 'lib/foo.rb', 'stale' => "missing", ... }], ... }
 
-# Staleness is now indicated by symbols:
+# Staleness is now indicated by readable strings:
+# "ok" - Fresh coverage data
 # "missing" - Missing file
 # "newer" - Timestamp mismatch
 # "length_mismatch" - Line count mismatch
 # "error" - Error during staleness check
-# "ok" - Fresh coverage data
 ```
 
 ### Rationale
 
-Symbols are more idiomatic in Ruby for enumerated values and provide:
-- **Better performance**: Symbols are interned, so comparisons are faster
-- **Clearer semantics**: Symbols represent categories/concepts, not text
-- **Consistency**: Aligns with Ruby conventions for status indicators
-- **Type safety**: Symbol vs String distinction catches bugs
+Readable strings make staleness statuses self-documenting in CLI tables, JSON output, and library code without sacrificing clarity.
 
 ### Impact
 
 This affects code that:
-- **Checks equality with string literals**: `stale == 'M'` will no longer match
-- **Uses string pattern matching**: Case statements with string patterns need updating
-- **Serializes to JSON**: Symbols are converted to strings in JSON output
-- **Type checks**: `stale.is_a?(Symbol)` instead of `stale.is_a?(String)`
+- **Checks equality with single-character literals**: `stale == 'M'` will no longer match
+- **Uses single-character pattern matching**: Case statements with `'M'`, `'T'`, etc. need updating
+- **Checks for `false` to mean fresh**: Fresh files now report `"ok"`
 
 **Frequency**: High - affects any code that checks staleness status.
 
 ### Migration
 
-**If you check equality with string literals**:
+**If you check equality with single-character literals**:
 ```ruby
 # Old
 if file['stale'] == 'M'
   puts "File is missing"
 end
 
-# New - use symbols
+# New - use readable strings
 if file['stale'] == 'missing'
-  puts "File is missing"
-end
-
-# Or use string comparison (less efficient but works with both versions)
-if file['stale'].to_s == 'missing'
   puts "File is missing"
 end
 ```
 
-**If you use case statements with string patterns**:
+**If you use case statements with single-character patterns**:
 ```ruby
 # Old
 case file['stale']
@@ -496,17 +494,8 @@ when 'E' then handle_error
 when false then handle_fresh
 end
 
-# New - use symbols
+# New - use readable strings
 case file['stale']
-when 'missing' then handle_missing
-when 'newer' then handle_timestamp
-when 'length_mismatch' then handle_length
-when 'error' then handle_error
-when 'ok' then handle_fresh
-end
-
-# Or use to_s for backward compatibility
-case file['stale'].to_s
 when 'missing' then handle_missing
 when 'newer' then handle_timestamp
 when 'length_mismatch' then handle_length
@@ -522,18 +511,13 @@ if file['stale']
   puts "Stale file (#{file['stale']})"
 end
 
-# New - explicit type check
-if file['stale'].is_a?(Symbol)
-  puts "Stale file (#{file['stale']})"
-end
-
-# Or use the same approach (works for both versions)
-if file['stale']
+# New - explicit check against "ok"
+if file['stale'] != 'ok'
   puts "Stale file (#{file['stale']})"
 end
 ```
 
-**JSON serialization note**: When serializing to JSON (CLI, MCP, etc.), symbols are automatically converted to strings:
+**JSON output** uses the same readable strings:
 ```ruby
 # In Ruby
 file['stale']  # => "missing"
@@ -549,8 +533,8 @@ Staleness: missing = Missing file, newer = Timestamp mismatch, length_mismatch =
 
 ### Complete Staleness Value Reference
 
-| Status | v3.x (String) | v4.x (Symbol) | Description |
-|--------|----------------|------------------|-------------|
+| Status | v3.x | v4.x | Description |
+|--------|------|------|-------------|
 | Fresh | `false` | `"ok"` | Coverage data is current |
 | Missing file | `'M'` | `"missing"` | File no longer exists on disk |
 | Timestamp mismatch | `'T'` | `"newer"` | File modified after coverage was generated |

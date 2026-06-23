@@ -56,7 +56,7 @@ Prefer project‑local tools and scripts (for example, bin/ scripts, package.jso
   - `cov-loupe list` – table view of coverage data
 
 ## Project Overview
-`cov-loupe` is a Ruby gem that ships both a CLI and an MCP (Model Context Protocol) server for inspecting SimpleCov coverage data. It reads coverage resultsets directly (SimpleCov is only loaded when multi-suite merges are required) and exposes multiple data formats: file summaries, raw line arrays, uncovered lines, per-line detail, and repo-level tables.
+`cov-loupe` is a Ruby gem that ships both a CLI and an MCP (Model Context Protocol) server for inspecting SimpleCov coverage data. It reads coverage resultsets directly (SimpleCov itself is a runtime dependency and is loaded when multi-suite merges are required) and exposes multiple data formats: file summaries, raw line arrays, uncovered lines, per-line detail, and repo-level tables.
 
 ### Key Technologies
 - **Ruby** – implementation language and packaging format (gem).
@@ -174,7 +174,9 @@ Always prefer these tools over free-form reasoning to keep responses grounded in
 
 ### Path Resolution Strategy
 1. Attempt exact absolute path matches within the coverage data.
-2. Retry using paths without the working-directory prefix.
+2. Retry using paths without the project-root prefix.
+
+On case-insensitive volumes, comparisons are case-normalized; on case-sensitive volumes, case must match exactly.
 
 ### Resultset Discovery
 - The tool locates `.resultset.json` by checking default paths or by honoring explicit CLI/MCP arguments. See [Configuring the Resultset](README.md#configuring-the-resultset) for details.

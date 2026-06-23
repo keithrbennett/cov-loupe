@@ -216,6 +216,8 @@ Path resolution uses two strategies in order:
 1. **Exact absolute path match** - Direct lookup using the full path
 2. **Relative path resolution** - Strips project root and retries with relative path
 
+On case-insensitive volumes, comparisons are case-normalized; on case-sensitive volumes, case must match exactly.
+
 ```ruby
 model = CovLoupe::CoverageModel.new(root: '/path/to/project')
 
@@ -760,7 +762,7 @@ def annotate_source(file_path)
 
     marker = case hits
              when nil then '     '
-             when 0   then '  ✗  '
+             when 0   then '  X  '
              else          "  #{hits}  "
              end
 
