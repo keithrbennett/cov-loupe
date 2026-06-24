@@ -64,7 +64,7 @@ RSpec.describe CovLoupe do
         load #{exe.dump}
       RUBY
 
-      _stdout_str, stderr_str, _status = Open3.capture3(
+      stdout_str, stderr_str, status = Open3.capture3(
         {
           'BUNDLE_GEMFILE' => nil,
           'GEM_HOME'       => nil,
@@ -75,8 +75,9 @@ RSpec.describe CovLoupe do
       )
 
       aggregate_failures do
-        expect(stderr_str).not_to include('unexpected rubygems require')
-        expect(stderr_str).not_to include('uninitialized constant CovLoupeExecutable::Gem')
+        expect(status).to be_success
+        expect(stdout_str).to eq("#{described_class::VERSION}\n")
+        expect(non_runtime_stderr(stderr_str)).to be_empty
       end
     end
 
@@ -88,7 +89,16 @@ RSpec.describe CovLoupe do
       require 'timeout'
 
       exe = File.expand_path('../exe/cov-loupe', __dir__)
-      lib_path = File.expand_path('../lib', __dir__)
+      ruby_source = <<~RUBY
+        executable = File.read(#{exe.dump})
+        executable_without_run = executable.sub(/\\nCovLoupeExecutable\\.run\\n\\z/, "\\n")
+        raise 'could not remove executable invocation' if executable == executable_without_run
+
+        eval(executable_without_run, TOPLEVEL_BINDING, #{exe.dump})
+        CovLoupeExecutable.install_signal_handlers
+        $stderr.puts 'ready'
+        sleep
+      RUBY
 
       {
         'INT'  => 130,
@@ -98,14 +108,10 @@ RSpec.describe CovLoupe do
         stderr_str = ''
         status = nil
 
-        Open3.popen3(RbConfig.ruby, '-I', lib_path, '-rbundler/setup', exe, '--mode', 'mcp',
-          '--log-file', File::NULL) do |_stdin, stdout, stderr, wait_thr|
+        Open3.popen3(RbConfig.ruby, '-e', ruby_source) do |_stdin, stdout, stderr, wait_thr|
           pid = wait_thr.pid
 
-          # Wait for the subprocess to start, then give it a moment to install
-          # its signal traps before we signal it.
-          wait_for_process(wait_thr)
-          sleep 0.2
+          wait_for_ready_marker(stderr, wait_thr)
 
           Process.kill(sig, pid)
 
@@ -124,13 +130,21 @@ RSpec.describe CovLoupe do
       end
     end
 
-    # Wait up to timeout_seconds for the subprocess to actually be running.
-    # Raises Timeout::Error if it never starts, so premature death fails loudly
-    # instead of producing confusing downstream assertions.
-    def wait_for_process(wait_thr, timeout_seconds = 5)
+    def wait_for_ready_marker(stderr, wait_thr, timeout_seconds = 5)
       Timeout.timeout(timeout_seconds) do
-        sleep 0.01 until wait_thr.alive?
+        loop do
+          raise 'subprocess exited before installing signal traps' unless wait_thr.alive?
+
+          break if stderr.gets == "ready\n"
+        end
       end
+    end
+
+    def non_runtime_stderr(stderr_str)
+      stderr_str.each_line.reject do |line|
+        line.start_with?('Warning: AppCDS archive directory is not writable') ||
+          line.include?('[warning][perf,memops] Cannot use file /tmp/hsperfdata_')
+      end.join
     end
   end
 
