@@ -7,6 +7,7 @@ module CovLoupeExecutable
 
   def self.run
     install_signal_handlers
+    handle_executable_flags
     ensure_ruby_version!
     run_application
   end
@@ -28,6 +29,14 @@ module CovLoupeExecutable
     $stderr.puts "#{File.basename($PROGRAM_NAME)} requires Ruby >= #{minimum} (current: #{RUBY_VERSION})."
     $stderr.puts 'Please run with a supported Ruby version (e.g., via rbenv, rvm, asdf, mise, rv).'
     exit 1
+  end
+
+  def self.handle_executable_flags(argv = ARGV)
+    return unless argv.any? { |arg| %w[-v --version].include?(arg) }
+
+    require_relative '../lib/cov_loupe/version'
+    puts CovLoupe::VERSION
+    exit 0
   end
 
   def self.run_application
