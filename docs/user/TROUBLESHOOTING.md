@@ -124,7 +124,7 @@ when merging resultsets.
 
 6. **Use CLI as fallback:**
 
-   If MCP still isn't working, you can use the CLI with `-fp` flag instead.
+   If MCP still isn't working, you can use the CLI with `-fJ` flag instead.
    See **[CLI Fallback for LLMs](CLI_FALLBACK_FOR_LLMS.md)** for complete guidance.
 
 7. **Check for Codex environment variable issues:**

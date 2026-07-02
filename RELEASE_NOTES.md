@@ -9,6 +9,11 @@
     - **Old:** `--log-file stdout` was allowed in CLI mode and rejected only in MCP mode.
     - **New:** `--log-file stdout` raises a `ConfigurationError` during normal configuration validation. Use `--log-file stderr`, a file path, or `:off` to disable logging.
     - See [Migrating to v6](docs/user/migrations/MIGRATING_TO_V6.md) for details.
+- **`--format` short codes and long names normalized.** Each format now has exactly one canonical short code and one canonical long name; noncanonical aliases (`pretty-json`, `awesome_print`, `ap`) are no longer accepted. New formats `inspect`, `puts`, and `pretty_print` were added.
+    - **Old:** `p`/`pretty_json`/`pretty-json` meant pretty-printed JSON. `a`/`amazing_print`/`awesome_print`/`ap` meant AmazingPrint. `J` was unassigned.
+    - **New:** `p` means `puts` (Ruby `Kernel#puts` output). `J` means `pretty_json`. `P` means `pretty_print` (Ruby stdlib `PP.pp` output). `i` means `inspect` (Ruby `#inspect` output). `a`/`amazing_print` is unchanged; `awesome_print`/`ap` are no longer accepted.
+    - Canonical formats: `a`/`amazing_print`, `i`/`inspect`, `j`/`json`, `J`/`pretty_json`, `p`/`puts`, `P`/`pretty_print`, `t`/`table`, `y`/`yaml`.
+    - See [Migrating to v6](docs/user/migrations/MIGRATING_TO_V6.md) for details.
 
 ## v5.0.1.pre
 - Extract shared RuboCop defaults into `.rubocop-shared.yml` and slim `.rubocop.yml` down to cov-loupe-specific overrides, making lint configuration easier to maintain across related projects.

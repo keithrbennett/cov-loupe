@@ -309,7 +309,7 @@ All file-specific tools accept these parameters in the JSON request:
 - `error_mode` (optional) - Error handling: `"off"`, `"log"` (default), `"debug"` (overrides server-level setting)
 - `output_chars` (optional) - Output character mode: `"default"`, `"fancy"`, or `"ascii"`
 
-`project_coverage` additionally accepts `sort_order` (`"ascending"` or `"descending"`) and `format` (`"json"`, `"pretty_json"`, `"yaml"`, `"amazing_print"`, `"table"`).
+`project_coverage` additionally accepts `sort_order` (`"ascending"` or `"descending"`) and `format` (`"json"`, `"pretty_json"`, `"yaml"`, `"amazing_print"`, `"inspect"`, `"puts"`, `"pretty_print"`, `"table"`; short codes: `j`, `J`, `y`, `a`, `i`, `p`, `P`, `t`).
 
 ### Tool Details
 
@@ -342,10 +342,10 @@ These tools analyze individual files. All require `path` parameter.
 #### Project-Wide Tools
 
 **`project_coverage`** - Coverage for all files in various formats
-- Parameters: `sort_order` (`ascending`|`descending`), `tracked_globs` (array), `format` (`json`|`pretty_json`|`yaml`|`amazing_print`|`table`)
+- Parameters: `sort_order` (`ascending`|`descending`), `tracked_globs` (array), `format` (`json`|`pretty_json`|`yaml`|`amazing_print`|`inspect`|`puts`|`pretty_print`|`table`)
 - Default format: `json`
 - Returns: JSON object (format dependent):
-  - JSON/pretty_json/yaml/amazing_print: `{"files": [...], "counts": {"total": N, "ok": N, "stale": N}, "skipped_files": [...], "missing_tracked_files": [...], "newer_files": [...], "deleted_files": [...], "length_mismatch_files": [...], "unreadable_files": [...], "timestamp_status": "ok|missing", "warnings": [...]}`
+  - JSON/pretty_json/yaml/amazing_print/inspect/puts/pretty_print: `{"files": [...], "counts": {"total": N, "ok": N, "stale": N}, "skipped_files": [...], "missing_tracked_files": [...], "newer_files": [...], "deleted_files": [...], "length_mismatch_files": [...], "unreadable_files": [...], "timestamp_status": "ok|missing", "warnings": [...]}`
   - Table: Plain text table with box-drawing characters
 
 **`project_coverage_totals`** - Aggregated line totals
@@ -504,7 +504,7 @@ To override the default log file location, specify the `--log-file` (or `-l`) ar
 
 ### CLI Fallback
 
-**Important:** If the MCP server doesn't work, you can use the CLI directly with the `-fp` (output in JSON format) flag.
+**Important:** If the MCP server doesn't work, you can use the CLI directly with the `-fJ` (output in JSON format) flag.
 
 See the **[CLI Fallback for LLMs Guide](CLI_FALLBACK_FOR_LLMS.md)** for:
 - Complete command reference and MCP tool mappings

@@ -422,7 +422,7 @@ The CLI is designed for CI/CD use with features that integrate naturally into pi
 ### Key Integration Features
 
 - **Exit codes**: Non-zero on failure, making it suitable for pipeline failure conditions
-- **JSON output**: `-fp` format for parsing by CI tools and custom processing
+- **JSON output**: `-fJ` format for parsing by CI tools and custom processing
 - **Staleness checking**: `--raise-on-stale true` to fail on outdated coverage data
 - **Validation predicates**: Custom Ruby policies for coverage enforcement
 
@@ -436,7 +436,7 @@ bundle exec rspec
 clp -S true -g "lib/**/*.rb"
 
 # 3. Export data for CI artifacts or further processing
-clp -fp list > coverage.json
+clp -fJ list > coverage.json
 ```
 
 ### Using Coverage Validation
@@ -512,17 +512,17 @@ Uses Ruby's `File.fnmatch` with extended glob support:
 -g "lib/payments/**/*.rb" -g "lib/ops/jobs/**/*.rb"
 
 # Exclude patterns (use CLI filtering to exclude ops jobs)
-clp -fp list | jq '.files[] | select(.file | test("ops") | not)'
+clp -fJ list | jq '.files[] | select(.file | test("ops") | not)'
 
 # Ruby alternative:
-clp -fp list | ruby -r json -e '
+clp -fJ list | ruby -r json -e '
   JSON.parse($stdin.read)["files"].reject { |f| f["file"].include?("ops") }.each do |f|
     puts JSON.pretty_generate(f)
   end
 '
 
 # Rexe alternative:
-clp -fp list | rexe -ij -mb -oJ 'self["files"].reject { |f| f["file"].include?("ops") }'
+clp -fJ list | rexe -ij -mb -oJ 'self["files"].reject { |f| f["file"].include?("ops") }'
 
 # Complex patterns
 -g "lib/{models,controllers}/**/*.rb"
@@ -550,7 +550,7 @@ clp -S true -g "lib/features/**/*.rb"
 ```sh
 # Generate separate reports per layer
 for layer in models views controllers; do
-  clp -g "app/${layer}/**/*.rb" -fp list > "coverage-${layer}.json"
+  clp -g "app/${layer}/**/*.rb" -fJ list > "coverage-${layer}.json"
 done
 ```
 
@@ -781,7 +781,7 @@ puts annotate_source('app/models/order.rb')
 ```sh
 #!/bin/bash
 bundle exec rspec
-clp -fp list > coverage.json
+clp -fJ list > coverage.json
 
 # Transform to Codecov format (example)
 jq '{

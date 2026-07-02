@@ -219,7 +219,7 @@ cov-loupe list | head -10     # truncate the table
 cov-loupe -g "lib/cov_loupe/tools/**/*.rb" list  # -g = --tracked-globs
 
 # Export for analysis
-cov-loupe -fp list > coverage-report.json
+cov-loupe -fJ list > coverage-report.json
 ```
 
 ### Best Practice: Match SimpleCov Configuration
@@ -246,18 +246,18 @@ This ensures `list` and `totals` output matches SimpleCov's scope and `missing_t
 
 ### Working with JSON Output
 
-The `-fp` flag enables programmatic processing of coverage data using command-line JSON tools.
+The `-fJ` flag enables programmatic processing of coverage data using command-line JSON tools.
 
 **Using jq:**
 ```sh
 # Filter files below 80% coverage
-cov-loupe -fp list | jq '.files[] | select(.percentage < 80)'
+cov-loupe -fJ list | jq '.files[] | select(.percentage < 80)'
 ```
 
 **Using Ruby one-liners:**
 ```sh
 # Count files below threshold
-cov-loupe -fp list | ruby -r json -e '
+cov-loupe -fJ list | ruby -r json -e '
   puts JSON.parse($stdin.read)["files"].count { |f| f["percentage"] < 80 }
 '
 ```
@@ -270,13 +270,13 @@ Install: `gem install rexe`
 
 ```sh
 # Filter files below 80% coverage with pretty-printed JSON output
-cov-loupe -fp list | rexe -ij -mb -oJ 'self["files"].select { |f| f["percentage"] < 80 }'
+cov-loupe -fJ list | rexe -ij -mb -oJ 'self["files"].select { |f| f["percentage"] < 80 }'
 
 # Count files below threshold
-cov-loupe -fp list | rexe -ij -mb -op 'self["files"].count { |f| f["percentage"] < 80 }'
+cov-loupe -fJ list | rexe -ij -mb -op 'self["files"].count { |f| f["percentage"] < 80 }'
 
 # Human-readable output with AmazingPrint
-cov-loupe -fp list | rexe -ij -mb -oa 'self["files"].first(3)'
+cov-loupe -fJ list | rexe -ij -mb -oa 'self["files"].first(3)'
 ```
 
 With rexe's `-ij -mb` options, `self` automatically becomes the parsed JSON object. The same holds true for JSON output -- using `-oJ` produces pretty-printed JSON without explicit formatting calls. Rexe also supports YAML input/output (`-iy`, `-oy`) and AmazingPrint output (`-oa`) for human consumption.
@@ -301,10 +301,10 @@ WARNING: 1 coverage row skipped due to errors:
 Run again with --raise-on-stale to exit when rows are skipped.
 ```
 
-Pretty JSON (`-fp`) reports still emit valid JSON to `stdout`; the warning continues to be printed on `stderr`:
+Pretty JSON (`-fJ`) reports still emit valid JSON to `stdout`; the warning continues to be printed on `stderr`:
 
 ```text
-$ cov-loupe -fp list
+$ cov-loupe -fJ list
 {
   "files": [
     { "file": "lib/foo.rb", "covered": 2, "total": 3, "percentage": 66.67, "stale": "ok" },
@@ -344,7 +344,7 @@ For comprehensive JSON processing examples, see [user/EXAMPLES.md](docs/user/EXA
 cov-loupe --raise-on-stale true list || exit 1
 
 # Generate coverage report artifact
-cov-loupe -fp list > artifacts/coverage.json
+cov-loupe -fJ list > artifacts/coverage.json
 ```
 
 ### Investigate Specific Files
@@ -364,7 +364,7 @@ cov-loupe detailed lib/cov_loupe/coverage/coverage_calculator.rb
 
 # Project totals
 cov-loupe totals
-cov-loupe -fp totals
+cov-loupe -fJ totals
 ```
 
 ### Boolean CLI Options

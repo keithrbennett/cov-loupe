@@ -34,20 +34,26 @@ module CovLoupe
       'd'     => :debug,
     }.freeze
 
+    # Canonical short codes and their single canonical long name.
+    # Codes are case-sensitive (e.g. 'j' => json, 'J' => pretty_json) so both
+    # are looked up via exact match before any case-insensitive fallback.
     FORMAT_MAP = {
-      't'             => :table,
-      'table'         => :table,
+      'a'             => :amazing_print,
+      'amazing_print' => :amazing_print,
+      'i'             => :inspect,
+      'inspect'       => :inspect,
       'j'             => :json,
       'json'          => :json,
-      'p'             => :pretty_json,
+      'J'             => :pretty_json,
       'pretty_json'   => :pretty_json,
-      'pretty-json'   => :pretty_json,
+      'p'             => :puts,
+      'puts'          => :puts,
+      'P'             => :pretty_print,
+      'pretty_print'  => :pretty_print,
+      't'             => :table,
+      'table'         => :table,
       'y'             => :yaml,
       'yaml'          => :yaml,
-      'a'             => :amazing_print,
-      'awesome_print' => :amazing_print,
-      'ap'            => :amazing_print,
-      'amazing_print' => :amazing_print,
     }.freeze
 
     MODE_MAP = {

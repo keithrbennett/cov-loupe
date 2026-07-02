@@ -1,13 +1,14 @@
 # frozen_string_literal: true
 
+require 'stringio'
 require_relative '../output_chars'
 
 module CovLoupe
   module Formatters
     # Multi-format output dispatcher for coverage data.
     #
-    # Supports JSON, pretty JSON, YAML, Amazing Print, and table formats.
-    # Optional format dependencies are loaded only when needed.
+    # Supports JSON, pretty JSON, YAML, Amazing Print, inspect, puts, pretty_print,
+    # and table formats. Optional format dependencies are loaded only when needed.
     # ASCII-only output can be requested through output_chars.
     #
     # The :table format is handled separately by CoverageTableFormatter and is
@@ -35,12 +36,30 @@ module CovLoupe
         result = obj.ai
         ascii_mode ? OutputChars.convert(result, :ascii) : result
       },
+      inspect:       ->(obj, ascii_mode:) {
+        result = obj.inspect
+        ascii_mode ? OutputChars.convert(result, :ascii) : result
+      },
+      puts:          ->(obj, ascii_mode:) {
+        sio = StringIO.new
+        sio.puts(obj)
+        result = sio.string
+        ascii_mode ? OutputChars.convert(result, :ascii) : result
+      },
+      pretty_print:  ->(obj, ascii_mode:) {
+        require 'pp'
+        sio = StringIO.new
+        PP.pp(obj, sio)
+        result = sio.string
+        ascii_mode ? OutputChars.convert(result, :ascii) : result
+      },
     }.freeze
 
     # Formats an object using the specified format.
     #
     # @param obj [Object] The object to format
-    # @param format [Symbol] Format type (:table, :json, :pretty_json, :yaml, :amazing_print)
+    # @param format [Symbol] Format type (:table, :json, :pretty_json, :yaml, :amazing_print,
+    #   :inspect, :puts, :pretty_print)
     # @param output_chars [Symbol] Output character mode (:default, :fancy, :ascii)
     # @return [String] Formatted output
     def self.format(obj, format, output_chars: :default)

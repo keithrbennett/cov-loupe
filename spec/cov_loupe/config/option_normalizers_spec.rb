@@ -111,23 +111,27 @@ RSpec.describe CovLoupe::OptionNormalizers do
   describe '.normalize_format' do
     it_behaves_like 'a normalizer', :normalize_format,
       [
-        ['t', :table],
-        ['table', :table],
+        ['a', :amazing_print],
+        ['amazing_print', :amazing_print],
+        ['i', :inspect],
+        ['inspect', :inspect],
         ['j', :json],
         ['json', :json],
-        ['p', :pretty_json],
+        ['J', :pretty_json],
         ['pretty_json', :pretty_json],
-        ['pretty-json', :pretty_json],
+        ['p', :puts],
+        ['puts', :puts],
+        ['P', :pretty_print],
+        ['pretty_print', :pretty_print],
+        ['t', :table],
+        ['table', :table],
         ['y', :yaml],
         ['yaml', :yaml],
-        ['a', :amazing_print],
-        ['awesome_print', :amazing_print],
-        ['ap', :amazing_print],
-        ['amazing_print', :amazing_print],
         ['TABLE', :table],
         ['Json', :json],
+        ['Pretty_Print', :pretty_print],
       ],
-      ['invalid']
+      %w[invalid pretty-json pretty-print awesome_print ap]
 
     # Single characters not in FORMAT_MAP are rejected in strict mode but return nil in lenient mode.
     # This tests the branch at lines 110-112 that handles unknown single-char shortcuts.
@@ -141,6 +145,18 @@ RSpec.describe CovLoupe::OptionNormalizers do
       it 'raises OptionParser::InvalidArgument for unknown single character' do
         expect { described_class.normalize_format('X', strict: true) }
           .to raise_error(OptionParser::InvalidArgument)
+      end
+    end
+
+    context 'with case-sensitive single-character shortcuts' do
+      it "normalizes 'j' to :json and 'J' to :pretty_json distinctly" do
+        expect(described_class.normalize_format('j')).to eq(:json)
+        expect(described_class.normalize_format('J')).to eq(:pretty_json)
+      end
+
+      it "normalizes 'p' to :puts and 'P' to :pretty_print distinctly" do
+        expect(described_class.normalize_format('p')).to eq(:puts)
+        expect(described_class.normalize_format('P')).to eq(:pretty_print)
       end
     end
   end

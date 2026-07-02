@@ -13,14 +13,17 @@ module CovLoupe
       description <<~DESC
         Use this when the user wants project-wide coverage data in their preferred format.
         Provides coverage percentages for every tracked file in JSON (default), or formatted output
-        (table, YAML, pretty JSON, Amazing Print).
+        (table, YAML, pretty JSON, Amazing Print, inspect, puts, pretty_print).
         Inputs: optional project root, alternate .resultset path, sort order, raise_on_stale flag,
         tracked_globs, output_chars, and format (default: json).
         Output format depends on the format parameter:
         - json (default): JSON object with files, counts, skipped_files, etc.
         - pretty_json: Formatted JSON with indentation
         - yaml: YAML format
-        - amazing_print: Ruby object formatting
+        - amazing_print: Ruby object formatting via AmazingPrint
+        - inspect: Ruby object#inspect output
+        - puts: Ruby Kernel#puts output
+        - pretty_print: Ruby stdlib PP.pp output
         - table: Plain text table with headers and percentages (matching CLI --format table)
         Examples: "Show repo coverage"; "List files with lowest coverage"; "Get coverage as YAML".
       DESC
@@ -30,10 +33,13 @@ module CovLoupe
           tracked_globs: TRACKED_GLOBS_PROPERTY,
           format:        {
             type:        'string',
-            description: 'Output format: json (default), pretty_json, yaml, amazing_print, or table. ' \
-                         'Accepts: j/json, p/pretty_json, y/yaml, a/amazing_print/ap/awesome_print, t/table.',
+            description: 'Output format: json (default), pretty_json, yaml, amazing_print, inspect, ' \
+                         'puts, pretty_print, or table. ' \
+                         'Accepts: a/amazing_print, i/inspect, j/json, J/pretty_json, p/puts, ' \
+                         'P/pretty_print, t/table, y/yaml.',
             default:     'json',
-            enum:        %w[j json p pretty_json pretty-json y yaml a amazing_print awesome_print ap t table],
+            enum:        %w[a amazing_print i inspect j json J pretty_json p puts P pretty_print t table y
+              yaml],
           },
         }
       ))

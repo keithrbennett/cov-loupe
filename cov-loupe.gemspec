@@ -101,6 +101,11 @@ Gem::Specification.new do |spec|
     ┃    Logs are diagnostics and must not corrupt command output on stdout.    ┃
     ┃    Use `-l stderr`, a file path, or `-l :off` instead.                    ┃
     ┃                                                                           ┃
+    ┃  • --format short codes/long names normalized (see below)                 ┃
+    ┃    'p' now means puts (was pretty_json); 'J' now means pretty_json.       ┃
+    ┃    'ap'/awesome_print no longer accepted; use 'a'/amazing_print.          ┃
+    ┃    New formats added: inspect (i), puts (p), pretty_print (P).            ┃
+    ┃                                                                           ┃
     ┃  📖 Migration instructions: docs/user/migrations/MIGRATING_TO_V6.md       ┃
     ┃                                                                           ┃
     ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
