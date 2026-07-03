@@ -13,14 +13,17 @@ module CovLoupe
       description <<~DESC
         Use this when the user wants project-wide coverage data in their preferred format.
         Provides coverage percentages for every tracked file in JSON (default), or formatted output
-        (table, YAML, pretty JSON, Amazing Print).
+        (table, YAML, pretty JSON, Amazing Print, inspect, puts, pretty_print).
         Inputs: optional project root, alternate .resultset path, sort order, raise_on_stale flag,
         tracked_globs, output_chars, and format (default: json).
         Output format depends on the format parameter:
         - json (default): JSON object with files, counts, skipped_files, etc.
-        - pretty_json: Formatted JSON with indentation
+        - pretty_json: Multi-line, indented JSON
         - yaml: YAML format
-        - amazing_print: Ruby object formatting
+        - amazing_print: Ruby object formatting via AmazingPrint
+        - inspect: Ruby object#inspect output
+        - puts: Ruby Kernel#puts output
+        - pretty_print: Ruby stdlib PP.pp output
         - table: Plain text table with headers and percentages (matching CLI --format table)
         Examples: "Show repo coverage"; "List files with lowest coverage"; "Get coverage as YAML".
       DESC
@@ -30,10 +33,12 @@ module CovLoupe
           tracked_globs: TRACKED_GLOBS_PROPERTY,
           format:        {
             type:        'string',
-            description: 'Output format: json (default), pretty_json, yaml, amazing_print, or table. ' \
-                         'Accepts: j/json, p/pretty_json, y/yaml, a/amazing_print/ap/awesome_print, t/table.',
+            description: 'Output format (default: json). Accepts a short code or its canonical ' \
+                         "long name: #{OptionNormalizers.available_format_choices.join(', ')}.",
             default:     'json',
-            enum:        %w[j json p pretty_json pretty-json y yaml a amazing_print awesome_print ap t table],
+            enum:        OptionNormalizers::FORMAT_LONG_NAMES.flat_map do |long_name, code|
+              [code, long_name]
+            end,
           },
         }
       ))

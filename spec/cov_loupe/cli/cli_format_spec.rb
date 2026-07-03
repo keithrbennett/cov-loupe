@@ -31,6 +31,28 @@ RSpec.describe CovLoupe::CoverageCLI, 'format option' do
       # AmazingPrint output contains colored/formatted structure
       expect(output).to match(/:files|"files"/)
     end
+
+    it 'supports inspect format' do
+      output = run_cli('--format', 'i', 'list')
+      # Hash#inspect's "key"=>value spacing is Ruby-version-dependent
+      # (Ruby 3.4+ adds spaces around `=>`), so match either form.
+      expect(output).to match(/"files"\s*=>/)
+    end
+
+    it 'supports pretty_print format' do
+      output = run_cli('--format', 'P', 'list')
+      # Hash#inspect's "key"=>value spacing is Ruby-version-dependent
+      # (Ruby 3.4+ adds spaces around `=>`), so match either form.
+      expect(output).to match(/"files"\s*=>/)
+      expect(output.lines.count).to be > 1
+    end
+
+    it 'supports puts format' do
+      output = run_cli('--format', 'p', 'list')
+      # Hash#inspect's "key"=>value spacing is Ruby-version-dependent
+      # (Ruby 3.4+ adds spaces around `=>`), so match either form.
+      expect(output).to match(/"files"\s*=>/)
+    end
   end
 
   describe 'option order requirements' do

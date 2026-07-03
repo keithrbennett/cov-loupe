@@ -34,8 +34,8 @@ clp -o a list  # -o = --sort-order, a = ascending
 clp -o a l
 
 # Export to JSON for processing
-clp -fp list > coverage-report.json
-clp -fp l > coverage-report.json
+clp -fJ list > coverage-report.json
+clp -fJ l > coverage-report.json
 ```
 
 ### Check Specific File
@@ -62,18 +62,18 @@ clp list | tail -12
 clp l | tail -12
 
 # Only show files below 80%
-clp -fp list | jq '.files[] | select(.percentage < 80)'
-clp -fp l | jq '.files[] | select(.percentage < 80)'
+clp -fJ list | jq '.files[] | select(.percentage < 80)'
+clp -fJ l | jq '.files[] | select(.percentage < 80)'
 
 # Ruby alternative:
-clp -fp l | ruby -r json -e '
+clp -fJ l | ruby -r json -e '
   JSON.parse($stdin.read)["files"].select { |f| f["percentage"] < 80 }.each do |f|
     puts JSON.pretty_generate(f)
   end
 '
 
 # Rexe alternative:
-clp -fp l | rexe -ij -mb -oJ 'self["files"].select { |f| f["percentage"] < 80 }'
+clp -fJ l | rexe -ij -mb -oJ 'self["files"].select { |f| f["percentage"] < 80 }'
 
 # Check specific directory
 clp -g "lib/payments/**/*.rb" list  # -g = --tracked-globs
@@ -107,35 +107,35 @@ Here are some examples:
 **Parse and filter:**
 ```bash
 # Files below threshold
-clp -fp list | jq '.files[] | select(.percentage < 80) | {file, coverage: .percentage}'
+clp -fJ list | jq '.files[] | select(.percentage < 80) | {file, coverage: .percentage}'
 
 # Ruby alternative:
-clp -fp list | ruby -r json -e '
+clp -fJ list | ruby -r json -e '
   JSON.parse($stdin.read)["files"].select { |f| f["percentage"] < 80 }.each do |f|
     puts JSON.pretty_generate({file: f["file"], coverage: f["percentage"]})
   end
 '
 
 # Rexe alternative:
-clp -fp list | rexe -ij -mb -oJ '
+clp -fJ list | rexe -ij -mb -oJ '
   self["files"].select { |f| f["percentage"] < 80 }.map do |f|
     {file: f["file"], coverage: f["percentage"]}
   end
 '
 
 # Count total uncovered lines
-clp -fp totals | jq '.lines.uncovered'
+clp -fJ totals | jq '.lines.uncovered'
 
 # Ruby alternative:
-clp -fp totals | ruby -r json -e '
+clp -fJ totals | ruby -r json -e '
   puts JSON.parse($stdin.read)["lines"]["uncovered"]
 '
 
 # Rexe alternative:
-clp -fp totals | rexe -ij -mb -op 'self["lines"]["uncovered"]'
+clp -fJ totals | rexe -ij -mb -op 'self["lines"]["uncovered"]'
 
 # Group by directory (full path)
-clp -fp list |
+clp -fJ list |
   jq '.files
       | map(. + {dir: (.file | split("/") | .[0:-1] | join("/"))})
       | sort_by(.dir)
@@ -143,7 +143,7 @@ clp -fp list |
       | map({dir: .[0].dir, avg: (map(.percentage) | add / length)})'
 
 # Ruby alternative:
-clp -fp list | ruby -r json -e '
+clp -fJ list | ruby -r json -e '
   grouped = JSON.parse($stdin.read)["files"]
     .map { |f| f.merge("dir" => File.dirname(f["file"])) }
     .group_by { |f| f["dir"] }
@@ -155,7 +155,7 @@ clp -fp list | ruby -r json -e '
 '
 
 # Rexe alternative:
-clp -fp list | rexe -ij -mb -oJ '
+clp -fJ list | rexe -ij -mb -oJ '
   self["files"]
     .map { |f| f.merge("dir" => File.dirname(f["file"])) }
     .group_by { |f| f["dir"] }
@@ -171,32 +171,32 @@ clp -fp list | rexe -ij -mb -oJ '
 # Create markdown table
 echo "| Coverage | File |" > report.md
 echo "|----------|------|" >> report.md
-clp -fp list | jq -r '.files[] | "| \(.percentage)% | \(.file) |"' >> report.md
+clp -fJ list | jq -r '.files[] | "| \(.percentage)% | \(.file) |"' >> report.md
 
 # Ruby alternative:
-clp -fp list | ruby -r json -e '
+clp -fJ list | ruby -r json -e '
   JSON.parse($stdin.read)["files"].each do |f|
     puts "| #{f["percentage"]}% | #{f["file"]} |"
   end
 ' >> report.md
 
 # Rexe alternative:
-clp -fp list | rexe -ij -mb '
+clp -fJ list | rexe -ij -mb '
   self["files"].each { |f| puts "| #{f["percentage"]}% | #{f["file"]} |" }
 ' >> report.md
 
 # Export for spreadsheet
-clp -fp list | jq -r '.files[] | [.file, .percentage] | @csv' > coverage.csv
+clp -fJ list | jq -r '.files[] | [.file, .percentage] | @csv' > coverage.csv
 
 # Ruby alternative:
-clp -fp list | ruby -r json -r csv -e '
+clp -fJ list | ruby -r json -r csv -e '
   JSON.parse($stdin.read)["files"].each do |f|
     puts CSV.generate_line([f["file"], f["percentage"]]).chomp
   end
 ' > coverage.csv
 
 # Rexe alternative:
-clp -fp list | rexe -r csv -ij -mb '
+clp -fJ list | rexe -r csv -ij -mb '
   self["files"].each { |f| puts CSV.generate_line([f["file"], f["percentage"]]).chomp }
 ' > coverage.csv
 ```
@@ -431,7 +431,7 @@ jobs:
         shell: bash
         run: |
           # Generate JSON report using the full command (aliases like 'clp' are not available here)
-          cov-loupe -fp list > coverage.json
+          cov-loupe -fJ list > coverage.json
 
           # Verify coverage using Ruby for cross-platform compatibility
           # (Tools like jq and rexe are not guaranteed to be installed on all runners)

@@ -16,10 +16,47 @@ RSpec.describe CovLoupe::Formatters do
       [:pretty_json, "{\n  \"foo\": \"bar\"\n}", :include],
       [:table, { 'foo' => 'bar' }, :eq],
       [:yaml, "---\nfoo: bar\n", :include],
+      # inspect/puts/pretty_print all key off Hash#inspect's "key"=>"value"
+      # rendering, whose exact spacing is Ruby-version-dependent (Ruby 3.4+
+      # adds spaces around `=>`). Derive the expectation from obj.inspect
+      # itself instead of hardcoding either spacing convention.
+      [:inspect, -> { obj.inspect }, :eq],
+      [:puts, -> { "#{obj.inspect}\n" }, :eq],
+      [:pretty_print, -> { "#{obj.inspect}\n" }, :eq],
     ].each do |format, expected, matcher|
       it "formats as #{format}" do
         result = described_class.format(obj, format)
-        expect(result).to send(matcher, expected)
+        expected_value = expected.respond_to?(:call) ? instance_exec(&expected) : expected
+        expect(result).to send(matcher, expected_value)
+      end
+    end
+
+    describe ':puts format' do
+      it 'uses puts semantics for arrays, one item per line, not to_s' do
+        result = described_class.format([1, 2, 3], :puts)
+        expect(result).to eq("1\n2\n3\n")
+      end
+
+      it 'differs from Array#to_s' do
+        result = described_class.format([1, 2, 3], :puts)
+        expect(result).not_to eq([1, 2, 3].to_s)
+      end
+    end
+
+    describe ':pretty_print format' do
+      it 'produces multi-line pretty-printed output for nested objects' do
+        nested = { 'first_key'  => [1, 2, { 'nested_key' => 'nested_value' }],
+                   'second_key' => %w[alpha beta gamma delta epsilon zeta] }
+        result = described_class.format(nested, :pretty_print)
+        expect(result.lines.count).to be > 1
+        expect(result).to include("\n")
+      end
+    end
+
+    describe ':inspect format' do
+      it "returns the object's #inspect string" do
+        result = described_class.format(obj, :inspect)
+        expect(result).to eq(obj.inspect)
       end
     end
 
@@ -86,6 +123,28 @@ RSpec.describe CovLoupe::Formatters do
           expect(result).to include('cafe')
           expect(result).to include('->')
         end
+      end
+
+      # NOTE: Ruby's own #inspect/PP already escape non-ASCII characters as \uXXXX
+      # when Encoding.default_external isn't UTF-8-compatible, independent of
+      # OutputChars' own transliteration. Assert only that no raw multi-byte
+      # characters survive, since the exact escaped form is locale-dependent.
+      it 'produces ASCII-only inspect output' do
+        result = described_class.format(unicode_obj, :inspect, output_chars: :ascii)
+        expect(result).not_to include('é')
+        expect(result).not_to include('→')
+      end
+
+      it 'produces ASCII-only puts output' do
+        result = described_class.format(unicode_obj, :puts, output_chars: :ascii)
+        expect(result).not_to include('é')
+        expect(result).not_to include('→')
+      end
+
+      it 'produces ASCII-only pretty_print output' do
+        result = described_class.format(unicode_obj, :pretty_print, output_chars: :ascii)
+        expect(result).not_to include('é')
+        expect(result).not_to include('→')
       end
     end
   end

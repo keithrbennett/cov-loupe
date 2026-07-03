@@ -55,7 +55,7 @@ module CovLoupe
           use_when:   'User wants coverage data for every tracked file in their preferred format.',
           avoid_when: 'User asks about a single file or only wants totals.',
           inputs:     ['root/resultset (optional)', 'sort_order', 'raise_on_stale', 'tracked_globs',
-            'format (json/pretty_json/yaml/amazing_print/table)'],
+            'format (json/pretty_json/yaml/amazing_print/inspect/puts/pretty_print/table)'],
         },
         {
           tool:       ProjectCoverageTotalsTool,

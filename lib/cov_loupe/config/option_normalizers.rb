@@ -34,21 +34,60 @@ module CovLoupe
       'd'     => :debug,
     }.freeze
 
-    FORMAT_MAP = {
-      't'             => :table,
-      'table'         => :table,
-      'j'             => :json,
-      'json'          => :json,
-      'p'             => :pretty_json,
-      'pretty_json'   => :pretty_json,
-      'pretty-json'   => :pretty_json,
-      'y'             => :yaml,
-      'yaml'          => :yaml,
-      'a'             => :amazing_print,
-      'awesome_print' => :amazing_print,
-      'ap'            => :amazing_print,
-      'amazing_print' => :amazing_print,
+    # Canonical long format name -> canonical single-letter short code.
+    # Insertion order is the display order used throughout help text, enums,
+    # and error messages (a, i, j, J, p, P, t, y): alphabetical by downcased
+    # code, with the lowercase member of a case pair (j/J, p/P) before the
+    # uppercase one. `available_format_choices` and `resolve_format_code`
+    # both rely on this order/content, so keep it as the single source of
+    # truth when formats are added, renamed, or reordered.
+    FORMAT_LONG_NAMES = {
+      'amazing_print' => 'a',
+      'inspect'       => 'i',
+      'json'          => 'j',
+      'pretty_json'   => 'J',
+      'puts'          => 'p',
+      'pretty_print'  => 'P',
+      'table'         => 't',
+      'yaml'          => 'y',
     }.freeze
+
+    # Canonical single-letter short code -> canonical format symbol.
+    # Codes are case-sensitive (e.g. 'j' => json, 'J' => pretty_json) so both
+    # are looked up via exact match before any case-insensitive fallback.
+    FORMAT_MAP = {
+      'a' => :amazing_print,
+      'i' => :inspect,
+      'j' => :json,
+      'J' => :pretty_json,
+      'p' => :puts,
+      'P' => :pretty_print,
+      't' => :table,
+      'y' => :yaml,
+    }.freeze
+
+    # Resolves a raw format value (a canonical long name, a short code, or
+    # anything else) to a single-letter short code.
+    #
+    # Long names are looked up in FORMAT_LONG_NAMES and mapped to their code.
+    # Everything else - an already-short code, a differently-cased variant,
+    # or an unrecognized value - passes through unchanged; it is up to the
+    # caller's FORMAT_MAP lookup to accept it (if it's a valid code) or
+    # reject it (if it isn't).
+    module_function def resolve_format_code(value)
+      str = value.to_s
+      FORMAT_LONG_NAMES.fetch(str, str)
+    end
+
+    # Returns "code/long_name" strings for every canonical format, in the
+    # display order defined by FORMAT_LONG_NAMES.
+    #
+    # Iterates FORMAT_LONG_NAMES directly (rather than sorting its keys/values
+    # with a comparator) because Ruby hashes preserve insertion order and
+    # FORMAT_LONG_NAMES is already defined in the correct display order.
+    module_function def available_format_choices
+      FORMAT_LONG_NAMES.map { |long_name, code| "#{code}/#{long_name}" }
+    end
 
     MODE_MAP = {
       'cli' => :cli,
@@ -109,7 +148,7 @@ module CovLoupe
     # @return [Symbol, nil] The normalized symbol or nil if invalid and not strict
     # @raise [OptionParser::InvalidArgument] If strict and value is invalid
     module_function def normalize_format(value, strict: true)
-      normalized = FORMAT_MAP[value.to_s]
+      normalized = FORMAT_MAP[resolve_format_code(value)]
       return normalized if normalized
 
       # Only allow case-insensitive match for multi-character keys
@@ -120,7 +159,7 @@ module CovLoupe
         return nil
       end
 
-      normalized = FORMAT_MAP[value.to_s.downcase]
+      normalized = FORMAT_MAP[resolve_format_code(value.to_s.downcase)]
       return normalized if normalized
 
       raise OptionParser::InvalidArgument, "invalid argument: #{value}" if strict

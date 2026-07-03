@@ -95,6 +95,46 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
         expect(output).to include('lib/foo.rb', 'lib/bar.rb')
       end
     end
+
+    context 'with format: inspect' do
+      def run_with_inspect
+        described_class.call(root: root, format: 'inspect',
+          server_context: server_context).payload.first['text']
+      end
+
+      it 'returns Ruby #inspect-formatted output' do
+        output = run_with_inspect
+        # Hash#inspect's "key"=>value spacing is Ruby-version-dependent
+        # (Ruby 3.4+ adds spaces around `=>`), so match either form.
+        expect(output).to match(/"files"\s*=>/)
+      end
+    end
+
+    context 'with format: puts' do
+      def run_with_puts
+        described_class.call(root: root, format: 'puts',
+          server_context: server_context).payload.first['text']
+      end
+
+      it 'returns Kernel#puts-formatted output' do
+        output = run_with_puts
+        expect(output).to match(/"files"\s*=>/)
+        expect(output).to end_with("\n")
+      end
+    end
+
+    context 'with format: pretty_print' do
+      def run_with_pretty_print
+        described_class.call(root: root, format: 'pretty_print',
+          server_context: server_context).payload.first['text']
+      end
+
+      it 'returns multi-line PP-formatted output' do
+        output = run_with_pretty_print
+        expect(output).to match(/"files"\s*=>/)
+        expect(output.lines.count).to be > 1
+      end
+    end
   end
 
   describe 'format abbreviations' do
@@ -105,10 +145,12 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
       expect(data).to have_key('files')
     end
 
-    it 'accepts p as pretty_json' do
-      output = described_class.call(root: root, format: 'p',
+    it 'accepts J as pretty_json' do
+      output = described_class.call(root: root, format: 'J',
         server_context: server_context).payload.first['text']
       expect(output).to include("\n")
+      data = JSON.parse(output)
+      expect(data).to have_key('files')
     end
 
     it 'accepts y as yaml' do
@@ -121,6 +163,24 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
       output = described_class.call(root: root, format: 'a',
         server_context: server_context).payload.first['text']
       expect(output).to include('files')
+    end
+
+    it 'accepts i as inspect' do
+      output = described_class.call(root: root, format: 'i',
+        server_context: server_context).payload.first['text']
+      expect(output).to match(/"files"\s*=>/)
+    end
+
+    it 'accepts p as puts' do
+      output = described_class.call(root: root, format: 'p',
+        server_context: server_context).payload.first['text']
+      expect(output).to match(/"files"\s*=>/)
+    end
+
+    it 'accepts P as pretty_print' do
+      output = described_class.call(root: root, format: 'P',
+        server_context: server_context).payload.first['text']
+      expect(output).to match(/"files"\s*=>/)
     end
 
     it 'accepts t as table' do
@@ -137,6 +197,15 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
       expect(response.payload.first['type']).to eq('text')
       text = response.payload.first['text']
       expect(text).to include('Error')
+    end
+
+    %w[pretty-json awesome_print ap].each do |alias_name|
+      it "rejects the noncanonical alias '#{alias_name}'" do
+        response = described_class.call(root: root, format: alias_name,
+          server_context: server_context)
+        text = response.payload.first['text']
+        expect(text).to include('Error')
+      end
     end
   end
 
