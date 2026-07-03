@@ -166,7 +166,7 @@ Full documentation is available at **[https://keithrbennett.github.io/cov-loupe/
 **Project Docs & Examples:**
 
 - [Contributing](docs/contributing.md)
-- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Code of Conduct](docs/code_of_conduct.md)
 - [Release Notes](docs/release_notes.md)
 - [License](docs/license.md)
 - [MCP Input Examples](docs/examples/mcp-inputs.md)

@@ -93,6 +93,7 @@ nav:
       - Installing a Prerelease: user/installing-a-prelease-version-of-covloupe.md
   - Migrations:
       - Overview: user/migrations/README.md
+      - Migrating to v6: user/migrations/MIGRATING_TO_V6.md
       - Migrating to v5: user/migrations/MIGRATING_TO_V5.md
       - Migrating to v4: user/migrations/MIGRATING_TO_V4.md
       - Migrating to v3: user/migrations/MIGRATING_TO_V3.md
