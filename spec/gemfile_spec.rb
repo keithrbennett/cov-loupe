@@ -8,16 +8,17 @@ RSpec.describe 'Gemfile dependencies' do
     require 'open3'
     require 'rbconfig'
 
+    gemfile_path = File.expand_path('../Gemfile', __dir__)
+    gemfile_source = File.read(gemfile_path)
+      .gsub(/\bRUBY_ENGINE\b/, ruby_engine.inspect)
+      .gsub(/\bRUBY_VERSION\b/, ruby_version.inspect)
+
     ruby_source = <<~RUBY
       require 'json'
       require 'bundler/dsl'
 
       dsl = Bundler::Dsl.new
-      gemfile_path = #{File.expand_path('../Gemfile', __dir__).inspect}
-      gemfile_source = File.read(gemfile_path)
-        .gsub(/\\bRUBY_ENGINE\\b/, #{ruby_engine.inspect.inspect})
-        .gsub(/\\bRUBY_VERSION\\b/, #{ruby_version.inspect.inspect})
-      dsl.instance_eval(gemfile_source, gemfile_path)
+      dsl.instance_eval(#{gemfile_source.inspect}, #{gemfile_path.inspect})
       puts dsl.dependencies.map(&:name).sort.to_json
     RUBY
 
@@ -30,12 +31,18 @@ RSpec.describe 'Gemfile dependencies' do
   it 'does not add irb or rdoc for jruby' do
     dependencies = gemfile_dependencies_for(ruby_engine: 'jruby', ruby_version: '3.4.0')
 
-    expect(dependencies).not_to include('irb', 'rdoc')
+    aggregate_failures do
+      expect(dependencies).to include('rspec')
+      expect(dependencies).not_to include('irb', 'rdoc')
+    end
   end
 
   it 'adds irb and rdoc for Ruby 3.4+' do
     dependencies = gemfile_dependencies_for(ruby_engine: 'ruby', ruby_version: '3.4.0')
 
-    expect(dependencies).to include('irb', 'rdoc')
+    aggregate_failures do
+      expect(dependencies).to include('rspec')
+      expect(dependencies).to include('irb', 'rdoc')
+    end
   end
 end
