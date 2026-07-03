@@ -16,13 +16,18 @@ RSpec.describe CovLoupe::Formatters do
       [:pretty_json, "{\n  \"foo\": \"bar\"\n}", :include],
       [:table, { 'foo' => 'bar' }, :eq],
       [:yaml, "---\nfoo: bar\n", :include],
-      [:inspect, '{"foo"=>"bar"}', :eq],
-      [:puts, "{\"foo\"=>\"bar\"}\n", :eq],
-      [:pretty_print, "{\"foo\"=>\"bar\"}\n", :eq],
+      # inspect/puts/pretty_print all key off Hash#inspect's "key"=>"value"
+      # rendering, whose exact spacing is Ruby-version-dependent (Ruby 3.4+
+      # adds spaces around `=>`). Derive the expectation from obj.inspect
+      # itself instead of hardcoding either spacing convention.
+      [:inspect, -> { obj.inspect }, :eq],
+      [:puts, -> { "#{obj.inspect}\n" }, :eq],
+      [:pretty_print, -> { "#{obj.inspect}\n" }, :eq],
     ].each do |format, expected, matcher|
       it "formats as #{format}" do
         result = described_class.format(obj, format)
-        expect(result).to send(matcher, expected)
+        expected_value = expected.respond_to?(:call) ? instance_exec(&expected) : expected
+        expect(result).to send(matcher, expected_value)
       end
     end
 

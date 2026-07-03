@@ -34,18 +34,24 @@ RSpec.describe CovLoupe::CoverageCLI, 'format option' do
 
     it 'supports inspect format' do
       output = run_cli('--format', 'i', 'list')
-      expect(output).to include('"files"=>')
+      # Hash#inspect's "key"=>value spacing is Ruby-version-dependent
+      # (Ruby 3.4+ adds spaces around `=>`), so match either form.
+      expect(output).to match(/"files"\s*=>/)
     end
 
     it 'supports pretty_print format' do
       output = run_cli('--format', 'P', 'list')
-      expect(output).to include('"files"=>')
+      # Hash#inspect's "key"=>value spacing is Ruby-version-dependent
+      # (Ruby 3.4+ adds spaces around `=>`), so match either form.
+      expect(output).to match(/"files"\s*=>/)
       expect(output.lines.count).to be > 1
     end
 
     it 'supports puts format' do
       output = run_cli('--format', 'p', 'list')
-      expect(output).to include('"files"=>')
+      # Hash#inspect's "key"=>value spacing is Ruby-version-dependent
+      # (Ruby 3.4+ adds spaces around `=>`), so match either form.
+      expect(output).to match(/"files"\s*=>/)
     end
   end
 

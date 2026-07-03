@@ -104,7 +104,9 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
 
       it 'returns Ruby #inspect-formatted output' do
         output = run_with_inspect
-        expect(output).to include('"files"=>')
+        # Hash#inspect's "key"=>value spacing is Ruby-version-dependent
+        # (Ruby 3.4+ adds spaces around `=>`), so match either form.
+        expect(output).to match(/"files"\s*=>/)
       end
     end
 
@@ -116,7 +118,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
 
       it 'returns Kernel#puts-formatted output' do
         output = run_with_puts
-        expect(output).to include('"files"=>')
+        expect(output).to match(/"files"\s*=>/)
         expect(output).to end_with("\n")
       end
     end
@@ -129,7 +131,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
 
       it 'returns multi-line PP-formatted output' do
         output = run_with_pretty_print
-        expect(output).to include('"files"=>')
+        expect(output).to match(/"files"\s*=>/)
         expect(output.lines.count).to be > 1
       end
     end
@@ -166,19 +168,19 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
     it 'accepts i as inspect' do
       output = described_class.call(root: root, format: 'i',
         server_context: server_context).payload.first['text']
-      expect(output).to include('"files"=>')
+      expect(output).to match(/"files"\s*=>/)
     end
 
     it 'accepts p as puts' do
       output = described_class.call(root: root, format: 'p',
         server_context: server_context).payload.first['text']
-      expect(output).to include('"files"=>')
+      expect(output).to match(/"files"\s*=>/)
     end
 
     it 'accepts P as pretty_print' do
       output = described_class.call(root: root, format: 'P',
         server_context: server_context).payload.first['text']
-      expect(output).to include('"files"=>')
+      expect(output).to match(/"files"\s*=>/)
     end
 
     it 'accepts t as table' do

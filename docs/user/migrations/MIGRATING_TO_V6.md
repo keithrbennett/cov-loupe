@@ -58,7 +58,7 @@ Note: `--help`, `--version`, and `--path-for` exit before configuration validati
 
 ## Format Short Codes and Long Names Normalized {#format-short-codes-and-long-names-normalized}
 
-The `--format` / `-f` option (CLI) and the `format` parameter (MCP `project_coverage` tool) now use exactly one canonical short code and one canonical long name per format. Noncanonical aliases are no longer accepted, and two formats were added.
+The `--format` / `-f` option (CLI) and the `format` parameter (MCP `project_coverage` tool) now use exactly one canonical short code and one canonical long name per format. Noncanonical aliases are no longer accepted, and three formats were added.
 
 **Canonical formats:**
 
