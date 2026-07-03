@@ -1,2 +1,18 @@
 #!/bin/bash
-bundle exec rake test
+
+set -euo pipefail
+
+# Pre-commit hook: RuboCop + RSpec before committing.
+
+run_step() {
+  local label="$1"
+  shift
+  echo "Running ${label}..."
+  "$@"
+  echo "✅ ${label} passed."
+}
+
+run_step "RuboCop" bundle exec rubocop
+run_step "unit tests" bundle exec rspec
+
+echo "✅ All checks passed. Proceeding with commit."
