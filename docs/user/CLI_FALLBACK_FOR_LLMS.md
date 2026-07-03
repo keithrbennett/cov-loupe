@@ -17,12 +17,12 @@ If MCP isn't working, provide this prompt to your LLM:
 
 ```
 The cov-loupe MCP server isn't available. Please use the cov-loupe CLI
-instead with the -fJ flag for pretty-printed JSON output.
+instead with the -fJ flag for multi-line, indented JSON output.
 
 To discover available commands and options:
   cov-loupe --help
 
-All commands support -fJ for structured, pretty-printed output.
+All commands support -fJ for structured, multi-line, indented output.
 
 For detailed documentation, see:
 - README.md in the gem root

@@ -301,7 +301,7 @@ WARNING: 1 coverage row skipped due to errors:
 Run again with --raise-on-stale to exit when rows are skipped.
 ```
 
-Pretty JSON (`-fJ`) reports still emit valid JSON to `stdout`; the warning continues to be printed on `stderr`:
+Multi-line, indented JSON (`-fJ`) reports still emit valid JSON to `stdout`; the warning continues to be printed on `stderr`:
 
 ```text
 $ cov-loupe -fJ list

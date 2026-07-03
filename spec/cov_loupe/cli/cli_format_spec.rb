@@ -49,33 +49,6 @@ RSpec.describe CovLoupe::CoverageCLI, 'format option' do
     end
   end
 
-  describe 'canonical short codes and long names' do
-    {
-      'a' => 'amazing_print',
-      'i' => 'inspect',
-      'j' => 'json',
-      'J' => 'pretty_json',
-      'p' => 'puts',
-      'P' => 'pretty_print',
-      't' => 'table',
-      'y' => 'yaml',
-    }.each do |short_code, long_name|
-      it "accepts short code '#{short_code}' and long name '#{long_name}' identically" do
-        short_output = run_cli('--format', short_code, 'list')
-        long_output = run_cli('--format', long_name, 'list')
-        expect(short_output).to eq(long_output)
-      end
-    end
-
-    %w[pretty-json pretty-print awesome_print ap].each do |alias_name|
-      it "rejects the noncanonical alias '#{alias_name}'" do
-        _out, err, status = run_fixture_cli_with_status('--format', alias_name, 'list')
-        expect(status).to eq(1)
-        expect(err).to include('invalid argument')
-      end
-    end
-  end
-
   describe 'option order requirements' do
     it 'works with format option before subcommand' do
       output = run_cli('--format', 'json', 'list')

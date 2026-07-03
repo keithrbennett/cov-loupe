@@ -18,7 +18,7 @@ module CovLoupe
         tracked_globs, output_chars, and format (default: json).
         Output format depends on the format parameter:
         - json (default): JSON object with files, counts, skipped_files, etc.
-        - pretty_json: Formatted JSON with indentation
+        - pretty_json: Multi-line, indented JSON
         - yaml: YAML format
         - amazing_print: Ruby object formatting via AmazingPrint
         - inspect: Ruby object#inspect output
@@ -33,13 +33,12 @@ module CovLoupe
           tracked_globs: TRACKED_GLOBS_PROPERTY,
           format:        {
             type:        'string',
-            description: 'Output format: json (default), pretty_json, yaml, amazing_print, inspect, ' \
-                         'puts, pretty_print, or table. ' \
-                         'Accepts: a/amazing_print, i/inspect, j/json, J/pretty_json, p/puts, ' \
-                         'P/pretty_print, t/table, y/yaml.',
+            description: 'Output format (default: json). Accepts a short code or its canonical ' \
+                         "long name: #{OptionNormalizers.available_format_choices.join(', ')}.",
             default:     'json',
-            enum:        %w[a amazing_print i inspect j json J pretty_json p puts P pretty_print t table y
-              yaml],
+            enum:        OptionNormalizers::FORMAT_LONG_NAMES.flat_map do |long_name, code|
+              [code, long_name]
+            end,
           },
         }
       ))

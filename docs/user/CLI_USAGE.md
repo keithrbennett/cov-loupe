@@ -83,14 +83,14 @@ Default sort order is descending (highest coverage first) so the lowest-coverage
 
 **Options:**
 
-| Short   | Long                     | Description                                           |
-|---------|--------------------------|-------------------------------------------------------|
-| `-o`    | `--sort-order`           | Sort by coverage percentage (ascending or descending) |
-| `-g`    | `--tracked-globs`        | Filter to specific file patterns                      |
-| `-S`    | `--raise-on-stale`       | Raise error if coverage is stale (default false)      |
-| `-fJ`   | `--format pretty_json`   | Output as pretty-printed JSON                         |
-| `-fj`   | `--format json`          | Output as single-line JSON                            |
-| `-f y`  | `--format yaml`          | Output as YAML                                        |
+| Short  | Long                     | Description                                           |
+|--------|--------------------------|-------------------------------------------------------|
+| `-o`   | `--sort-order`           | Sort by coverage percentage (ascending or descending) |
+| `-g`   | `--tracked-globs`        | Filter to specific file patterns                      |
+| `-S`   | `--raise-on-stale`       | Raise error if coverage is stale (default false)      |
+| `-fJ`  | `--format pretty_json`   | Output as multi-line, indented JSON                   |
+| `-fj`  | `--format json`          | Output as single-line JSON                            |
+| `-f y` | `--format yaml`          | Output as YAML                                        |
 | `-f a` | `--format amazing_print` | Output using AmazingPrint                             |
 
 **Output (table format):**
@@ -127,13 +127,13 @@ clp -s full s app/models/order.rb  # -s = --source
 
 **Options:**
 
-| Short | Long             | Description                                |
-|-------|------------------|--------------------------------------------|
-| `-fJ`   | `--format pretty_json` | Output as pretty-printed JSON         |
-| `-fj` | `--format json`        | Output as single-line JSON            |
-| `-f y` | `--format yaml`        | Output as YAML                        |
-| `-f a` | `--format amazing_print` | Output using AmazingPrint                             |
-| `-s`  | `--source MODE`  | Include source code (full, uncovered, or none)    |
+| Short  | Long                     | Description                                    |
+|--------|--------------------------|------------------------------------------------|
+| `-fJ`  | `--format pretty_json`   | Output as multi-line, indented JSON            |
+| `-fj`  | `--format json`          | Output as single-line JSON                     |
+| `-f y` | `--format yaml`          | Output as YAML                                 |
+| `-f a` | `--format amazing_print` | Output using AmazingPrint                      |
+| `-s`   | `--source MODE`          | Include source code (full, uncovered, or none) |
 
 **Output (default format):**
 ```
@@ -173,15 +173,15 @@ clp -s uncovered -c 3 u app/controllers/orders_controller.rb  # -s = --source, -
 
 **Options:**
 
-| Short   | Long                     | Description                                          |
-|---------|--------------------------|------------------------------------------------------|
-| `-s`    | `--source MODE`          | Show source (full, uncovered, none)                 |
-| `-c`    | `--context-lines N`      | Lines of context around uncovered lines (default: 2) |
-| `-C`    | `--color BOOLEAN`        | Enable (`true`)/disable (`false`) syntax coloring    |
-| `-fJ`   | `--format pretty_json`   | Output as pretty-printed JSON                        |
-| `-fj`   | `--format json`          | Output as single-line JSON                           |
-| `-f y`  | `--format yaml`          | Output as YAML                                       |
-| `-f a` | `--format amazing_print` | Output using AmazingPrint                             |
+| Short  | Long                     | Description                                          |
+|--------|--------------------------|------------------------------------------------------|
+| `-s`   | `--source MODE`          | Show source (full, uncovered, none)                  |
+| `-c`   | `--context-lines N`      | Lines of context around uncovered lines (default: 2) |
+| `-C`   | `--color BOOLEAN`        | Enable (`true`)/disable (`false`) syntax coloring    |
+| `-fJ`  | `--format pretty_json`   | Output as multi-line, indented JSON                  |
+| `-fj`  | `--format json`          | Output as single-line JSON                           |
+| `-f y` | `--format yaml`          | Output as YAML                                       |
+| `-f a` | `--format amazing_print` | Output using AmazingPrint                            |
 
 **Output (default format):**
 ```
@@ -245,13 +245,13 @@ clp -s full d app/models/order.rb  # -s = --source
 
 **Options:**
 
-| Short   | Long                     | Description                   |
-|---------|--------------------------|-------------------------------|
-| `-fJ`   | `--format pretty_json`   | Output as pretty-printed JSON |
-| `-fj`   | `--format json`          | Output as single-line JSON    |
-| `-f y`  | `--format yaml`          | Output as YAML                |
-| `-f a` | `--format amazing_print` | Output using AmazingPrint                             |
-| `-s`    | `--source MODE`          | Include source code           |
+| Short  | Long                     | Description                         |
+|--------|--------------------------|-------------------------------------|
+| `-fJ`  | `--format pretty_json`   | Output as multi-line, indented JSON |
+| `-fj`  | `--format json`          | Output as single-line JSON          |
+| `-f y` | `--format yaml`          | Output as YAML                      |
+| `-f a` | `--format amazing_print` | Output using AmazingPrint           |
+| `-s`   | `--source MODE`          | Include source code                 |
 
 **Output (default format):**
 ```
@@ -473,19 +473,19 @@ open "$(clp --path-for docs)"
 
 Selects the output format. Short codes are case-sensitive.
 
-| Short | Long           |
-|-------|----------------|
-| `a`   | `amazing_print`|
-| `i`   | `inspect`      |
-| `j`   | `json`         |
-| `J`   | `pretty_json`  |
-| `p`   | `puts`         |
-| `P`   | `pretty_print` |
-| `t`   | `table`        |
-| `y`   | `yaml`         |
+| Short | Long            | Description                        |
+|-------|-----------------|------------------------------------|
+| `a`   | `amazing_print` | AmazingPrint-formatted Ruby object |
+| `i`   | `inspect`       | Ruby `#inspect` output             |
+| `j`   | `json`          | Single-line, compact JSON          |
+| `J`   | `pretty_json`   | Multi-line, indented JSON          |
+| `p`   | `puts`          | Ruby `Kernel#puts` output          |
+| `P`   | `pretty_print`  | Ruby stdlib `PP.pp` output         |
+| `t`   | `table`         | Formatted table (Unicode or ASCII) |
+| `y`   | `yaml`          | YAML                               |
 
 ```sh
-clp -fJ summary lib/api/client.rb   # pretty-printed JSON
+clp -fJ summary lib/api/client.rb   # multi-line, indented JSON
 clp -fj summary lib/api/client.rb   # single-line JSON
 ```
 

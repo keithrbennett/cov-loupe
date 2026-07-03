@@ -161,11 +161,56 @@ RSpec.describe CovLoupe::OptionNormalizers do
     end
   end
 
+  describe '.resolve_format_code' do
+    it 'resolves each canonical long name to its short code' do
+      described_class::FORMAT_LONG_NAMES.each do |long_name, code|
+        expect(described_class.resolve_format_code(long_name)).to eq(code)
+      end
+    end
+
+    it 'passes short codes through unchanged' do
+      described_class::FORMAT_MAP.each_key do |code|
+        expect(described_class.resolve_format_code(code)).to eq(code)
+      end
+    end
+
+    it 'passes unrecognized values through unchanged' do
+      expect(described_class.resolve_format_code('invalid_format')).to eq('invalid_format')
+    end
+
+    it 'stringifies non-string input before resolving' do
+      expect(described_class.resolve_format_code(:json)).to eq('j')
+    end
+  end
+
+  describe '.available_format_choices' do
+    it 'returns one "code/long_name" entry per canonical format' do
+      expect(described_class.available_format_choices).to eq(
+        described_class::FORMAT_LONG_NAMES.map { |long_name, code| "#{code}/#{long_name}" }
+      )
+    end
+
+    it 'preserves FORMAT_LONG_NAMES insertion (display) order' do
+      codes = described_class.available_format_choices.map { |choice| choice.split('/').first }
+      expect(codes).to eq(described_class::FORMAT_LONG_NAMES.values)
+    end
+  end
+
+  describe 'FORMAT_LONG_NAMES insertion order' do
+    it 'is alphabetical by downcased code, with lowercase before uppercase on ties' do
+      actual_codes = described_class::FORMAT_LONG_NAMES.values
+      expected_codes = actual_codes.sort_by { |code| [code.downcase, code.match?(/[A-Z]/) ? 1 : 0] }
+
+      expect(actual_codes).to eq(expected_codes)
+    end
+  end
+
   describe 'constant maps' do
     %i[
       SORT_ORDER_MAP
       SOURCE_MODE_MAP
       ERROR_MODE_MAP
+      FORMAT_LONG_NAMES
       FORMAT_MAP
       MODE_MAP
       OUTPUT_CHARS_MAP
