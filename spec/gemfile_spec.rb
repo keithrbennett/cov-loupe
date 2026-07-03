@@ -11,13 +11,13 @@ RSpec.describe 'Gemfile dependencies' do
     ruby_source = <<~RUBY
       require 'json'
       require 'bundler/dsl'
-      Object.send(:remove_const, :RUBY_ENGINE)
-      Object.const_set(:RUBY_ENGINE, #{ruby_engine.inspect})
-      Object.send(:remove_const, :RUBY_VERSION)
-      Object.const_set(:RUBY_VERSION, #{ruby_version.inspect})
 
       dsl = Bundler::Dsl.new
-      dsl.eval_gemfile(#{File.expand_path('../Gemfile', __dir__).inspect})
+      gemfile_path = #{File.expand_path('../Gemfile', __dir__).inspect}
+      gemfile_source = File.read(gemfile_path)
+        .gsub(/\\bRUBY_ENGINE\\b/, #{ruby_engine.inspect.inspect})
+        .gsub(/\\bRUBY_VERSION\\b/, #{ruby_version.inspect.inspect})
+      dsl.instance_eval(gemfile_source, gemfile_path)
       puts dsl.dependencies.map(&:name).sort.to_json
     RUBY
 
