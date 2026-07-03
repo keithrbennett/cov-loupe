@@ -103,7 +103,7 @@ cov-loupe -f P list                   # pretty_print: Ruby stdlib PP.pp output
 
 **Migration:**
 
-- Replace `-fp` / `--format pretty_json` / `--format pretty-json` used for multi-line, indented JSON with `-fJ` / `--format pretty_json`.
+- Replace `-fp` / `--format pretty-json` used for multi-line, indented JSON with `-fJ` / `--format pretty_json`.
 - Replace `-f ap` / `--format awesome_print` / `--format ap` with `-f a` / `--format amazing_print`.
 - Any script or `COV_LOUPE_OPTS` value relying on `-fp` producing multi-line, indented JSON must be updated, since `-fp` now means `puts`.
 - MCP clients passing `"format": "p"` or `"format": "pretty-json"` to `project_coverage` must switch to `"format": "J"` or `"format": "pretty_json"`.
