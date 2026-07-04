@@ -15,7 +15,3 @@ gem 'simplecov-cobertura'
 gem 'bundler-audit', require: false
 gem 'erb', '>= 4.0.3'
 gem 'ruby_audit', require: false
-
-# Ruby 3.5+ will remove irb and rdoc from default gems
-gem 'irb', '>= 1.0' if RUBY_VERSION >= '3.4'
-gem 'rdoc', '>= 6.0' if RUBY_VERSION >= '3.4'
