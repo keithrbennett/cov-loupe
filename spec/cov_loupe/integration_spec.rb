@@ -147,7 +147,7 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
         ].each do |tc|
           response = tc[:tool].call(**tc[:args], server_context: server_context)
           if tc[:is_text]
-            text = response.payload.first['text']
+            text = response.content.first['text']
             tc[:check].call(text)
           else
             data, = expect_mcp_text_json(response, expected_keys: tc[:expected_keys])
@@ -295,7 +295,9 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
           },
         ].each do |tc|
           resp = jsonrpc_tool_call(tc[:id], tc[:name], tc[:args])
-          content = expect_jsonrpc_result(resp, tc[:id])['content']
+          result = expect_jsonrpc_result(resp, tc[:id])
+          expect(result['isError']).to be(false)
+          content = result['content']
           data = JSON.parse(content.first['text'])
           tc[:check].call(data)
         end
@@ -320,7 +322,9 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
           },
         ].each do |tc|
           resp = jsonrpc_tool_call(tc[:id], tc[:name])
-          content = expect_jsonrpc_result(resp, tc[:id])['content']
+          result = expect_jsonrpc_result(resp, tc[:id])
+          expect(result['isError']).to be(false)
+          content = result['content']
           # version returns plain text, help returns JSON text
           if tc[:name] == 'help'
             tc[:check].call(JSON.parse(content.first['text']))
@@ -341,28 +345,110 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
           resultset: coverage_dir,
         }
       )
-      content = expect_jsonrpc_result(resp, 80)['content']
+      result = expect_jsonrpc_result(resp, 80)
+      expect(result['isError']).to be(false)
+      content = result['content']
       expect(JSON.parse(content.first['text'])).to include('result' => true)
     end
 
     it 'handles error cases' do
+      # Tool-execution failures: project-scope and file-scope tools return a
+      # tools/call result with isError: true (tool-result-level error signaling).
+      aggregate_failures do
+        file_error_resp = jsonrpc_tool_call(
+          8,
+          'file_coverage_summary',
+          {
+            path:      'nonexistent.rb',
+            root:      project_root,
+            resultset: coverage_dir,
+          }
+        )
+        expect_jsonrpc_tool_error(file_error_resp, 8)
+
+        project_scope_error_resp = jsonrpc_tool_call(
+          11,
+          'project_coverage_totals',
+          {
+            root:      project_root,
+            resultset: File.join(coverage_dir, 'nonexistent.resultset.json'),
+          }
+        )
+        expect_jsonrpc_tool_error(project_scope_error_resp, 11)
+
+        project_error_resp = jsonrpc_tool_call(
+          9,
+          'project_validate',
+          {
+            code:      'this is not valid ruby {',
+            root:      project_root,
+            resultset: coverage_dir,
+          }
+        )
+        expect_jsonrpc_tool_error(project_error_resp, 9)
+      end
+
+      # Protocol-level failures: genuine JSON-RPC error responses raised by the
+      # mcp gem before tool dispatch (missing required args, unknown tool, or
+      # arguments that fail input-schema validation such as invalid enums).
       aggregate_failures do
         [
-          {
-            id:        8,
-            name:      'file_coverage_summary',
-            arguments: {
-              path:      'nonexistent.rb',
-              root:      project_root,
-              resultset: coverage_dir,
-            },
-          },
           { id: 201, name: 'file_coverage_summary', arguments: {} },
+          # unknown tool
           { id: 200, name: 'nonexistent_tool', arguments: {} },
+          # invalid format enum
+          {
+            id:        202,
+            name:      'project_coverage',
+            arguments: { root: project_root, resultset: coverage_dir, format: 'invalid_format' },
+          },
+          # invalid sort_order enum
+          {
+            id:        203,
+            name:      'project_coverage',
+            arguments: { root: project_root, resultset: coverage_dir, sort_order: 'invalid' },
+          },
         ].each do |request|
           response = jsonrpc_tool_call(request[:id], request[:name], request[:arguments])
           expect_jsonrpc_error(response, request[:id])
         end
+      end
+    end
+
+    it 'handles raise_on_stale errors with isError: true' do
+      require 'tmpdir'
+      require 'fileutils'
+
+      Dir.mktmpdir do |tmp_root|
+        temp_project_root = File.join(tmp_root, 'project1')
+        FileUtils.cp_r(project_root, temp_project_root)
+
+        temp_resultset = File.join(temp_project_root, 'coverage', '.resultset.json')
+        resultset = JSON.parse(File.read(temp_resultset))
+        resultset['RSpec']['timestamp'] = 1000
+        File.write(temp_resultset, JSON.generate(resultset))
+
+        temp_coverage_dir = File.join(temp_project_root, 'coverage')
+        stale_env = {
+          'RUBY_LIB'       => lib_path,
+          'COV_LOUPE_OPTS' => "--mode mcp --root #{temp_project_root} --resultset #{temp_coverage_dir} " \
+                              '--log-file /dev/null',
+        }
+
+        resp = run_mcp_json(
+          jsonrpc_request(10, 'tools/call', {
+            name:      'file_coverage_summary',
+            arguments: {
+              path:           'lib/foo.rb',
+              root:           temp_project_root,
+              resultset:      temp_coverage_dir,
+              raise_on_stale: true,
+            },
+          }),
+          env: stale_env
+        )
+        response = parse_jsonrpc(resp[:stdout])
+        expect_jsonrpc_tool_error(response, 10)
       end
     end
 

@@ -3,7 +3,9 @@
 [Back to main README](docs/index.md)
 
 
-## v6.0.0.pre (Breaking)
+## v6.0.0.pre
+
+### Breaking
 
 - **Stdout logging is no longer permitted.** The `--log-file` / `-l` option no longer accepts `stdout` in any mode (CLI, MCP, or library). Logs are diagnostics and must not corrupt command output on `stdout` or the MCP JSON-RPC protocol stream.
     - **Old:** `--log-file stdout` was allowed in CLI mode and rejected only in MCP mode.
@@ -14,6 +16,12 @@
     - **New:** `p` means `puts` (Ruby `Kernel#puts` output). `J` means `pretty_json` (multi-line, indented JSON). `P` means `pretty_print` (Ruby stdlib `PP.pp` output). `i` means `inspect` (Ruby `#inspect` output). `a`/`amazing_print` is unchanged; `awesome_print`/`ap` are no longer accepted.
     - Canonical formats: `a`/`amazing_print`, `i`/`inspect`, `j`/`json`, `J`/`pretty_json`, `p`/`puts`, `P`/`pretty_print`, `t`/`table`, `y`/`yaml`.
     - See [Migrating to v6](docs/user/migrations/MIGRATING_TO_V6.md) for details.
+
+### Improvements
+
+- **MCP tool errors now carry `isError: true` on the wire.** Failed tool executions (bad paths, invalid predicates, stale coverage, etc.) return a `tools/call` result with `isError: true` and the friendly error message in the content. Previously, callers had to parse the `"Error: ..."` text to detect failures.
+    - Clients can now programmatically detect tool failures by checking the `isError` field in the response payload.
+    - Protocol-level JSON-RPC errors remain reserved for transport/schema failures, distinct from tool-level errors.
 
 ## v5.0.1.pre
 - Extract shared RuboCop defaults into `.rubocop-shared.yml` and slim `.rubocop.yml` down to cov-loupe-specific overrides, making lint configuration easier to maintain across related projects.

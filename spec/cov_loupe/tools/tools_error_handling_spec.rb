@@ -31,23 +31,24 @@ RSpec.describe CovLoupe::Tools do
       default_args = { error_mode: 'log', server_context: server_context }
       response = tool_class.call(**default_args, **call_args)
 
-      expect(response).to be_a(MCP::Tool::Response)
-      item = response.payload.first
+      expect_mcp_tool_error(response)
+      item = response.content.first
       expect(item[:type] || item['type']).to eq('text')
       expect(item['text']).to include('Error')
     end
   end
 
-  # NOTE: VersionTool error handling is difficult to test because the tool is so simple
-  # and doesn't have any complex logic that could fail. The rescue clause in the tool
-  # exists for consistency with other tools but is unlikely to be triggered in practice.
+  # NOTE: VersionTool is covered directly in version_tool_spec.rb, which now
+  # asserts the error flag and wire shape for VERSION access and response
+  # creation failures, so it is intentionally omitted here.
 
   describe CovLoupe::Tools::HelpTool do
     it 'returns tool information without errors' do
       response = described_class.call(error_mode: 'log', server_context: server_context)
 
       expect(response).to be_a(MCP::Tool::Response)
-      item = response.payload.first
+      expect(response).not_to be_error
+      item = response.content.first
       expect(item[:type] || item['type']).to eq('text')
 
       data = JSON.parse(item['text'])

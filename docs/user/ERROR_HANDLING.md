@@ -55,11 +55,12 @@ Available exception classes:
 
 ## MCP Server Mode
 
-Errors are returned as structured responses to the MCP client:
+Errors are surfaced in one of two ways, depending on where the failure occurs:
 
+- **Tool-result error flag** - Failed tool *executions* (bad path, invalid predicate, stale coverage, etc.) return a `tools/call` result with `isError: true`. MCP clients can detect the failure programmatically by checking the `isError` field.
+- **JSON-RPC error** - Protocol-level failures and arguments that fail MCP input-schema validation (unknown tool, missing required argument, invalid enum value such as `format` or `sort_order`) return a JSON-RPC `error` response, *not* a `tools/call` result with `isError: true`.
 - **Logging enabled** - Errors go to `cov_loupe.log` in the current directory by default
 - **Clean error messages** - User-friendly messages, no stack traces by default
-- **Structured responses** - Tool responses instead of exceptions
 
 ## Custom Error Handlers
 

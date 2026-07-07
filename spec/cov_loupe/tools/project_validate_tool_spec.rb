@@ -19,7 +19,7 @@ RSpec.describe CovLoupe::Tools::ProjectValidateTool do
   end
 
   def response_text(response)
-    item = response.payload.first
+    item = response.content.first
     item['text']
   end
 
@@ -35,6 +35,7 @@ RSpec.describe CovLoupe::Tools::ProjectValidateTool do
     it 'returns an error for syntax errors' do
       response = call_with_predicate('->(_m) { 1 + }')
 
+      expect_mcp_tool_error(response)
       expect(response_text(response)).to include(error_message_fragment)
     end
   end
@@ -43,6 +44,7 @@ RSpec.describe CovLoupe::Tools::ProjectValidateTool do
     it 'returns an error when the predicate is not callable' do
       response = call_with_predicate(content)
 
+      expect_mcp_tool_error(response)
       expect(response_text(response)).to include('Predicate must be callable')
     end
   end
@@ -51,6 +53,8 @@ RSpec.describe CovLoupe::Tools::ProjectValidateTool do
     it 'returns false when the predicate evaluates to false' do
       response = call_with_predicate('->(_m) { false }')
 
+      expect(response).not_to be_error
+      expect(response.to_h).to include(isError: false)
       data, = expect_mcp_text_json(response, expected_keys: %w[result])
       expect(data['result']).to be(false)
     end
@@ -75,6 +79,8 @@ RSpec.describe CovLoupe::Tools::ProjectValidateTool do
           end
         RUBY
 
+        expect(response).not_to be_error
+        expect(response.to_h).to include(isError: false)
         data, = expect_mcp_text_json(response, expected_keys: %w[result])
         expect(data['result']).to be(true)
       end
@@ -86,6 +92,7 @@ RSpec.describe CovLoupe::Tools::ProjectValidateTool do
       it 'returns an error when the predicate raises during execution' do
         response = call_with_predicate("->(_m) { raise 'Boom' }")
 
+        expect_mcp_tool_error(response)
         text = response_text(response)
         expect(text).to include('Error:', 'Boom')
         # Verify it's an error response, not a JSON result
@@ -124,6 +131,7 @@ RSpec.describe CovLoupe::Tools::ProjectValidateTool do
       it 'returns an error when the predicate file is missing' do
         response = call_tool(file: 'missing_predicate.rb')
 
+        expect_mcp_tool_error(response)
         expect(response_text(response)).to include('Predicate file not found')
       end
     end
@@ -131,12 +139,14 @@ RSpec.describe CovLoupe::Tools::ProjectValidateTool do
     it 'returns an error when neither code nor file is provided' do
       response = call_tool
 
+      expect_mcp_tool_error(response)
       expect(response_text(response)).to include("Either 'code' or 'file' must be provided")
     end
 
     it 'returns an error when both code and file are provided' do
       response = call_tool(code: '->(_m) { true }', file: 'predicate.rb')
 
+      expect_mcp_tool_error(response)
       expect(response_text(response)).to include("Only one of 'code' or 'file' must be provided, not both")
     end
   end

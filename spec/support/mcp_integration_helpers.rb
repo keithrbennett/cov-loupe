@@ -41,15 +41,26 @@ module Spec
 
       def expect_jsonrpc_error(response, id)
         expect(response).to include('jsonrpc' => '2.0', 'id' => id)
-        if response['error']
-          expect(response['error']).to have_key('message')
-        elsif response['result']
-          content = response['result']['content']
-          text = content.first['text']
-          expect(text.downcase).to match(/error|not found|required/)
-        else
-          raise 'Expected error or result with error message'
-        end
+        expect(response).to have_key('error'),
+          "expected a JSON-RPC error response for id #{id}, " \
+          "got result: #{response['result'].inspect}"
+        expect(response['error']).to have_key('message')
+      end
+
+      # Asserts a tool-execution failure: a tools/call result whose serialized
+      # payload carries isError: true (the MCP-spec mechanism for tool errors),
+      # as distinct from a JSON-RPC error used for protocol-level failures.
+      def expect_jsonrpc_tool_error(response, id)
+        expect(response).to include('jsonrpc' => '2.0', 'id' => id)
+        expect(response).to have_key('result'),
+          "expected a tools/call result for id #{id}, " \
+          "got error: #{response['error'].inspect}"
+        result = response['result']
+        expect(result['isError']).to be(true),
+          "expected isError: true for id #{id}, " \
+          "got result: #{result.inspect}"
+        text = result.dig('content', 0, 'text').to_s
+        expect(text.downcase).to match(/error|not found|required/)
       end
     end
   end

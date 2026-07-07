@@ -12,9 +12,7 @@ RSpec.describe CovLoupe::Tools::HelpTool do
 
   it 'returns guidance for each registered tool' do
     response = described_class.call(server_context: server_context)
-    expect(response.meta).to be_nil
-
-    payload = response.payload.first
+    payload = response.content.first
     expect(payload['type']).to eq('text')
     data = JSON.parse(payload['text'])
     tool_names = data['tools'].map { |entry| entry['tool'] }
@@ -26,7 +24,7 @@ RSpec.describe CovLoupe::Tools::HelpTool do
 
   it 'includes resources with local readme path' do
     response = described_class.call(server_context: server_context)
-    payload = response.payload.first
+    payload = response.content.first
     data = JSON.parse(payload['text'])
 
     expect(data).to have_key('resources')

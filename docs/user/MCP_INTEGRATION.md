@@ -14,6 +14,8 @@
     - [Kilo](#kilo)
 - [Stdout Must Stay Clean During MCP Startup](#stdout-must-stay-clean-during-mcp-startup)
 - [Available MCP Tools](#available-mcp-tools-functions)
+    - [JSON Response Format](#json-response-format)
+    - [Error Responses](#error-responses)
 - [Testing Your Setup](#testing-your-setup)
 - [Troubleshooting](#troubleshooting)
 
@@ -268,6 +270,30 @@ This decision was informed by discussions with multiple AI models. For more deta
 - [Perplexity AI Discussion](https://www.perplexity.ai/search/title-resolving-a-model-contex-IfpFWU1FR5WQXQ8HcQctyg#0)
 - [ChatGPT Discussion](https://chatgpt.com/share/68e4d7e1-cad4-800f-80c2-58b33bfc31cb)
 
+### Error Responses
+
+When a tool *execution* fails (bad path, invalid predicate, stale coverage, etc.), cov-loupe returns a `tools/call` result with `isError: true` and the friendly error message in the `content` array. This is a **tool-result-level** signal, distinct from a **JSON-RPC error** response.
+
+JSON-RPC `error` responses are reserved for failures that happen *before* the tool runs: unknown methods, invalid JSON-RPC requests, and tool arguments that fail MCP input-schema validation (for example, an invalid `format` or `sort_order` enum value, or a missing required parameter).
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 7,
+  "result": {
+    "isError": true,
+    "content": [
+      {
+        "type": "text",
+        "text": "Error: file not found in coverage data: nonexistent.rb"
+      }
+    ]
+  }
+}
+```
+
+Your MCP client should check `result.isError` before parsing the response content as a successful payload. `isError: false` means the tool succeeded and the content can be parsed normally; `isError: true` means execution failed. If the response itself contains an `error` object instead of a `result`, the failure is at the JSON-RPC/schema level and did not reach tool execution.
+
 ### CLI Options in MCP Mode
 
 When the MCP server starts, you can pass CLI options via the startup command. These options become the default config for MCP tools. **Per-request JSON parameters still win over CLI defaults.**
@@ -358,7 +384,8 @@ These tools analyze individual files. All require `path` parameter.
 
 **`project_validate`** - Validate coverage against custom policies
 - Parameters: Either `code` (Ruby string) OR `file` (path to Ruby file), plus optional `root`, `resultset`, `raise_on_stale`, `error_mode`
-- Returns: `{"result": Boolean}` where `true` means policy passed, `false` means failed
+- Returns: `{"result": Boolean}` where `true` means policy passed, `false` means the predicate evaluated to false (the tool itself succeeded, so `isError: false`)
+- Execution errors (syntax error in the predicate, missing predicate file, etc.) return `isError: true` with the friendly error message in `content`
 - Security Warning: Predicates execute as arbitrary Ruby code with full system privileges. Only use predicate files from trusted sources.
 - Examples:
     - Check if all files have at least 80% coverage: `{"code": "->(m) { m.list[\"files\"].all? { |f| f['percentage'] >= 80 } }"}`
@@ -450,6 +477,9 @@ echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"help","arg
 
 # Test summary tool (use root param if needed)
 echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"lib/cov_loupe/model/model.rb","root":"."}}}' | cov-loupe -m mcp
+
+# Test an error case: the response should contain a `result` with `isError: true`
+echo '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"nonexistent.rb","root":"."}}}' | cov-loupe -m mcp
 
 # Test with a project-specific root
 echo '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"app/models/order.rb","root":"docs/fixtures/demo_project"}}}' | cov-loupe -m mcp

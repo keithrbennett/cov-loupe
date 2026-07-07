@@ -16,7 +16,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
   describe 'format parameter' do
     context 'with default format (json)' do
       def run_with_default_format
-        described_class.call(root: root, server_context: server_context).payload.first['text']
+        described_class.call(root: root, server_context: server_context).content.first['text']
       end
 
       it 'returns JSON by default' do
@@ -40,7 +40,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
     context 'with format: pretty_json' do
       def run_with_pretty_json
         described_class.call(root: root, format: 'pretty_json',
-          server_context: server_context).payload.first['text']
+          server_context: server_context).content.first['text']
       end
 
       it 'returns formatted JSON with indentation' do
@@ -54,7 +54,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
     context 'with format: yaml' do
       def run_with_yaml
         described_class.call(root: root, format: 'yaml',
-          server_context: server_context).payload.first['text']
+          server_context: server_context).content.first['text']
       end
 
       it 'returns YAML-formatted output' do
@@ -68,7 +68,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
     context 'with format: amazing_print' do
       def run_with_amazing_print
         described_class.call(root: root, format: 'amazing_print',
-          server_context: server_context).payload.first['text']
+          server_context: server_context).content.first['text']
       end
 
       it 'returns AmazingPrint-formatted output' do
@@ -81,7 +81,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
     context 'with format: table' do
       def run_with_table
         described_class.call(root: root, format: 'table',
-          server_context: server_context).payload.first['text']
+          server_context: server_context).content.first['text']
       end
 
       it 'returns a formatted table with Unicode box-drawing characters' do
@@ -99,7 +99,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
     context 'with format: inspect' do
       def run_with_inspect
         described_class.call(root: root, format: 'inspect',
-          server_context: server_context).payload.first['text']
+          server_context: server_context).content.first['text']
       end
 
       it 'returns Ruby #inspect-formatted output' do
@@ -113,7 +113,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
     context 'with format: puts' do
       def run_with_puts
         described_class.call(root: root, format: 'puts',
-          server_context: server_context).payload.first['text']
+          server_context: server_context).content.first['text']
       end
 
       it 'returns Kernel#puts-formatted output' do
@@ -126,7 +126,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
     context 'with format: pretty_print' do
       def run_with_pretty_print
         described_class.call(root: root, format: 'pretty_print',
-          server_context: server_context).payload.first['text']
+          server_context: server_context).content.first['text']
       end
 
       it 'returns multi-line PP-formatted output' do
@@ -140,14 +140,14 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
   describe 'format abbreviations' do
     it 'accepts j as json' do
       output = described_class.call(root: root, format: 'j',
-        server_context: server_context).payload.first['text']
+        server_context: server_context).content.first['text']
       data = JSON.parse(output)
       expect(data).to have_key('files')
     end
 
     it 'accepts J as pretty_json' do
       output = described_class.call(root: root, format: 'J',
-        server_context: server_context).payload.first['text']
+        server_context: server_context).content.first['text']
       expect(output).to include("\n")
       data = JSON.parse(output)
       expect(data).to have_key('files')
@@ -155,47 +155,53 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
 
     it 'accepts y as yaml' do
       output = described_class.call(root: root, format: 'y',
-        server_context: server_context).payload.first['text']
+        server_context: server_context).content.first['text']
       expect(output).to start_with('---')
     end
 
     it 'accepts a as amazing_print' do
       output = described_class.call(root: root, format: 'a',
-        server_context: server_context).payload.first['text']
+        server_context: server_context).content.first['text']
       expect(output).to include('files')
     end
 
     it 'accepts i as inspect' do
       output = described_class.call(root: root, format: 'i',
-        server_context: server_context).payload.first['text']
+        server_context: server_context).content.first['text']
       expect(output).to match(/"files"\s*=>/)
     end
 
     it 'accepts p as puts' do
       output = described_class.call(root: root, format: 'p',
-        server_context: server_context).payload.first['text']
+        server_context: server_context).content.first['text']
       expect(output).to match(/"files"\s*=>/)
     end
 
     it 'accepts P as pretty_print' do
       output = described_class.call(root: root, format: 'P',
-        server_context: server_context).payload.first['text']
+        server_context: server_context).content.first['text']
       expect(output).to match(/"files"\s*=>/)
     end
 
     it 'accepts t as table' do
       output = described_class.call(root: root, format: 't',
-        server_context: server_context).payload.first['text']
+        server_context: server_context).content.first['text']
       expect(output).to include('┌')
     end
   end
 
-  describe 'invalid format' do
+  # These direct-call tests exercise the tool's own validation. In real MCP
+  # traffic, invalid `format`/`sort_order` enum values are rejected by the MCP
+  # input schema before the tool runs and therefore return JSON-RPC errors, not
+  # tool-result errors with `isError: true`. See integration tests for the
+  # wire-level behavior.
+  describe 'invalid format (direct tool call)' do
     it 'returns an error response for invalid format' do
       response = described_class.call(root: root, format: 'invalid_format',
         server_context: server_context)
-      expect(response.payload.first['type']).to eq('text')
-      text = response.payload.first['text']
+      expect_mcp_tool_error(response)
+      expect(response.content.first['type']).to eq('text')
+      text = response.content.first['text']
       expect(text).to include('Error')
     end
 
@@ -203,13 +209,14 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
       it "rejects the noncanonical alias '#{alias_name}'" do
         response = described_class.call(root: root, format: alias_name,
           server_context: server_context)
-        text = response.payload.first['text']
+        expect_mcp_tool_error(response)
+        text = response.content.first['text']
         expect(text).to include('Error')
       end
     end
   end
 
-  describe 'sort_order parameter validation' do
+  describe 'sort_order parameter validation (direct tool call)' do
     it 'accepts valid values: ascending, descending, a, d' do
       %w[ascending descending a d].each do |sort_order|
         response = described_class.call(
@@ -218,7 +225,8 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
           server_context: server_context
         )
         expect(response).to be_a(MCP::Tool::Response)
-        expect(response.payload.first['type']).to eq('text')
+        expect(response).not_to be_error
+        expect(response.content.first['type']).to eq('text')
       end
     end
 
@@ -228,8 +236,8 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
         sort_order:     'invalid',
         server_context: server_context
       )
-      expect(response).to be_a(MCP::Tool::Response)
-      text = response.payload.first['text']
+      expect_mcp_tool_error(response)
+      text = response.content.first['text']
       expect(text).to include('Error')
       expect(text).to include('invalid')
     end
@@ -263,7 +271,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
       setup_presenter_with_timestamp_status.call('missing')
 
       response = described_class.call(root: root, server_context: server_context)
-      data = JSON.parse(response.payload.first['text'])
+      data = JSON.parse(response.content.first['text'])
 
       expect(data['timestamp_status']).to eq('missing')
       expect(data['warnings']).to be_an(Array)
@@ -274,7 +282,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
 
     it 'does not include warnings array when timestamp_status is ok' do
       response = described_class.call(root: root, server_context: server_context)
-      data = JSON.parse(response.payload.first['text'])
+      data = JSON.parse(response.content.first['text'])
 
       expect(data['timestamp_status']).to eq('ok')
       expect(data['warnings']).to be_nil
@@ -325,7 +333,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
           format:         'table',
           tracked_globs:  ['lib/**/*.rb'],
           server_context: server_context
-        ).payload.first['text']
+        ).content.first['text']
 
         expect(output).to include(
           'Files excluded from coverage:',
@@ -374,7 +382,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
           root:           root,
           format:         'table',
           server_context: server_context
-        ).payload.first['text']
+        ).content.first['text']
 
         expect(output).to include('WARNING: Coverage timestamps are missing')
       end
@@ -400,7 +408,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
       allow(CovLoupe::Presenters::ProjectCoveragePresenter).to receive(:new).and_return(presenter)
       allow(presenter).to receive(:relativized_payload).and_return(test_payload)
 
-      output = described_class.call(root: root, server_context: server_context).payload.first['text']
+      output = described_class.call(root: root, server_context: server_context).content.first['text']
       data = JSON.parse(output)
 
       expect(data['missing_tracked_files']).to be_empty
@@ -413,7 +421,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
         root:           root,
         format:         'table',
         server_context: server_context
-      ).payload.first['text']
+      ).content.first['text']
 
       expect(output).to include('┌', '─', '│', '┘')
     end
@@ -424,7 +432,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
         format:         'table',
         output_chars:   'ascii',
         server_context: server_context
-      ).payload.first['text']
+      ).content.first['text']
 
       expect(output).to include('+', '-', '|')
       expect(output).not_to include('┌')
@@ -436,7 +444,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
         format:         'table',
         output_chars:   'a',
         server_context: server_context
-      ).payload.first['text']
+      ).content.first['text']
 
       expect(output).to include('+', '-', '|')
       expect(output).not_to include('┌')
@@ -448,7 +456,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
         format:         'table',
         output_chars:   'fancy',
         server_context: server_context
-      ).payload.first['text']
+      ).content.first['text']
 
       expect(output).to include('┌', '─', '│')
     end

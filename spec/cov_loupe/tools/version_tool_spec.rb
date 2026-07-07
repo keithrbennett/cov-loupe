@@ -14,9 +14,9 @@ RSpec.describe CovLoupe::Tools::VersionTool do
     it 'returns a valid MCP response with the correct version string' do
       response = described_class.call(server_context: server_context)
       expect(response).to be_a(MCP::Tool::Response)
-      expect(response.payload.size).to eq(1)
+      expect(response.content.size).to eq(1)
 
-      item = response.payload.first
+      item = response.content.first
       expect(item[:type] || item['type']).to eq('text')
       expect(item['text']).to eq("CovLoupe version: #{CovLoupe::VERSION}")
     end
@@ -25,7 +25,7 @@ RSpec.describe CovLoupe::Tools::VersionTool do
       %w[off log debug].each do |mode|
         it "accepts error_mode '#{mode}' without affecting output" do
           response = described_class.call(error_mode: mode, server_context: server_context)
-          item = response.payload.first
+          item = response.content.first
           expect(item['text']).to eq("CovLoupe version: #{CovLoupe::VERSION}")
         end
       end
@@ -38,13 +38,13 @@ RSpec.describe CovLoupe::Tools::VersionTool do
           extra_arg:      'value',
           another:        { nested: 'data' }
         )
-        item = response.payload.first
+        item = response.content.first
         expect(item['text']).to eq("CovLoupe version: #{CovLoupe::VERSION}")
       end
     end
 
     context 'when an error occurs' do
-      it 'handles VERSION constant access errors and returns structured error response' do
+      it 'returns an MCP tool result with isError: true' do
         # Force an error by hiding VERSION so const_missing is triggered
         hide_const('CovLoupe::VERSION')
         allow(CovLoupe).to receive(:const_missing).with(:VERSION)
@@ -52,9 +52,8 @@ RSpec.describe CovLoupe::Tools::VersionTool do
 
         response = described_class.call(error_mode: 'log', server_context: server_context)
 
-        # Should return error response in MCP format
-        expect(response).to be_a(MCP::Tool::Response)
-        item = response.payload.first
+        expect_mcp_tool_error(response)
+        item = response.content.first
         expect(item[:type] || item['type']).to eq('text')
         expect(item['text']).to include('Error')
       end
@@ -69,9 +68,8 @@ RSpec.describe CovLoupe::Tools::VersionTool do
 
         response = described_class.call(error_mode: 'log', server_context: server_context)
 
-        # Should return error response in MCP format via the rescue block
-        expect(response).to be_a(MCP::Tool::Response)
-        item = response.payload.first
+        expect_mcp_tool_error(response)
+        item = response.content.first
         expect(item[:type] || item['type']).to eq('text')
         expect(item['text']).to include('Error')
       end
@@ -84,8 +82,9 @@ RSpec.describe CovLoupe::Tools::VersionTool do
 
         %w[off debug].each do |mode|
           response = described_class.call(error_mode: mode, server_context: server_context)
-          expect(response).to be_a(MCP::Tool::Response)
-          item = response.payload.first
+
+          expect_mcp_tool_error(response)
+          item = response.content.first
           expect(item[:type] || item['type']).to eq('text')
           expect(item['text']).to include('Error:')
           expect(item['text']).to include('Version error')

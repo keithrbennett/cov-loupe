@@ -2,12 +2,13 @@
 
 [Back to Migration Guides](README.md)
 
-This document describes the breaking changes introduced in version 6.0.0.
+This document describes the breaking changes introduced in version 6.0.0, plus notable non-breaking improvements for MCP integrators.
 
 ## Table of Contents
 
 - [Stdout Logging Is No Longer Permitted](#stdout-logging-is-no-longer-permitted)
 - [Format Short Codes and Long Names Normalized](#format-short-codes-and-long-names-normalized)
+- [MCP Tool Errors Now Carry `isError: true`](#mcp-tool-errors-now-carry-iserror-true)
 
 ---
 
@@ -107,3 +108,35 @@ cov-loupe -f P list                   # pretty_print: Ruby stdlib PP.pp output
 - Replace `-f ap` / `--format awesome_print` / `--format ap` with `-f a` / `--format amazing_print`.
 - Any script or `COV_LOUPE_OPTS` value relying on `-fp` producing multi-line, indented JSON must be updated, since `-fp` now means `puts`.
 - MCP clients passing `"format": "p"` or `"format": "pretty-json"` to `project_coverage` must switch to `"format": "J"` or `"format": "pretty_json"`.
+
+## MCP Tool Errors Now Carry `isError: true` {#mcp-tool-errors-now-carry-iserror-true}
+
+**Not a breaking change**, but MCP integrators should update their clients.
+
+Failed tool *executions* (bad path, invalid predicate, stale coverage, etc.) now return a `tools/call` **result** with `isError: true` and the friendly error message in `content`. Previously, callers had to infer failure from `"Error: ..."` text in an otherwise normal success response.
+
+**What to change:**
+
+- Check `result.isError` before parsing response content as a successful payload.
+- Do not rely on parsing `"Error: ..."` text alone to detect tool failures.
+- A top-level JSON-RPC `error` response (not a `result`) still indicates protocol- or schema-level failures (unknown tool, missing required argument, invalid `format`/`sort_order` enum), distinct from tool execution errors.
+
+**Example:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "isError": true,
+    "content": [
+      {
+        "type": "text",
+        "text": "Error: file not found in coverage data: nonexistent.rb"
+      }
+    ]
+  }
+}
+```
+
+**Further reading:** [MCP Integration — Error Responses](../MCP_INTEGRATION.md#error-responses), [Release Notes](../../release_notes.md).

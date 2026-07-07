@@ -87,8 +87,8 @@ RSpec.describe 'Error Mode System' do
           .to receive(:for_mcp_server).with(error_mode: mode).and_call_original
 
         response = CovLoupe::BaseTool.handle_mcp_error(test_error, 'TestTool', error_mode: mode)
-        expect(response).to be_a(MCP::Tool::Response)
-        expect(response.payload.first['text']).to include('Error:')
+        expect_mcp_tool_error(response)
+        expect(response.content.first['text']).to include('Error:')
       end
     end
 
@@ -103,8 +103,8 @@ RSpec.describe 'Error Mode System' do
         response = CovLoupe::BaseTool.handle_mcp_error(
           test_error, 'TestTool', error_mode: invalid_mode
         )
-        expect(response).to be_a(MCP::Tool::Response)
-        expect(response.payload.first['text']).to include('Error:')
+        expect_mcp_tool_error(response)
+        expect(response.content.first['text']).to include('Error:')
       end
     end
   end

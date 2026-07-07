@@ -27,22 +27,25 @@
 
 ### MCP Error Handling
 
-The MCP server uses structured error responses:
+The MCP server signals tool execution failures by returning a `tools/call` **result** with `isError: true` (the MCP-spec mechanism for tool errors), carrying the user-friendly message in the response content:
 
 ```json
 {
   "jsonrpc": "2.0",
-  "error": {
-    "code": -32603,
-    "message": "Coverage data not found at coverage/.resultset.json",
-    "data": {
-      "type": "FileError",
-      "context": "MCP tool execution"
-    }
-  },
-  "id": 1
+  "id": 1,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Error: Coverage data not found at coverage/.resultset.json"
+      }
+    ],
+    "isError": true
+  }
 }
 ```
+
+This lets MCP clients programmatically distinguish a failed tool call from a successful one. A JSON-RPC `error` response (e.g. `-32603`) is reserved for protocol-level failures such as an unknown tool or invalid arguments, not tool execution errors.
 
 ### MCP Server Logging
 
@@ -258,7 +261,7 @@ coverage_b = model_b.list
 
 **Library Mode:** typed exceptions with full details
 
-**MCP Server Mode:** JSON-RPC errors logged to file with structured data
+**MCP Server Mode:** failed tool calls return a `tools/call` result with `isError: true` (logged to file); JSON-RPC errors are reserved for protocol-level failures
 
 ### Error Modes
 

@@ -118,14 +118,16 @@ module CovLoupe
       handle_mcp_error(e, tool_name, error_mode: error_mode, output_chars: output_chars)
     end
 
-    # Handle errors consistently across all MCP tools
-    # Returns an MCP::Tool::Response with appropriate error message
+    # Handle errors consistently across all MCP tools.
+    # Returns an MCP::Tool::Response marked as an error (isError: true) so MCP
+    # clients can programmatically detect the failure, with the user-friendly
+    # message carried in the response content.
     #
     # @param error [Exception] The error to handle
     # @param tool_name [String] Name of the tool for error reporting
     # @param error_mode [Symbol, String] Error handling mode
     # @param output_chars [Symbol, String, nil] Output character mode for error messages
-    # @return [MCP::Tool::Response] Error response
+    # @return [MCP::Tool::Response] Error response (isError: true)
     def self.handle_mcp_error(error, tool_name, error_mode: :log, output_chars: :default)
       # Safely normalize error_mode to a symbol, defaulting to :log for invalid inputs
       # This prevents crashes when MCP clients send invalid types (null, numbers, objects, etc.)
@@ -150,7 +152,15 @@ module CovLoupe
       # Convert error message to ASCII if needed
       error_message = normalized.user_friendly_message
       error_message = OutputChars.convert(error_message, output_chars || :default)
-      ::MCP::Tool::Response.new([{ 'type' => 'text', 'text' => "Error: #{error_message}" }])
+      # Flag the failure in the tool result via isError: true so MCP clients
+      # can distinguish failed tool calls from successful ones, rather than
+      # embedding error text in a normal success response. This is the
+      # tool-result-level error signal; a JSON-RPC error is reserved for
+      # protocol-level failures raised before tool dispatch.
+      ::MCP::Tool::Response.new(
+        [{ 'type' => 'text', 'text' => "Error: #{error_message}" }],
+        error: true
+      )
     end
 
     # Respond with JSON as a resource to avoid clients mutating content types.

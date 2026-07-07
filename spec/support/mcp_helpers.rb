@@ -15,20 +15,34 @@ module MCPToolTestHelpers
   end
 
   def setup_mcp_response_stub
-    # Standardized MCP::Tool::Response stub that works for all tools
+    # Standardized MCP::Tool::Response stub that mirrors the real gem class
+    # (content, structured_content, error flag, error? predicate, to_h wire
+    # serialization) so tests can assert on tool-result-level error signaling via
+    # `response.error?` and on the serialized shape via `.to_h`.
     response_class = Class.new do
-      attr_reader :payload, :meta
+      attr_reader :content, :structured_content
 
-      def initialize(payload, meta: nil)
-        @payload = payload
-        @meta = meta
+      def initialize(content = nil, error: false, structured_content: nil)
+        @content = content || []
+        @error = error
+        @structured_content = structured_content
+      end
+
+      def error?
+        !!@error
+      end
+
+      def to_h
+        hash = { content:, isError: error? }
+        hash[:structuredContent] = @structured_content if @structured_content
+        hash
       end
     end
     stub_const('MCP::Tool::Response', response_class)
   end
 
   def expect_mcp_text_json(response, expected_keys: [])
-    item = response.payload.first
+    item = response.content.first
 
     # Check for a 'text' part
     expect(item['type']).to eq('text')
@@ -43,5 +57,12 @@ module MCPToolTestHelpers
     end
 
     [data, item] # Return for additional custom assertions
+  end
+
+  def expect_mcp_tool_error(response)
+    expect(response).to be_a(MCP::Tool::Response)
+    expect(response).to be_error
+    expect(response.to_h).to include(isError: true)
+    response
   end
 end

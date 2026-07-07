@@ -72,7 +72,7 @@ Prefer project‑local tools and scripts (for example, bin/ scripts, package.jso
 - `lib/cov_loupe/cli.rb` (`CoverageCLI`) – CLI interface with subcommands like `list`, `summary`, `raw`, and more.
 - `lib/cov_loupe/mcp_server.rb` (`MCPServer`) – JSON-RPC server that exposes tools to MCP clients.
 - `lib/cov_loupe/tools/*.rb` – tool implementations (`file_coverage_summary`, `project_coverage`, etc.).
-- Error handling utilities keep behavior context-aware (friendly CLI output, raised exceptions for libraries, structured MCP responses logged to `./cov_loupe.log`).
+- Error handling utilities keep behavior context-aware (friendly CLI output, raised exceptions for libraries, tools/call results with `isError: true` for MCP tool failures).
 
 ### Coverage Data Flow
 1. Read SimpleCov `.resultset.json` files without needing SimpleCov at runtime (unless merging suites).
@@ -144,7 +144,7 @@ Run `cov-loupe` in MCP mode with `-m mcp`/`--mode mcp`. You can issue JSON-RPC r
 {"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"help","arguments":{}}}
 {"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"lib/cov_loupe/model/model.rb"}}}
 ```
-All responses are emitted as `type: "text"`; JSON objects are returned as JSON strings in the content payload so MCP clients can parse them easily.
+All responses are emitted as `type: "text"`; JSON objects are returned as JSON strings in the content payload so MCP clients can parse them easily. **Check `result.isError` before parsing content as a successful payload** — `isError: true` means the tool execution failed (bad path, invalid predicate, etc.). A top-level JSON-RPC `error` response (instead of a `result`) indicates a protocol- or schema-level failure that never reached tool execution.
 
 ## Prompt Examples for MCP Clients
 - “What’s the coverage percentage for `lib/cov_loupe/model/model.rb`?” → call `file_coverage_summary`.
@@ -157,7 +157,8 @@ Always prefer these tools over free-form reasoning to keep responses grounded in
 ## MCP Tool Playbook
 - Always select an MCP tool over ad-hoc reasoning for coverage data. Unsure which one fits? Call `help`.
 - Available tools: `file_coverage_summary`, `file_coverage_detailed`, `file_uncovered_lines`, `file_coverage_raw`, `project_coverage`, `project_coverage_totals`, `project_validate`, `help`, and `version`.
-- Responses return deterministic JSON/text; surface the tool output directly unless the user asks for interpretation. Note that `project_coverage` now includes `skipped_files`, `missing_tracked_files`, `newer_files`, and `deleted_files` arrays in its output to report any files that could not be processed due to errors or staleness.
+- Check `result.isError` before parsing tool response content. `isError: false` means the tool succeeded; `isError: true` means execution failed (bad path, invalid predicate, stale coverage, etc.) and the `content` carries a friendly error message. A top-level JSON-RPC `error` object (not a `result`) indicates a protocol- or schema-level failure (unknown tool, missing required argument, invalid enum) that never reached tool execution.
+- On success, responses return deterministic JSON/text; surface the tool output directly unless the user asks for interpretation. Note that `project_coverage` now includes `skipped_files`, `missing_tracked_files`, `newer_files`, and `deleted_files` arrays in its output to report any files that could not be processed due to errors or staleness.
 
 ## Development Conventions
 - Target Ruby >= 3.2; use two-space indentation and `# frozen_string_literal: true` in Ruby files.
@@ -165,12 +166,12 @@ Always prefer these tools over free-form reasoning to keep responses grounded in
 - Never undo or overwrite user changes outside your scope; integrate with them instead. However, if the new changes would be better implemented by modifying other sections, e.g., extracting now-duplicated behavior into a special method, then do that.
 - When adding behavior, couple it with tests; keep or raise coverage. Specs belong in `spec/**/*_spec.rb` mirroring the lib path.
 - Validate meaningful changes with `bundle exec rspec` when feasible; note skipped verification in your summary if you cannot run it.
-- The codebase follows standard Ruby conventions and emphasizes user-friendly CLI output, structured MCP responses, and rich error handling.
+- The codebase follows standard Ruby conventions and emphasizes user-friendly CLI output, `isError: true` MCP tool-failure responses, and rich error handling.
 
 ### Error Handling Strategy
 - **CLI mode** – render user-friendly messages, respect exit codes, and support optional debug output.
 - **Library mode** – raise custom exceptions for programmatic handling.
-- **MCP server mode** – return structured error responses and log context to `./cov_loupe.log`.
+- **MCP server mode** – return `tools/call` results with `isError: true` for tool execution failures (JSON-RPC errors remain reserved for protocol-level failures) and log context to `./cov_loupe.log`.
 
 ### Path Resolution Strategy
 1. Attempt exact absolute path matches within the coverage data.
@@ -250,4 +251,4 @@ Migration documentation must accurately reflect the state of the project at the 
 - Require files via `cov_loupe` paths.
 - Ensure API paths work with both absolute and relative inputs.
 - The executable name is `cov-loupe` (hyphenated).
-- Keep CLI error messages user-friendly and MCP responses structured.
+- Keep CLI error messages user-friendly and MCP tool failures flagged with `isError: true`.

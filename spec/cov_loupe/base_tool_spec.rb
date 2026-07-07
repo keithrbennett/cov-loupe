@@ -33,13 +33,28 @@ RSpec.describe CovLoupe::BaseTool do
     it 'returns friendly text' do
       resp = described_class.handle_mcp_error(error, tool, error_mode: :log)
       expect(resp).to be_a(MCP::Tool::Response)
-      expect(resp.payload.first['text']).to match(expected_pattern)
+      expect(resp.content.first['text']).to match(expected_pattern)
+    end
+
+    it 'signals the error at the tool-result level (isError)' do
+      resp = described_class.handle_mcp_error(error, tool, error_mode: :log)
+      expect(resp).to be_error
     end
 
     it 'respects error_mode :off' do
       resp = described_class.handle_mcp_error(error, tool, error_mode: :off)
       expect(resp).to be_a(MCP::Tool::Response)
-      expect(resp.payload.first['text']).to match(expected_pattern)
+      expect(resp.content.first['text']).to match(expected_pattern)
+    end
+
+    it 'still signals isError regardless of error_mode' do
+      resp = described_class.handle_mcp_error(error, tool, error_mode: :off)
+      expect(resp).to be_error
+    end
+
+    it 'serializes the error to isError: true' do
+      resp = described_class.handle_mcp_error(error, tool, error_mode: :log)
+      expect(resp.to_h).to include(isError: true)
     end
   end
 
@@ -162,11 +177,17 @@ RSpec.describe CovLoupe::BaseTool do
   end
 
   describe '.respond_json' do
+    it 'does not flag successful responses as errors' do
+      response = described_class.respond_json({ 'ok' => true })
+
+      expect(response).not_to be_error
+    end
+
     it 'produces ASCII-only JSON when output_chars is :ascii' do
       payload = { 'name' => 'café', 'arrow' => '→' }
       response = described_class.respond_json(payload, output_chars: :ascii)
 
-      json_text = response.payload.first['text']
+      json_text = response.content.first['text']
       expect(json_text).not_to include('é')
       expect(json_text).not_to include('→')
       expect(json_text).to include('\\u') # Unicode escape sequences
@@ -176,7 +197,7 @@ RSpec.describe CovLoupe::BaseTool do
       payload = { 'name' => 'café' }
       response = described_class.respond_json(payload, output_chars: :fancy)
 
-      json_text = response.payload.first['text']
+      json_text = response.content.first['text']
       expect(json_text).to include('café')
     end
 
@@ -184,7 +205,7 @@ RSpec.describe CovLoupe::BaseTool do
       payload = { 'key' => 'valüe' }
       response = described_class.respond_json(payload, pretty: true, output_chars: :ascii)
 
-      json_text = response.payload.first['text']
+      json_text = response.content.first['text']
       expect(json_text).to include("\n") # Pretty formatted
       expect(json_text).not_to include('ü')
     end
