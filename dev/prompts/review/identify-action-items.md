@@ -156,7 +156,7 @@ Use your judgment to order issues for optimal value delivery.
 
 ## Output File
 
-Write your analysis in a Markdown file whose name is:
+Write your analysis in a Markdown file in the untracked/ dir (mkdir if necessary) whose name is:
 
 - today's date in UTC `%Y-%m-%d-%H-%M` format +
 - `-prioritized-action-items-` +
