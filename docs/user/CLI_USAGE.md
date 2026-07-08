@@ -66,6 +66,8 @@ clp --path-for docs
 clp --path-for docs-local
 ```
 
+Note: `-l` with a dash sets `--log-file`; `l` without a dash runs the `list` subcommand abbreviation.
+
 ## Subcommands
 
 ### `list`, `l`
@@ -598,6 +600,8 @@ clp --raise-on-stale false
 - **"length_mismatch"** (Length): Source file line count differs from coverage data
 - **"error"** (Error): Staleness check failed due to permission or I/O errors
 - Tracked files missing from coverage (with --tracked-globs)
+
+<a id="tracked-globs"></a>
 
 ### `-g, --tracked-globs PATTERNS`
 

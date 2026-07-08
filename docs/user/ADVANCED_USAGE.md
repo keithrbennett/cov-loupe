@@ -482,26 +482,7 @@ For platform-specific integration examples (GitHub Actions, GitLab CI, Jenkins, 
 1. **Exclude unwanted results** - Only show files from the resultset that match the patterns
 2. **Include files with or without coverage** - Report files that match the patterns but aren't in the resultset (reported in `missing_tracked_files` for `list`, `missing_from_coverage` for `totals`)
 
-**Best practice:** Set `COV_LOUPE_OPTS` to match your SimpleCov `track_files` configuration:
-
-```ruby
-# spec_helper.rb
-SimpleCov.start do
-  add_filter '/spec/'
-  track_files 'lib/**/*.rb'
-  track_files 'app/**/*.rb'
-end
-```
-
-```sh
-# Shell config (.bashrc, .zshrc, etc.)
-export COV_LOUPE_OPTS="--tracked-globs lib/**/*.rb,app/**/*.rb"
-```
-
-This alignment ensures:
-- `list` and `totals` output matches SimpleCov's scope
-- `missing_tracked_files` (in `list`) reports files that SimpleCov should track but hasn't measured
-- No surprises from default patterns that don't match your project
+**Best practice:** Set `COV_LOUPE_OPTS` to match your SimpleCov `track_files` configuration so `list`, `totals`, and missing-file reports use the same scope. See [`--tracked-globs`](CLI_USAGE.md#tracked-globs) for the canonical setup example.
 
 ### Pattern Syntax
 

@@ -120,7 +120,7 @@ Use `model.relativize(...)` when you want library payloads with project-relative
 **MCP Server:**
 See [MCP Integration Guide](docs/user/MCP_INTEGRATION.md) for AI assistant setup.
 
-**Important for MCP users:** MCP servers must keep `stdout` clean until the protocol handshake begins. If you launch `cov-loupe -m mcp` through the RubyGems-installed `cov-loupe` stub from inside some other project directory, wrapper layers such as `ruby_executable_hooks` and `rubygems-bundler` may inspect that directory's `Gemfile` before `cov-loupe` starts. In projects with no lockfile or an incomplete bundle, Bundler can emit lines such as `Resolving dependencies...`, which corrupts MCP startup. The most reliable workaround is to launch through a wrapper that exports `NOEXEC_DISABLE=1`, or to point your MCP client at the gem's real `exe/cov-loupe`. Settling the current project's bundle with `bundle install` often helps too. See [MCP Integration](docs/user/MCP_INTEGRATION.md#stdout-must-stay-clean-during-mcp-startup) and [Troubleshooting](docs/user/TROUBLESHOOTING.md#rubygems-wrapper-prints-to-stdout-before-mcp-startup) for details, fallback options, and the upstream RVM tracking issue.
+**Important for MCP users:** MCP servers must keep `stdout` clean until the protocol handshake begins. If `cov-loupe -m mcp` prints text such as `Resolving dependencies...` before responding, see [Troubleshooting](docs/user/TROUBLESHOOTING.md#rubygems-wrapper-prints-to-stdout-before-mcp-startup) and [MCP Integration](docs/user/MCP_INTEGRATION.md#stdout-must-stay-clean-during-mcp-startup) for wrapper and RubyGems launcher guidance.
 
 ## Multi-Suite Coverage
 
@@ -224,25 +224,7 @@ cov-loupe -fJ list > coverage-report.json
 
 ### Best Practice: Match SimpleCov Configuration
 
-For accurate coverage tracking and validation, set `COV_LOUPE_OPTS` to match your SimpleCov `track_files` patterns:
-
-```ruby
-# In spec_helper.rb or rails_helper.rb
-SimpleCov.start do
-  add_filter '/spec/'
-  track_files 'lib/**/*.rb'
-  track_files 'app/**/*.rb'
-end
-```
-
-```sh
-# In your shell config (.bashrc, .zshrc, etc.)
-export COV_LOUPE_OPTS="--tracked-globs lib/**/*.rb,app/**/*.rb"
-```
-
-This ensures `list` and `totals` output matches SimpleCov's scope and `missing_tracked_files` (in `list`) / `missing_from_coverage` (in `totals`) report meaningful gaps.
-
-**Note:** By default, `--tracked-globs` is empty (shows all files in the resultset). This prevents silently hiding coverage data that doesn't match assumed patterns.
+For accurate coverage tracking and validation, set `COV_LOUPE_OPTS` to match your SimpleCov `track_files` patterns. See [`--tracked-globs`](docs/user/CLI_USAGE.md#tracked-globs) for the canonical setup example and default behavior.
 
 ### Working with JSON Output
 
