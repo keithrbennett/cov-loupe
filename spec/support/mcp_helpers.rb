@@ -2,6 +2,8 @@
 
 # MCP Tool shared examples and helpers
 module MCPToolTestHelpers
+  RESPONSE_NOT_GIVEN = Object.new.freeze
+
   def null_server_context
     instance_double('ServerContext', app_config: nil, mcp_mode?: false)
   end
@@ -22,7 +24,12 @@ module MCPToolTestHelpers
     response_class = Class.new do
       attr_reader :content, :structured_content
 
-      def initialize(content = nil, error: false, structured_content: nil)
+      def initialize(content = nil, deprecated_error = RESPONSE_NOT_GIVEN, error: false,
+        structured_content: nil)
+        if deprecated_error != RESPONSE_NOT_GIVEN
+          error = deprecated_error
+        end
+
         @content = content || []
         @error = error
         @structured_content = structured_content
@@ -33,9 +40,7 @@ module MCPToolTestHelpers
       end
 
       def to_h
-        hash = { content:, isError: error? }
-        hash[:structuredContent] = @structured_content if @structured_content
-        hash
+        { content:, isError: error?, structuredContent: @structured_content }.compact
       end
     end
     stub_const('MCP::Tool::Response', response_class)
