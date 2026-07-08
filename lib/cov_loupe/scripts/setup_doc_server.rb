@@ -7,14 +7,20 @@ module CovLoupe
     class SetupDocServer
       include CommandExecution
 
+      VENV_DIR = '.docs-venv'
+
       def call
         puts 'Setting up Python virtual environment...'
-        run_command(%w[python3 -m venv .venv], print_output: true)
+        run_command(['python3', '-m', 'venv', VENV_DIR], print_output: true)
 
         puts 'Installing dependencies...'
-        # Install using the venv's pip directly
-        pip_path = File.exist?('.venv/bin/pip') ? '.venv/bin/pip' : 'pip'
-        run_command([pip_path, 'install', '-q', '-r', 'requirements.txt'], print_output: true)
+        pip_path = File.join(VENV_DIR, 'bin', 'pip')
+        requirements_path = if File.exist?('requirements-lock.txt')
+          'requirements-lock.txt'
+        else
+          'requirements.txt'
+        end
+        run_command([pip_path, 'install', '-q', '-r', requirements_path], print_output: true)
 
         puts '✓ Documentation server setup complete.'
       end

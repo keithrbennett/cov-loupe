@@ -13,15 +13,14 @@ RSpec.describe CovLoupe::Scripts::SetupDocServer do
       allow($stdout).to receive(:warn)
     end
 
-    it 'creates a venv and installs dependencies' do
-      expect(script).to receive(:run_command).with(%w[python3 -m venv .venv], print_output: true)
-
-      # Mock pip path check
+    it 'creates a docs venv and installs locked dependencies' do
       allow(File).to receive(:exist?).and_call_original
-      allow(File).to receive(:exist?).with('.venv/bin/pip').and_return(true)
+      allow(File).to receive(:exist?).with('requirements-lock.txt').and_return(true)
+
+      expect(script).to receive(:run_command).with(%w[python3 -m venv .docs-venv], print_output: true)
 
       expect(script).to receive(:run_command).with(
-        %w[.venv/bin/pip install -q -r requirements.txt],
+        %w[.docs-venv/bin/pip install -q -r requirements-lock.txt],
         print_output: true
       )
 
@@ -30,25 +29,25 @@ RSpec.describe CovLoupe::Scripts::SetupDocServer do
     end
 
     it 'fails gracefully if pip install fails' do
-      allow(script).to receive(:run_command).with(%w[python3 -m venv .venv], print_output: true)
       allow(File).to receive(:exist?).and_call_original
-      allow(File).to receive(:exist?).with('.venv/bin/pip').and_return(true)
+      allow(File).to receive(:exist?).with('requirements-lock.txt').and_return(true)
+      allow(script).to receive(:run_command).with(%w[python3 -m venv .docs-venv], print_output: true)
 
-      # Simulate failure in run_command (it calls abort_with on failure)
       allow(script).to receive(:run_command).with(
-        %w[.venv/bin/pip install -q -r requirements.txt],
+        %w[.docs-venv/bin/pip install -q -r requirements-lock.txt],
         print_output: true
       ).and_raise(SystemExit)
 
       expect { script.call }.to raise_error(SystemExit)
     end
 
-    it 'falls back to global pip if venv pip is missing' do
-      allow(script).to receive(:run_command).with(%w[python3 -m venv .venv], print_output: true)
+    it 'falls back to requirements.txt if no lock file exists' do
       allow(File).to receive(:exist?).and_call_original
-      allow(File).to receive(:exist?).with('.venv/bin/pip').and_return(false)
+      allow(File).to receive(:exist?).with('requirements-lock.txt').and_return(false)
+      allow(script).to receive(:run_command).with(%w[python3 -m venv .docs-venv], print_output: true)
+
       expect(script).to receive(:run_command).with(
-        %w[pip install -q -r requirements.txt],
+        %w[.docs-venv/bin/pip install -q -r requirements.txt],
         print_output: true
       )
 
