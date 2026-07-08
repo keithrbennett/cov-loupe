@@ -1,6 +1,6 @@
 # Installing a Prerelease Version of cov-loupe
 
-[Back to main README](../../index.md)
+[Back to main README](../index.md)
 
 Prerelease versions of gems (those containing `.pre`, `.alpha`, `.beta`, `.rc`, etc.) are **not** installed by default in RubyGems.
 
