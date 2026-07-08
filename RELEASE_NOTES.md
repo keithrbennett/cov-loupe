@@ -29,7 +29,7 @@
 - Expand `AGENTS.md` with Ruby-specific contributor guidance: inspect core project config files before editing, prefer `bundle exec` and binstubs, and run the smallest relevant test first.
 
 ## v5.0.0 (Breaking)
-- **MCP tool names renamed** to encode scope: file-scope tools are prefixed with `file_` (`file_coverage_summary`, `file_coverage_detailed`, `file_coverage_raw`, `file_uncovered_lines`); project-scope tools are prefixed with `project_` (`project_coverage_list`, `project_coverage_totals`, `project_coverage_table`, `project_validate`). `help_tool` and `version_tool` drop the `_tool` suffix and become `help` and `version`.
+- **MCP tool names renamed** to encode scope: file-scope tools are prefixed with `file_` (`file_coverage_summary`, `file_coverage_detailed`, `file_coverage_raw`, `file_uncovered_lines`); project-scope tools are prefixed with `project_` (`project_coverage`, `project_coverage_totals`, `project_validate`). Table output is available through `project_coverage` with `format: "table"`. `help_tool` and `version_tool` drop the `_tool` suffix and become `help` and `version`.
 
 - **Removed `version` subcommand**: `cov-loupe version` no longer exists. Use `cov-loupe -v` or `cov-loupe --version` instead.
 - **Simplified `--version` output**: `-v`/`--version` now prints only the bare version string (e.g. `5.0.0`) and exits, instead of displaying a formatted table with `Gem Root` and `Documentation` fields. JSON format is no longer supported for version output.

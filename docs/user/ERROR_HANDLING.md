@@ -67,10 +67,7 @@ Errors are surfaced in one of two ways, depending on where the failure occurs:
 Library usage can opt into different logging behavior by installing a custom handler on the active context:
 
 ```ruby
-handler = CovLoupe::ErrorHandler.new(
-  log_errors: true,         # Enable logging when embedding
-  show_stack_traces: false  # Keep error messages clean
-)
+handler = CovLoupe::ErrorHandler.new(error_mode: :log)
 
 context = CovLoupe.create_context(error_handler: handler)
 

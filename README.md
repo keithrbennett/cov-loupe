@@ -109,13 +109,13 @@ require "cov_loupe"
 model = CovLoupe::CoverageModel.new
 list_result = model.list
 files = list_result["files"]
-# => [{ "file" => "lib/cov_loupe/model/model.rb", "covered" => 114, "total" => 118, "percentage" => 96.61, "stale" => "ok" }, ...]
+# => [{ "file" => "/path/to/project/lib/cov_loupe/model/model.rb", "covered" => 114, "total" => 118, "percentage" => 96.61, "stale" => "ok" }, ...]
 
 summary = model.summary_for("lib/cov_loupe/model/model.rb")
-# => { "file" => "lib/cov_loupe/model/model.rb", "summary" => { "covered" => 114, "total" => 118, "percentage" => 96.61 } }
+# => { "file" => "/path/to/project/lib/cov_loupe/model/model.rb", "summary" => { "covered" => 114, "total" => 118, "percentage" => 96.61 } }
 ```
 
-For advanced use cases, multiple models can each have their own data source and log file. See [Library API](docs/user/LIBRARY_API.md#per-model-context-advanced) for details.
+Use `model.relativize(...)` when you want library payloads with project-relative paths. See [Library API](docs/user/LIBRARY_API.md) for details.
 
 **MCP Server:**
 See [MCP Integration Guide](docs/user/MCP_INTEGRATION.md) for AI assistant setup.

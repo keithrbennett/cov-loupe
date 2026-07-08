@@ -276,6 +276,26 @@ When a tool *execution* fails (bad path, invalid predicate, stale coverage, etc.
 
 JSON-RPC `error` responses are reserved for failures that happen *before* the tool runs: unknown methods, invalid JSON-RPC requests, and tool arguments that fail MCP input-schema validation (for example, an invalid `format` or `sort_order` enum value, or a missing required parameter).
 
+**Successful tool execution** — `isError: false`:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 6,
+  "result": {
+    "isError": false,
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"tools\":[{\"tool\":\"file_coverage_summary\",...}]}"
+      }
+    ]
+  }
+}
+```
+
+**Failed tool execution** — `isError: true`:
+
 ```json
 {
   "jsonrpc": "2.0",

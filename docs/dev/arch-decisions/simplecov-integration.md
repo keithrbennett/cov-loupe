@@ -184,8 +184,8 @@ If SimpleCov's format changes:
 ### References
 
 - Gemspec dependencies: `cov-loupe.gemspec` (`spec.add_dependency` entries)
-- JSON parsing: `lib/cov_loupe/resultset_loader.rb` (`ResultsetLoader.load`)
-- Coverage calculations: `lib/cov_loupe/coverage_calculator.rb` (`CoverageCalculator.summary`, `.uncovered`, `.detailed`)
+- JSON parsing: `lib/cov_loupe/loaders/resultset_loader.rb` (`ResultsetLoader.load`)
+- Coverage calculations: `lib/cov_loupe/coverage/coverage_calculator.rb` (`CoverageCalculator.summary`, `.uncovered`, `.detailed`)
 - Resultset discovery: `lib/cov_loupe/resolvers/resultset_path_resolver.rb` (`ResultsetPathResolver::DEFAULT_CANDIDATES`)
 - SimpleCov format documentation: https://github.com/simplecov-ruby/simplecov
 - Development usage: Uses SimpleCov in `spec/spec_helper.rb` to test itself

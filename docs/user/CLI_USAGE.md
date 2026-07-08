@@ -433,6 +433,13 @@ File breakdown:
 
 These options work with all subcommands.
 
+Global options must come before the subcommand:
+
+```sh
+clp -fJ summary lib/api/client.rb  # Correct
+clp summary lib/api/client.rb -fJ  # Incorrect
+```
+
 ### `-r, --resultset PATH`
 
 Path to the `.resultset.json` file or a directory containing it.
@@ -674,11 +681,11 @@ Error handling verbosity.
 
 **Modes:**
 
-| Short | Long    | Description                                        |
-|-------|---------|----------------------------------------------------|
-|       | `off`   | Silent (no error logging)                          |
-| `l`   | `log`   | Log errors without stack traces (default)          |
-| `d`   | `debug` | Log errors with full stack traces                  |
+| Value abbreviation | Long    | Description                               |
+|--------------------|---------|-------------------------------------------|
+| `o`                | `off`   | Silent (no error logging)                 |
+| `l`                | `log`   | Log errors without stack traces (default) |
+| `d`                | `debug` | Log errors with full stack traces         |
 
 ```sh
 clp --error-mode debug summary lib/api/client.rb
@@ -1011,6 +1018,7 @@ clp --error-mode debug 2>&1 | grep resultset
 
 - `0` - Success
 - `1` - Error (file not found, coverage data missing, stale coverage with `-S` / `--raise-on-stale`, etc.)
+- `2` - Predicate error from the `validate` subcommand (invalid predicate or runtime error)
 
 ## Next Steps
 

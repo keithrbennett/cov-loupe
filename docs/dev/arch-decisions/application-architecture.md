@@ -204,7 +204,7 @@ This provides a unified interface for presenting errors to users while preservin
 
 #### 2. ErrorHandler Class
 
-The `ErrorHandler` class (see `lib/cov_loupe/error_handler.rb`) provides configurable error handling behavior:
+The `ErrorHandler` class (see `lib/cov_loupe/errors/error_handler.rb`) provides configurable error handling behavior:
 
 ```ruby
 class ErrorHandler
@@ -234,7 +234,7 @@ The `convert_standard_error` method transforms Ruby's standard errors into user-
 
 #### 3. ErrorHandlerFactory
 
-The `ErrorHandlerFactory` (defined in `lib/cov_loupe/error_handler_factory.rb`) creates mode-specific handlers:
+The `ErrorHandlerFactory` (defined in `lib/cov_loupe/errors/error_handler_factory.rb`) creates mode-specific handlers:
 
 ```ruby
 module ErrorHandlerFactory
@@ -303,8 +303,8 @@ The `ErrorHandler.convert_standard_error` method uses pattern matching on except
 ### References
 
 - Custom exceptions: `lib/cov_loupe/errors/errors.rb`
-- ErrorHandler implementation: `lib/cov_loupe/error_handler.rb`
-- ErrorHandlerFactory: `lib/cov_loupe/error_handler_factory.rb`
+- ErrorHandler implementation: `lib/cov_loupe/errors/error_handler.rb`
+- ErrorHandlerFactory: `lib/cov_loupe/errors/error_handler_factory.rb`
 - CLI error handling: `lib/cov_loupe/cli.rb` (rescue block in `CoverageCLI#run`)
 - MCP tool error handling: `lib/cov_loupe/base_tool.rb` (`BaseTool#call`)
 - Library mode: `lib/cov_loupe.rb` (error handling within `CovLoupe.run`)

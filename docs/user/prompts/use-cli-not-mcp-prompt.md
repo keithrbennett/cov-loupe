@@ -22,7 +22,7 @@ Ideally it is configured as an MCP server so you can call its tools directly. If
    | `file_uncovered_lines` | `uncovered <path>` | `cov-loupe uncovered lib/foo.rb` |
    | `file_coverage_detailed` | `detailed <path>` | `cov-loupe detailed lib/foo.rb` |
    | `project_coverage_totals` | `totals` | `cov-loupe totals` |
-   | `project_validate` | `validate <expr>` | `cov-loupe validate 'pct >= 90'` |
+   | `project_validate` | `validate <file>` / `validate -i <code>` | `cov-loupe validate -i '->(m) { m.project_totals["lines"]["percentage"] >= 90 }'` |
    | `version` | `--version` (flag) | `cov-loupe --version` |
 
 3. **Use `--help`** at any point to get up-to-date flag and argument information:

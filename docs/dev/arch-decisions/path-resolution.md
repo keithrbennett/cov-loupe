@@ -62,7 +62,7 @@ Specifically:
 
 ### Implementation
 
-Path normalization is centralized in the `PathUtils` module (`lib/cov_loupe/path_utils.rb`). It handles:
+Path normalization is centralized in the `PathUtils` module (`lib/cov_loupe/paths/path_utils.rb`). It handles:
 - Normalizing path separators (backslashes to forward slashes on Windows)
 - Case normalization for case-insensitive volumes (autodetected or explicit)
 - Path cleaning
@@ -86,5 +86,5 @@ This approach ensures:
 ### References
 
 - Implementation: `lib/cov_loupe/resolvers/coverage_line_resolver.rb` (delegates to `PathUtils`)
-- Central Logic: `lib/cov_loupe/path_utils.rb`
-- Related tests removed: `spec/resolvers/coverage_line_resolver_spec.rb` (cross-OS separator normalization context)
+- Central Logic: `lib/cov_loupe/paths/path_utils.rb`
+- Related tests removed: `spec/cov_loupe/resolvers/coverage_line_resolver_spec.rb` (cross-OS separator normalization context)

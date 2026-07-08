@@ -35,6 +35,7 @@ require "cov_loupe"
 # - resultset: resolved from common paths under root
 # - raise_on_stale: false (don't raise on stale data)
 # - tracked_globs: [] (no project-level file-set checks)
+# - logger: CovLoupe.logger
 model = CovLoupe::CoverageModel.new
 
 # Custom configuration (non-default values):
@@ -42,7 +43,8 @@ model = CovLoupe::CoverageModel.new(
   root: File.join(Dir.home, 'project'),          # non-default project root
   resultset: "build/coverage",                   # file or directory containing .resultset.json
   raise_on_stale: true,                          # enable strict staleness checks (raise on stale)
-  tracked_globs: ["lib/cov_loupe/tools/**/*.rb"] # for 'list' staleness: flag new/missing files
+  tracked_globs: ["lib/cov_loupe/tools/**/*.rb"],# for 'list' staleness: flag new/missing files
+  logger: Logger.new($stderr)                    # optional custom logger
 )
 
 # List all files with coverage summary
@@ -59,14 +61,14 @@ raw = model.raw_for(target)
 
 ## Method Reference
 
-### `list(sort_order: :descending, raise_on_stale: nil, tracked_globs: [])`
+### `list(sort_order: :descending, raise_on_stale: model default, tracked_globs: model default)`
 
 Returns coverage summary for all files in the resultset.
 
 **Parameters:**
 - `sort_order` (Symbol, optional): `:descending` (default) or `:ascending` by coverage percentage
 - `raise_on_stale` (Boolean, optional): Whether to raise error if project is stale. Defaults to model setting.
-- `tracked_globs` (Array<String>, optional): Patterns to filter files (also used for staleness checks)
+- `tracked_globs` (Array<String>, optional): Patterns to filter files (also used for staleness checks). Defaults to model setting.
 
 **Returns:** `Hash` - See [list return type](#list)
 
@@ -153,7 +155,7 @@ raw = model.raw_for("lib/foo.rb")
 # => { 'file' => '/abs/.../lib/foo.rb', 'lines' => [nil, 1, 0, 3, ...] }
 ```
 
-### `format_table(rows = nil, sort_order: :descending, raise_on_stale: nil, tracked_globs: nil)`
+### `format_table(rows = nil, sort_order: :descending, raise_on_stale: model default, tracked_globs: model default, output_chars: :default)`
 
 Generates formatted ASCII table string.
 
@@ -162,6 +164,7 @@ Generates formatted ASCII table string.
 - `sort_order` (Symbol, optional): `:descending` (default) or `:ascending`
 - `raise_on_stale` (Boolean, optional): Whether to raise error if project is stale. Defaults to model setting.
 - `tracked_globs` (Array<String>, optional): Patterns to filter files.
+- `output_chars` (Symbol, optional): Character mode for table borders and symbols (`:default`, `:fancy`, or `:ascii`).
 
 **Returns:** `String` - Formatted table with Unicode borders
 
@@ -254,7 +257,7 @@ Returns `Hash` with file data and staleness metadata:
 }
 ```
 
-### `summary_for`
+### `summary_for` {#summary_for}
 
 Returns `Hash`:
 
@@ -271,7 +274,7 @@ Returns `Hash`:
 
 The CLI and MCP responses add a `'stale'` field with values `"ok"`, `"missing"`, `"newer"`, `"length_mismatch"`, or `"error"`.
 
-### `uncovered_for`
+### `uncovered_for` {#uncovered_for}
 
 Returns `Hash`:
 
@@ -287,7 +290,7 @@ Returns `Hash`:
 }
 ```
 
-### `detailed_for`
+### `detailed_for` {#detailed_for}
 
 Returns `Hash`:
 
@@ -312,7 +315,7 @@ Each element in `lines` array:
 }
 ```
 
-### `raw_for`
+### `raw_for` {#raw_for}
 
 Returns `Hash`:
 
@@ -323,7 +326,7 @@ Returns `Hash`:
 }
 ```
 
-### `project_totals`
+### `project_totals` {#project_totals}
 
 Returns `Hash`:
 
@@ -743,9 +746,9 @@ reporter = CoverageReporter.new(model)
 reporter.generate_markdown_report("coverage_report.md")
 ```
 
-### Per-Model Context (Advanced)
+### Custom Library Context (Advanced)
 
-By default, all `CoverageModel` instances share the global context for error handling and logging. For advanced scenarios where you need different models with different logging or error handling configurations in the same process, you can pass a custom context to each model.
+By default, `CoverageModel` uses the active CovLoupe context for error handling and logging. For advanced scenarios where a block of work needs different logging or error handling, create a context and run that work inside `CovLoupe.with_context`.
 
 ```ruby
 require "cov_loupe"
@@ -758,32 +761,29 @@ context_a = CovLoupe.create_context(
   log_target: 'project_a_coverage.log'
 )
 
-model_a = CovLoupe::CoverageModel.new(
-  root: '/path/to/project_a',
-  resultset: '/path/to/project_a/coverage/.resultset.json',
-  context: context_a
-)
+summary_a = CovLoupe.with_context(context_a) do
+  model_a = CovLoupe::CoverageModel.new(
+    root: '/path/to/project_a',
+    resultset: '/path/to/project_a/coverage/.resultset.json'
+  )
+  model_a.summary_for('lib/foo.rb')
+end
 
 # Project B: Different log file
 context_b = context_a.with(log_target: 'project_b_coverage.log')
 
-model_b = CovLoupe::CoverageModel.new(
-  root: '/path/to/project_b',
-  resultset: '/path/to/project_b/coverage/.resultset.json',
-  context: context_b
-)
-
-# Each model logs to its own file
-summary_a = model_a.summary_for('lib/foo.rb')  # Logs to project_a_coverage.log
-summary_b = model_b.summary_for('lib/bar.rb')  # Logs to project_b_coverage.log
-
-# You can also change a model's context at runtime
-model_a.context = CovLoupe.context  # Switch to global context
+summary_b = CovLoupe.with_context(context_b) do
+  model_b = CovLoupe::CoverageModel.new(
+    root: '/path/to/project_b',
+    resultset: '/path/to/project_b/coverage/.resultset.json'
+  )
+  model_b.summary_for('lib/bar.rb')
+end
 ```
 
-**When to use per-model contexts:**
+**When to use custom contexts:**
 - Managing coverage for multiple projects in one script
-- Different error handling strategies per model
+- Different error handling strategies for separate blocks of work
 - Separate log files for different data sources
 - Testing scenarios requiring isolated configurations
 
@@ -793,7 +793,7 @@ model_a.context = CovLoupe.context  # Switch to global context
 CovLoupe.error_handler = CovLoupe::ErrorHandlerFactory.for_library
 CovLoupe.default_log_file = 'coverage_analysis.log'
 
-# All models automatically use the global context
+# All models automatically use the active global context
 model = CovLoupe::CoverageModel.new
 ```
 
@@ -807,7 +807,7 @@ The `list` method returns a `'stale'` field for each file with one of these valu
 - `"length_mismatch"` - **Length**: Source file line count differs from coverage data
 - `"error"` - **Error**: Staleness check failed
 
-**Note:** Per-file methods (`summary_for`, `uncovered_for`, `detailed_for`, `raw_for`) do not include staleness information in their return values. To check staleness for individual files, use `list` and filter the results.
+**Note:** Per-file methods (`summary_for`, `uncovered_for`, `detailed_for`, `raw_for`) do not include staleness information in their return values. To check staleness for an individual file, call `model.staleness_for(path)`.
 
 When `raise_on_stale: true` is enabled in `CoverageModel.new`, the model will raise `CovLoupe::CoverageDataStaleError` exceptions when stale files are detected during method calls.
 

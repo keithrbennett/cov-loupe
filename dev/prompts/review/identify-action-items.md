@@ -142,7 +142,7 @@ ordered by priority (considering severity, effort, and impact):
 | Brief Description (<= 50 chars) | Severity (H/M/L) | Effort (H/M/L) |
 | Impact if Unaddressed | Link to Detail |
 | :--- | :---: | :---: | :--- | :--- |
-| ... | ... | ... | ... | [See below](#issue-title) |
+| ... | ... | ... | ... | [See below](#issue-insecure-password-storage) |
 
 **Priority ordering:** Issues should be ordered to maximize value. Generally this means:
 - Critical severity with low-to-medium effort → highest priority

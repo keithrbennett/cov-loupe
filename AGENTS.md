@@ -76,7 +76,7 @@ Prefer project‑local tools and scripts (for example, bin/ scripts, package.jso
 
 ### Coverage Data Flow
 1. Read SimpleCov `.resultset.json` files without needing SimpleCov at runtime (unless merging suites).
-2. Resolve file paths using absolute match, relative path matching, and basename fallback strategies.
+2. Resolve file paths using exact normalized matches and project-root-relative matching.
 3. Provide coverage data in multiple formats: raw arrays, summaries, uncovered lines, per-line details, totals, and formatted tables.
 
 ## Building, Running, and Testing
@@ -158,7 +158,7 @@ Always prefer these tools over free-form reasoning to keep responses grounded in
 - Always select an MCP tool over ad-hoc reasoning for coverage data. Unsure which one fits? Call `help`.
 - Available tools: `file_coverage_summary`, `file_coverage_detailed`, `file_uncovered_lines`, `file_coverage_raw`, `project_coverage`, `project_coverage_totals`, `project_validate`, `help`, and `version`.
 - Check `result.isError` before parsing tool response content. `isError: false` means the tool succeeded; `isError: true` means execution failed (bad path, invalid predicate, stale coverage, etc.) and the `content` carries a friendly error message. A top-level JSON-RPC `error` object (not a `result`) indicates a protocol- or schema-level failure (unknown tool, missing required argument, invalid enum) that never reached tool execution.
-- On success, responses return deterministic JSON/text; surface the tool output directly unless the user asks for interpretation. Note that `project_coverage` now includes `skipped_files`, `missing_tracked_files`, `newer_files`, and `deleted_files` arrays in its output to report any files that could not be processed due to errors or staleness.
+- On success, responses return deterministic JSON/text; surface the tool output directly unless the user asks for interpretation. Note that `project_coverage` now includes `skipped_files`, `missing_tracked_files`, `newer_files`, `deleted_files`, `length_mismatch_files`, and `unreadable_files` arrays in its output to report any files that could not be processed due to errors or staleness.
 
 ## Development Conventions
 - Target Ruby >= 3.2; use two-space indentation and `# frozen_string_literal: true` in Ruby files.
@@ -174,7 +174,7 @@ Always prefer these tools over free-form reasoning to keep responses grounded in
 - **MCP server mode** – return `tools/call` results with `isError: true` for tool execution failures (JSON-RPC errors remain reserved for protocol-level failures) and log context to `./cov_loupe.log`.
 
 ### Path Resolution Strategy
-1. Attempt exact absolute path matches within the coverage data.
+1. Attempt exact normalized path matches within the coverage data.
 2. Retry using paths without the project-root prefix.
 
 On case-insensitive volumes, comparisons are case-normalized; on case-sensitive volumes, case must match exactly.

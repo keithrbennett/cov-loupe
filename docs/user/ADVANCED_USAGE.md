@@ -592,18 +592,18 @@ end
 
 ## Performance Optimization
 
-### Minimizing Coverage Reads
+### Reusing Coverage Models
 
-The `CoverageModel` reads `.resultset.json` once at initialization:
+`CoverageModel` reads `.resultset.json` through a shared cache. The cache automatically reloads when the resultset file changes, and reusing one model for related queries avoids repeated model setup:
 
 ```ruby
-# Good: Single model for multiple queries
+# Good: Single model for related queries
 model = CovLoupe::CoverageModel.new
 files = model.list['files']
 file1 = model.summary_for('lib/a.rb')
 file2 = model.summary_for('lib/b.rb')
 
-# Bad: Re-reads coverage for each operation
+# Works, but creates extra model instances
 model1 = CovLoupe::CoverageModel.new
 files = model1.list['files']
 

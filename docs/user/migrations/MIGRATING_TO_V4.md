@@ -27,7 +27,7 @@ This document describes the breaking changes introduced in version 4.0.0. These 
 
 ## CLI Changes
 
-### ⚠️ MCP Mode Now Requires Explicit `-m/--mode mcp` Flag
+### ⚠️ MCP Mode Now Requires Explicit `-m/--mode mcp` Flag {#mcp-mode-now-requires-explicit-m-mode-mcp-flag}
 
 **BREAKING**: Automatic mode detection has been removed. 
 The `-m/--mode mcp` flag is now **required** to run cov-loupe as an MCP server.
@@ -77,7 +77,7 @@ The staleness checking logic has been unified into a single flag that raises an 
 
 #### Behavior
 *   **`--raise-on-stale true` (or `raise_on_stale: true`)**: The command will exit with an error code if any file in the result set is stale or if the project totals are stale.
-*   **Default (false)**: Staleness is reported in the output (e.g., status `M`, `T`, `L`), but the command returns success (unless other errors occur).
+*   **Default (false)**: Staleness is reported in the output (e.g., status `"missing"`, `"newer"`, or `"length_mismatch"`), but the command returns success (unless other errors occur).
 
 #### Migration
 *   If you relied on previous flags to enforce staleness checks, switch to `--raise-on-stale true` or `-S true`.
@@ -170,7 +170,7 @@ result = model.list  # Uses explicit globs
 
 ## Ruby API Changes
 
-### CoverageLineResolver Now Requires `root:` and `volume_case_sensitive:`
+### CoverageLineResolver Now Requires `root:` and `volume_case_sensitive:` {#coveragelineresolver-now-requires-root-and-volume_case_sensitive}
 
 **Breaking Change**: `CovLoupe::Resolvers::CoverageLineResolver` now requires `root:` and `volume_case_sensitive:` keyword arguments, and `CovLoupe::Resolvers::ResolverHelpers.lookup_lines` / `create_coverage_resolver` now require these parameters as well.
 
@@ -276,7 +276,7 @@ result = model.list
 table = model.format_table(result)  # This will fail
 ```
 
-### Return Type Changed: `project_totals` Schema Updated
+### Return Type Changed: `project_totals` Schema Updated {#return-type-changed-project_totals-schema-updated}
 
 **Breaking Change**: `CoverageModel#project_totals` now returns a structured hash with
 explicit `lines`, `tracking`, and `files` sections. The top-level `percentage` and

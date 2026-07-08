@@ -111,7 +111,7 @@ Comprehensive test coverage exists:
 
 - `lib/cov_loupe/` – Core runtime (model, utilities, error handling, CLI, MCP server, tools).
 - `lib/cov_loupe.rb` – Primary public entry point required by gem consumers.
-- `lib/cov_loupe/path_utils.rb` – Centralized path normalization and expansion logic.
+- `lib/cov_loupe/paths/path_utils.rb` – Centralized path normalization and expansion logic.
 - `docs/` – Audience-specific guides (`docs/user` for usage, `docs/dev` for contributors).
 - `spec/` – RSpec suite with fixtures under `spec/fixtures/` for deterministic coverage data.
 
@@ -120,7 +120,7 @@ Comprehensive test coverage exists:
 1. Add or update data processing inside `CoverageModel` or `CoverageCalculator` when a new metric is needed.
 2. Surface that metric through all interfaces: add a CLI option/subcommand, create an MCP tool, and expose a library helper method.
 3. Register the new tool in `MCPServer` and update CLI option parsing in `CoverageCLI`.
-4. Provide tests under `spec/` mirroring the lib path (`spec/lib/cov_loupe/..._spec.rb`).
+4. Provide tests under `spec/` mirroring the lib path (`spec/cov_loupe/..._spec.rb`).
 5. Update documentation to reflect the new capability.
 
 By funnelling every interface through the shared `CoverageModel`, cov-loupe guarantees that CLI users, MCP clients, and embedding libraries all observe identical coverage semantics and staleness rules, while still allowing each adapter to tailor presentation and error handling to its audience.
