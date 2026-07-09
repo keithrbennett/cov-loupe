@@ -38,7 +38,7 @@ jobs:
         RSPEC_DISRUPTIVE_TESTS: exclude
     
     - name: Upload coverage reports
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v6
       if: matrix.ruby-version == '3.3' && matrix.os == 'ubuntu-latest'
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
