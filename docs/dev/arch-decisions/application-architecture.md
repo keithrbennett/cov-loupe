@@ -175,7 +175,7 @@ Initially, we considered uniform error handling across all modes, but this creat
 #### Key Requirements
 
 - **CLI**: User-friendly messages, meaningful exit codes, optional stack traces for debugging
-- **MCP Server**: Logged errors (to file, not stdout), tool results with `isError: true` (reserving JSON-RPC errors for protocol-level failures), no server crashes
+- **MCP Server**: Logged execution errors (to file, not stdout), tool results with `isError: true` for argument-validation and execution failures (reserving JSON-RPC errors for protocol- or dispatch-level failures such as unknown tools), no server crashes
 - **Library**: Raise custom exceptions with no logging, allowing consumers to handle errors as needed
 - **Consistency**: Same underlying error types, but different presentation strategies
 
@@ -263,7 +263,7 @@ end
 **MCP Server Mode** (`lib/cov_loupe/base_tool.rb`):
 1. Each tool wraps execution in a rescue block
 2. Uses `for_mcp_server` handler to log errors to `./cov_loupe.log`
-3. Returns a `tools/call` result with `isError: true` and the friendly message in the content (the tool-result-level error flag; a JSON-RPC `error` is reserved for protocol-level failures)
+3. Returns a `tools/call` result with `isError: true` and the friendly message in the content (matching the result shape that the MCP SDK uses for argument-validation failures; a JSON-RPC `error` is reserved for protocol- or dispatch-level failures such as unknown tools)
 4. Server continues running (no crashes)
 
 **Library Mode** (`lib/cov_loupe.rb`):

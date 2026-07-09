@@ -57,9 +57,9 @@ Available exception classes:
 
 Errors are surfaced in one of two ways, depending on where the failure occurs:
 
-- **Tool-result error flag** - Failed tool *executions* (bad path, invalid predicate, stale coverage, etc.) return a `tools/call` result with `isError: true`. MCP clients can detect the failure programmatically by checking the `isError` field.
-- **JSON-RPC error** - Protocol-level failures and arguments that fail MCP input-schema validation (unknown tool, missing required argument, invalid enum value such as `format` or `sort_order`) return a JSON-RPC `error` response, *not* a `tools/call` result with `isError: true`.
-- **Logging enabled** - Errors go to `cov_loupe.log` in the current directory by default
+- **Tool-result error flag** - Failed tool calls (bad path, invalid predicate, stale coverage, missing required argument, invalid enum value such as `format` or `sort_order`, etc.) return a `tools/call` result with `isError: true`. MCP clients can detect the failure programmatically by checking the `isError` field.
+- **JSON-RPC error** - Protocol- and dispatch-level failures, such as malformed JSON-RPC requests, unknown methods, and unknown tools, return a JSON-RPC `error` response rather than a `tools/call` result.
+- **Logging enabled** - Tool-execution errors handled by cov-loupe go to `cov_loupe.log` in the current directory by default; MCP SDK argument-validation failures do not reach cov-loupe's logger
 - **Clean error messages** - User-friendly messages, no stack traces by default
 
 ## Custom Error Handlers

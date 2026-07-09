@@ -47,9 +47,9 @@ module Spec
         expect(response['error']).to have_key('message')
       end
 
-      # Asserts a tool-execution failure: a tools/call result whose serialized
-      # payload carries isError: true (the MCP-spec mechanism for tool errors),
-      # as distinct from a JSON-RPC error used for protocol-level failures.
+      # Asserts a failed tools/call result, including argument-validation and
+      # tool-execution failures. JSON-RPC errors are reserved for protocol- or
+      # dispatch-level failures such as unknown tools.
       def expect_jsonrpc_tool_error(response, id)
         expect(response).to include('jsonrpc' => '2.0', 'id' => id)
         expect(response).to have_key('result'),
@@ -60,7 +60,7 @@ module Spec
           "expected isError: true for id #{id}, " \
           "got result: #{result.inspect}"
         text = result.dig('content', 0, 'text').to_s
-        expect(text.downcase).to match(/error|not found|required/)
+        expect(text.downcase).to match(/error|invalid|not found|required/)
       end
     end
   end

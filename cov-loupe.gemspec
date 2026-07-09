@@ -32,7 +32,7 @@ Gem::Specification.new do |spec|
   # Runtime deps (stdlib: json, time, pathname, yaml)
   spec.add_dependency 'amazing_print', '~> 2.0'
   spec.add_dependency 'logger'
-  spec.add_dependency 'mcp', '~> 0.4'
+  spec.add_dependency 'mcp', '>= 0.15', '< 1.0'
   spec.add_dependency 'simplecov', '>= 0.21', '< 1.0'
   spec.metadata['rubygems_mfa_required'] = 'true'
 
@@ -105,6 +105,9 @@ Gem::Specification.new do |spec|
     ┃    'p' now means puts (was pretty_json); 'J' now means pretty_json.       ┃
     ┃    'ap'/awesome_print no longer accepted; use 'a'/amazing_print.          ┃
     ┃    New formats added: inspect (i), puts (p), pretty_print (P).            ┃
+    ┃                                                                           ┃
+    ┃  • MCP tool-call failures now return results with isError: true.          ┃
+    ┃    Requires mcp >= 0.15; upgrade applications pinned to older versions.   ┃
     ┃                                                                           ┃
     ┃  📖 Migration instructions: docs/user/migrations/MIGRATING_TO_V6.md       ┃
     ┃                                                                           ┃

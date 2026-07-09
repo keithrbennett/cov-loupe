@@ -388,14 +388,24 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
         expect_jsonrpc_tool_error(project_error_resp, 9)
       end
 
-      # Protocol-level failures: genuine JSON-RPC error responses raised by the
-      # mcp gem before tool dispatch (missing required args, unknown tool, or
-      # arguments that fail input-schema validation such as invalid enums).
+      aggregate_failures 'protocol- and dispatch-level failures' do
+        unknown_tool_response = jsonrpc_tool_call(200, 'nonexistent_tool')
+        expect_jsonrpc_error(unknown_tool_response, 200)
+
+        unknown_method_response = jsonrpc_call(204, 'nonexistent_method')
+        expect_jsonrpc_error(unknown_method_response, 204)
+
+        malformed_request = run_mcp_json({ jsonrpc: '2.0', id: 205 })
+        malformed_response = parse_jsonrpc(malformed_request[:stdout])
+        expect_jsonrpc_error(malformed_response, nil)
+      end
+
+      # The mcp gem reports tool-argument validation failures as tools/call
+      # results with isError: true, even though validation happens before the
+      # tool implementation runs.
       aggregate_failures do
         [
           { id: 201, name: 'file_coverage_summary', arguments: {} },
-          # unknown tool
-          { id: 200, name: 'nonexistent_tool', arguments: {} },
           # invalid format enum
           {
             id:        202,
@@ -410,7 +420,7 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
           },
         ].each do |request|
           response = jsonrpc_tool_call(request[:id], request[:name], request[:arguments])
-          expect_jsonrpc_error(response, request[:id])
+          expect_jsonrpc_tool_error(response, request[:id])
         end
       end
     end

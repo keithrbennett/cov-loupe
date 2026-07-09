@@ -156,7 +156,7 @@ module CovLoupe
       # can distinguish failed tool calls from successful ones, rather than
       # embedding error text in a normal success response. This is the
       # tool-result-level error signal; a JSON-RPC error is reserved for
-      # protocol-level failures raised before tool dispatch.
+      # protocol- or dispatch-level failures such as an unknown tool.
       ::MCP::Tool::Response.new(
         [{ 'type' => 'text', 'text' => "Error: #{error_message}" }],
         error: true

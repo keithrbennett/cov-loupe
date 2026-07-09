@@ -196,11 +196,11 @@ This decision was informed by discussions with multiple AI models. For more deta
 
 ### Error Responses
 
-When a tool *execution* fails (bad path, invalid predicate, stale coverage, etc.), cov-loupe returns a `tools/call` result with `isError: true` and the friendly error message in the `content` array. This is a **tool-result-level** signal, distinct from a **JSON-RPC error** response.
+Failed tool calls return a `tools/call` result with `isError: true` and an error message in the `content` array. The MCP SDK emits this result for argument-validation failures before cov-loupe runs; cov-loupe emits it for tool-execution failures such as bad paths, invalid predicates, and stale coverage. This is a **tool-result-level** signal, distinct from a **JSON-RPC error** response.
 
-JSON-RPC `error` responses are reserved for failures that happen *before* the tool runs: unknown methods, invalid JSON-RPC requests, and tool arguments that fail MCP input-schema validation (for example, an invalid `format` or `sort_order` enum value, or a missing required parameter).
+JSON-RPC `error` responses are reserved for protocol- and dispatch-level failures such as unknown methods, invalid JSON-RPC requests, and unknown tools. Input-schema validation failures are tool-result errors even though validation happens before the tool implementation runs.
 
-**Successful tool execution** — `isError: false`:
+**Successful tool call** — `isError: false`:
 
 ```json
 {
@@ -218,7 +218,7 @@ JSON-RPC `error` responses are reserved for failures that happen *before* the to
 }
 ```
 
-**Failed tool execution** — `isError: true`:
+**Tool-execution failure** — `isError: true`:
 
 ```json
 {
@@ -236,7 +236,25 @@ JSON-RPC `error` responses are reserved for failures that happen *before* the to
 }
 ```
 
-Your MCP client should check `result.isError` before parsing the response content as a successful payload. `isError: false` means the tool succeeded and the content can be parsed normally; `isError: true` means execution failed. If the response itself contains an `error` object instead of a `result`, the failure is at the JSON-RPC/schema level and did not reach tool execution.
+**Argument-validation failure** — `isError: true`:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 8,
+  "result": {
+    "isError": true,
+    "content": [
+      {
+        "type": "text",
+        "text": "Missing required arguments: path"
+      }
+    ]
+  }
+}
+```
+
+Your MCP client should check `result.isError` before parsing the response content as a successful payload. `isError: false` means the tool succeeded and the content can be parsed normally; `isError: true` means the call failed. If the response itself contains an `error` object instead of a `result`, the failure is at the protocol or dispatch level.
 
 ### CLI Options in MCP Mode
 
@@ -409,7 +427,7 @@ Using cov-loupe, create a markdown report of:
 
 ### Manual Testing via Command Line
 
-Test the MCP server responds to JSON-RPC:
+Use these commands as smoke tests to confirm that the MCP server is installed, launches with your configuration, and responds to JSON-RPC over stdio. They are not an exhaustive error-contract test suite; the included error cases are optional sanity checks. See [Error Responses](#error-responses) for the full MCP failure model.
 
 ```sh
 # Prefer the real executable or a known-clean working directory for MCP tests.
@@ -422,8 +440,11 @@ echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"help","arg
 # Test summary tool (use root param if needed)
 echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"lib/cov_loupe/model/model.rb","root":"."}}}' | cov-loupe -m mcp
 
-# Test an error case: the response should contain a `result` with `isError: true`
+# Optional error sanity check: the response should contain a `result` with `isError: true`
 echo '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"nonexistent.rb","root":"."}}}' | cov-loupe -m mcp
+
+# Optional validation sanity check: this also returns a `result` with `isError: true`
+echo '{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{}}}' | cov-loupe -m mcp
 
 # Test with a project-specific root
 echo '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"app/models/order.rb","root":"docs/fixtures/demo_project"}}}' | cov-loupe -m mcp
@@ -458,7 +479,7 @@ If these work, your setup is correct!
 
 ### Checking Logs
 
-The MCP server logs to `cov_loupe.log` in the current directory by default.
+The MCP server logs tool-execution errors and other cov-loupe diagnostics to `cov_loupe.log` in the current directory by default. Argument-validation failures emitted by the MCP SDK before cov-loupe runs do not reach this logger.
 
 ```sh
 # Watch logs in real-time

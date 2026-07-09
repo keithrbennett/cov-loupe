@@ -2,7 +2,7 @@
 
 [Back to Migration Guides](README.md)
 
-This document describes the breaking changes introduced in version 6.0.0, plus notable non-breaking improvements for MCP integrators.
+This document describes the breaking changes introduced in version 6.0.0, including changes that require MCP integrators to update their clients or dependencies.
 
 ## Table of Contents
 
@@ -111,17 +111,23 @@ cov-loupe -f P list                   # pretty_print: Ruby stdlib PP.pp output
 
 ## MCP Tool Errors Now Carry `isError: true` {#mcp-tool-errors-now-carry-iserror-true}
 
-**Not a breaking change**, but MCP integrators should update their clients.
+**Breaking change:** MCP clients must handle `isError: true` for both argument-validation and tool-execution failures.
 
-Failed tool *executions* (bad path, invalid predicate, stale coverage, etc.) now return a `tools/call` **result** with `isError: true` and the friendly error message in `content`. Previously, callers had to infer failure from `"Error: ..."` text in an otherwise normal success response.
+Failed tool calls now return a `tools/call` **result** with `isError: true` and the error message in `content`. This includes two failure categories:
+
+- **Argument validation:** Missing required arguments and invalid enum values are rejected by the MCP SDK before the tool implementation runs. They return `isError: true` rather than a top-level JSON-RPC error.
+- **Tool execution:** Bad paths, invalid predicates, stale coverage, and similar cov-loupe errors return `isError: true`. Previously, callers had to infer these failures from `"Error: ..."` text in an otherwise successful result.
+
+This contract requires `mcp` 0.15 or newer, so cov-loupe now declares that minimum version. Applications pinned to an older `mcp` version must upgrade it before installing cov-loupe v6.
 
 **What to change:**
 
 - Check `result.isError` before parsing response content as a successful payload.
 - Do not rely on parsing `"Error: ..."` text alone to detect tool failures.
-- A top-level JSON-RPC `error` response (not a `result`) still indicates protocol- or schema-level failures (unknown tool, missing required argument, invalid `format`/`sort_order` enum), distinct from tool execution errors.
+- Treat missing required arguments and invalid `format`/`sort_order` enum values as `tools/call` results with `isError: true`.
+- A top-level JSON-RPC `error` response (not a `result`) indicates a protocol- or dispatch-level failure, such as an unknown tool.
 
-**Example:**
+**Tool-execution failure example:**
 
 ```json
 {
@@ -133,6 +139,24 @@ Failed tool *executions* (bad path, invalid predicate, stale coverage, etc.) now
       {
         "type": "text",
         "text": "Error: file not found in coverage data: nonexistent.rb"
+      }
+    ]
+  }
+}
+```
+
+**Argument-validation failure example:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "result": {
+    "isError": true,
+    "content": [
+      {
+        "type": "text",
+        "text": "Missing required arguments: path"
       }
     ]
   }

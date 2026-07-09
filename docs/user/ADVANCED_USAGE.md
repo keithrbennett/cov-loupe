@@ -27,7 +27,7 @@
 
 ### MCP Error Handling
 
-The MCP server signals tool execution failures by returning a `tools/call` **result** with `isError: true` (the MCP-spec mechanism for tool errors), carrying the user-friendly message in the response content:
+The MCP server signals tool-call failures by returning a `tools/call` **result** with `isError: true` (the MCP-spec mechanism for tool errors), carrying the user-friendly message in the response content:
 
 ```json
 {
@@ -45,11 +45,11 @@ The MCP server signals tool execution failures by returning a `tools/call` **res
 }
 ```
 
-This lets MCP clients programmatically distinguish a failed tool call from a successful one. A JSON-RPC `error` response (e.g. `-32603`) is reserved for protocol-level failures such as an unknown tool or invalid arguments, not tool execution errors.
+This lets MCP clients programmatically distinguish a failed tool call from a successful one. Argument-validation failures also return `isError: true`; a JSON-RPC `error` response is reserved for protocol- and dispatch-level failures such as an unknown tool.
 
 ### MCP Server Logging
 
-The MCP server logs to `cov_loupe.log` in the current directory by default.
+The MCP server logs tool-execution errors and other cov-loupe diagnostics to `cov_loupe.log` in the current directory by default. Argument-validation failures emitted by the MCP SDK before cov-loupe runs do not reach this logger.
 
 To override the default log file location, specify the `--log-file` (or `-l`) argument wherever and however you configure your MCP server. For example, to log to a different file path, include `-l /path/to/logfile.log` in your server configuration. To log to standard error, use `-l stderr`. To disable logging entirely, use `-l :off` (cross-platform alternative to `/dev/null`).
 
@@ -59,7 +59,9 @@ To override the default log file location, specify the `--log-file` (or `-l`) ar
 
 ### Testing MCP Server Manually
 
-Use JSON-RPC over stdin to test the MCP server. **Note:** CLI flags set defaults for MCP tool calls, but per-request JSON parameters still win. Use `-R`/`-r` when you want server-wide defaults, or pass `root`/`resultset` per request.
+Use these JSON-RPC commands as smoke tests to confirm that the MCP server launches and responds over stdin with your configuration. They are not exhaustive error-contract tests; see [Testing Your Setup](MCP_INTEGRATION.md#testing-your-setup) for installation checks and [Error Responses](MCP_INTEGRATION.md#error-responses) for the full MCP failure model.
+
+**Note:** CLI flags set defaults for MCP tool calls, but per-request JSON parameters still win. Use `-R`/`-r` when you want server-wide defaults, or pass `root`/`resultset` per request.
 
 ```sh
 # Get version (no parameters needed)
@@ -261,7 +263,7 @@ coverage_b = model_b.list
 
 **Library Mode:** typed exceptions with full details
 
-**MCP Server Mode:** failed tool calls return a `tools/call` result with `isError: true` (logged to file); JSON-RPC errors are reserved for protocol-level failures
+**MCP Server Mode:** argument-validation and tool-execution failures return a `tools/call` result with `isError: true` (execution failures are logged to file); JSON-RPC errors are reserved for protocol- or dispatch-level failures such as malformed JSON-RPC requests, unknown methods, and unknown tools
 
 ### Error Modes
 

@@ -190,11 +190,10 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
     end
   end
 
-  # These direct-call tests exercise the tool's own validation. In real MCP
-  # traffic, invalid `format`/`sort_order` enum values are rejected by the MCP
-  # input schema before the tool runs and therefore return JSON-RPC errors, not
-  # tool-result errors with `isError: true`. See integration tests for the
-  # wire-level behavior.
+  # These direct-call tests bypass MCP input-schema validation and exercise the
+  # tool's equivalent internal validation. In real MCP traffic, the schema
+  # rejects invalid `format`/`sort_order` enum values before the tool runs but
+  # returns the same tool-result error shape with `isError: true`.
   describe 'invalid format (direct tool call)' do
     it 'returns an error response for invalid format' do
       response = described_class.call(root: root, format: 'invalid_format',
