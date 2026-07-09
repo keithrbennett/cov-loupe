@@ -22,15 +22,15 @@
 
 **cov-loupe** makes SimpleCov coverage data queryable and actionable through three interfaces:
 
-- **MCP server** - Lets AI assistants analyze your coverage
-- **CLI** - Fast command-line coverage reports and queries
+- **CLI** - command-line execution of single reports or queries
+- **MCP server** - stdio (localhost nonnetwork) server assists AI analysis of your coverage
 - **Ruby library** - Programmatic API for custom tooling
 
-Works with any SimpleCov-generated `.resultset.json` file—no runtime dependency on your test suite.
+Works with any SimpleCov-generated `.resultset.json` file—no runtime dependency on your test suite. (New coverage.json file support coming soon.)
 
 ### Key Features
 
-- ✅ **Multiple interfaces** - MCP server, CLI, and Ruby API
+- ✅ **Multiple interfaces** - CLI, MCP server, and Ruby API
 - **Annotated source code** - `-s full|uncovered|none` / `--source full|uncovered|none` with `-c N` / `--context-lines N` for context lines
 - ✅ **Staleness detection** - Identify outdated coverage (missing files, timestamp mismatches, line count changes)
 - ✅ **Multi-suite support** - Automatic merging of multiple test suites (RSpec + Cucumber, etc.)
@@ -53,6 +53,9 @@ Works with any SimpleCov-generated `.resultset.json` file—no runtime dependenc
 
 ```sh
 gem install cov-loupe
+
+# Or, for the most current version you may need to specify prerelease:
+gem install --pre cov-loupe
 ```
 
 ### Upgrading
@@ -62,8 +65,8 @@ If you are upgrading from a previous version, please refer to the [Migration Gui
 ### Generate Coverage Data
 
 ```sh
-# Run your tests with SimpleCov enabled
-bundle exec rspec  # or your test command
+# Generate your SimpleCov test coverage data with your test suite run command, e.g.:
+bundle exec rspec
 
 # Verify coverage was generated
 ls -l coverage/.resultset.json
@@ -71,11 +74,11 @@ ls -l coverage/.resultset.json
 
 ### Basic Usage
 
-**CLI - View Coverage Table:**
+**CLI - View Coverage Table:** This is the default command, so any of the following will work:
 ```sh
 cov-loupe
-# or use the 'l' abbreviation for 'list'
 cov-loupe l
+cov-loupe list
 ```
 
 **CLI - Check Specific File:**
@@ -86,20 +89,28 @@ cov-loupe s lib/cov_loupe/model/model.rb
 cov-loupe u lib/cov_loupe/cli.rb
 ```
 
-**CLI - Find the Project Homepage Fast:**
-Run `cov-loupe -h` and the banner's second line shows the repository URL. Some terminal applications (e.g. iTerm2) will enable direct clicking the link using modifier keys such as `Cmd` or `Alt`.
+**CLI - Find Project Resources:**
+
+The repo URL, doc server URL, and local gem filespec are output in the header of the online help, e.g.:
+
 ```
-Usage:      cov-loupe [options] [subcommand] [args]
-Repository: https://github.com/keithrbennett/cov-loupe  # <--- Project URL ---
+Repository:            https://github.com/keithrbennett/cov-loupe
+Documentation (Web):   https://keithrbennett.github.io/cov-loupe/
+Documentation (Local): /Users/kbennett/.local/share/mise/installs/ruby/4.0.5/lib/ruby/gems/4.0.0/gems/cov-loupe-6.0.0.pre/README.md
 ```
 
-**CLI - Fetch Canonical Resource Values:**
-```sh
+There is a p/--path-for option that will get an individual value for each of these:
+
+```
 cov-loupe -p repo
-cov-loupe --path-for repo
-cov-loupe --path-for docs
-cov-loupe --path-for docs-local
-open `cov-loupe --path-for docs`
+cov-loupe -p docs
+cov-loupe -p docs-local
+```
+
+You can use your operating system's application open command (usually `open` for Mac, `xdg-open` on Linux, and `start` on Windows) to assemble this into a single command:
+
+```
+open `cov-loupe -p docs`
 ```
 
 **Ruby Library:**
