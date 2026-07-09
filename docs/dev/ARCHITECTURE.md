@@ -55,7 +55,7 @@ cov-loupe is organized around a single coverage data model that feeds three deli
     - `CovLoupe.default_log_file` / `default_log_file=` adjust the baseline log sink that future contexts inherit.
     - `CovLoupe.active_log_file` / `active_log_file=` mutate only the current context (or create one on demand) so the change applies immediately without touching the default.
 - `ErrorHandlerFactory` wires the appropriate handler per runtime: CLI, MCP server, or embedded library, each of which installs its handler inside a fresh `AppContext` before executing user work.
-- Diagnostics are written through `CovLoupe::Logger` to `cov_loupe.log` in the current directory by default; override with CLI `--log-file`, set `CovLoupe.default_log_file` for future contexts, or temporarily tweak `CovLoupe.active_log_file` when a caller needs a different destination mid-run. `stdout` is never a valid log destination because it would corrupt command output.
+- Diagnostics are written through `CovLoupe::Logger` to `cov_loupe.log` in the current directory by default. MCP tool-execution errors reach this logger, but argument-validation failures emitted by the MCP SDK before cov-loupe runs do not. Override the destination with CLI `--log-file`, set `CovLoupe.default_log_file` for future contexts, or temporarily tweak `CovLoupe.active_log_file` when a caller needs a different destination mid-run. `stdout` is never a valid log destination because it would corrupt command output.
 
 ## Output Character Mode
 

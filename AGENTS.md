@@ -112,11 +112,14 @@ Use `bundle exec rspec spec/path_spec.rb` to target specific specs when needed.
   # or
   cov-loupe --help
   ```
-- Exercise the MCP server manually by piping JSON-RPC:
+- Smoke-test the MCP server manually by piping JSON-RPC:
   ```sh
   echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"lib/cov_loupe/model/model.rb"}}}' | bundle exec exe/cov-loupe -m mcp
   echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"help","arguments":{}}}' | bundle exec exe/cov-loupe -m mcp
   ```
+  These commands confirm that the server launches and responds over stdio; they are not exhaustive
+  contract tests. Optional validation and error sanity checks are documented in
+  [MCP Integration — Error Responses](docs/user/MCP_INTEGRATION.md#error-responses).
 
 ### Building
 ```sh

@@ -181,7 +181,11 @@ mkdocs serve
 
 **RVM + Codex macOS:** Currently not possible for Codex to run rspec when running on macOS with rvm-managed rubies - see [Troubleshooting](../user/TROUBLESHOOTING.md)
 
-**MCP server testing:**
+**MCP server smoke test:**
 ```sh
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"version","arguments":{}}}' | cov-loupe -m mcp
 ```
+
+This confirms that the server launches and responds over stdio; it is not an exhaustive contract
+test. See [MCP Integration — Error Responses](../user/MCP_INTEGRATION.md#error-responses) for
+optional validation and error sanity checks and the full failure model.

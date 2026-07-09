@@ -397,7 +397,8 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
 
         malformed_request = run_mcp_json({ jsonrpc: '2.0', id: 205 })
         malformed_response = parse_jsonrpc(malformed_request[:stdout])
-        expect_jsonrpc_error(malformed_response, nil)
+        expect_jsonrpc_error_without_id(malformed_response)
+        expect(malformed_response.dig('error', 'code')).to eq(-32_600)
       end
 
       # The mcp gem reports tool-argument validation failures as tools/call
@@ -463,25 +464,20 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
     end
 
     it 'handles malformed or partial inputs gracefully' do
-      env = { 'RUBY_LIB' => lib_path }
+      [
+        "{'jsonrpc': '2.0', 'id': 999, 'method': 'invalid'}",
+        '{"jsonrpc": "2.0", "id": 300, "method":',
+      ].each do |input|
+        result = Spec::Support::McpRunner.call(input: input, **runner_args)
+        expect(result[:stderr]).not_to include('NameError', 'uninitialized constant')
 
-      # Malformed JSON
-      res1 = Spec::Support::McpRunner.call(
-        input: "{'jsonrpc': '2.0', 'id': 999, 'method': 'invalid'}",
-        **runner_args(env: env)
-      )
-      expect(res1[:stderr]).not_to include('NameError', 'uninitialized constant')
-
-      # Partial JSON
-      res2 = Spec::Support::McpRunner.call(
-        input: '{"jsonrpc": "2.0", "id": 300, "method":',
-        **runner_args(env: env)
-      )
-
-      expect(res2[:stderr]).not_to include('uninitialized constant')
+        response = parse_jsonrpc(result[:stdout])
+        expect_jsonrpc_error_without_id(response)
+        expect(response.dig('error', 'code')).to eq(-32_700)
+      end
 
       # Empty input
-      res3 = Spec::Support::McpRunner.call(input: '', **runner_args(env: env))
+      res3 = Spec::Support::McpRunner.call(input: '', **runner_args)
       expect(res3[:stderr]).not_to include('NameError')
     end
 

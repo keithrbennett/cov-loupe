@@ -41,8 +41,13 @@ module Spec
 
       def expect_jsonrpc_error(response, id)
         expect(response).to include('jsonrpc' => '2.0', 'id' => id)
+        expect_jsonrpc_error_without_id(response)
+      end
+
+      def expect_jsonrpc_error_without_id(response)
+        expect(response).to include('jsonrpc' => '2.0')
         expect(response).to have_key('error'),
-          "expected a JSON-RPC error response for id #{id}, " \
+          'expected a JSON-RPC error response, ' \
           "got result: #{response['result'].inspect}"
         expect(response['error']).to have_key('message')
       end

@@ -98,11 +98,14 @@ when merging resultsets.
    cov-loupe --version
    ```
 
-2. **Test MCP server mode manually:**
+2. **Smoke-test MCP server mode manually:**
    ```bash
    echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"version","arguments":{}}}' | cov-loupe -m mcp
    ```
-   Should return JSON-RPC response.
+   This should return a JSON-RPC response, confirming that the server launches and responds over
+   stdio. It is not an exhaustive contract test; see
+   [MCP Integration — Error Responses](MCP_INTEGRATION.md#error-responses) for optional validation
+   and error sanity checks and the full failure model.
 
 3. **Verify MCP server is configured:**
    ```bash

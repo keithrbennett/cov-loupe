@@ -175,8 +175,11 @@ Full documentation is available at **[https://keithrbennett.github.io/cov-loupe/
 ## Requirements
 
 - **Ruby >= 3.2** (required by `mcp` gem dependency)
+- `mcp` gem >= 0.15 and < 1.0
 - SimpleCov-generated `.resultset.json` file
 - `simplecov` gem >= 0.21
+
+Applications pinned to an older `mcp` version must upgrade it before installing cov-loupe v6.
 
 ### JRuby Compatibility
 
