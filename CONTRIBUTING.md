@@ -1,6 +1,6 @@
-# Contributing to cov-loupe
+# Contributing to WifiWand
 
-[Back to main README](docs/index.md)
+[Back to the main README](README.md)
 
 Thank you for your interest in contributing.
 
@@ -8,7 +8,7 @@ Bug reports, feature proposals, documentation suggestions, and other feedback ar
 
 ---
 
-## Before submitting a pull request
+## Before Submitting a Pull Request
 
 Please do not submit a pull request unless you have first opened an issue and received explicit approval from the maintainer to proceed.
 
@@ -25,7 +25,7 @@ The contribution process is:
 
 Pull requests submitted without prior approval may be closed without detailed review.
 
-### AI-assisted contributions
+### AI-Assisted Contributions
 
 AI-assisted work is welcomed. The same prior-approval requirement applies whether the work is produced manually or with AI assistance.
 
@@ -33,48 +33,48 @@ Contributors are responsible for supervising and validating their work. A pull r
 
 ---
 
-## Reporting issues
+## Reporting Issues
 
 Before opening an issue:
 
 - Check whether an existing issue already addresses the subject.
 - Include clear reproduction steps when reporting a problem.
 - Describe the expected and actual behavior.
-- Include your Ruby version (`ruby -v`), operating system, and any other relevant environment information.
-- Keep discussion technical and respectful. See the [Code of Conduct](docs/code_of_conduct.md).
+- Include your Ruby version (`ruby -v`), operating system, and relevant operating-system version.
+- Identify whether the problem occurs on macOS or Ubuntu.
+- Include relevant WifiWand command output, while removing passwords and other sensitive information.
+- Include any other environment information relevant to reproducing the problem.
+
+WifiWand invokes operating-system networking tools and can interact with WiFi credentials and local network configuration. Review the [Security Notes](docs/SECURITY_NOTES.md) before posting diagnostic output.
 
 ---
 
-## Preparing an approved change
+## Preparing an Approved Change
 
 After receiving explicit approval to submit a pull request:
 
 1. Fork the repository on GitHub.
-2. Create a branch for your work:
+2. Clone your fork and enter the project directory:
+
+   ```bash
+   git clone https://github.com/YOUR-USERNAME/wifiwand.git
+   cd wifiwand
+   ```
+
+3. Create a branch for your work:
 
    ```bash
    git checkout -b feature/my-change
    ```
 
-3. Install dependencies:
+4. Install dependencies:
 
    ```bash
    bundle install
    ```
 
-4. Make your changes, following the project's existing coding style.
-5. Run the tests:
-
-   ```bash
-   bundle exec rspec
-   ```
-
-6. Run RuboCop:
-
-   ```bash
-   bundle exec rubocop
-   ```
-
+5. Make your changes, following the project's existing coding style.
+6. Test and validate the changes as described below.
 7. Commit the changes with a clear, informative message.
 8. Push the branch and open a pull request against `main`.
 
@@ -82,53 +82,35 @@ Pull requests should:
 
 - Link to the issue in which the change was approved.
 - Include or update tests for new or changed behavior.
-- Pass all existing tests and RuboCop checks.
+- Pass the applicable test suites and RuboCop checks.
 - Update documentation and examples when behavior changes.
 - Explain how the change was tested and validated.
+- Identify the operating systems and versions on which the change was tested when platform-specific behavior is involved.
+- Clearly distinguish mocked testing from testing performed against a real host environment.
 
 ---
 
-## Development setup
+## Testing Approved Changes
 
-This project requires Ruby 3.2 or later because of the `mcp` gem dependency.
-
-A typical setup is:
+Run the default test suite and RuboCop before submitting a pull request:
 
 ```bash
-git clone https://github.com/keithrbennett/cov-loupe.git
-cd cov-loupe
-bundle install
 bundle exec rspec
+bundle exec rubocop
 ```
 
-Useful commands and entry points include:
-
-- `bundle exec rspec` — run the test suite
-- `bundle exec rubocop` — run static analysis and style checks
-- `bundle exec rake` — run the default Rake tasks
-- `exe/cov-loupe` — run the CLI or MCP entry point for end-to-end testing
-
----
-
-## Documentation
-
-This project uses [MkDocs](https://www.mkdocs.org/) with the [Material theme](https://squidfunk.github.io/mkdocs-material/) to build and serve its documentation.
-
-To run the documentation locally:
+For changes affecting operating-system-specific networking behavior, also run the full real-environment test suite on the affected platforms:
 
 ```bash
-pip3 install -r requirements.txt
-mkdocs serve
+bundle exec rake test:all
 ```
 
-The documentation will be available at <http://127.0.0.1:8000>.
+Real-environment tests depend on the host's WiFi hardware, operating-system state, permissions, and saved network configuration. Some tests may temporarily modify network state and use capture-and-restoration safeguards.
 
-For detailed platform-specific installation instructions and troubleshooting, see [Documentation Development](docs/dev/DEVELOPMENT.md#documentation-development).
+Before running them, review the [Testing Guide](dev/docs/TESTING.md).
 
----
+In the pull request, identify:
 
-## Code of Conduct
-
-Please review and follow the [Code of Conduct](docs/code_of_conduct.md).
-
-Instances of unacceptable behavior may be reported through GitHub's [Report Abuse form](https://github.com/contact/report-abuse).
+- The operating systems and versions tested.
+- Whether testing included the default suite, real-environment tests, or both.
+- Any relevant behavior that could not be tested.
