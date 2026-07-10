@@ -8,7 +8,7 @@ This document describes the breaking changes introduced in version 6.0.0, includ
 
 - [Stdout Logging Is No Longer Permitted](#stdout-logging-is-no-longer-permitted)
 - [Format Short Codes and Long Names Normalized](#format-short-codes-and-long-names-normalized)
-- [MCP tool-call failures now consistently return `isError: true`](#mcp-tool-call-failures-now-consistently-return-iserror-true)
+- [MCP Tool-call Failures Now Consistently Return `isError: true`](#mcp-tool-call-failures-now-consistently-return-iserror-true)
 
 ---
 
@@ -109,7 +109,7 @@ cov-loupe -f P list                   # pretty_print: Ruby stdlib PP.pp output
 - Any script or `COV_LOUPE_OPTS` value relying on `-fp` producing multi-line, indented JSON must be updated, since `-fp` now means `puts`.
 - MCP clients passing `"format": "p"` or `"format": "pretty-json"` to `project_coverage` must switch to `"format": "J"` or `"format": "pretty_json"`.
 
-## MCP tool-call failures now consistently return `isError: true` {#mcp-tool-call-failures-now-consistently-return-iserror-true}
+## MCP Tool-call Failures Now Consistently Return `isError: true` {#mcp-tool-call-failures-now-consistently-return-iserror-true}
 
 **Breaking change:** MCP clients must handle `isError: true` for both argument-validation and tool-execution failures.
 
