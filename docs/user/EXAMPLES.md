@@ -413,7 +413,7 @@ jobs:
         ruby-version: ['3.4']
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -453,7 +453,7 @@ jobs:
       - name: Upload coverage report
         # Saves the coverage file as an artifact so you can download/inspect it 
         # from the GitHub Actions run summary page.
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: coverage-report-${{ matrix.os }}
