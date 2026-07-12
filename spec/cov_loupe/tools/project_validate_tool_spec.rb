@@ -96,7 +96,7 @@ RSpec.describe CovLoupe::Tools::ProjectValidateTool do
         text = response_text(response)
         expect(text).to include('Error:', 'Boom')
         # Verify it's an error response, not a JSON result
-        expect(text).not_to match(/\{"result"/)
+        expect(text).not_to include('{"result"')
       end
     end
 

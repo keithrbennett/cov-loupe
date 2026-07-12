@@ -121,7 +121,7 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
         described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH)
       end.to raise_error(CovLoupe::FilePermissionError) do |error|
         expect(error.message).to include('Permission denied')
-        expect(error.message).to match(/\.resultset\.json/)
+        expect(error.message).to include('.resultset.json')
       end
     end
   end

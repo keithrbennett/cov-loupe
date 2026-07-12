@@ -40,7 +40,7 @@ RSpec.describe CovLoupe::Scripts::LatestCiStatus do
 
     it 'fetches and displays the latest CI run details' do
       _result, out, _err = capture_io { script.call }
-      expect(out).to match(/Fetching latest CI run/)
+      expect(out).to include('Fetching latest CI run')
       expect(out).to match(/Title:\s+Test Run/)
       expect(out).to match(/Status:.*SUCCESS/)
     end
@@ -113,8 +113,8 @@ RSpec.describe CovLoupe::Scripts::LatestCiStatus do
 
       it 'shows in-progress message with watch command' do
         _result, out, _err = capture_io { script.call }
-        expect(out).to match(/Build is currently running/)
-        expect(out).to match(/gh run watch 789012/)
+        expect(out).to include('Build is currently running')
+        expect(out).to include('gh run watch 789012')
       end
     end
 
@@ -134,7 +134,7 @@ RSpec.describe CovLoupe::Scripts::LatestCiStatus do
 
       it 'shows queued message' do
         _result, out, _err = capture_io { script.call }
-        expect(out).to match(/Build is queued/)
+        expect(out).to include('Build is queued')
       end
     end
 

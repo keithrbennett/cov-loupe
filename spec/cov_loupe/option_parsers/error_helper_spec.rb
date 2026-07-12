@@ -96,7 +96,7 @@ RSpec.describe CovLoupe::OptionParsers::ErrorHelper do
           end
 
           expect(stderr_output).to include('invalid option')
-          expect(stderr_output).not_to match(/Valid values/)
+          expect(stderr_output).not_to include('Valid values')
         end
       end
     end
@@ -131,7 +131,7 @@ RSpec.describe CovLoupe::OptionParsers::ErrorHelper do
 
         expect(stderr_output).to match(/Error:.*invalid option.*--unknown/)
         expect(stderr_output).to include("Run 'cov-loupe --help'")
-        expect(stderr_output).not_to match(/Valid values/)
+        expect(stderr_output).not_to include('Valid values')
       end
     end
 
@@ -196,8 +196,8 @@ RSpec.describe CovLoupe::OptionParsers::ErrorHelper do
           argv: %w[--format json --resultset coverage])
       end
 
-      expect(stderr_output).to match(/Error: invalid argument: some error/)
-      expect(stderr_output).to match(/Run 'cov-loupe --help'/)
+      expect(stderr_output).to include('Error: invalid argument: some error')
+      expect(stderr_output).to include("Run 'cov-loupe --help'")
     end
 
     it 'does not show enum hint when all enum values are valid' do
@@ -208,7 +208,7 @@ RSpec.describe CovLoupe::OptionParsers::ErrorHelper do
       end
 
       expect(stderr_output).to match(/Error:.*missing argument.*--resultset/)
-      expect(stderr_output).not_to match(/Valid values/)
+      expect(stderr_output).not_to include('Valid values')
     end
   end
 end

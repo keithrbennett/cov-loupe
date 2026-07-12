@@ -104,7 +104,7 @@ RSpec.describe CovLoupe::Repositories::CoverageRepository do
 
         it 'raises CoverageDataError with details about colliding keys including originals' do
           expect { repo }.to raise_error(CovLoupe::CoverageDataError) do |error|
-            expect(error.message).to match(/Duplicate paths detected after normalization/)
+            expect(error.message).to include('Duplicate paths detected after normalization')
             expect(error.message).to match(/#{Regexp.escape(rel_foo_path)}/)
           end
         end
@@ -169,7 +169,7 @@ RSpec.describe CovLoupe::Repositories::CoverageRepository do
 
         it 'raises CoverageDataError detecting case collision with original variants' do
           expect { repo }.to raise_error(CovLoupe::CoverageDataError) do |error|
-            expect(error.message).to match(/Duplicate paths detected after normalization/)
+            expect(error.message).to include('Duplicate paths detected after normalization')
             expect(error.message).to include('foo.rb')
             expect(error.message).to include('Foo.rb')
           end

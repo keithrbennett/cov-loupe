@@ -32,7 +32,7 @@ module CovLoupeExecutable
   end
 
   def self.handle_executable_flags(argv = ARGV)
-    return unless argv.any? { |arg| %w[-v --version].include?(arg) }
+    return unless argv.intersect?(%w[-v --version])
 
     require_relative '../lib/cov_loupe/version'
     puts CovLoupe::VERSION
