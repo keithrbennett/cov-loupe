@@ -3,7 +3,7 @@
 [Back to main README](docs/index.md)
 
 
-## v6.0.0.pre
+## v6.0.0
 
 ### Breaking
 
