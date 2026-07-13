@@ -96,7 +96,7 @@ The repo URL, doc server URL, and local gem filespec are output in the header of
 ```
 Repository:            https://github.com/keithrbennett/cov-loupe
 Documentation (Web):   https://keithrbennett.github.io/cov-loupe/
-Documentation (Local): /Users/kbennett/.local/share/mise/installs/ruby/4.0.5/lib/ruby/gems/4.0.0/gems/cov-loupe-6.0.0.pre/README.md
+Documentation (Local): /Users/kbennett/.local/share/mise/installs/ruby/4.0.5/lib/ruby/gems/4.0.0/gems/cov-loupe-VERSION/README.md
 ```
 
 There is a p/--path-for option that will get an individual value for each of these:
