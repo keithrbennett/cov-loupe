@@ -59,7 +59,7 @@ module CovLoupe
     private def define_options(parser)
       parser.separator 'Options:'
       parser.on('-r', '--resultset PATH', String,
-        'Path or directory that contains .resultset.json (default: coverage/.resultset.json)') \
+        'Path or directory containing coverage.json or .resultset.json (default: coverage/coverage.json)') \
       do |value|
         config.resultset = value
       end

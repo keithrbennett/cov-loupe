@@ -26,7 +26,7 @@
 - **MCP server** - stdio (localhost nonnetwork) server assists AI analysis of your coverage
 - **Ruby library** - Programmatic API for custom tooling
 
-Works with any SimpleCov-generated `.resultset.json` file—no runtime dependency on your test suite. (New coverage.json file support coming soon.)
+Works with SimpleCov's `coverage.json` (the documented JSON formatter output, written alongside the HTML report from SimpleCov 1.0.0 on) and with `.resultset.json` (SimpleCov's internal merge cache, used by SimpleCov 0.21 and 0.22)—no runtime dependency on your test suite.
 
 ### Key Features
 
@@ -69,7 +69,8 @@ If you are upgrading from a previous version, please refer to the [Migration Gui
 bundle exec rspec
 
 # Verify coverage was generated
-ls -l coverage/.resultset.json
+ls -l coverage/coverage.json    # SimpleCov 1.0.0 and later
+ls -l coverage/.resultset.json  # SimpleCov 0.21 and 0.22
 ```
 
 ### Basic Usage
@@ -187,7 +188,7 @@ Full documentation is available at **[https://keithrbennett.github.io/cov-loupe/
 
 - **Ruby >= 3.2** (required by `mcp` gem dependency)
 - `mcp` gem >= 0.15 and < 2.0
-- SimpleCov-generated `.resultset.json` file
+- SimpleCov-generated `coverage.json` or `.resultset.json` file
 - `simplecov` gem >= 0.21
 
 Applications pinned to an older `mcp` version must upgrade it before installing cov-loupe v6.
@@ -199,7 +200,27 @@ If you encounter any JRuby-specific issues, please open a GitHub issue, includin
 
 ## Configuring the Resultset
 
-`cov-loupe` automatically searches for `.resultset.json` in standard locations (`coverage/.resultset.json`, `.resultset.json`, `tmp/.resultset.json`). For non-standard locations:
+`cov-loupe` reads either of SimpleCov's two on-disk formats:
+
+- **`coverage.json`** — the documented output of SimpleCov's JSON formatter, described by a versioned JSON schema. From SimpleCov 1.0.0 on, the default HTML formatter writes it alongside its report.
+- **`.resultset.json`** — SimpleCov's internal merge cache, keyed by test suite. This is the only format available in SimpleCov 0.21 and 0.22.
+
+The format is detected from the file's contents, not its name, so an explicitly supplied path of either format is read correctly whatever it is called.
+
+**Discovery precedence.** With no `--resultset` argument, the search is *format-first*: every default `coverage.json` location is checked before any `.resultset.json` location, and the first file found wins.
+
+1. `coverage.json`
+2. `coverage/coverage.json`
+3. `tmp/coverage.json`
+4. `.resultset.json`
+5. `coverage/.resultset.json`
+6. `tmp/.resultset.json`
+
+When `--resultset` names a **directory**, `coverage.json` inside it is preferred over `.resultset.json`. When it names a **file**, that file is used as given.
+
+Because `coverage.json` wins over `.resultset.json` regardless of location or age, a stale `coverage.json` left over from an earlier run will be chosen ahead of a freshly written `.resultset.json`. Pass `--resultset` with an explicit path to select a specific file.
+
+For non-standard locations:
 
 ```sh
 # Command-line option (highest priority) - use -r or --resultset
@@ -399,7 +420,7 @@ cov-loupe --raise-on-stale yes # enforce stale coverage failures
 
 - **"command not found"** - See [Installation Guide](docs/user/INSTALLATION.md#require-path)
 - **"cannot load such file -- mcp"** - Requires Ruby >= 3.2. Verify: `ruby -v`
-- **"Could not find .resultset.json"** - Ensure SimpleCov is configured in your test suite, then run tests to generate coverage. See the [Configuring the Resultset](#configuring-the-resultset) section for more details.
+- **"Could not find coverage.json or .resultset.json"** - Ensure SimpleCov is configured in your test suite, then run tests to generate coverage. See the [Configuring the Resultset](#configuring-the-resultset) section for more details.
 - **MCP server won't connect** - Check PATH and Ruby version in [MCP Troubleshooting](docs/user/MCP_INTEGRATION.md#troubleshooting)
 - **RVM in sandboxed environments (macOS)** - RVM requires `/bin/ps` which may be blocked by sandbox restrictions. Use rbenv or chruby instead.
 

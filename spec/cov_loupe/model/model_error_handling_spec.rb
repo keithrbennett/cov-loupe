@@ -72,7 +72,7 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
       broken_map = instance_double('CoverageMap')
       allow(broken_map).to receive(:each)
         .and_raise(NoMethodError.new("undefined method `upcase' for nil:NilClass"))
-      allow(CovLoupe::ResultsetLoader).to receive(:load).and_return(
+      allow(CovLoupe::CoverageFileLoader).to receive(:load).and_return(
         CovLoupe::ResultsetLoader::Result.new(coverage_map: broken_map,
           timestamp: 0, suite_names: ['RSpec'])
       )

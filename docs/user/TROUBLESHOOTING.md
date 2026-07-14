@@ -29,21 +29,28 @@ Codex's macOS sandbox forbids `/bin/ps`; RVM shells need it. When you run `bundl
 
 ## Coverage Data Issues
 
-### Missing `coverage/.resultset.json`
+### Missing coverage file
 
-`cov-loupe` only reads coverage data; it never generates it. If you see "Could not find .resultset.json":
+`cov-loupe` only reads coverage data; it never generates it. It accepts either of
+SimpleCov's on-disk formats: `coverage.json` (written by SimpleCov 1.0.0 and later)
+or `.resultset.json` (SimpleCov 0.21 and 0.22). If you see "Could not find
+coverage.json or .resultset.json":
 
 1. Run the test suite with SimpleCov enabled (default project setup already enables it).
    ```bash
    bundle exec rspec
-   ls coverage/.resultset.json
+   ls coverage/coverage.json coverage/.resultset.json
    ```
 2. If your coverage lives elsewhere, point the tools at it:
    ```bash
-   cov-loupe -r build/coverage/.resultset.json  # -r = --resultset
+   cov-loupe -r build/coverage/coverage.json  # -r = --resultset
    # or
    export COV_LOUPE_OPTS="-r build/coverage"
    ```
+
+Note that discovery is format-first: all default `coverage.json` locations are searched
+before any `.resultset.json` location, so a leftover `coverage.json` is used ahead of a
+newer `.resultset.json`. Pass `-r` with an explicit file path to pin one.
 
 ### Stale Coverage Errors
 

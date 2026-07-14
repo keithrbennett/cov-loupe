@@ -7,17 +7,31 @@ require_relative '../paths/path_utils'
 
 module CovLoupe
   module Resolvers
-    # Locates the .resultset.json file for a project.
+    # Locates the coverage data file for a project: coverage.json (the
+    # documented SimpleCov JSON formatter output) or .resultset.json
+    # (SimpleCov's internal merge cache). coverage.json is preferred when
+    # both exist.
     #
     # Resolution order:
-    # 1. If the user provides an explicit path, resolve it (supports files and directories)
-    # 2. If not found, search a list of default candidate locations relative to the project root
+    # 1. If the user provides an explicit path, resolve it (supports files and directories).
+    #    A directory is searched in COVERAGE_FILE_NAMES order, so coverage.json inside it
+    #    wins over .resultset.json.
+    # 2. Otherwise, search DEFAULT_CANDIDATES relative to the project root and take the
+    #    first file that exists. That list is ordered format-first, not location-first:
+    #    every coverage.json location is tried before any .resultset.json location, so
+    #    e.g. tmp/coverage.json is chosen over coverage/.resultset.json. Recency is never
+    #    consulted; an explicit path is the way to pin a specific file.
     #
     # When a relative path is given, it is expanded against both the current working directory
     # and the project root. If both expansions point to valid locations, an ambiguity error
     # is raised to prevent silently using the wrong file.
     class ResultsetPathResolver
+      COVERAGE_FILE_NAMES = ['coverage.json', '.resultset.json'].freeze
+
       DEFAULT_CANDIDATES = [
+        'coverage.json',
+        'coverage/coverage.json',
+        'tmp/coverage.json',
         '.resultset.json',
         'coverage/.resultset.json',
         'tmp/.resultset.json',
@@ -48,10 +62,12 @@ module CovLoupe
       end
 
       private def resolve_directory(path)
-        candidate = File.join(path, '.resultset.json')
-        return candidate if File.file?(candidate)
+        COVERAGE_FILE_NAMES.each do |name|
+          candidate = File.join(path, name)
+          return candidate if File.file?(candidate)
+        end
 
-        raise ResultsetNotFoundError, "No .resultset.json found in directory: #{path}"
+        raise ResultsetNotFoundError, "No coverage.json or .resultset.json found in directory: #{path}"
       end
 
       private def raise_not_found_error_for_file(path)
@@ -102,7 +118,7 @@ module CovLoupe
         return true if File.file?(path)
         return false unless File.directory?(path)
 
-        File.file?(File.join(path, '.resultset.json'))
+        COVERAGE_FILE_NAMES.any? { |name| File.file?(File.join(path, name)) }
       end
 
       private def raise_ambiguous_resultset_error(expanded_pwd, expanded_root)
@@ -112,7 +128,8 @@ module CovLoupe
       end
 
       private def raise_not_found_error
-        message = "Could not find .resultset.json under #{@root.inspect}; run tests or set --resultset option"
+        message = "Could not find coverage.json or .resultset.json under #{@root.inspect}; " \
+                  'run tests or set --resultset option'
         CovLoupe.logger.error(message) if CovLoupe.logger
         raise ResultsetNotFoundError, message
       end

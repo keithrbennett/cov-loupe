@@ -4,6 +4,7 @@ require 'json'
 require 'time'
 
 require_relative '../errors/errors'
+require_relative 'timestamp_normalization'
 
 module CovLoupe
   # Reads and parses a SimpleCov .resultset.json file.
@@ -17,6 +18,8 @@ module CovLoupe
   # to integer epoch seconds. Missing or unparseable timestamps default to 0, which
   # disables time-based staleness checks.
   class ResultsetLoader
+    include TimestampNormalization
+
     Result = Struct.new(:coverage_map, :timestamp, :suite_names)
     SuiteEntry = Struct.new(:name, :coverage, :timestamp)
 
@@ -25,13 +28,20 @@ module CovLoupe
       new(resultset_path: resultset_path, logger: logger).load
     end
 
+    # Load from JSON that has already been parsed (used by
+    # CoverageFileLoader, which reads the file once to detect its format).
+    def self.load_parsed(raw, resultset_path:, logger: nil)
+      logger ||= CovLoupe.logger
+      new(resultset_path: resultset_path, logger: logger).load(raw)
+    end
+
     def initialize(resultset_path:, logger:)
       @resultset_path = resultset_path
       @logger = logger
     end
 
-    def load
-      raw = JSON.parse(File.read(@resultset_path))
+    def load(raw = nil)
+      raw ||= JSON.parse(File.read(@resultset_path))
 
       suites = extract_suite_entries(raw)
       if suites.empty?
@@ -118,55 +128,6 @@ module CovLoupe
       # compact removes suites with nil timestamps; max on an empty array returns nil,
       # and nil.to_i => 0, which is the sentinel meaning "no timestamp — skip staleness checks".
       suites.map(&:timestamp).compact.max.to_i
-    end
-
-    private def normalize_coverage_timestamp(timestamp_value, created_at_value)
-      raw = timestamp_value.nil? ? created_at_value : timestamp_value
-      return log_missing_timestamp if raw.nil?
-
-      timestamp = case raw
-                  when Integer
-                    raw
-                  when Float, Time
-                    raw.to_i
-                  when String
-                    str = raw.strip
-                    # Matches optional leading "-", digits, and an optional fractional part.
-                    if str.match?(/\A-?\d+(\.\d+)?\z/)
-                      # Some resultsets serialize the epoch as a numeric string instead of
-                      # a JSON number. Non-numeric, non-empty strings are handled by the
-                      # else branch below via Time.parse.
-                      str.to_f.to_i
-                    elsif str.empty?
-                      0
-                    else
-                      Time.parse(str).to_i
-                    end
-                  else
-                    log_timestamp_warning(raw)
-                    return 0
-      end
-
-      timestamp = [timestamp.to_i, 0].max # change negative numbers to zero
-      log_missing_timestamp(raw) if timestamp.zero? # but log the original value
-      timestamp
-    rescue => e
-      log_timestamp_warning(raw, e)
-      0
-    end
-
-    private def log_missing_timestamp(raw_value = nil)
-      message = 'Coverage timestamp missing, defaulting to 0. ' \
-                'Time-based staleness checks will be disabled.'
-      message = "#{message} (value: #{raw_value.inspect})" if raw_value
-      @logger.safe_log(message)
-      0
-    end
-
-    private def log_timestamp_warning(raw_value, error = nil)
-      message = "Coverage resultset timestamp could not be parsed: #{raw_value.inspect}"
-      message = "#{message} (#{error.message})" if error
-      @logger.safe_log(message)
     end
   end
 end

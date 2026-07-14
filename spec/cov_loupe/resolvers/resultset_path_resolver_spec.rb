@@ -25,7 +25,8 @@ RSpec.describe CovLoupe::Resolvers::ResultsetPathResolver do
 
       expect do
         resolver.find_resultset(resultset: nested_dir)
-      end.to raise_error(CovLoupe::ResultsetNotFoundError, /No .resultset.json found in directory/)
+      end.to raise_error(CovLoupe::ResultsetNotFoundError,
+        /No coverage.json or .resultset.json found in directory/)
     end
 
     it 'returns the resolved path when a valid resultset file is provided' do
@@ -50,7 +51,7 @@ RSpec.describe CovLoupe::Resolvers::ResultsetPathResolver do
     it 'raises a helpful error when no fallback candidates are found' do
       expect do
         resolver.find_resultset
-      end.to raise_error(CovLoupe::ResultsetNotFoundError, /Could not find .resultset.json/)
+      end.to raise_error(CovLoupe::ResultsetNotFoundError, /Could not find coverage.json or .resultset.json/)
     end
 
     it 'accepts a resultset path already nested under the provided root without double-prefixing' do
@@ -95,6 +96,44 @@ RSpec.describe CovLoupe::Resolvers::ResultsetPathResolver do
     it 'returns nil for non-existent path in non-strict mode' do
       result = resolver.send(:resolve_candidate, '/nonexistent/path.json', strict: false)
       expect(result).to be_nil
+    end
+  end
+
+  describe 'coverage.json support' do
+    it 'prefers coverage.json over .resultset.json in the default candidates' do
+      Dir.mktmpdir do |root|
+        coverage_dir = File.join(root, 'coverage')
+        FileUtils.mkdir_p(coverage_dir)
+        File.write(File.join(coverage_dir, 'coverage.json'), '{}')
+        File.write(File.join(coverage_dir, '.resultset.json'), '{}')
+
+        resolver = described_class.new(root: root)
+
+        expect(resolver.find_resultset).to eq(File.join(coverage_dir, 'coverage.json'))
+      end
+    end
+
+    it 'prefers coverage.json when resolving an explicit directory containing both' do
+      Dir.mktmpdir do |dir|
+        File.write(File.join(dir, 'coverage.json'), '{}')
+        File.write(File.join(dir, '.resultset.json'), '{}')
+
+        resolver = described_class.new(root: dir)
+
+        expect(resolver.find_resultset(resultset: dir)).to eq(File.join(dir, 'coverage.json'))
+      end
+    end
+
+    it 'falls back to .resultset.json when no coverage.json exists' do
+      Dir.mktmpdir do |root|
+        coverage_dir = File.join(root, 'coverage')
+        FileUtils.mkdir_p(coverage_dir)
+        File.write(File.join(coverage_dir, '.resultset.json'), '{}')
+
+        resolver = described_class.new(root: root)
+
+        expect(resolver.find_resultset).to eq(File.join(coverage_dir, '.resultset.json'))
+      end
     end
   end
 

@@ -444,7 +444,9 @@ clp summary lib/api/client.rb -fJ  # Incorrect
 
 ### `-r, --resultset PATH`
 
-Path to the `.resultset.json` file or a directory containing it.
+Path to a SimpleCov `coverage.json` or `.resultset.json` file, or to a directory containing one. The format is detected from the file's contents rather than its name, so either format is read correctly under any filename.
+
+When the path is a directory, `coverage.json` is preferred over `.resultset.json`. With no `-r` argument at all, the default search is format-first: `coverage.json`, `coverage/coverage.json`, `tmp/coverage.json`, then `.resultset.json`, `coverage/.resultset.json`, `tmp/.resultset.json`.
 
 For a detailed explanation of how to configure the resultset location, including the default search path, environment variables, and MCP configuration, see the [Configuring the Resultset](../index.md#configuring-the-resultset) section in the main README.
 
