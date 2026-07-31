@@ -35,7 +35,7 @@ Gem::Specification.new do |spec|
   # MCP 0.15 is the minimum supported version because earlier releases reported tool
   # argument-validation failures as top-level JSON-RPC errors. Since 0.15, those failures are
   # tools/call results with isError: true, which is cov-loupe's documented response contract.
-  spec.add_dependency 'mcp', '>= 0.15', '< 1.0'
+  spec.add_dependency 'mcp', '>= 0.15', '< 2.0'
   spec.add_dependency 'simplecov', '>= 0.21', '< 2.0'
   spec.metadata['rubygems_mfa_required'] = 'true'
 
