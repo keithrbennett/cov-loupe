@@ -3,6 +3,10 @@
 [Back to main README](docs/index.md)
 
 
+## v6.1.0
+
+- In gemspec, change mcp gem's constraints from `'>= 0.15', '< 1.0'` to `'>= 0.15', '< 2.0'`
+
 ## v6.0.0
 
 ### Breaking
