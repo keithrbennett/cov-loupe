@@ -77,7 +77,7 @@ RSpec.describe 'CovLoupe::VERSION' do
   describe 'runtime dependency constraints' do
     # MCP 0.15 changed argument-validation failures from JSON-RPC errors to
     # tools/call results with isError: true.
-    it 'sets MCP 0.15 as the minimum supported version' do
+    it 'supports MCP 0.15 through 1.x' do
       gemspec = Gem::Specification.load(gemspec_file)
       mcp_dependency = gemspec.runtime_dependencies.find { |dependency| dependency.name == 'mcp' }
       expect(mcp_dependency).not_to be_nil, 'expected the gemspec to declare an mcp runtime dependency'
@@ -85,7 +85,8 @@ RSpec.describe 'CovLoupe::VERSION' do
       requirement = mcp_dependency.requirement
       expect(requirement).to be_satisfied_by(Gem::Version.new('0.15.0'))
       expect(requirement).not_to be_satisfied_by(Gem::Version.new('0.14.0'))
-      expect(requirement).not_to be_satisfied_by(Gem::Version.new('1.0.0'))
+      expect(requirement).to be_satisfied_by(Gem::Version.new('1.0.0'))
+      expect(requirement).not_to be_satisfied_by(Gem::Version.new('2.0.0'))
     end
   end
 
