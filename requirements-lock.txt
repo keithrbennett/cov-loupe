@@ -48,6 +48,6 @@ pyyaml_env_tag==1.1
 requests==2.32.5
 six==1.17.0
 smmap==5.0.2
-urllib3==2.6.2
+urllib3==2.6.3
 watchdog==6.0.0
 wcmatch==10.1
