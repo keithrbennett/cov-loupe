@@ -216,10 +216,10 @@ RSpec.describe CovLoupe::ErrorHandler do
   describe '#handle_error with context parameter' do
     [
       {
-        desc:     'converts Errno::ENOENT to ResultsetNotFoundError when context is :coverage_loading',
+        desc:     'converts Errno::ENOENT to CoverageFileNotFoundError when context is :coverage_loading',
         error:    Errno::ENOENT.new('missing .resultset.json'),
         context:  :coverage_loading,
-        expected: CovLoupe::ResultsetNotFoundError,
+        expected: CovLoupe::CoverageFileNotFoundError,
         msg:      'Coverage data not found',
       },
       {

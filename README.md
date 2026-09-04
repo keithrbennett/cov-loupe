@@ -198,7 +198,7 @@ Applications pinned to an older `mcp` version must upgrade it before installing 
 The test suite passes on JRuby, and to the best of our knowledge the project is fully JRuby-compatible.
 If you encounter any JRuby-specific issues, please open a GitHub issue, including as much detail as possible.
 
-## Configuring the Resultset
+## Configuring the Coverage File
 
 `cov-loupe` reads either of SimpleCov's two on-disk formats:
 
@@ -207,7 +207,7 @@ If you encounter any JRuby-specific issues, please open a GitHub issue, includin
 
 The format is detected from the file's contents, not its name, so an explicitly supplied path of either format is read correctly whatever it is called.
 
-**Discovery precedence.** With no `--resultset` argument, the search is *format-first*: every default `coverage.json` location is checked before any `.resultset.json` location, and the first file found wins.
+**Discovery precedence.** With no `--coverage-file` argument, the search is *format-first*: every default `coverage.json` location is checked before any `.resultset.json` location, and the first file found wins.
 
 1. `coverage.json`
 2. `coverage/coverage.json`
@@ -216,14 +216,14 @@ The format is detected from the file's contents, not its name, so an explicitly 
 5. `coverage/.resultset.json`
 6. `tmp/.resultset.json`
 
-When `--resultset` names a **directory**, `coverage.json` inside it is preferred over `.resultset.json`. When it names a **file**, that file is used as given.
+When `--coverage-file` names a **directory**, `coverage.json` inside it is preferred over `.resultset.json`. When it names a **file**, that file is used as given.
 
-Because `coverage.json` wins over `.resultset.json` regardless of location or age, a stale `coverage.json` left over from an earlier run will be chosen ahead of a freshly written `.resultset.json`. Pass `--resultset` with an explicit path to select a specific file.
+Because `coverage.json` wins over `.resultset.json` regardless of location or age, a stale `coverage.json` left over from an earlier run will be chosen ahead of a freshly written `.resultset.json`. Pass `--coverage-file` with an explicit path to select a specific file.
 
 For non-standard locations:
 
 ```sh
-# Command-line option (highest priority) - use -r or --resultset
+# Command-line option (highest priority) - use -r or --coverage-file
 cov-loupe -r /path/to/your/coverage
 
 # Environment variable (project-wide default)
@@ -234,7 +234,26 @@ export COV_LOUPE_OPTS="-r /path/to/your/coverage"
 # "args": ["-r", "/path/to/your/coverage"]
 ```
 
-**MCP precedence:** For MCP tool calls, per-request JSON parameters win over the CLI args used to start the server (including `COV_LOUPE_OPTS`). If neither is provided, built-in defaults are used (`root: '.'`, `raise_on_stale: false`, etc.). Coverage data is cached globally and automatically reloaded when the resultset file changes.
+### Deprecated `resultset` names
+
+Before `coverage.json` support, the input was always a `.resultset.json`, and the API said so. Every name below still works and now emits a one-time deprecation warning; all of them are removed in **v7.0.0**.
+
+| Deprecated | Use instead |
+| --- | --- |
+| `--resultset PATH` | `--coverage-file PATH` (`-r` is unchanged) |
+| `resultset` MCP tool argument | `coverage_file` |
+| `CoverageModel.new(resultset:)` | `CoverageModel.new(coverage_file:)` |
+| `CoverageModel#resultset_path` | `#coverage_file_path` |
+| `CoverageReporter.report(resultset:)` | `report(coverage_file:)` |
+| `CovLoupe::ResultsetNotFoundError` | `CovLoupe::CoverageFileNotFoundError` |
+| `Resolvers::ResultsetPathResolver` | `Resolvers::CoverageFilePathResolver` |
+| `AppConfig#resultset` | `#coverage_file` |
+
+The warning goes to stderr (and the log) in CLI and library mode, and to the log only in MCP mode, where stderr is server noise. `CovLoupe::Deprecation.enabled = false` silences it.
+
+`ResultsetLoader` keeps its name: it reads `.resultset.json` specifically, so the name is accurate.
+
+**MCP precedence:** For MCP tool calls, per-request JSON parameters win over the CLI args used to start the server (including `COV_LOUPE_OPTS`). If neither is provided, built-in defaults are used (`root: '.'`, `raise_on_stale: false`, etc.). Coverage data is cached globally and automatically reloaded when the coverage file changes.
 
 See [CLI Usage Guide](docs/user/CLI_USAGE.md) for complete details.
 
@@ -420,7 +439,7 @@ cov-loupe --raise-on-stale yes # enforce stale coverage failures
 
 - **"command not found"** - See [Installation Guide](docs/user/INSTALLATION.md#require-path)
 - **"cannot load such file -- mcp"** - Requires Ruby >= 3.2. Verify: `ruby -v`
-- **"Could not find coverage.json or .resultset.json"** - Ensure SimpleCov is configured in your test suite, then run tests to generate coverage. See the [Configuring the Resultset](#configuring-the-resultset) section for more details.
+- **"Could not find coverage.json or .resultset.json"** - Ensure SimpleCov is configured in your test suite, then run tests to generate coverage. See the [Configuring the Coverage File](#configuring-the-coverage-file) section for more details.
 - **MCP server won't connect** - Check PATH and Ruby version in [MCP Troubleshooting](docs/user/MCP_INTEGRATION.md#troubleshooting)
 - **RVM in sandboxed environments (macOS)** - RVM requires `/bin/ps` which may be blocked by sandbox restrictions. Use rbenv or chruby instead.
 

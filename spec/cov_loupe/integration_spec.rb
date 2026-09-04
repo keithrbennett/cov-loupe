@@ -7,7 +7,7 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
 
   let(:project_root) { (FIXTURES_DIR / 'project1').to_s }
   let(:coverage_dir) { File.join(project_root, 'coverage') }
-  let(:resultset_path) { File.join(coverage_dir, '.resultset.json') }
+  let(:coverage_file_path) { File.join(coverage_dir, '.resultset.json') }
 
   describe 'End-to-End Coverage Model Functionality' do
     it 'loads fixture coverage and surfaces core stats across APIs' do
@@ -196,7 +196,7 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
     it 'handles invalid resultset paths gracefully' do
       expect do
         CovLoupe::CoverageModel.new(root: project_root, resultset: '/nonexistent/path')
-      end.to raise_error(CovLoupe::ResultsetNotFoundError, /Specified resultset not found/)
+      end.to raise_error(CovLoupe::CoverageFileNotFoundError, /Specified coverage file not found/)
     end
 
     it 'provides helpful CLI error messages' do

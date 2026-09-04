@@ -9,12 +9,12 @@ RSpec.describe CovLoupe::CoverageDataStaleError do
     err = described_class.new(
       'Coverage data appears stale for foo.rb',
       nil,
-      file_path:      'foo.rb',
-      file_mtime:     file_time,
-      cov_timestamp:  cov_epoch,
-      src_len:        10,
-      cov_len:        8,
-      resultset_path: '/path/to/coverage/.resultset.json'
+      file_path:          'foo.rb',
+      file_mtime:         file_time,
+      cov_timestamp:      cov_epoch,
+      src_len:            10,
+      cov_len:            8,
+      coverage_file_path: '/path/to/coverage/.resultset.json'
     )
 
     msg = err.user_friendly_message
@@ -33,12 +33,12 @@ RSpec.describe CovLoupe::CoverageDataStaleError do
     err = described_class.new(
       'Coverage data appears stale for bar.rb',
       nil,
-      file_path:      'bar.rb',
-      file_mtime:     nil,
-      cov_timestamp:  nil,
-      src_len:        1,
-      cov_len:        0,
-      resultset_path: nil
+      file_path:          'bar.rb',
+      file_mtime:         nil,
+      cov_timestamp:      nil,
+      src_len:            1,
+      cov_len:            0,
+      coverage_file_path: nil
     )
     msg = err.user_friendly_message
     expect(msg).to include('Coverage data stale: Coverage data appears stale for bar.rb')
@@ -51,12 +51,12 @@ RSpec.describe CovLoupe::CoverageDataStaleError do
     err = described_class.new(
       nil,
       nil,
-      file_path:      'lib/example.rb',
-      file_mtime:     Time.now,
-      cov_timestamp:  Time.now.to_i - 1000,
-      src_len:        10,
-      cov_len:        8,
-      resultset_path: '/coverage/.resultset.json'
+      file_path:          'lib/example.rb',
+      file_mtime:         Time.now,
+      cov_timestamp:      Time.now.to_i - 1000,
+      src_len:            10,
+      cov_len:            8,
+      coverage_file_path: '/coverage/.resultset.json'
     )
 
     msg = err.user_friendly_message
@@ -68,12 +68,12 @@ RSpec.describe CovLoupe::CoverageDataStaleError do
     err = described_class.new(
       nil,
       nil,
-      file_path:      nil,
-      file_mtime:     nil,
-      cov_timestamp:  nil,
-      src_len:        0,
-      cov_len:        0,
-      resultset_path: nil
+      file_path:          nil,
+      file_mtime:         nil,
+      cov_timestamp:      nil,
+      src_len:            0,
+      cov_len:            0,
+      coverage_file_path: nil
     )
 
     msg = err.user_friendly_message
@@ -89,10 +89,10 @@ RSpec.describe CovLoupe::CoverageDataStaleError do
     let(:file) { File.join(tmpdir, 'lib', 'test.rb') }
     let(:checker) do
       CovLoupe::StalenessChecker.new(
-        root:      tmpdir,
-        resultset: nil,
-        mode:      :error,
-        timestamp: Time.now
+        root:          tmpdir,
+        coverage_file: nil,
+        mode:          :error,
+        timestamp:     Time.now
       )
     end
 

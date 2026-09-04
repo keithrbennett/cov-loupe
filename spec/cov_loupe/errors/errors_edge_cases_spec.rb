@@ -44,7 +44,7 @@ RSpec.describe CovLoupe do
   end
 
 
-  describe CovLoupe::ResultsetNotFoundError do
+  describe CovLoupe::CoverageFileNotFoundError do
     describe '#user_friendly_message' do
       it 'includes helpful tips in CLI mode' do
         # Create a CLI context (not MCP mode)
@@ -57,8 +57,8 @@ RSpec.describe CovLoupe do
           expect(message).to include(
             'File error: Coverage data not found',
             'Try one of the following:',
-            'cd to a directory containing coverage/.resultset.json',
-            'Specify a resultset: cov-loupe -r PATH',
+            'cd to a directory containing coverage/coverage.json',
+            'Specify a coverage file: cov-loupe -r PATH',
             'Use -h for help: cov-loupe -h'
           )
         end

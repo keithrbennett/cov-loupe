@@ -31,7 +31,7 @@ RSpec.describe 'COV_LOUPE_OPTS Environment Variable' do
 
     it 'handles quoted options with spaces' do
       test_path = File.join(Dir.tmpdir, 'test path with spaces', '.resultset.json')
-      ENV['COV_LOUPE_OPTS'] = "--resultset \"#{test_path}\""
+      ENV['COV_LOUPE_OPTS'] = "--coverage-file \"#{test_path}\""
       env_opts = CovLoupe.send(:extract_env_opts)
 
       exit_status = swallow_system_exit do
@@ -41,7 +41,7 @@ RSpec.describe 'COV_LOUPE_OPTS Environment Variable' do
       end
 
       expect(exit_status).to eq(0) # --help exits cleanly
-      expect(cli.config.resultset).to eq(test_path)
+      expect(cli.config.coverage_file).to eq(test_path)
     end
 
     it 'rejects setting log-file to stdout from environment' do
@@ -160,16 +160,16 @@ RSpec.describe 'COV_LOUPE_OPTS Environment Variable' do
   end
 
   describe 'integration with actual CLI usage' do
-    it 'works end-to-end with --resultset option' do
-      test_resultset = File.join(Dir.tmpdir, 'test_coverage', '.resultset.json')
-      ENV['COV_LOUPE_OPTS'] = "--resultset #{test_resultset} --format json"
+    it 'works end-to-end with --coverage-file option' do
+      test_coverage_file = File.join(Dir.tmpdir, 'test_coverage', 'coverage.json')
+      ENV['COV_LOUPE_OPTS'] = "--coverage-file #{test_coverage_file} --format json"
       env_opts = CovLoupe.send(:extract_env_opts)
 
       swallow_system_exit do
         suppress_io { cli.send(:run, env_opts + ['--help']) }
       end
 
-      expect(cli.config.resultset).to eq(test_resultset)
+      expect(cli.config.coverage_file).to eq(test_coverage_file)
       expect(cli.config.format).to eq(:json)
     end
   end

@@ -196,7 +196,7 @@ end
 
 class FileNotFoundError < FileError; end
 class CoverageDataError < Error; end
-class ResultsetNotFoundError < CoverageDataError; end
+class CoverageFileNotFoundError < CoverageDataError; end
 # ... etc
 ```
 

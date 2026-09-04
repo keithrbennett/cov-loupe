@@ -8,6 +8,7 @@ require_relative 'model/model'
 require_relative 'presenters/coverage_payload_presenter'
 require_relative 'output_chars'
 require_relative 'config/option_normalizers'
+require_relative 'deprecation'
 
 module CovLoupe
   # Base class for all MCP tool implementations.
@@ -36,9 +37,14 @@ module CovLoupe
                      '(defaults to current workspace).',
         default:     '.',
       },
+      coverage_file:  {
+        type:        'string',
+        description: 'Path to the SimpleCov coverage.json or .resultset.json file, or to a ' \
+                     'directory containing one (absolute or relative to root).',
+      },
       resultset:      {
         type:        'string',
-        description: 'Path to the SimpleCov .resultset.json file (absolute or relative to root).',
+        description: 'Deprecated alias for coverage_file. Removed in v7.0.0.',
       },
       raise_on_stale: {
         type:        'boolean',
@@ -213,8 +219,22 @@ module CovLoupe
 
       # Merge explicit params from JSON, removing nils
       # (nil means "not provided", so use base config)
-      base.merge(model_option_overrides.compact)
+      base.merge(normalize_coverage_file_option(model_option_overrides).compact)
     end
+
+    # Accepts the deprecated `resultset` tool argument as `coverage_file`.
+    # An explicit `coverage_file` wins when a client sends both.
+    # @param options [Hash] tool call parameters
+    # @return [Hash] parameters with `resultset` folded into `coverage_file`
+    def self.normalize_coverage_file_option(options)
+      resultset = options.delete(:resultset)
+      return options unless resultset
+
+      Deprecation.warn('the resultset tool argument', 'coverage_file')
+      options[:coverage_file] ||= resultset
+      options
+    end
+    private_class_method :normalize_coverage_file_option
 
     # Creates and configures a CoverageModel instance.
     # Encapsulates the common pattern of merging config and initializing the model.
@@ -244,7 +264,7 @@ module CovLoupe
 
     # Default configuration when no context or explicit params are provided
     def self.default_model_options
-      { root: '.', resultset: nil, raise_on_stale: false, tracked_globs: [] }
+      { root: '.', coverage_file: nil, raise_on_stale: false, tracked_globs: [] }
     end
 
     # Resolves output_chars from tool parameter or server context.

@@ -32,7 +32,7 @@ require "cov_loupe"
 
 # Defaults (omit args; shown here with comments):
 # - root: "."
-# - resultset: resolved from common paths under root
+# - coverage_file: resolved from common paths under root
 # - raise_on_stale: false (don't raise on stale data)
 # - tracked_globs: [] (no project-level file-set checks)
 # - logger: CovLoupe.logger
@@ -41,7 +41,7 @@ model = CovLoupe::CoverageModel.new
 # Custom configuration (non-default values):
 model = CovLoupe::CoverageModel.new(
   root: File.join(Dir.home, 'project'),          # non-default project root
-  resultset: "build/coverage",                   # file or directory containing .resultset.json
+  coverage_file: "build/coverage",                # coverage.json/.resultset.json file, or its directory
   raise_on_stale: true,                          # enable strict staleness checks (raise on stale)
   tracked_globs: ["lib/cov_loupe/tools/**/*.rb"],# for 'list' staleness: flag new/missing files
   logger: Logger.new($stderr)                    # optional custom logger
@@ -63,7 +63,7 @@ raw = model.raw_for(target)
 
 ### `list(sort_order: :descending, raise_on_stale: model default, tracked_globs: model default)`
 
-Returns coverage summary for all files in the resultset.
+Returns coverage summary for all files in the coverage file.
 
 **Parameters:**
 - `sort_order` (Symbol, optional): `:descending` (default) or `:ascending` by coverage percentage
@@ -380,7 +380,7 @@ Note: The `without_coverage` hash will only be present if `tracked_globs` were s
 
 The library raises these custom exceptions:
 
-- **`CovLoupe::ResultsetNotFoundError`** - Coverage data file not found
+- **`CovLoupe::CoverageFileNotFoundError`** - Coverage data file not found
 - **`CovLoupe::FileError`** - Requested file not in coverage data
 - **`CovLoupe::CoverageDataStaleError`** - Coverage data is stale (only when `raise_on_stale: true`)
 - **`CovLoupe::CoverageDataError`** - Invalid coverage data format or structure
@@ -398,7 +398,7 @@ begin
   puts "Coverage: #{summary['summary']['percentage']}%"
 rescue CovLoupe::FileError => e
   puts "File not in coverage data: #{e.message}"
-rescue CovLoupe::ResultsetNotFoundError => e
+rescue CovLoupe::CoverageFileNotFoundError => e
   puts "Coverage data not found: #{e.message}"
   puts "Run your tests first: bundle exec rspec"
 rescue CovLoupe::Error => e
@@ -764,7 +764,7 @@ context_a = CovLoupe.create_context(
 summary_a = CovLoupe.with_context(context_a) do
   model_a = CovLoupe::CoverageModel.new(
     root: '/path/to/project_a',
-    resultset: '/path/to/project_a/coverage/.resultset.json'
+    coverage_file: '/path/to/project_a/coverage/.resultset.json'
   )
   model_a.summary_for('lib/foo.rb')
 end
@@ -775,7 +775,7 @@ context_b = context_a.with(log_target: 'project_b_coverage.log')
 summary_b = CovLoupe.with_context(context_b) do
   model_b = CovLoupe::CoverageModel.new(
     root: '/path/to/project_b',
-    resultset: '/path/to/project_b/coverage/.resultset.json'
+    coverage_file: '/path/to/project_b/coverage/.resultset.json'
   )
   model_b.summary_for('lib/bar.rb')
 end

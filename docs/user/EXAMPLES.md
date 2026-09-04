@@ -354,12 +354,12 @@ Lowest coverage files (< 80%):
 - `threshold:` - Coverage percentage below which files are included (default: 80)
 - `count:` - Maximum number of files to show (default: 5)
 - `root:` - Project root directory (defaults to `SimpleCov.root` when SimpleCov is loaded, otherwise `'.'`)
-- `resultset:` - Path or directory to `.resultset.json` (defaults to `SimpleCov.coverage_dir/.resultset.json` when SimpleCov is loaded)
-- `model:` - Pre-configured `CoverageModel` instance (optional, overrides `root:`/`resultset:`)
+- `coverage_file:` - Path or directory to `.resultset.json` (defaults to `SimpleCov.coverage_dir/.resultset.json` when SimpleCov is loaded)
+- `model:` - Pre-configured `CoverageModel` instance (optional, overrides `root:`/`coverage_file:`)
 
 **Returns:** Formatted string, or `nil` if no files are below the threshold.
 
-**SimpleCov Integration:** When SimpleCov is loaded, `CoverageReporter.report` automatically uses SimpleCov's configured root and coverage directory. You can override these by passing explicit `root:` or `resultset:` parameters, or provide a custom `model:` instance.
+**SimpleCov Integration:** When SimpleCov is loaded, `CoverageReporter.report` automatically uses SimpleCov's configured root and coverage directory. You can override these by passing explicit `root:` or `coverage_file:` parameters, or provide a custom `model:` instance.
 
 ### Custom Coverage Directory
 
@@ -389,7 +389,7 @@ Or specify the resultset path explicitly:
 report = CovLoupe::CoverageReporter.report(
   threshold: 80,
   count: 5,
-  resultset: 'reports/coverage/.resultset.json'
+  coverage_file: 'reports/coverage/.resultset.json'
 )
 ```
 

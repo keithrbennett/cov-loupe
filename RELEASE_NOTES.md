@@ -3,6 +3,27 @@
 [Back to main README](docs/index.md)
 
 
+## Unreleased
+
+### Added
+
+- **`coverage.json` support.** cov-loupe now reads SimpleCov's documented JSON formatter output (written alongside the HTML report from SimpleCov 1.0.0 on) in addition to `.resultset.json`. The format is detected from the file's contents rather than its name. Discovery is format-first: all default `coverage.json` locations are searched before any `.resultset.json` location.
+- **`--coverage-file` option**, the accurate name for what `-r` has always pointed at. `-r` is unchanged.
+
+### Deprecated
+
+The `resultset` terminology dates from when `.resultset.json` was the only readable input. Every name below still works and now emits a one-time deprecation warning; all are removed in **v7.0.0**. See [Configuring the Coverage File](docs/index.md#configuring-the-coverage-file) for the full table.
+
+- `--resultset` → `--coverage-file`
+- the `resultset` MCP tool argument → `coverage_file`
+- `CoverageModel.new(resultset:)` → `coverage_file:`, and `#resultset_path` → `#coverage_file_path`
+- `CoverageReporter.report(resultset:)` → `coverage_file:`
+- `CovLoupe::ResultsetNotFoundError` → `CovLoupe::CoverageFileNotFoundError`
+- `Resolvers::ResultsetPathResolver` → `Resolvers::CoverageFilePathResolver`
+- `AppConfig#resultset` → `#coverage_file`
+
+`ResultsetLoader` keeps its name: it reads `.resultset.json` specifically, so the name remains accurate.
+
 ## v6.1.0
 
 - In gemspec, change mcp gem's constraints from `'>= 0.15', '< 1.0'` to `'>= 0.15', '< 2.0'`

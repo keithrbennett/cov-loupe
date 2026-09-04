@@ -31,20 +31,20 @@ RSpec.describe CovLoupe::CoverageModel do
   describe 'initialization error handling' do
     it 'raises FileError when File.read raises Errno::ENOENT directly' do
       # Stub find_resultset to return a path, but File.read to raise ENOENT
-      allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:find_resultset)
+      allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:find_coverage_file)
         .and_return('/some/path/.resultset.json')
       allow(File).to receive(:read).with('/some/path/.resultset.json')
         .and_raise(Errno::ENOENT, 'No such file')
 
       expect do
-        described_class.new(root: root, resultset: '/some/path/.resultset.json')
+        described_class.new(root: root, coverage_file: '/some/path/.resultset.json')
       end.to raise_error(CovLoupe::FileError, /Coverage data not found/)
     end
 
-    it 'raises ResultsetNotFoundError when resultset file does not exist' do
+    it 'raises CoverageFileNotFoundError when resultset file does not exist' do
       expect do
-        described_class.new(root: root, resultset: '/nonexistent/path/.resultset.json')
-      end.to raise_error(CovLoupe::ResultsetNotFoundError, /Specified resultset not found/)
+        described_class.new(root: root, coverage_file: '/nonexistent/path/.resultset.json')
+      end.to raise_error(CovLoupe::CoverageFileNotFoundError, /Specified coverage file not found/)
     end
   end
 
@@ -342,7 +342,7 @@ RSpec.describe CovLoupe::CoverageModel do
   end
 
   describe 'multiple suites in resultset' do
-    let(:resultset_path) { File.join(Dir.tmpdir, 'multi_suite_resultset.json') }
+    let(:coverage_file_path) { File.join(Dir.tmpdir, 'multi_suite_resultset.json') }
     let(:shared_file) { File.join(root, 'lib', 'foo.rb') }
     let(:suite_a_cov) { { shared_file => { 'lines' => [1, 0, nil, 0] } } }
     let(:suite_b_cov) { { shared_file => { 'lines' => [0, 3, nil, 1] } } }
@@ -355,22 +355,22 @@ RSpec.describe CovLoupe::CoverageModel do
     end
 
     before do
-      allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:find_resultset).and_wrap_original do
-        |original, search_root, resultset: nil|
+      allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:find_coverage_file).and_wrap_original do
+        |original, search_root, coverage_file: nil|
         is_root = File.absolute_path(search_root) == File.absolute_path(root)
-        is_empty = resultset.nil? || resultset.to_s.empty?
-        is_target = resultset.to_s == resultset_path
+        is_empty = coverage_file.nil? || coverage_file.to_s.empty?
+        is_target = coverage_file.to_s == coverage_file_path
 
         if is_root && (is_empty || is_target)
-          resultset_path
+          coverage_file_path
         else
-          original.call(search_root, resultset: resultset)
+          original.call(search_root, coverage_file: coverage_file)
         end
       end
     end
 
     it 'merges coverage data from multiple suites' do
-      allow(File).to receive(:read).with(resultset_path).and_return(JSON.generate(resultset))
+      allow(File).to receive(:read).with(coverage_file_path).and_return(JSON.generate(resultset))
 
       model = described_class.new(root: root)
 
@@ -489,7 +489,7 @@ RSpec.describe CovLoupe::CoverageModel do
         },
       }
 
-      allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:find_resultset)
+      allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:find_coverage_file)
         .and_return(File.join(Dir.tmpdir, 'test_resultset.json'))
       allow(File).to receive(:read).with(File.join(Dir.tmpdir, 'test_resultset.json'))
         .and_return(JSON.generate(resultset))
@@ -519,7 +519,7 @@ RSpec.describe CovLoupe::CoverageModel do
       # full.rb -> 100.0
       # none.rb -> 0.0
 
-      allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:find_resultset)
+      allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:find_coverage_file)
         .and_return(File.join(Dir.tmpdir, 'test_resultset.json'))
       allow(File).to receive(:read).with(File.join(Dir.tmpdir, 'test_resultset.json'))
         .and_return(JSON.generate(resultset))
@@ -546,11 +546,11 @@ RSpec.describe CovLoupe::CoverageModel do
     it 'clears resolved resultset path' do
       # Access coverage_map to trigger initial resolution
       model.send(:coverage_map)
-      model.instance_variable_get(:@resolved_resultset_path)
+      model.instance_variable_get(:@resolved_coverage_file_path)
 
       # Refresh should clear it
       model.refresh_data
-      expect(model.instance_variable_get(:@resolved_resultset_path)).to be_nil
+      expect(model.instance_variable_get(:@resolved_coverage_file_path)).to be_nil
     end
   end
 
@@ -597,7 +597,7 @@ RSpec.describe CovLoupe::CoverageModel do
 
     it 'automatically reloads data when resultset file changes' do
       # Create model with initial resultset
-      long_lived_model = described_class.new(root: root, resultset: temp_resultset)
+      long_lived_model = described_class.new(root: root, coverage_file: temp_resultset)
 
       # Verify initial state
       list1 = long_lived_model.list['files']
@@ -625,7 +625,7 @@ end['covered']).to eq(3)
     end
 
     it 'picks up new files added to the resultset' do
-      long_lived_model = described_class.new(root: root, resultset: temp_resultset)
+      long_lived_model = described_class.new(root: root, coverage_file: temp_resultset)
 
       # Initial state - only first.rb exists
       files1 = long_lived_model.list['files'].map { |f| File.basename(f['file']) }
@@ -756,7 +756,7 @@ end['covered']).to eq(3)
 
     describe 'with raise_on_stale: false (default)' do
       it 'returns coverage payload for missing file' do
-        model_with_deleted = described_class.new(root: root, resultset: temp_resultset)
+        model_with_deleted = described_class.new(root: root, coverage_file: temp_resultset)
 
         # All single-file methods should return coverage data
         aggregate_failures do
@@ -793,7 +793,7 @@ end['covered']).to eq(3)
       end
 
       it 'reports staleness status for missing file via staleness_for' do
-        model_with_deleted = described_class.new(root: root, resultset: temp_resultset)
+        model_with_deleted = described_class.new(root: root, coverage_file: temp_resultset)
 
         staleness = model_with_deleted.staleness_for('lib/deleted.rb')
         expect(staleness).to eq('missing')
@@ -884,7 +884,7 @@ end['covered']).to eq(3)
 
         aggregate_failures do
           # Default (raise_on_stale: false)
-          normal_model = described_class.new(root: root, resultset: temp_resultset)
+          normal_model = described_class.new(root: root, coverage_file: temp_resultset)
           summary = normal_model.summary_for('lib/existing.rb')
           expect(summary).to include('summary' => include('total' => 3, 'covered' => 2))
 

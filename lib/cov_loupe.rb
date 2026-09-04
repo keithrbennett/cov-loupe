@@ -13,6 +13,7 @@ require_relative 'cov_loupe/errors/errors'
 require_relative 'cov_loupe/errors/error_handler'
 require_relative 'cov_loupe/errors/error_handler_factory'
 require_relative 'cov_loupe/paths/path_relativizer'
+require_relative 'cov_loupe/deprecation'
 require_relative 'cov_loupe/loaders/resultset_loader'
 require_relative 'cov_loupe/model/model'
 require_relative 'cov_loupe/coverage/coverage_reporter'
@@ -24,7 +25,7 @@ require_relative 'cov_loupe/coverage/coverage_reporter'
 #   - CoverageModel: domain layer that queries coverage data, delegates staleness and path resolution
 #   - CoverageCLI / MCPServer: presentation layer (CLI commands vs JSON-RPC tool calls)
 #   - CoverageRepository: data access layer (reads coverage.json or .resultset.json, normalizes paths)
-#   - ModelDataCache: singleton cache that auto-invalidates when the resultset file changes
+#   - ModelDataCache: singleton cache that auto-invalidates when the coverage file changes
 #   - Presenters: memoized adapters that compute absolute payloads, then relativize paths for output
 #
 # Data flow for a typical request:

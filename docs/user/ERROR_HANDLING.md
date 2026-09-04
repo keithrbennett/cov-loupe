@@ -47,7 +47,7 @@ Available exception classes:
 - `CovLoupe::FileNotFoundError` - File does not exist on disk (subclass of `FileError`)
 - `CovLoupe::FilePermissionError` - File permission denied (subclass of `FileError`)
 - `CovLoupe::CoverageDataError` - Invalid or missing coverage data
-- `CovLoupe::ResultsetNotFoundError` - Coverage data file not found (subclass of `CoverageDataError`)
+- `CovLoupe::CoverageFileNotFoundError` - Coverage data file not found (subclass of `CoverageDataError`)
 - `CovLoupe::CoverageDataStaleError` - Coverage data is stale (when `raise_on_stale: true`)
 - `CovLoupe::CoverageDataProjectStaleError` - Project-wide staleness error
 - `CovLoupe::ConfigurationError` - Configuration problems

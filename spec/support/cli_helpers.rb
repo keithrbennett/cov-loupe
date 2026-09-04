@@ -51,9 +51,9 @@ module CLITestHelpers
     end
 
     unless args.any? do |arg|
-      arg == '--resultset' || arg.start_with?('--resultset=') || arg.start_with?('-r')
+      arg == '--coverage-file' || arg.start_with?('--coverage-file=') || arg.start_with?('-r')
     end
-      args = ['--resultset', FIXTURE_PROJECT1_RESULTSET_PATH] + args
+      args = ['--coverage-file', FIXTURE_PROJECT1_RESULTSET_PATH] + args
     end
 
     args

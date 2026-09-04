@@ -56,7 +56,7 @@ Prefer project‑local tools and scripts (for example, bin/ scripts, package.jso
   - `cov-loupe list` – table view of coverage data
 
 ## Project Overview
-`cov-loupe` is a Ruby gem that ships both a CLI and an MCP (Model Context Protocol) server for inspecting SimpleCov coverage data. It reads coverage resultsets directly (SimpleCov itself is a runtime dependency and is loaded when multi-suite merges are required) and exposes multiple data formats: file summaries, raw line arrays, uncovered lines, per-line detail, and repo-level tables.
+`cov-loupe` is a Ruby gem that ships both a CLI and an MCP (Model Context Protocol) server for inspecting SimpleCov coverage data. It reads SimpleCov's coverage files directly (SimpleCov itself is a runtime dependency and is loaded when multi-suite merges are required) and exposes multiple data formats: file summaries, raw line arrays, uncovered lines, per-line detail, and repo-level tables.
 
 ### Key Technologies
 - **Ruby** – implementation language and packaging format (gem).
@@ -182,8 +182,8 @@ Always prefer these tools over free-form reasoning to keep responses grounded in
 
 On case-insensitive volumes, comparisons are case-normalized; on case-sensitive volumes, case must match exactly.
 
-### Resultset Discovery
-- The tool locates `.resultset.json` by checking default paths or by honoring explicit CLI/MCP arguments. See [Configuring the Resultset](README.md#configuring-the-resultset) for details.
+### Coverage File Discovery
+- The tool locates `.resultset.json` by checking default paths or by honoring explicit CLI/MCP arguments. See [Configuring the Coverage File](README.md#configuring-the-coverage-file) for details.
 - SimpleCov is a lazy-loaded dependency used only when multi-suite resultsets require merging.
 
 ## Git Workflow
@@ -216,7 +216,7 @@ On case-insensitive volumes, comparisons are case-normalized; on case-sensitive 
 - If there are test errors that would never occur in production (i.e. that are errors due to the test environment and not logic errors), the agent should modify test code and not production code, and make the solution as simple as possible.
 
 ## Troubleshooting Notes
-- Coverage lookup order: The tool locates the `.resultset.json` file by checking a series of default paths or by using a path specified by the user. For a detailed explanation of the configuration options, see the [Configuring the Resultset](README.md#configuring-the-resultset) section in the main README.
+- Coverage lookup order: The tool locates the `.resultset.json` file by checking a series of default paths or by using a path specified by the user. For a detailed explanation of the configuration options, see the [Configuring the Coverage File](README.md#configuring-the-coverage-file) section in the main README.
 - `COV_LOUPE_OPTS` can set default CLI flags (command-line arguments still win).
 - Mode selection: Use `-m mcp`/`--mode mcp` to run as MCP server, or `-m cli`/`--mode cli` (or omit for default) for CLI mode.
 
@@ -243,7 +243,7 @@ bundle exec rubocop --cache false
 This disables caching and adds approximately 5 seconds to execution time (3s → 8s) but ensures successful analysis in sandboxed environments. See [dev/prompts/guidelines/ai-code-evaluator-guidelines.md](dev/prompts/guidelines/ai-code-evaluator-guidelines.md) for details on why caching is enabled by default.
 
 ## Documentation
-- `README.md` – primary documentation for installation, CLI usage, MCP integration, troubleshooting, and resultset configuration.
+- `README.md` – primary documentation for installation, CLI usage, MCP integration, troubleshooting, and coverage file configuration.
 - `docs/user/` – user-facing guides, examples, and troubleshooting.
 - `docs/dev/` – deeper architecture notes, contributing details, and decisions.
 

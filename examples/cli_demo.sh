@@ -27,9 +27,9 @@ BANNER
 cat <<INTRO
 == cov-loupe CLI demo ==
 
-Note: Project root and resultset JSON file normally do not need to be specified.
+Note: Project root and coverage JSON file normally do not need to be specified.
 We set --root here to use the docs/fixtures/demo_project nondefault location,
-and later demonstrate a nondefault resultset via the --resultset option.
+and later demonstrate a nondefault coverage file via the --coverage-file option.
 
 Project root:     $PROJ
 Resultset (dir):  $RESULTSET_DIR
@@ -61,17 +61,17 @@ run --root "$PROJ" --format json detailed app/models/order.rb
 # 7) Raw lines array (JSON)
 run --root "$PROJ" --format json raw app/models/order.rb
 
-# 8) Using environment variable for a NONDEFAULT resultset location
-#    Copy the default resultset into a simple alt directory to simulate a custom layout.
+# 8) Using environment variable for a NONDEFAULT coverage file location
+#    Copy the default coverage file into a simple alt directory to simulate a custom layout.
 ALT_DIR="$PROJ/alt_resultset"
 mkdir -p "$ALT_DIR"
 cp -f "$PROJ/.resultset.json" "$ALT_DIR/.resultset.json"
 echo 
-echo "+ ${CLI[*]} --root $PROJ --resultset $PROJ/alt_resultset list"
-"${CLI[@]}" --root "$PROJ" --resultset "$PROJ/alt_resultset" list
+echo "+ ${CLI[*]} --root $PROJ --coverage-file $PROJ/alt_resultset list"
+"${CLI[@]}" --root "$PROJ" --coverage-file "$PROJ/alt_resultset" list
 
 echo
 echo "== Done =="
 
-# Cleanup files created for the nondefault resultset demo
+# Cleanup files created for the nondefault coverage file demo
 rm -rf "$ALT_DIR"

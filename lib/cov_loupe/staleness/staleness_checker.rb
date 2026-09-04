@@ -27,13 +27,13 @@ module CovLoupe
   class StalenessChecker
     MODES = %i[off error].freeze
 
-    def initialize(root:, resultset:, mode: :off, tracked_globs: nil, timestamp: nil)
+    def initialize(root:, coverage_file:, mode: :off, tracked_globs: nil, timestamp: nil)
       @root = File.expand_path(root || '.')
-      @resultset = resultset
+      @coverage_file = coverage_file
       @mode = (mode || :off).to_sym
       @tracked_globs = tracked_globs
       @cov_timestamp = timestamp
-      @resultset_path = nil
+      @coverage_file_path = nil
     end
 
     def off?
@@ -57,12 +57,12 @@ module CovLoupe
         raise CoverageDataStaleError.new(
           nil,
           nil,
-          file_path:      rel(file_abs),
-          file_mtime:     d[:file_mtime],
-          cov_timestamp:  d[:coverage_timestamp],
-          src_len:        d[:src_len],
-          cov_len:        d[:cov_len],
-          resultset_path: resultset_path
+          file_path:          rel(file_abs),
+          file_mtime:         d[:file_mtime],
+          cov_timestamp:      d[:coverage_timestamp],
+          src_len:            d[:src_len],
+          cov_len:            d[:cov_len],
+          coverage_file_path: coverage_file_path
         )
       end
     end
@@ -108,12 +108,12 @@ module CovLoupe
         raise CoverageDataProjectStaleError.new(
           nil,
           nil,
-          cov_timestamp:    ts,
-          newer_files:      newer,
-          missing_files:    missing,
-          deleted_files:    deleted,
-          unreadable_files: unreadable,
-          resultset_path:   resultset_path
+          cov_timestamp:      ts,
+          newer_files:        newer,
+          missing_files:      missing,
+          deleted_files:      deleted,
+          unreadable_files:   unreadable,
+          coverage_file_path: coverage_file_path
         )
       end
 
@@ -181,7 +181,7 @@ module CovLoupe
           deleted_files:         deleted,
           length_mismatch_files: length_mismatch,
           unreadable_files:      unreadable,
-          resultset_path:        resultset_path
+          coverage_file_path:    coverage_file_path
         )
       end
 
@@ -239,10 +239,11 @@ module CovLoupe
       @cov_timestamp || 0
     end
 
-    private def resultset_path
+    private def coverage_file_path
       # Only used for error message context; if the path can't be resolved,
       # nil omits it from the message rather than raising a secondary error.
-      @resultset_path ||= Resolvers::ResolverHelpers.find_resultset(@root, resultset: @resultset)
+      @coverage_file_path ||=
+        Resolvers::ResolverHelpers.find_coverage_file(@root, coverage_file: @coverage_file)
     rescue
       nil
     end

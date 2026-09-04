@@ -6,7 +6,7 @@ require 'fileutils'
 require 'tmpdir'
 
 RSpec.describe CovLoupe::Repositories::CoverageRepository do
-  subject(:repo) { described_class.new(root: root, resultset_path: resultset_arg, logger: logger) }
+  subject(:repo) { described_class.new(root: root, coverage_file_path: resultset_arg, logger: logger) }
 
   let(:root) { (FIXTURES_DIR / 'project1').to_s }
   let(:resultset_arg) { nil }
@@ -52,7 +52,7 @@ RSpec.describe CovLoupe::Repositories::CoverageRepository do
     after { FileUtils.remove_entry(tmp_root) }
 
     it 'discovers coverage/coverage.json without an explicit path' do
-      expect(repo.resultset_path).to eq(File.join(tmp_root, 'coverage', 'coverage.json'))
+      expect(repo.coverage_file_path).to eq(File.join(tmp_root, 'coverage', 'coverage.json'))
     end
 
     it 'normalizes the project-relative key to an absolute project path' do
@@ -87,7 +87,7 @@ RSpec.describe CovLoupe::Repositories::CoverageRepository do
 
       it 'resolves resultset path' do
         expected = File.join(root, 'coverage', '.resultset.json')
-        expect(repo.resultset_path).to eq(expected)
+        expect(repo.coverage_file_path).to eq(expected)
       end
     end
 
@@ -108,13 +108,13 @@ RSpec.describe CovLoupe::Repositories::CoverageRepository do
       it 'raises error' do
         expect do
           repo
-        end.to raise_error(CovLoupe::ResultsetNotFoundError)
+        end.to raise_error(CovLoupe::CoverageFileNotFoundError)
       end
     end
 
     context 'when underlying loader raises generic error' do
       before do
-        allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:find_resultset).and_return('dummy')
+        allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:find_coverage_file).and_return('dummy')
         allow(CovLoupe::CoverageFileLoader).to receive(:load).and_raise(RuntimeError.new('Boom'))
       end
 

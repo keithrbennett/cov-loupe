@@ -93,7 +93,7 @@ RSpec.describe CovLoupe::BaseTool do
 
   describe '.model_config_for' do
     let(:defaults) do
-      { root: '.', resultset: nil, raise_on_stale: false, tracked_globs: [] }
+      { root: '.', coverage_file: nil, raise_on_stale: false, tracked_globs: [] }
     end
 
     # Helper to mock AppContext with a specific config
@@ -116,8 +116,8 @@ RSpec.describe CovLoupe::BaseTool do
 
       expect(config[:root]).to eq('/cli/root')
       expect(config[:raise_on_stale]).to be(true)
-      # resultset remains nil (default) if not in cli_config
-      expect(config[:resultset]).to be_nil
+      # coverage_file remains nil (default) if not in cli_config
+      expect(config[:coverage_file]).to be_nil
     end
 
     it 'uses explicit params over app_config' do
@@ -166,10 +166,10 @@ RSpec.describe CovLoupe::BaseTool do
     it 'creates and returns a configured model' do
       root = '/test/project'
       mock_resultset_with_timestamp(root, FIXTURE_COVERAGE_TIMESTAMP)
-      resultset_path = File.join(root, 'coverage', '.resultset.json')
+      coverage_file_path = File.join(root, 'coverage', '.resultset.json')
 
-      mock_file_stat(resultset_path, mtime: Time.at(FIXTURE_COVERAGE_TIMESTAMP))
-      mock_file_digest(resultset_path)
+      mock_file_stat(coverage_file_path, mtime: Time.at(FIXTURE_COVERAGE_TIMESTAMP))
+      mock_file_digest(coverage_file_path)
 
       model = described_class.create_model(server_context: context, root: root)
       expect(model).to be_a(CovLoupe::CoverageModel)
@@ -217,10 +217,10 @@ RSpec.describe CovLoupe::BaseTool do
     it 'creates fresh model instances each time' do
       Dir.mktmpdir do |root|
         mock_resultset_with_timestamp(root, FIXTURE_COVERAGE_TIMESTAMP)
-        resultset_path = File.join(root, 'coverage', '.resultset.json')
+        coverage_file_path = File.join(root, 'coverage', '.resultset.json')
 
-        mock_file_stat(resultset_path, mtime: Time.at(100))
-        mock_file_digest(resultset_path)
+        mock_file_stat(coverage_file_path, mtime: Time.at(100))
+        mock_file_digest(coverage_file_path)
 
         model1, = described_class.create_configured_model(server_context: context, root: root)
         model2, = described_class.create_configured_model(server_context: context, root: root)
@@ -235,10 +235,10 @@ RSpec.describe CovLoupe::BaseTool do
     it 'models share cached data when resultset is unchanged' do
       Dir.mktmpdir do |root|
         mock_resultset_with_timestamp(root, FIXTURE_COVERAGE_TIMESTAMP)
-        resultset_path = File.join(root, 'coverage', '.resultset.json')
+        coverage_file_path = File.join(root, 'coverage', '.resultset.json')
 
-        mock_file_stat(resultset_path, mtime: Time.at(100))
-        mock_file_digest(resultset_path)
+        mock_file_stat(coverage_file_path, mtime: Time.at(100))
+        mock_file_digest(coverage_file_path)
 
         model1, = described_class.create_configured_model(server_context: context, root: root)
         model2, = described_class.create_configured_model(server_context: context, root: root)

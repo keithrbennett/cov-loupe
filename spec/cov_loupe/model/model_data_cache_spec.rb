@@ -18,7 +18,7 @@ RSpec.describe CovLoupe::ModelDataCache do
       expect(data).to be_a(CovLoupe::ModelData)
       expect(data.coverage_map).to be_a(Hash)
       expect(data.timestamp).to be_a(Integer)
-      expect(data.resultset_path).to eq(project1_resultset)
+      expect(data.coverage_file_path).to eq(project1_resultset)
     end
 
     it 'returns the same data for identical resultset path and root' do
@@ -34,7 +34,7 @@ RSpec.describe CovLoupe::ModelDataCache do
         # Should create separate cache entries because path normalization depends on root
         expect(data2).not_to be(data1)
         # But both should contain valid coverage data from the same resultset
-        expect(data1.resultset_path).to eq(data2.resultset_path)
+        expect(data1.coverage_file_path).to eq(data2.coverage_file_path)
         expect(data1.timestamp).to eq(data2.timestamp)
       end
     end

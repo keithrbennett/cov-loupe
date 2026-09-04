@@ -33,8 +33,8 @@ def output_examples
   # Initialize coverage model
   # Using the built-in coverage data from running specs
   model = CovLoupe::CoverageModel.new(
-    root:      '.',
-    resultset: 'spec/fixtures/project1/coverage'
+    root:          '.',
+    coverage_file: 'spec/fixtures/project1/coverage'
   )
 
   puts <<~DOC

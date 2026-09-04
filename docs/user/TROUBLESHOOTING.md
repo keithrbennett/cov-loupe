@@ -43,7 +43,7 @@ coverage.json or .resultset.json":
    ```
 2. If your coverage lives elsewhere, point the tools at it:
    ```bash
-   cov-loupe -r build/coverage/coverage.json  # -r = --resultset
+   cov-loupe -r build/coverage/coverage.json  # -r = --coverage-file
    # or
    export COV_LOUPE_OPTS="-r build/coverage"
    ```

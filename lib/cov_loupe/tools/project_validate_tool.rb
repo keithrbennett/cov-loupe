@@ -11,7 +11,7 @@ module CovLoupe
       description <<~DESC
         Validates coverage data against a predicate (Ruby code that evaluates to true/false).
         Use this to enforce coverage policies programmatically.
-        Inputs: Either 'code' (Ruby string) OR 'file' (path to Ruby file), plus optional root/resultset/raise_on_stale/error_mode.
+        Inputs: Either 'code' (Ruby string) OR 'file' (path to Ruby file), plus optional root/coverage_file/raise_on_stale/error_mode.
         Output: JSON object {"result": Boolean} where true means policy passed. A false result means the policy failed but the tool itself succeeded (the response carries `isError: false`); execution errors (syntax error, file not found, etc.) return a `tools/call` result with `isError: true` and the friendly error message in the content.
         Security Warning: Predicates execute as arbitrary Ruby code with full system privileges.
         Examples:
@@ -34,8 +34,8 @@ module CovLoupe
         }
       ))
       class << self
-        def call(code: nil, file: nil, root: nil, resultset: nil, raise_on_stale: nil,
-          error_mode: 'log', output_chars: nil, server_context:)
+        def call(code: nil, file: nil, root: nil, coverage_file: nil, resultset: nil,
+          raise_on_stale: nil, error_mode: 'log', output_chars: nil, server_context:)
           # Normalize output_chars before error handling so errors also get converted
           output_chars_sym = resolve_output_chars(output_chars, server_context)
           with_error_handling('ProjectValidateTool',
@@ -43,6 +43,7 @@ module CovLoupe
             model, config = create_configured_model(
               server_context: server_context,
               root:           root,
+              coverage_file:  coverage_file,
               resultset:      resultset,
               raise_on_stale: raise_on_stale
             )

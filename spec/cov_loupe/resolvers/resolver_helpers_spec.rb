@@ -4,24 +4,24 @@ require 'spec_helper'
 require 'tmpdir'
 
 RSpec.describe CovLoupe::Resolvers::ResolverHelpers do
-  describe '.create_resultset_resolver' do
+  describe '.create_coverage_file_resolver' do
     it 'uses provided candidates when present' do
       custom_candidates = ['alt/.resultset.json']
-      resolver = described_class.create_resultset_resolver(
+      resolver = described_class.create_coverage_file_resolver(
         root:       '/tmp/sample',
         candidates: custom_candidates
       )
 
-      expect(resolver).to be_a(CovLoupe::Resolvers::ResultsetPathResolver)
+      expect(resolver).to be_a(CovLoupe::Resolvers::CoverageFilePathResolver)
       expect(resolver.instance_variable_get(:@root)).to eq('/tmp/sample')
       expect(resolver.instance_variable_get(:@candidates)).to eq(custom_candidates)
     end
 
     it 'falls back to default candidates when none provided' do
-      resolver = described_class.create_resultset_resolver(root: '/tmp/sample')
+      resolver = described_class.create_coverage_file_resolver(root: '/tmp/sample')
 
       expect(resolver.instance_variable_get(:@candidates)).to eq(
-        CovLoupe::Resolvers::ResultsetPathResolver::DEFAULT_CANDIDATES
+        CovLoupe::Resolvers::CoverageFilePathResolver::DEFAULT_CANDIDATES
       )
     end
   end
@@ -37,15 +37,15 @@ RSpec.describe CovLoupe::Resolvers::ResolverHelpers do
     end
   end
 
-  describe '.find_resultset' do
-    it 'locates default resultset within the provided root' do
+  describe '.find_coverage_file' do
+    it 'locates the default coverage file within the provided root' do
       Dir.mktmpdir do |dir|
-        resultset_path = File.join(dir, '.resultset.json')
-        File.write(resultset_path, '{}')
+        coverage_file_path = File.join(dir, '.resultset.json')
+        File.write(coverage_file_path, '{}')
 
-        resolved = described_class.find_resultset(dir)
+        resolved = described_class.find_coverage_file(dir)
 
-        expect(resolved).to eq(resultset_path)
+        expect(resolved).to eq(coverage_file_path)
       end
     end
   end

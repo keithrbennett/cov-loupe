@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative '../deprecation'
 require_relative '../errors/errors'
 
 module CovLoupe
@@ -16,7 +17,7 @@ module CovLoupe
   # for consistent comparison throughout the codebase.
   AppConfig = Struct.new(
     :root,
-    :resultset,
+    :coverage_file,
     :format,
     :sort_order,
     :source_mode,
@@ -32,7 +33,7 @@ module CovLoupe
     # Set sensible defaults - ALL SYMBOLS FOR ENUMS
     def initialize(
       root: '.',
-      resultset: nil,
+      coverage_file: nil,
       format: :table,
       sort_order: :descending,
       source_mode: nil,
@@ -45,17 +46,29 @@ module CovLoupe
       mode: :cli,
       output_chars: :default
     )
-      # Default to empty array (show all files in resultset and don't look for files lacking coverage data)
+      # Default to empty array (show all files in the coverage file and don't look for
+      # files lacking coverage data)
       # Users should set COV_LOUPE_OPTS to match SimpleCov track_files patterns
       tracked_globs = [] if tracked_globs.nil?
       super
+    end
+
+    # Deprecated accessors for coverage_file. Removed in v7.0.0.
+    def resultset
+      Deprecation.warn('AppConfig#resultset', '#coverage_file')
+      coverage_file
+    end
+
+    def resultset=(value)
+      Deprecation.warn('AppConfig#resultset=', '#coverage_file=')
+      self.coverage_file = value
     end
 
     # Convenience method for CoverageModel initialization
     def model_options
       {
         root:           root,
-        resultset:      resultset,
+        coverage_file:  coverage_file,
         raise_on_stale: raise_on_stale,
         tracked_globs:  tracked_globs,
       }
