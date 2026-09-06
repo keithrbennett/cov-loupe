@@ -60,9 +60,6 @@ mise.toml
 /log/
 *.log
 
-# Lockfile (for libraries)
-/Gemfile.lock
-
 # RSpec
 /.rspec_status
 

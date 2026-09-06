@@ -45,6 +45,55 @@ jobs:
         files: ./coverage/coverage.xml
         fail_ci_if_error: false
 
+k  # The gemspec promises simplecov >= 0.21, < 2.0. The `test` job above only
+  # exercises whatever version is in the committed lock, so this job re-resolves
+  # against the ends of that range and runs the suite there. It exists because a
+  # simplecov point release (1.2.0) once broke the multi-suite merge path on
+  # main with no change on our side; this turns that class of break into a
+  # failure here instead.
+  compat:
+    name: Compat (simplecov ${{ matrix.simplecov }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Oldest supported simplecov. cobertura 4.x needs simplecov ~> 1.0, so
+          # this cell drops cobertura to 3.x (see SIMPLECOV_COBERTURA_VERSION
+          # handling in the Gemfile). 0.22 is the last 0.x release.
+          - simplecov: '0.22.0'
+            version: '0.22.0'
+            cobertura: '~> 3.0'
+          # Newest release. Empty pins -> the Gemfile leaves both gems to the
+          # gemspec, so Bundler takes the current versions.
+          - simplecov: latest
+            version: ''
+            cobertura: ''
+    env:
+      SIMPLECOV_VERSION: ${{ matrix.version }}
+      SIMPLECOV_COBERTURA_VERSION: ${{ matrix.cobertura }}
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '4.0'
+        # Re-resolve from scratch rather than restoring the committed lock, so
+        # the pins above actually take effect.
+        bundler-cache: false
+
+    - name: Install (simplecov ${{ matrix.simplecov }})
+      run: |
+        rm -f Gemfile.lock
+        bundle install --jobs 4
+
+    - name: Show resolved simplecov
+      run: bundle list | grep simplecov
+
+    - name: Run tests
+      run: bundle exec rspec
+
   security:
     name: Security audit
     runs-on: ubuntu-latest
