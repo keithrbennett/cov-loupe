@@ -9,37 +9,37 @@ on:
 
 jobs:
   test:
-    name: Run tests
+    name: Run tests (${{ matrix.os }}, Ruby ${{ matrix.ruby-version }})
     runs-on: ${{ matrix.os }}
-    
+
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        ruby-version: ['3.2', '3.3', '3.4', '4.0']
+        # Full Ruby matrix on Linux; one representative Ruby on Windows and
+        # macOS to exercise the OS-specific path handling in lib/cov_loupe/paths/.
+        os: [ubuntu-latest]
+        ruby-version: ['3.2', '3.3', '3.4', '4.0', jruby]
         include:
-          # Test JRuby on Linux only (not available on Windows/macOS in CI)
-          - os: ubuntu-latest
-            ruby-version: jruby
-    
+          - os: windows-latest
+            ruby-version: '4.0'
+          - os: macos-latest
+            ruby-version: '4.0'
+
     steps:
     - uses: actions/checkout@v7
-    
+
     - name: Set up Ruby ${{ matrix.ruby-version }}
       uses: ruby/setup-ruby@v1
       with:
         ruby-version: ${{ matrix.ruby-version }}
         bundler-cache: true
-    
+
     - name: Run tests
       run: bundle exec rspec
-      env:
-        # Only run safe tests in CI (no network modifications)
-        RSPEC_DISRUPTIVE_TESTS: exclude
-    
+
     - name: Upload coverage reports
       uses: codecov/codecov-action@v7
-      if: matrix.ruby-version == '3.3' && matrix.os == 'ubuntu-latest'
+      if: matrix.os == 'ubuntu-latest' && matrix.ruby-version == '3.3'
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: ./coverage/coverage.xml
@@ -54,7 +54,7 @@ jobs:
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
       with:
-        ruby-version: '4.0.5'
+        ruby-version: '4.0.6'
         bundler-cache: true
 
     - name: Audit dependencies for vulnerabilities
@@ -72,7 +72,7 @@ jobs:
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
       with:
-        ruby-version: '4.0.5'
+        ruby-version: '4.0.6'
         bundler-cache: true
 
     - name: Run RuboCop
