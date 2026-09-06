@@ -11,9 +11,9 @@ module CovLoupe
   #
   # File lists are capped at 10 entries to keep error messages readable.
   class StalenessMessageFormatter
-    def initialize(cov_timestamp:, resultset_path: nil, output_chars: :default)
+    def initialize(cov_timestamp:, coverage_file_path: nil, output_chars: :default)
       @cov_timestamp = cov_timestamp
-      @resultset_path = resultset_path
+      @coverage_file_path = coverage_file_path
       @output_chars = output_chars
     end
 
@@ -26,7 +26,7 @@ module CovLoupe
         *format_file_list(deleted_files, 'Coverage-only files', 'deleted or moved in project'),
         *format_file_list(length_mismatch_files, 'Line count mismatches'),
         *format_file_list(unreadable_files, 'Unreadable files', 'permission denied or read errors'),
-        (@resultset_path ? "\nResultset - #{convert_path(@resultset_path)}" : nil),
+        (@coverage_file_path ? "\nResultset - #{convert_path(@coverage_file_path)}" : nil),
       ].compact.join
     end
 
@@ -42,7 +42,7 @@ module CovLoupe
         DETAILS
 
       details += "\nDelta    - file is #{delta_str} newer than coverage" if delta_str
-      details += "\nResultset - #{convert_path(@resultset_path)}" if @resultset_path
+      details += "\nResultset - #{convert_path(@coverage_file_path)}" if @coverage_file_path
       details.chomp
     end
 

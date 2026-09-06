@@ -213,7 +213,7 @@ RSpec.describe CovLoupe::CoverageModel do
     mock_resultset_with_timestamp(root, Time.now.to_i, coverage: {
       File.join(root, 'lib', 'bar.rb') => { 'lines' => [1, 1] }, # 2 entries vs 3 lines in source
     })
-    model = described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH,
+    model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_RESULTSET_PATH,
       raise_on_stale: true)
     # bar.rb has 2 coverage entries but 3 source lines in fixtures
     expect do
@@ -225,7 +225,7 @@ RSpec.describe CovLoupe::CoverageModel do
     mock_resultset_with_timestamp(root, Time.now.to_i, coverage: {
       File.join(root, 'lib', 'bar.rb') => { 'lines' => [1, 1] }, # 2 entries vs 3 lines in source
     })
-    model = described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH,
+    model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_RESULTSET_PATH,
       raise_on_stale: true)
 
     expect do
@@ -250,7 +250,7 @@ RSpec.describe CovLoupe::CoverageModel do
       path.to_s == bar_path ? current_time : m.call(path)
     end
 
-    model = described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH,
+    model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_RESULTSET_PATH,
       raise_on_stale: true)
 
     expect do
@@ -272,7 +272,7 @@ RSpec.describe CovLoupe::CoverageModel do
       foo_path => { 'lines' => [nil, nil, 1, 0, nil, 2] }, # 6 lines matching foo.rb
     })
 
-    model = described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH,
+    model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_RESULTSET_PATH,
       raise_on_stale: true)
 
     # Should not raise - all files are current
@@ -287,7 +287,7 @@ RSpec.describe CovLoupe::CoverageModel do
       missing_path => { 'lines' => [1, 1, 1] },
     })
 
-    model = described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH,
+    model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_RESULTSET_PATH,
       raise_on_stale: true)
 
     expect do
@@ -312,7 +312,7 @@ RSpec.describe CovLoupe::CoverageModel do
       path.to_s == bar_path ? current_time : m.call(path)
     end
 
-    model = described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH,
+    model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_RESULTSET_PATH,
       raise_on_stale: true)
 
     expect do
@@ -332,7 +332,7 @@ RSpec.describe CovLoupe::CoverageModel do
       bar_path => { 'lines' => [1, 1] }, # 2 lines vs 3 in actual file
     })
 
-    model = described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH,
+    model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_RESULTSET_PATH,
       raise_on_stale: true)
 
     expect do
@@ -362,7 +362,7 @@ RSpec.describe CovLoupe::CoverageModel do
       path.to_s == bar_path ? current_time : m.call(path)
     end
 
-    model = described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH,
+    model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_RESULTSET_PATH,
       raise_on_stale: true)
 
     expect do

@@ -60,8 +60,8 @@ cov-loupe currently depends on `amazing_print`, `mcp`, `logger`, and `simplecov`
 
 Coverage data is read directly from JSON files via `ModelDataCache` and `ResultsetLoader`:
 ```ruby
-resultset_path = Resolvers::ResolverHelpers.find_resultset(@root, resultset: resultset)
-data = ModelDataCache.instance.get(resultset_path, root: @root, logger: @logger)
+coverage_file_path = Resolvers::ResolverHelpers.find_resultset(@root, coverage_file: resultset)
+data = ModelDataCache.instance.get(coverage_file_path, root: @root, logger: @logger)
 coverage_map = data.coverage_map
 coverage_timestamp = data.timestamp
 ```
@@ -123,7 +123,7 @@ Where:
 
 ### Resultset Discovery
 
-We implement flexible discovery of `.resultset.json` files via `Resolvers::ResultsetPathResolver::DEFAULT_CANDIDATES`:
+We implement flexible discovery of `.resultset.json` files via `Resolvers::CoverageFilePathResolver::DEFAULT_CANDIDATES`:
 ```ruby
 DEFAULT_CANDIDATES = [
   '.resultset.json',
@@ -186,6 +186,6 @@ If SimpleCov's format changes:
 - Gemspec dependencies: `cov-loupe.gemspec` (`spec.add_dependency` entries)
 - JSON parsing: `lib/cov_loupe/loaders/resultset_loader.rb` (`ResultsetLoader.load`)
 - Coverage calculations: `lib/cov_loupe/coverage/coverage_calculator.rb` (`CoverageCalculator.summary`, `.uncovered`, `.detailed`)
-- Resultset discovery: `lib/cov_loupe/resolvers/resultset_path_resolver.rb` (`ResultsetPathResolver::DEFAULT_CANDIDATES`)
+- Resultset discovery: `lib/cov_loupe/resolvers/coverage_file_path_resolver.rb` (`CoverageFilePathResolver::DEFAULT_CANDIDATES`)
 - SimpleCov format documentation: https://github.com/simplecov-ruby/simplecov
 - Development usage: Uses SimpleCov in `spec/spec_helper.rb` to test itself

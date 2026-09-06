@@ -6,7 +6,7 @@
 >
 > `alias clp='cov-loupe -R docs/fixtures/demo_project'`  # -R = --root
 >
-> Replace `clp` with `cov-loupe` if you want to target your own project/resultset.
+> Replace `clp` with `cov-loupe` if you want to target your own project/coverage file.
 
 ## Table of Contents
 
@@ -61,7 +61,7 @@ To override the default log file location, specify the `--log-file` (or `-l`) ar
 
 Use these JSON-RPC commands as smoke tests to confirm that the MCP server launches and responds over stdin with your configuration. They are not exhaustive error-contract tests; see [Testing Your Setup](MCP_INTEGRATION.md#testing-your-setup) for installation checks and [Error Responses](MCP_INTEGRATION.md#error-responses) for the full MCP failure model.
 
-**Note:** CLI flags set defaults for MCP tool calls, but per-request JSON parameters still win. Use `-R`/`-r` when you want server-wide defaults, or pass `root`/`resultset` per request.
+**Note:** CLI flags set defaults for MCP tool calls, but per-request JSON parameters still win. Use `-R`/`-r` when you want server-wide defaults, or pass `root`/`coverage_file` per request.
 
 ```sh
 # Get version (no parameters needed)
@@ -198,7 +198,7 @@ Modern SimpleCov versions automatically include timestamps in `.resultset.json`.
 
 1. Ensure SimpleCov is up to date (`gem update simplecov`)
 2. Regenerate coverage data (`bundle exec rspec`)
-3. If using custom resultset generation, ensure timestamps are included
+3. If generating coverage data yourself, ensure timestamps are included
 
 **Example timestamp in `.resultset.json`:**
 ```json
@@ -236,13 +236,13 @@ model.summary_for('app/models/order.rb')                   # Relative
 # Project A
 model_a = CovLoupe::CoverageModel.new(
   root: '/path/to/projects/service-a',
-  resultset: '/path/to/projects/service-a/coverage/.resultset.json'
+  coverage_file: '/path/to/projects/service-a/coverage/.resultset.json'
 )
 
 # Project B
 model_b = CovLoupe::CoverageModel.new(
   root: '/path/to/projects/service-b',
-  resultset: '/path/to/projects/service-b/tmp/coverage/.resultset.json'
+  coverage_file: '/path/to/projects/service-b/tmp/coverage/.resultset.json'
 )
 
 # Compare coverage
@@ -286,10 +286,10 @@ require 'cov_loupe'
 begin
   model = CovLoupe::CoverageModel.new(
     root: '/path/to/project',
-    resultset: '/nonexistent/.resultset.json'
+    coverage_file: '/nonexistent/.resultset.json'
   )
 rescue CovLoupe::FileError => e
-  # Handle missing resultset
+  # Handle missing coverage file
   puts "Coverage file not found: #{e.message}"
 rescue CovLoupe::CoverageDataError => e
   # Handle corrupt/invalid coverage data
@@ -471,18 +471,18 @@ For platform-specific integration examples (GitHub Actions, GitLab CI, Jenkins, 
 
 ### Tracked Globs Overview
 
-**Default behavior:** By default, `--tracked-globs` is empty (`[]`), which means all files in the coverage resultset are shown. This ensures transparency—you see exactly what SimpleCov measured without any filtering.
+**Default behavior:** By default, `--tracked-globs` is empty (`[]`), which means all files in the coverage file are shown. This ensures transparency—you see exactly what SimpleCov measured without any filtering.
 
 **Why opt-in filtering?**
 - **Coverage results are not hidden** - Results are not excluded because their filespecs did not match default tracked globs
 - **Meaningful validation** - `missing_tracked_files` only flags files you explicitly expect to have coverage
 - **Project flexibility** - Different projects use different directory structures
 
-**Important:** Files lacking any coverage at all (not loaded during tests) will not appear in the resultset and therefore won't be visible with the default empty array. To detect such files, you must set `--tracked-globs` to match the files you expect to have coverage.
+**Important:** Files lacking any coverage at all (not loaded during tests) will not appear in the coverage file and therefore won't be visible with the default empty array. To detect such files, you must set `--tracked-globs` to match the files you expect to have coverage.
 
 **Two purposes of tracked globs:**
-1. **Exclude unwanted results** - Only show files from the resultset that match the patterns
-2. **Include files with or without coverage** - Report files that match the patterns but aren't in the resultset (reported in `missing_tracked_files` for `list`, `missing_from_coverage` for `totals`)
+1. **Exclude unwanted results** - Only show files from the coverage file that match the patterns
+2. **Include files with or without coverage** - Report files that match the patterns but aren't in the coverage file (reported in `missing_tracked_files` for `list`, `missing_from_coverage` for `totals`)
 
 **Best practice:** Set `COV_LOUPE_OPTS` to match your SimpleCov `track_files` configuration so `list`, `totals`, and missing-file reports use the same scope. See [`--tracked-globs`](CLI_USAGE.md#tracked-globs) for the canonical setup example.
 
@@ -577,7 +577,7 @@ end
 
 ### Reusing Coverage Models
 
-`CoverageModel` reads `.resultset.json` through a shared cache. The cache automatically reloads when the resultset file changes, and reusing one model for related queries avoids repeated model setup:
+`CoverageModel` reads the coverage file through a shared cache. The cache automatically reloads when that file changes, and reusing one model for related queries avoids repeated model setup:
 
 ```ruby
 # Good: Single model for related queries

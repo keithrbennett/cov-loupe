@@ -9,6 +9,7 @@ require_relative '../errors/error_handler'
 require_relative '../staleness/staleness_checker'
 require_relative '../staleness/stale_status'
 require_relative '../paths/path_relativizer'
+require_relative '../deprecation'
 require_relative '../loaders/resultset_loader'
 require_relative '../coverage/coverage_table_formatter'
 require_relative '../coverage/coverage_calculator'
@@ -23,9 +24,9 @@ module CovLoupe
   # Provides file-level queries (raw_for, summary_for, uncovered_for, detailed_for),
   # project-level queries (list, project_totals), and table formatting (format_table).
   #
-  # Construction eagerly validates that the resultset exists and loads initial data
+  # Construction eagerly validates that the coverage file exists and loads initial data
   # via ModelDataCache. Subsequent data accesses check the cache on every call and
-  # auto-reload if the resultset file has changed (based on mtime + MD5 digest).
+  # auto-reload if the coverage file has changed (based on mtime + MD5 digest).
   #
   # The model delegates to:
   # - CoverageCalculator for line counting and aggregation
@@ -49,21 +50,34 @@ module CovLoupe
 
     DEFAULT_SORT_ORDER = :descending
 
-    attr_reader :relativizer, :skipped_rows, :volume_case_sensitive
+    attr_reader :relativizer, :skipped_rows, :volume_case_sensitive, :coverage_file_path
+
+    # Deprecated reader for coverage_file_path. Removed in v7.0.0.
+    def resultset_path
+      Deprecation.warn('CoverageModel#resultset_path', '#coverage_file_path')
+      @coverage_file_path
+    end
 
     # Create a CoverageModel
     #
     # Params:
     # - root: project root directory (default '.')
-    # - resultset: path or directory to .resultset.json
+    # - coverage_file: path to a coverage.json or .resultset.json file, or to a
+    #   directory containing one
+    # - resultset: deprecated alias for coverage_file, removed in v7.0.0
     # - raise_on_stale: boolean (default false). When true, raises
     #   stale errors if sources are newer than coverage or line counts mismatch.
     # - tracked_globs: array of glob patterns (default []). Used for filtering and tracking.
     # - logger: logger instance (defaults to CovLoupe.logger)
-    def initialize(root: '.', resultset: nil, raise_on_stale: false, tracked_globs: [],
-      logger: nil)
+    def initialize(root: '.', coverage_file: nil, resultset: nil, raise_on_stale: false,
+      tracked_globs: [], logger: nil)
+      if resultset && !coverage_file
+        Deprecation.warn('CoverageModel.new(resultset:)', 'coverage_file:')
+        coverage_file = resultset
+      end
+
       @root = File.expand_path(root || '.')
-      @resultset_arg = resultset
+      @coverage_file_arg = coverage_file
       @default_tracked_globs = tracked_globs
       @skipped_rows = []
       @logger = logger || CovLoupe.logger
@@ -73,13 +87,13 @@ module CovLoupe
         array_keys:  RELATIVIZER_ARRAY_KEYS
       )
       @default_raise_on_stale = raise_on_stale
-      @resolved_resultset_path = nil # Resolved on first fetch
+      @resolved_coverage_file_path = nil # Resolved on first fetch
 
-      # Eagerly validate resultset exists and load initial data
+      # Eagerly validate the coverage file exists and load initial data
       # This matches original behavior and surfaces errors immediately
       begin
         data = fetch_data
-        @resultset_path = data.resultset_path
+        @coverage_file_path = data.coverage_file_path
       rescue CovLoupe::Error
         raise # Re-raise our own errors as-is
       rescue => e
@@ -87,7 +101,7 @@ module CovLoupe
       end
 
       # Compute volume case sensitivity based on this model's root directory
-      # This is not cached because different models may use the same resultset
+      # This is not cached because different models may use the same coverage file
       # with different root directories on different volumes
       @volume_case_sensitive = PathUtils.volume_case_sensitive?(@root)
     end
@@ -252,43 +266,43 @@ module CovLoupe
       CoverageTableFormatter.format(rows, output_chars: output_chars)
     end
 
-    # Lazily resolves the resultset path on first access
-    private def resolved_resultset_path
-      @resolved_resultset_path ||= Resolvers::ResolverHelpers.find_resultset(
-        @root, resultset: @resultset_arg
+    # Lazily resolves the coverage file path on first access
+    private def resolved_coverage_file_path
+      @resolved_coverage_file_path ||= Resolvers::ResolverHelpers.find_coverage_file(
+        @root, coverage_file: @coverage_file_arg
       )
     end
 
     # Fetches current ModelData from the shared cache
-    # The cache automatically reloads if the resultset file has changed
+    # The cache automatically reloads if the coverage file has changed
     private def fetch_data
-      ModelDataCache.instance.get(resolved_resultset_path, root: @root, logger: @logger)
+      ModelDataCache.instance.get(resolved_coverage_file_path, root: @root, logger: @logger)
     end
 
     # Returns the coverage map by delegating to ModelDataCache.
-    # The cache automatically reloads if the resultset file has changed.
+    # The cache automatically reloads if the coverage file has changed.
     private def coverage_map
       fetch_data.coverage_map
     end
 
     # Returns the timestamp by delegating to ModelDataCache.
-    # The cache automatically reloads if the resultset file has changed.
+    # The cache automatically reloads if the coverage file has changed.
     private def coverage_timestamp
       fetch_data.timestamp
     end
 
-    # Clears the resolved resultset path to allow re-resolution.
-    # ModelDataCache automatically handles resultset file changes on each access,
+    # Clears the resolved coverage file path to allow re-resolution.
+    # ModelDataCache automatically handles coverage file changes on each access,
     # so explicit refresh is rarely needed. This method is primarily for testing.
     def refresh_data
-      @resolved_resultset_path = nil
+      @resolved_coverage_file_path = nil
       self
     end
 
     private def build_staleness_checker(raise_on_stale:, tracked_globs:)
       StalenessChecker.new(
         root:          @root,
-        resultset:     resolved_resultset_path,
+        coverage_file: resolved_coverage_file_path,
         mode:          raise_on_stale ? :error : :off,
         tracked_globs: tracked_globs,
         timestamp:     coverage_timestamp
@@ -540,7 +554,7 @@ module CovLoupe
     # or contains invalid elements. Invalid entries trigger fallback to the resolver,
     # which performs centralized validation and error handling.
     #
-    # @param entry [Hash, Object] coverage entry from the resultset
+    # @param entry [Hash, Object] coverage entry from the coverage file
     # @return [Array<Integer, nil>, nil] SimpleCov-style line coverage array or nil
     private def extract_lines_from_entry(entry)
       return unless entry.is_a?(Hash)

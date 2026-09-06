@@ -14,7 +14,7 @@ module CovLoupe
         Use this when the user wants project-wide coverage data in their preferred format.
         Provides coverage percentages for every tracked file in JSON (default), or formatted output
         (table, YAML, pretty JSON, Amazing Print, inspect, puts, pretty_print).
-        Inputs: optional project root, alternate .resultset path, sort order, raise_on_stale flag,
+        Inputs: optional project root, alternate coverage file path, sort order, raise_on_stale flag,
         tracked_globs, output_chars, and format (default: json).
         Output format depends on the format parameter:
         - json (default): JSON object with files, counts, skipped_files, etc.
@@ -43,14 +43,16 @@ module CovLoupe
         }
       ))
       class << self
-        def call(root: nil, resultset: nil, sort_order: nil, raise_on_stale: nil,
-          tracked_globs: nil, format: 'json', error_mode: 'log', output_chars: nil, server_context:)
+        def call(root: nil, coverage_file: nil, resultset: nil, sort_order: nil,
+          raise_on_stale: nil, tracked_globs: nil, format: 'json', error_mode: 'log',
+          output_chars: nil, server_context:)
           output_chars_sym = resolve_output_chars(output_chars, server_context)
           with_error_handling('ProjectCoverageTool',
             error_mode: error_mode, output_chars: output_chars_sym) do
             model, config = create_configured_model(
               server_context: server_context,
               root:           root,
+              coverage_file:  coverage_file,
               resultset:      resultset,
               raise_on_stale: raise_on_stale,
               tracked_globs:  tracked_globs

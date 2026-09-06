@@ -442,11 +442,15 @@ clp -fJ summary lib/api/client.rb  # Correct
 clp summary lib/api/client.rb -fJ  # Incorrect
 ```
 
-### `-r, --resultset PATH`
+### `-r, --coverage-file PATH`
 
-Path to the `.resultset.json` file or a directory containing it.
+Path to a SimpleCov `coverage.json` or `.resultset.json` file, or to a directory containing one. The format is detected from the file's contents rather than its name, so either format is read correctly under any filename.
 
-For a detailed explanation of how to configure the resultset location, including the default search path, environment variables, and MCP configuration, see the [Configuring the Resultset](../index.md#configuring-the-resultset) section in the main README.
+When the path is a directory, `coverage.json` is preferred over `.resultset.json`. With no `-r` argument at all, the default search is format-first: `coverage.json`, `coverage/coverage.json`, `tmp/coverage.json`, then `.resultset.json`, `coverage/.resultset.json`, `tmp/.resultset.json`.
+
+`--resultset` is the deprecated spelling of this option. It still works and warns, and is removed in v7.0.0.
+
+For a detailed explanation of how to configure the coverage file location, including the default search path, environment variables, and MCP configuration, see the [Configuring the Coverage File](../index.md#configuring-the-coverage-file) section in the main README.
 
 ### `-R, --root PATH`
 
@@ -607,14 +611,14 @@ clp --raise-on-stale false
 
 Comma-separated glob patterns for files that should be tracked.
 
-**Default:** `[]` (empty - shows all files in the resultset)
+**Default:** `[]` (empty - shows all files in the coverage file)
 
 **Why no default patterns?**
 1. **Transparency** - Shows all coverage data without hiding files that don't match assumptions
 2. **Avoids false positives** - Broad patterns like `**/*.rb` flag migrations, bin scripts, etc. as "missing"
 3. **Project variety** - Coverage patterns vary by project structure (lib/, app/, src/, config/, etc.)
 
-**Important:** Files lacking any coverage at all (not loaded during tests) will not appear in the resultset and therefore won't be visible with the default empty array. To detect such files, you must set `--tracked-globs` to match the files you expect to have coverage.
+**Important:** Files lacking any coverage at all (not loaded during tests) will not appear in the coverage file and therefore won't be visible with the default empty array. To detect such files, you must set `--tracked-globs` to match the files you expect to have coverage.
 
 **Best practice:** Match your SimpleCov configuration by setting `COV_LOUPE_OPTS`:
 
@@ -653,13 +657,13 @@ clp -g "lib/**/*.rb,app/**/*.rb" -fJ list > coverage.json
 
 **Use cases:**
 - **Exclude unwanted results** - Narrow focus to a subsystem or layer
-- **Include files without coverage** - Report files that should be tracked but aren't in the resultset
+- **Include files without coverage** - Report files that should be tracked but aren't in the coverage file
 - **CI validation** - Use with `-S`/`--raise-on-stale` to catch coverage gaps
 
 **Important:** The `missing_tracked_files` array (in `list` output) only includes files that:
 1. Match the tracked globs
 2. Exist in the filesystem
-3. Are NOT in the coverage resultset
+3. Are NOT in the coverage file
 
 Without globs, this array is empty (no expectations = no violations).
 
@@ -859,7 +863,7 @@ Default command-line options applied to all invocations.
 **Format:** Shell-style string containing any valid CLI options
 
 ```sh
-export COV_LOUPE_OPTS="--resultset coverage -fJ"
+export COV_LOUPE_OPTS="--coverage-file coverage -fJ"
 clp summary lib/api/client.rb  # Automatically uses options above
 ```
 
@@ -874,7 +878,7 @@ clp -f table summary lib/api/client.rb  # Explicit override to table format
 
 **Examples:**
 ```sh
-# Default resultset location
+# Default coverage file location
 export COV_LOUPE_OPTS="-r build/coverage"
 
 # Enable detailed error logging
@@ -1002,7 +1006,7 @@ clp -S true || exit 1
 clp -fJ list > artifacts/coverage-report.json
 
 # Check specific directory in monorepo
-clp -R services/api -r services/api/coverage  # -R = --root, -r = --resultset
+clp -R services/api -r services/api/coverage  # -R = --root, -r = --coverage-file
 ```
 
 ### Debugging
@@ -1014,8 +1018,8 @@ clp --error-mode debug summary lib/api/client.rb
 # Custom log file (--log-file or -l)
 clp -l /tmp/simplecov-debug.log summary lib/api/client.rb
 
-# Check what resultset is being used
-clp --error-mode debug 2>&1 | grep resultset
+# Check which coverage file is being used
+clp --error-mode debug 2>&1 | grep coverage
 ```
 
 ## Exit Codes

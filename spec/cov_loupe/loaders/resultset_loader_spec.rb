@@ -184,12 +184,12 @@ RSpec.describe CovLoupe::ResultsetLoader do
       {
         desc:  'invalid timestamp strings',
         input: 'not-a-timestamp',
-        msgs:  ['Coverage resultset timestamp could not be parsed', 'not-a-timestamp'],
+        msgs:  ['Coverage timestamp could not be parsed', 'not-a-timestamp'],
       },
       {
         desc:  'unsupported types',
         input: [:invalid],
-        msgs:  ['Coverage resultset timestamp could not be parsed', '[:invalid]'],
+        msgs:  ['Coverage timestamp could not be parsed', '[:invalid]'],
       },
       {
         desc:  'blank string timestamps',

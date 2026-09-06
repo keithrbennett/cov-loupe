@@ -56,8 +56,8 @@ module CovLoupe
         cov-loupe provides SimpleCov coverage data via MCP tools.
         Documentation resources: #{JSON.generate(Resources::RESOURCE_MAP)}
         Call help for tool usage guidance. File-scope tools (file_coverage_*, file_uncovered_lines) require a path argument; project-scope tools (project_*) do not.
-        Tools accept optional `root` (project root directory) and `resultset`
-        (path or directory containing .resultset.json) arguments when the defaults
+        Tools accept optional `root` (project root directory) and `coverage_file`
+        (path or directory containing coverage.json or .resultset.json) arguments when the defaults
         need overriding; these may point to different locations.
       MSG
     end

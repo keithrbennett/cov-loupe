@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative '../deprecation'
 require_relative '../staleness/staleness_message_formatter'
 
 module CovLoupe
@@ -16,7 +17,7 @@ module CovLoupe
   #     │     ├── FileNotFoundError
   #     │     ├── FilePermissionError
   #     │     ├── NotAFileError
-  #     │     └── ResultsetNotFoundError  — adds CLI-specific help tips
+  #     │     └── CoverageFileNotFoundError  — adds CLI-specific help tips
   #     ├── UsageError             — command-line usage mistakes
   #     └── CoverageDataError      — coverage data problems
   #           ├── CorruptCoverageDataError
@@ -63,7 +64,7 @@ module CovLoupe
   class FilePermissionError < FileError; end
   class NotAFileError < FileError; end
 
-  class ResultsetNotFoundError < FileError
+  class CoverageFileNotFoundError < FileError
     def user_friendly_message
       base = "File error: #{message}"
 
@@ -73,8 +74,8 @@ module CovLoupe
 
 
           Try one of the following:
-            - cd to a directory containing coverage/.resultset.json
-            - Specify a resultset: cov-loupe -r PATH
+            - cd to a directory containing coverage/coverage.json
+            - Specify a coverage file: cov-loupe -r PATH
             - Use -h for help: cov-loupe -h
         HELP
       end
@@ -82,6 +83,10 @@ module CovLoupe
       base
     end
   end
+
+  # Deprecated name for CoverageFileNotFoundError, kept so existing rescues
+  # keep working. Removed in v7.0.0.
+  ResultsetNotFoundError = CoverageFileNotFoundError
 
   # Coverage data related errors
   class CoverageDataError < Error
@@ -100,8 +105,8 @@ module CovLoupe
   module StalenessFormatterMixin
     private def formatter
       @formatter ||= StalenessMessageFormatter.new(
-        cov_timestamp:  @cov_timestamp,
-        resultset_path: @resultset_path
+        cov_timestamp:      @cov_timestamp,
+        coverage_file_path: @coverage_file_path
       )
     end
   end
@@ -110,17 +115,23 @@ module CovLoupe
   class CoverageDataStaleError < CoverageDataError
     include StalenessFormatterMixin
 
-    attr_reader :file_path, :file_mtime, :cov_timestamp, :src_len, :cov_len, :resultset_path
+    attr_reader :file_path, :file_mtime, :cov_timestamp, :src_len, :cov_len, :coverage_file_path
 
     def initialize(message = nil, original_error = nil, file_path: nil, file_mtime: nil,
-      cov_timestamp: nil, src_len: nil, cov_len: nil, resultset_path: nil)
+      cov_timestamp: nil, src_len: nil, cov_len: nil, coverage_file_path: nil)
       @file_path = file_path
       @file_mtime = file_mtime
       @cov_timestamp = cov_timestamp
       @src_len = src_len
       @cov_len = cov_len
-      @resultset_path = resultset_path
+      @coverage_file_path = coverage_file_path
       super(message || default_message, original_error)
+    end
+
+    # Deprecated reader for coverage_file_path. Removed in v7.0.0.
+    def resultset_path
+      Deprecation.warn('CoverageDataStaleError#resultset_path', '#coverage_file_path')
+      @coverage_file_path
     end
 
     def user_friendly_message
@@ -144,11 +155,11 @@ module CovLoupe
     include StalenessFormatterMixin
 
     attr_reader :cov_timestamp, :newer_files, :missing_files, :deleted_files,
-      :length_mismatch_files, :unreadable_files, :resultset_path
+      :length_mismatch_files, :unreadable_files, :coverage_file_path
 
     def initialize(message = nil, original_error = nil, cov_timestamp: nil, newer_files: [],
       missing_files: [], deleted_files: [], length_mismatch_files: [], unreadable_files: [],
-      resultset_path: nil)
+      coverage_file_path: nil)
       super(message, original_error)
       @cov_timestamp = cov_timestamp
       @newer_files = Array(newer_files)
@@ -156,7 +167,13 @@ module CovLoupe
       @deleted_files = Array(deleted_files)
       @length_mismatch_files = Array(length_mismatch_files)
       @unreadable_files = Array(unreadable_files)
-      @resultset_path = resultset_path
+      @coverage_file_path = coverage_file_path
+    end
+
+    # Deprecated reader for coverage_file_path. Removed in v7.0.0.
+    def resultset_path
+      Deprecation.warn('CoverageDataProjectStaleError#resultset_path', '#coverage_file_path')
+      @coverage_file_path
     end
 
     def user_friendly_message

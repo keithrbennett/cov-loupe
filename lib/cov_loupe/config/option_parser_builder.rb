@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'option_normalizers'
+require_relative '../deprecation'
 require_relative '../version'
 require_relative '../resources'
 require_relative 'boolean_type'
@@ -58,10 +59,16 @@ module CovLoupe
 
     private def define_options(parser)
       parser.separator 'Options:'
-      parser.on('-r', '--resultset PATH', String,
-        'Path or directory that contains .resultset.json (default: coverage/.resultset.json)') \
+      parser.on('-r', '--coverage-file PATH', String,
+        'Path or directory containing coverage.json or .resultset.json (default: coverage/coverage.json)') \
       do |value|
-        config.resultset = value
+        config.coverage_file = value
+      end
+      # Deprecated spelling of --coverage-file. Removed in v7.0.0. Hidden from
+      # help so new users see only the current name.
+      parser.on('--resultset PATH', String) do |value|
+        Deprecation.warn('--resultset', '--coverage-file')
+        config.coverage_file = value
       end
       parser.on('-R', '--root PATH', String, 'Project root (default: .)') do |value|
         config.root = value
@@ -98,7 +105,7 @@ module CovLoupe
       end
       parser.on('-g', '--tracked-globs x,y,z', Array,
         'Used to exclude unwanted results and/or include files with or without coverage data',
-        'Default: [] (shows all files in resultset)',
+        'Default: [] (shows all files in the coverage file)',
         'Best practice: match your SimpleCov track_files patterns',
         'Example: --tracked-globs lib/**/*.rb,app/**/*.rb') do |value|
         config.tracked_globs = value
@@ -156,8 +163,8 @@ module CovLoupe
       parser.separator <<~EXAMPLES
 
         Examples:
-          cov-loupe --resultset coverage list
-          cov-loupe --format json --resultset coverage summary lib/foo.rb
+          cov-loupe --coverage-file coverage list
+          cov-loupe --format json --coverage-file coverage summary lib/foo.rb
           cov-loupe --source uncovered --context-lines 2 uncovered lib/foo.rb
           cov-loupe totals --format json
         EXAMPLES

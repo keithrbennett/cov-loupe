@@ -12,9 +12,9 @@ RSpec.describe CovLoupe::StalenessMessageFormatter do
     describe '#format_project_details' do
       it 'converts file paths to ASCII' do
         formatter = described_class.new(
-          cov_timestamp:  cov_timestamp,
-          resultset_path: unicode_resultset,
-          output_chars:   :ascii
+          cov_timestamp:      cov_timestamp,
+          coverage_file_path: unicode_resultset,
+          output_chars:       :ascii
         )
 
         result = formatter.format_project_details(
@@ -34,9 +34,9 @@ RSpec.describe CovLoupe::StalenessMessageFormatter do
 
       it 'converts resultset path to ASCII' do
         formatter = described_class.new(
-          cov_timestamp:  cov_timestamp,
-          resultset_path: unicode_resultset,
-          output_chars:   :ascii
+          cov_timestamp:      cov_timestamp,
+          coverage_file_path: unicode_resultset,
+          output_chars:       :ascii
         )
 
         result = formatter.format_project_details(
@@ -55,9 +55,9 @@ RSpec.describe CovLoupe::StalenessMessageFormatter do
     describe '#format_single_file_details' do
       it 'converts resultset path to ASCII' do
         formatter = described_class.new(
-          cov_timestamp:  cov_timestamp,
-          resultset_path: unicode_resultset,
-          output_chars:   :ascii
+          cov_timestamp:      cov_timestamp,
+          coverage_file_path: unicode_resultset,
+          output_chars:       :ascii
         )
 
         result = formatter.format_single_file_details(
@@ -78,9 +78,9 @@ RSpec.describe CovLoupe::StalenessMessageFormatter do
 
     it 'preserves Unicode in file paths' do
       formatter = described_class.new(
-        cov_timestamp:  cov_timestamp,
-        resultset_path: nil,
-        output_chars:   :fancy
+        cov_timestamp:      cov_timestamp,
+        coverage_file_path: nil,
+        output_chars:       :fancy
       )
 
       result = formatter.format_project_details(
@@ -98,8 +98,8 @@ RSpec.describe CovLoupe::StalenessMessageFormatter do
   describe 'default mode (no output_chars specified)' do
     it 'preserves Unicode by default' do
       formatter = described_class.new(
-        cov_timestamp:  cov_timestamp,
-        resultset_path: '/path/café/.resultset.json'
+        cov_timestamp:      cov_timestamp,
+        coverage_file_path: '/path/café/.resultset.json'
       )
 
       result = formatter.format_project_details(

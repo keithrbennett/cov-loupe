@@ -466,7 +466,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
       model = instance_double(CovLoupe::CoverageModel)
       allow(CovLoupe::CoverageModel).to receive(:new).with(
         root:           root,
-        resultset:      nil,
+        coverage_file:  nil,
         raise_on_stale: true,
         tracked_globs:  []
       ).and_return(model)
@@ -491,7 +491,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
 
       expect(CovLoupe::CoverageModel).to have_received(:new).with(
         root:           root,
-        resultset:      nil,
+        coverage_file:  nil,
         raise_on_stale: true,
         tracked_globs:  []
       )

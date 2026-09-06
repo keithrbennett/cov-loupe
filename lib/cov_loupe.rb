@@ -13,6 +13,7 @@ require_relative 'cov_loupe/errors/errors'
 require_relative 'cov_loupe/errors/error_handler'
 require_relative 'cov_loupe/errors/error_handler_factory'
 require_relative 'cov_loupe/paths/path_relativizer'
+require_relative 'cov_loupe/deprecation'
 require_relative 'cov_loupe/loaders/resultset_loader'
 require_relative 'cov_loupe/model/model'
 require_relative 'cov_loupe/coverage/coverage_reporter'
@@ -23,12 +24,12 @@ require_relative 'cov_loupe/coverage/coverage_reporter'
 #   - Dual-mode entry point (CovLoupe.run): dispatches to CLI or MCP server based on --mode flag
 #   - CoverageModel: domain layer that queries coverage data, delegates staleness and path resolution
 #   - CoverageCLI / MCPServer: presentation layer (CLI commands vs JSON-RPC tool calls)
-#   - CoverageRepository: data access layer (reads .resultset.json, normalizes paths)
-#   - ModelDataCache: singleton cache that auto-invalidates when the resultset file changes
+#   - CoverageRepository: data access layer (reads coverage.json or .resultset.json, normalizes paths)
+#   - ModelDataCache: singleton cache that auto-invalidates when the coverage file changes
 #   - Presenters: memoized adapters that compute absolute payloads, then relativize paths for output
 #
 # Data flow for a typical request:
-#   1. ResultsetLoader reads and parses .resultset.json
+#   1. CoverageFileLoader reads coverage.json or .resultset.json, routing by format
 #   2. CoverageRepository normalizes keys to absolute paths
 #   3. ModelDataCache stores the resulting ModelData (coverage_map + timestamp)
 #   4. CoverageModel queries the cache and applies staleness/glob filters

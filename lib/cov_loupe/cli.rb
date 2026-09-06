@@ -13,7 +13,7 @@ require_relative 'resources'
 module CovLoupe
   # Command-line interface for cov-loupe.
   #
-  # Parses global options (resultset path, format, sort order, etc.) and dispatches
+  # Parses global options (coverage file path, format, sort order, etc.) and dispatches
   # to subcommand classes via CommandFactory. When no subcommand is given, the default
   # report (equivalent to `list`) is shown.
   #
@@ -83,7 +83,7 @@ module CovLoupe
       if CovLoupe.logger
         params = { mode: :cli, subcommand: @cmd || 'default' }
         params[:root] = config.root if config.root
-        params[:resultset] = config.resultset if config.resultset
+        params[:coverage_file] = config.coverage_file if config.coverage_file
         params[:format] = config.format if config.format
         params[:sort_order] = config.sort_order if config.sort_order
         params[:raise_on_stale] = config.raise_on_stale if config.raise_on_stale
@@ -186,7 +186,7 @@ module CovLoupe
 
     private def check_for_misplaced_global_options(cmd, args)
       # Global options that users commonly place after subcommands by mistake
-      global_options = %w[-r --resultset -R --root -f --format -o --sort-order -s --source
+      global_options = %w[-r --coverage-file --resultset -R --root -f --format -o --sort-order -s --source
         -c --context-lines -S --raise-on-stale -g --tracked-globs
         -l --log-file --error-mode --color -m --mode -v --version
         -p --path-for

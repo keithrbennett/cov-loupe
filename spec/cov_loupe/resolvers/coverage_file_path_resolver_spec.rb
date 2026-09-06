@@ -4,8 +4,8 @@ require 'spec_helper'
 require 'tmpdir'
 require 'fileutils'
 
-RSpec.describe CovLoupe::Resolvers::ResultsetPathResolver do
-  describe '#find_resultset' do
+RSpec.describe CovLoupe::Resolvers::CoverageFilePathResolver do
+  describe '#find_coverage_file' do
     let(:root) { Dir.mktmpdir }
     let(:resolver) { described_class.new(root: root) }
 
@@ -13,10 +13,10 @@ RSpec.describe CovLoupe::Resolvers::ResultsetPathResolver do
       FileUtils.remove_entry(root) if root && Dir.exist?(root)
     end
 
-    it 'raises when a specified resultset file cannot be found' do
+    it 'raises when a specified coverage file cannot be found' do
       expect do
-        resolver.find_resultset(resultset: 'missing.json')
-      end.to raise_error(CovLoupe::ResultsetNotFoundError, /Specified resultset not found/)
+        resolver.find_coverage_file(coverage_file: 'missing.json')
+      end.to raise_error(CovLoupe::CoverageFileNotFoundError, /Specified coverage file not found/)
     end
 
     it 'raises when a specified directory does not contain .resultset.json' do
@@ -24,15 +24,16 @@ RSpec.describe CovLoupe::Resolvers::ResultsetPathResolver do
       Dir.mkdir(nested_dir)
 
       expect do
-        resolver.find_resultset(resultset: nested_dir)
-      end.to raise_error(CovLoupe::ResultsetNotFoundError, /No .resultset.json found in directory/)
+        resolver.find_coverage_file(coverage_file: nested_dir)
+      end.to raise_error(CovLoupe::CoverageFileNotFoundError,
+        /No coverage.json or .resultset.json found in directory/)
     end
 
-    it 'returns the resolved path when a valid resultset file is provided' do
+    it 'returns the resolved path when a valid coverage file is provided' do
       file = File.join(root, 'custom.json')
       File.write(file, '{}')
 
-      expect(resolver.find_resultset(resultset: file)).to eq(file)
+      expect(resolver.find_coverage_file(coverage_file: file)).to eq(file)
     end
 
     it 'locates .resultset.json inside a provided directory' do
@@ -42,7 +43,7 @@ RSpec.describe CovLoupe::Resolvers::ResultsetPathResolver do
         File.write(File.join(nested, '.resultset.json'), '{}')
 
         resolver = described_class.new(root: dir)
-        expect(resolver.find_resultset(resultset: nested))
+        expect(resolver.find_coverage_file(coverage_file: nested))
           .to eq(File.join(nested, '.resultset.json'))
       end
     end
@@ -50,19 +51,20 @@ RSpec.describe CovLoupe::Resolvers::ResultsetPathResolver do
     it 'raises a helpful error when no fallback candidates are found' do
       expect do
         resolver.find_resultset
-      end.to raise_error(CovLoupe::ResultsetNotFoundError, /Could not find .resultset.json/)
+      end.to raise_error(CovLoupe::CoverageFileNotFoundError,
+        /Could not find coverage.json or .resultset.json/)
     end
 
-    it 'accepts a resultset path already nested under the provided root without double-prefixing' do
+    it 'accepts a coverage file path already nested under the provided root without double-prefixing' do
       project_root = (FIXTURES_DIR / 'project1').to_s
       resolver = described_class.new(root: project_root)
 
-      resolved = resolver.find_resultset(resultset: 'spec/fixtures/project1/coverage')
+      resolved = resolver.find_coverage_file(coverage_file: 'spec/fixtures/project1/coverage')
 
       expect(resolved).to eq(File.join(project_root, 'coverage', '.resultset.json'))
     end
 
-    it 'raises when relative resultset is ambiguous between root and Dir.pwd' do
+    it 'raises when a relative coverage file path is ambiguous between root and Dir.pwd' do
       FileUtils.mkdir_p(File.join(root, 'coverage'))
       File.write(File.join(root, 'coverage', '.resultset.json'), '{}')
 
@@ -72,8 +74,8 @@ RSpec.describe CovLoupe::Resolvers::ResultsetPathResolver do
 
         Dir.chdir(pwd) do
           expect do
-            resolver.find_resultset(resultset: 'coverage')
-          end.to raise_error(CovLoupe::ConfigurationError, /Ambiguous resultset location specified/)
+            resolver.find_coverage_file(coverage_file: 'coverage')
+          end.to raise_error(CovLoupe::ConfigurationError, /Ambiguous coverage file location specified/)
         end
       end
     end
@@ -84,7 +86,7 @@ RSpec.describe CovLoupe::Resolvers::ResultsetPathResolver do
 
       Dir.mktmpdir do |pwd|
         Dir.chdir(pwd) do
-          resolved = resolver.find_resultset(resultset: 'coverage')
+          resolved = resolver.find_coverage_file(coverage_file: 'coverage')
           expect(resolved).to eq(File.join(root, 'coverage', '.resultset.json'))
         end
       end
@@ -95,6 +97,44 @@ RSpec.describe CovLoupe::Resolvers::ResultsetPathResolver do
     it 'returns nil for non-existent path in non-strict mode' do
       result = resolver.send(:resolve_candidate, '/nonexistent/path.json', strict: false)
       expect(result).to be_nil
+    end
+  end
+
+  describe 'coverage.json support' do
+    it 'prefers coverage.json over .resultset.json in the default candidates' do
+      Dir.mktmpdir do |root|
+        coverage_dir = File.join(root, 'coverage')
+        FileUtils.mkdir_p(coverage_dir)
+        File.write(File.join(coverage_dir, 'coverage.json'), '{}')
+        File.write(File.join(coverage_dir, '.resultset.json'), '{}')
+
+        resolver = described_class.new(root: root)
+
+        expect(resolver.find_resultset).to eq(File.join(coverage_dir, 'coverage.json'))
+      end
+    end
+
+    it 'prefers coverage.json when resolving an explicit directory containing both' do
+      Dir.mktmpdir do |dir|
+        File.write(File.join(dir, 'coverage.json'), '{}')
+        File.write(File.join(dir, '.resultset.json'), '{}')
+
+        resolver = described_class.new(root: dir)
+
+        expect(resolver.find_coverage_file(coverage_file: dir)).to eq(File.join(dir, 'coverage.json'))
+      end
+    end
+
+    it 'falls back to .resultset.json when no coverage.json exists' do
+      Dir.mktmpdir do |root|
+        coverage_dir = File.join(root, 'coverage')
+        FileUtils.mkdir_p(coverage_dir)
+        File.write(File.join(coverage_dir, '.resultset.json'), '{}')
+
+        resolver = described_class.new(root: root)
+
+        expect(resolver.find_resultset).to eq(File.join(coverage_dir, '.resultset.json'))
+      end
     end
   end
 

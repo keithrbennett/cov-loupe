@@ -87,16 +87,16 @@ def mock_resultset_with_metadata(root, metadata, coverage: nil)
 
   allow(File).to receive(:read).with(end_with('.resultset.json'))
     .and_return(JSON.generate(fake_resultset_hash))
-  allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:find_resultset)
-    .and_wrap_original do |method, search_root, resultset: nil|
+  allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:find_coverage_file)
+    .and_wrap_original do |method, search_root, coverage_file: nil|
     mock_path = File.join(abs_root, 'coverage', '.resultset.json')
-    is_mock_target = resultset.nil? || resultset.to_s.empty? ||
-      File.absolute_path(resultset.to_s) == File.absolute_path(mock_path)
+    is_mock_target = coverage_file.nil? || coverage_file.to_s.empty? ||
+      File.absolute_path(coverage_file.to_s) == File.absolute_path(mock_path)
 
     if File.absolute_path(search_root) == abs_root && is_mock_target
       mock_path
     else
-      method.call(search_root, resultset: resultset)
+      method.call(search_root, coverage_file: coverage_file)
     end
   end
 end
@@ -116,6 +116,11 @@ RSpec.configure do |config|
   # This is cheap and doesn't break tests that verify logging behavior
   CovLoupe.default_log_file = File::NULL
   CovLoupe.active_log_file = File::NULL
+
+  # Deprecation warnings are off by default so specs exercising deprecated
+  # names do not write to stderr. Specs that assert on the warnings turn them
+  # back on for their own examples.
+  CovLoupe::Deprecation.enabled = false
 
   # Reset log file after each test to ensure tests that change it don't pollute others
   config.after do
