@@ -61,7 +61,7 @@ module CovLoupe
 
     # Selects coverage strategy based on suite count:
     # - Single suite: use its coverage map directly (no merging needed)
-    # - Multiple suites: merge via SimpleCov::Combine (requires simplecov gem)
+    # - Multiple suites: merge via SimpleCov::Combine::ResultsCombiner (requires simplecov gem)
     private def build_coverage_map(suites)
       return suites.first&.coverage if suites.length == 1
 
@@ -92,7 +92,7 @@ module CovLoupe
       suites.reduce(nil) do |memo, suite|
         coverage = suite.coverage
         memo ?
-          SimpleCov::Combine.combine(SimpleCov::Combine::ResultsCombiner, memo, coverage) :
+          SimpleCov::Combine::ResultsCombiner.combine(memo, coverage) :
           coverage
       end
     end
