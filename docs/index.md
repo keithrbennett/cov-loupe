@@ -1,2 +1,2 @@
-<a id="configuring-the-resultset"></a>
+<a id="configuring-the-coverage-file"></a>
 {% include-markdown "../README.md" %}

@@ -16,9 +16,8 @@
 
 # Coverage
 /coverage/
-/.resultset.json
-/coverage/.resultset.json
-/tmp/.resultset.json
+/coverage.json
+/tmp/coverage.json
 
 # Docs
 /doc/

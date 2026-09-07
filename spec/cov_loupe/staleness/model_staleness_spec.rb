@@ -7,7 +7,7 @@ RSpec.describe CovLoupe::CoverageModel do
   let(:root) { (FIXTURES_DIR / 'project1').to_s }
 
   it "raises stale error when staleness mode is 'error' and file is newer" do
-    mock_resultset_with_timestamp(root, VERY_OLD_TIMESTAMP)
+    mock_coverage_with_timestamp(root, VERY_OLD_TIMESTAMP)
     model = described_class.new(root: root, raise_on_stale: true)
     expect do
       model.summary_for('lib/foo.rb')
@@ -15,19 +15,19 @@ RSpec.describe CovLoupe::CoverageModel do
   end
 
   it "does not check staleness when mode is 'off'" do
-    mock_resultset_with_timestamp(root, VERY_OLD_TIMESTAMP)
+    mock_coverage_with_timestamp(root, VERY_OLD_TIMESTAMP)
     model = described_class.new(root: root, raise_on_stale: false)
     expect { model.summary_for('lib/foo.rb') }.not_to raise_error
   end
 
   it 'list raises project-level stale when any source file is newer than coverage' do
-    mock_resultset_with_timestamp(root, VERY_OLD_TIMESTAMP)
+    mock_coverage_with_timestamp(root, VERY_OLD_TIMESTAMP)
     model = described_class.new(root: root, raise_on_stale: true)
     expect { model.list }.to raise_error(CovLoupe::CoverageDataProjectStaleError)
   end
 
   it 'list detects new files via tracked_globs' do
-    mock_resultset_with_timestamp(root, Time.now.to_i)
+    mock_coverage_with_timestamp(root, Time.now.to_i)
     Tempfile.create(%w[brand_new_file .rb], File.join(root, 'lib')) do |f|
       f.write("# new file\n")
       f.flush
@@ -45,7 +45,7 @@ RSpec.describe CovLoupe::CoverageModel do
         File.join(root, 'lib', 'foo.rb') => { 'lines' => [nil, nil, 1, 0, nil, 2] },
         File.join(root, 'lib', 'bar.rb') => { 'lines' => [nil, nil, 0, 0, 1] },
       }
-      mock_resultset_with_timestamp(root, VERY_OLD_TIMESTAMP, coverage: accurate_coverage)
+      mock_coverage_with_timestamp(root, VERY_OLD_TIMESTAMP, coverage: accurate_coverage)
 
       # All files are newer than the very old timestamp, but we're only tracking lib/foo.rb
       model = described_class.new(root: root, raise_on_stale: false)
@@ -63,7 +63,7 @@ RSpec.describe CovLoupe::CoverageModel do
         File.join(root, 'lib', 'bar.rb')         => { 'lines' => [0, 0, 1] },
         File.join(root, 'lib', 'nonexistent.rb') => { 'lines' => [1, 1] },
       }
-      mock_resultset_with_timestamp(root, Time.now.to_i, coverage: coverage_with_missing)
+      mock_coverage_with_timestamp(root, Time.now.to_i, coverage: coverage_with_missing)
 
       model = described_class.new(root: root, raise_on_stale: false)
       result = model.list(tracked_globs: ['lib/foo.rb'])
@@ -79,7 +79,7 @@ RSpec.describe CovLoupe::CoverageModel do
         File.join(root, 'lib', 'foo.rb') => { 'lines' => [nil, nil, 1, 0, nil, 2] },
         File.join(root, 'lib', 'bar.rb') => { 'lines' => [nil, nil, 0, 0, 1] },
       }
-      mock_resultset_with_timestamp(root, VERY_OLD_TIMESTAMP, coverage: accurate_coverage)
+      mock_coverage_with_timestamp(root, VERY_OLD_TIMESTAMP, coverage: accurate_coverage)
 
       model = described_class.new(root: root, raise_on_stale: false)
       result = model.list
@@ -95,7 +95,7 @@ RSpec.describe CovLoupe::CoverageModel do
         File.join(root, 'lib', 'foo.rb') => { 'lines' => [nil, nil, 1, 0, nil, 2] },
         File.join(root, 'lib', 'bar.rb') => { 'lines' => [0, 0] }, # Wrong length!
       }
-      mock_resultset_with_timestamp(root, Time.now.to_i, coverage: mismatched_coverage)
+      mock_coverage_with_timestamp(root, Time.now.to_i, coverage: mismatched_coverage)
 
       # Only track foo.rb - bar.rb's length mismatch should be ignored
       model = described_class.new(root: root, raise_on_stale: false)
@@ -115,7 +115,7 @@ RSpec.describe CovLoupe::CoverageModel do
         File.join(root, 'lib', 'foo.rb') => { 'lines' => [nil, nil, 1, 0, nil, 2] },
         File.join(root, 'lib', 'bar.rb') => { 'lines' => [0, 0] }, # Wrong length!
       }
-      mock_resultset_with_timestamp(root, Time.now.to_i, coverage: mismatched_coverage)
+      mock_coverage_with_timestamp(root, Time.now.to_i, coverage: mismatched_coverage)
 
       # When tracking only foo.rb with raise_on_stale, bar.rb's mismatch should be ignored
       model = described_class.new(root: root, raise_on_stale: true)
@@ -142,7 +142,7 @@ RSpec.describe CovLoupe::CoverageModel do
       end
 
       before do
-        mock_resultset_with_timestamp(root, Time.now.to_i, coverage: coverage_with_errors)
+        mock_coverage_with_timestamp(root, Time.now.to_i, coverage: coverage_with_errors)
       end
 
       it 'only includes skipped files that match tracked_globs' do
@@ -165,15 +165,15 @@ RSpec.describe CovLoupe::CoverageModel do
   end
 
   describe 'timestamp normalization' do
-    it 'parses created_at strings to epoch seconds' do
+    it 'parses ISO 8601 timestamps to epoch seconds' do
       created_at = Time.new(2024, 7, 3, 16, 26, 40, '-07:00')
-      mock_resultset_with_created_at(root, created_at.strftime('%Y-%m-%d %H:%M:%S %z'))
+      mock_coverage_with_timestamp(root, created_at.iso8601(3))
 
       model = described_class.new(root: root, raise_on_stale: false)
 
       # Verify that the timestamp is correctly parsed by checking staleness behavior
       # When coverage timestamp is in the past and file is newer, it should be stale
-      # Since created_at is in 2024 and files are current, they should be newer
+      # Since the coverage timestamp is in 2024 and files are current, they should be newer
       foo_path = File.join(root, 'lib', 'foo.rb')
 
       # Make coverage older than file by mocking file mtime to be newer
@@ -188,14 +188,14 @@ RSpec.describe CovLoupe::CoverageModel do
       end.to raise_error(CovLoupe::CoverageDataStaleError, /stale/i)
     end
 
-    it 'propagates parsed created_at timestamps into stale errors' do
+    it 'propagates parsed timestamps into stale errors' do
       file_mtime = File.mtime(File.join(root, 'lib', 'foo.rb'))
       created_at_time = (file_mtime + 3600).utc
       # Use mismatched coverage (3 lines instead of 4) to trigger staleness
       mismatched_coverage = {
         File.join(root, 'lib', 'foo.rb') => { 'lines' => [1, 0, nil] },
       }
-      mock_resultset_with_created_at(root, created_at_time.iso8601, coverage: mismatched_coverage)
+      mock_coverage_with_timestamp(root, created_at_time.iso8601, coverage: mismatched_coverage)
 
       model = described_class.new(root: root, raise_on_stale: true)
 
@@ -210,10 +210,10 @@ RSpec.describe CovLoupe::CoverageModel do
 
   it 'raises file-level stale when source and coverage lengths differ' do
     # Ensure time is not the triggering factor - use current timestamp
-    mock_resultset_with_timestamp(root, Time.now.to_i, coverage: {
+    mock_coverage_with_timestamp(root, Time.now.to_i, coverage: {
       File.join(root, 'lib', 'bar.rb') => { 'lines' => [1, 1] }, # 2 entries vs 3 lines in source
     })
-    model = described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH,
+    model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH,
       raise_on_stale: true)
     # bar.rb has 2 coverage entries but 3 source lines in fixtures
     expect do
@@ -222,10 +222,10 @@ RSpec.describe CovLoupe::CoverageModel do
   end
 
   it 'raises on list when source and coverage lengths differ' do
-    mock_resultset_with_timestamp(root, Time.now.to_i, coverage: {
+    mock_coverage_with_timestamp(root, Time.now.to_i, coverage: {
       File.join(root, 'lib', 'bar.rb') => { 'lines' => [1, 1] }, # 2 entries vs 3 lines in source
     })
-    model = described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH,
+    model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH,
       raise_on_stale: true)
 
     expect do
@@ -240,7 +240,7 @@ RSpec.describe CovLoupe::CoverageModel do
     # Use current time for file mtime to ensure it is newer
     current_time = Time.now
 
-    mock_resultset_with_timestamp(root, old_timestamp, coverage: {
+    mock_coverage_with_timestamp(root, old_timestamp, coverage: {
       # 5 lines to match actual bar.rb
       bar_path => { 'lines' => [nil, nil, 1, 0, 1] },
     })
@@ -250,7 +250,7 @@ RSpec.describe CovLoupe::CoverageModel do
       path.to_s == bar_path ? current_time : m.call(path)
     end
 
-    model = described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH,
+    model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH,
       raise_on_stale: true)
 
     expect do
@@ -267,12 +267,12 @@ RSpec.describe CovLoupe::CoverageModel do
     bar_path = File.join(root, 'lib', 'bar.rb')
     foo_path = File.join(root, 'lib', 'foo.rb')
 
-    mock_resultset_with_timestamp(root, future_timestamp, coverage: {
+    mock_coverage_with_timestamp(root, future_timestamp, coverage: {
       bar_path => { 'lines' => [nil, nil, 1, 0, 1] }, # 5 lines matching bar.rb
       foo_path => { 'lines' => [nil, nil, 1, 0, nil, 2] }, # 6 lines matching foo.rb
     })
 
-    model = described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH,
+    model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH,
       raise_on_stale: true)
 
     # Should not raise - all files are current
@@ -283,11 +283,11 @@ RSpec.describe CovLoupe::CoverageModel do
     # Create coverage for a non-existent file
     missing_path = File.join(root, 'lib', 'deleted_file.rb')
 
-    mock_resultset_with_timestamp(root, Time.now.to_i, coverage: {
+    mock_coverage_with_timestamp(root, Time.now.to_i, coverage: {
       missing_path => { 'lines' => [1, 1, 1] },
     })
 
-    model = described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH,
+    model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH,
       raise_on_stale: true)
 
     expect do
@@ -303,7 +303,7 @@ RSpec.describe CovLoupe::CoverageModel do
     bar_path = File.join(root, 'lib', 'bar.rb')
     current_time = Time.now
 
-    mock_resultset_with_timestamp(root, old_timestamp, coverage: {
+    mock_coverage_with_timestamp(root, old_timestamp, coverage: {
       bar_path => { 'lines' => [1, 1] }, # 2 lines vs 5 in actual file
     })
 
@@ -312,7 +312,7 @@ RSpec.describe CovLoupe::CoverageModel do
       path.to_s == bar_path ? current_time : m.call(path)
     end
 
-    model = described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH,
+    model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH,
       raise_on_stale: true)
 
     expect do
@@ -328,11 +328,11 @@ RSpec.describe CovLoupe::CoverageModel do
   it 'includes length_mismatch_files in error message' do
     bar_path = File.join(root, 'lib', 'bar.rb')
 
-    mock_resultset_with_timestamp(root, Time.now.to_i, coverage: {
+    mock_coverage_with_timestamp(root, Time.now.to_i, coverage: {
       bar_path => { 'lines' => [1, 1] }, # 2 lines vs 3 in actual file
     })
 
-    model = described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH,
+    model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH,
       raise_on_stale: true)
 
     expect do
@@ -351,7 +351,7 @@ RSpec.describe CovLoupe::CoverageModel do
     missing_path = File.join(root, 'lib', 'deleted.rb')
     current_time = Time.now
 
-    mock_resultset_with_timestamp(root, old_timestamp, coverage: {
+    mock_coverage_with_timestamp(root, old_timestamp, coverage: {
       bar_path     => { 'lines' => [nil, nil, 1, 0, 1] }, # 5 lines matching bar.rb - will be newer (T)
       foo_path     => { 'lines' => [1, 1] },              # 2 lines vs 6 actual - length mismatch (L)
       missing_path => { 'lines' => [1, 1, 1] },        # doesn't exist - missing (M)
@@ -362,7 +362,7 @@ RSpec.describe CovLoupe::CoverageModel do
       path.to_s == bar_path ? current_time : m.call(path)
     end
 
-    model = described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH,
+    model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH,
       raise_on_stale: true)
 
     expect do

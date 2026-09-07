@@ -15,7 +15,7 @@ module CovLoupe
   #
   # Case sensitivity is derived from the volume containing the given path, not
   # from a global setting. This is important for projects that span multiple
-  # volumes (e.g., project on macOS case-insensitive volume, resultset on a
+  # volumes (e.g., project on macOS case-insensitive volume, coverage file on a
   # case-sensitive external drive).
   module PathUtils
     # Platform detection - delegates to main CovLoupe module for testability

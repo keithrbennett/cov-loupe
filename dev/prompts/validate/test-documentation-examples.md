@@ -163,7 +163,7 @@ cov-loupe list --output-format json
 
 ### docs/user/getting-started.md
 
-#### Line 78: Running with custom resultset
+#### Line 78: Running with custom coverage file
 
 ... (continue for each failure)
 

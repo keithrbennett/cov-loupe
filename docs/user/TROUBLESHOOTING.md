@@ -29,20 +29,23 @@ Codex's macOS sandbox forbids `/bin/ps`; RVM shells need it. When you run `bundl
 
 ## Coverage Data Issues
 
-### Missing `coverage/.resultset.json`
+### Missing coverage file
 
-`cov-loupe` only reads coverage data; it never generates it. If you see "Could not find .resultset.json":
+`cov-loupe` only reads coverage data; it never generates it. It reads `coverage.json`,
+which SimpleCov 1.0.0 and later write alongside the HTML report. SimpleCov 0.x only
+writes `.resultset.json`, which cov-loupe no longer reads; upgrade SimpleCov to 1.0 or
+later. If you see "Could not find coverage.json":
 
 1. Run the test suite with SimpleCov enabled (default project setup already enables it).
    ```bash
    bundle exec rspec
-   ls coverage/.resultset.json
+   ls coverage/coverage.json
    ```
 2. If your coverage lives elsewhere, point the tools at it:
    ```bash
-   cov-loupe -r build/coverage/.resultset.json  # -r = --resultset
+   cov-loupe -c build/coverage/coverage.json  # -c = --coverage-file
    # or
-   export COV_LOUPE_OPTS="-r build/coverage"
+   export COV_LOUPE_OPTS="-c build/coverage"
    ```
 
 ### Stale Coverage Errors
@@ -72,15 +75,15 @@ depends on your volume - see note below).
 On case-insensitive volumes (most macOS/Windows), `lib/Foo.rb` and `lib/foo.rb` are treated
 as the same file. On case-sensitive volumes (most Linux, some macOS), they are different files.
 
-### SimpleCov path consistency (merged resultsets)
+### SimpleCov path consistency (merged results)
 
-When SimpleCov merges resultsets from multiple suites or environments, it can record the same file
+When SimpleCov merges results from multiple suites or environments, it can record the same file
 under different path forms (for example, absolute vs relative, or with different roots). This is a
 SimpleCov output issue, not a cov-loupe issue. Downstream tools will normalize paths and may treat
 one entry as overriding another if two keys map to the same file.
 
 **Recommendation:** Keep `SimpleCov.root` consistent across suites and avoid manual path rewriting
-when merging resultsets.
+when merging results.
 
 ## MCP Server Issues
 
@@ -268,8 +271,8 @@ cov-loupe --help
 cov-loupe list 2>&1
 
 # Check coverage data
-ls -la coverage/.resultset.json
-head -20 coverage/.resultset.json
+ls -la coverage/coverage.json
+head -20 coverage/coverage.json
 
 # Test MCP mode
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"version","arguments":{}}}' | cov-loupe -m mcp 2>&1

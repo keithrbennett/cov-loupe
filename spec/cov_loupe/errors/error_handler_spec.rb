@@ -91,11 +91,11 @@ RSpec.describe CovLoupe::ErrorHandler do
   end
 
   it 'wraps RuntimeError as UnknownError' do
-    error = RuntimeError.new('Could not find .resultset.json under /path; run tests')
+    error = RuntimeError.new('Could not find coverage.json under /path; run tests')
     result = handler.convert_standard_error(error)
 
     expect(result).to be_a(CovLoupe::UnknownError)
-    expect(result.message).to eq('Could not find .resultset.json under /path; run tests')
+    expect(result.message).to eq('Could not find coverage.json under /path; run tests')
   end
 
   it 'logs via provided logger' do
@@ -216,10 +216,10 @@ RSpec.describe CovLoupe::ErrorHandler do
   describe '#handle_error with context parameter' do
     [
       {
-        desc:     'converts Errno::ENOENT to ResultsetNotFoundError when context is :coverage_loading',
-        error:    Errno::ENOENT.new('missing .resultset.json'),
+        desc:     'converts Errno::ENOENT to CoverageFileNotFoundError when context is :coverage_loading',
+        error:    Errno::ENOENT.new('missing coverage.json'),
         context:  :coverage_loading,
-        expected: CovLoupe::ResultsetNotFoundError,
+        expected: CovLoupe::CoverageFileNotFoundError,
         msg:      'Coverage data not found',
       },
       {

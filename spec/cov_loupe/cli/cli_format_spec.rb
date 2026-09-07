@@ -94,7 +94,8 @@ RSpec.describe CovLoupe::CoverageCLI, 'format option' do
     [
       # Short-form options
       ['short -f after list', %w[list -f json], '-f'],
-      ['short -r after totals', %w[totals -r .resultset.json], '-r'],
+      ['short -c after totals', %w[totals -c coverage.json], '-c'],
+      ['short -n after list', %w[list -n 3], '-n'],
       ['short -R after list', ['list', '-R', Dir.tmpdir], '-R'],
       ['short -o after list', %w[list -o a], '-o'],
       ['short -s after list', %w[list -s full], '-s'],

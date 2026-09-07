@@ -37,23 +37,23 @@ RSpec.describe CovLoupe::OptionParsers::EnvOptionsParser do
         },
         {
           desc:     'quoted strings with spaces',
-          env:      '--resultset "/path/to/my file.json"',
-          expected: ['--resultset', '/path/to/my file.json'],
+          env:      '--coverage-file "/path/to/my file.json"',
+          expected: ['--coverage-file', '/path/to/my file.json'],
         },
         {
           desc:     'complex shell escaping scenarios',
-          env:      '--resultset "/path/with spaces/file.json" --error-mode on',
-          expected: ['--resultset', '/path/with spaces/file.json', '--error-mode', 'on'],
+          env:      '--coverage-file "/path/with spaces/file.json" --error-mode on',
+          expected: ['--coverage-file', '/path/with spaces/file.json', '--error-mode', 'on'],
         },
         {
           desc:     'single quotes',
-          env:      "--resultset '/path/with spaces/file.json'",
-          expected: ['--resultset', '/path/with spaces/file.json'],
+          env:      "--coverage-file '/path/with spaces/file.json'",
+          expected: ['--coverage-file', '/path/with spaces/file.json'],
         },
         {
           desc:     'escaped characters',
-          env:      '--resultset /path/with\\ spaces/file.json',
-          expected: ['--resultset', '/path/with spaces/file.json'],
+          env:      '--coverage-file /path/with\\ spaces/file.json',
+          expected: ['--coverage-file', '/path/with spaces/file.json'],
         },
         {
           desc:     'mixed quoting styles',
@@ -74,8 +74,8 @@ RSpec.describe CovLoupe::OptionParsers::EnvOptionsParser do
 
     context 'with malformed inputs' do
       [
-        { desc: 'unmatched double quotes', env: '--resultset "unterminated string' },
-        { desc: 'unmatched single quotes', env: "--resultset 'unterminated string" },
+        { desc: 'unmatched double quotes', env: '--coverage-file "unterminated string' },
+        { desc: 'unmatched single quotes', env: "--coverage-file 'unterminated string" },
         { desc: 'multiple quoting errors', env: '"first "second "third' },
       ].each do |tc|
         it "raises ConfigurationError for #{tc[:desc]}" do

@@ -7,7 +7,7 @@ require 'cov_loupe/tools/project_validate_tool'
 
 RSpec.describe CovLoupe::Tools::ProjectValidateTool do
   let(:root) { (FIXTURES_DIR / 'project1').to_s }
-  let(:resultset) { FIXTURE_PROJECT1_RESULTSET_PATH }
+  let(:coverage_file) { FIXTURE_PROJECT1_COVERAGE_PATH }
   let(:server_context) { null_server_context }
 
   before do
@@ -15,7 +15,7 @@ RSpec.describe CovLoupe::Tools::ProjectValidateTool do
   end
 
   def call_tool(**params)
-    described_class.call(**params, root: root, resultset: resultset, server_context: server_context)
+    described_class.call(**params, root: root, coverage_file: coverage_file, server_context: server_context)
   end
 
   def response_text(response)

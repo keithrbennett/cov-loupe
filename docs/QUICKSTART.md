@@ -18,7 +18,7 @@ Run your test suite with SimpleCov enabled:
 bundle exec rspec  # or your test command
 ```
 
-This creates `coverage/.resultset.json`.
+This creates `coverage/coverage.json` (SimpleCov 1.0 or later is required).
 
 ## 3. View Coverage
 

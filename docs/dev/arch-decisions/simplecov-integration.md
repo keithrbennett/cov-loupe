@@ -2,190 +2,81 @@
 
 [Back to main README](../../index.md)
 
-This document describes how cov-loupe integrates with SimpleCov and manages its dependency on the SimpleCov gem.
+This document describes how cov-loupe integrates with SimpleCov: which of SimpleCov's output files it reads, and why it declares SimpleCov as a dependency without ever loading it.
 
-## SimpleCov Runtime Dependency
+## Input Format: `coverage.json` Only
 
 ### Status
 
-**Replaced** – cov-loupe now requires SimpleCov at runtime so that multi-suite resultsets can be merged using SimpleCov's combine helpers.
+**Accepted** (v7.0.0) – cov-loupe reads SimpleCov's `coverage.json` and nothing else. Support for `.resultset.json` was removed.
 
-### Original Context
+### Context
 
-cov-loupe provides tooling for inspecting SimpleCov coverage reports. When designing the gem, we had to decide whether to depend on SimpleCov as a runtime dependency.
+SimpleCov writes two JSON files:
 
-#### Alternative Approaches
+- **`.resultset.json`** is SimpleCov's internal merge cache, keyed by test suite name. Its shape is undocumented and carries no compatibility promise. Before SimpleCov 1.0.0 it was the only machine-readable output, so cov-loupe read it, merged suites with SimpleCov's own combiner (which required SimpleCov at runtime), and adapted to its historical variations (raw line arrays vs `{ "lines" => [...] }` entries, `timestamp` vs `created_at`).
+- **`coverage.json`** is the output of SimpleCov's JSON formatter. From SimpleCov 1.0.0 on it is described by a versioned JSON schema in the SimpleCov repository, and the default HTML formatter writes it alongside the report, so nearly every 1.x project has one after a test run. It contains a single already-merged coverage map with project-relative file keys, an ISO 8601 `meta.timestamp`, and `"ignored"` markers for lines excluded by `:nocov:` regions.
 
-1. **Runtime dependency on SimpleCov**: Use SimpleCov's API to read and process coverage data
-2. **Development-only dependency**: Read SimpleCov's `.resultset.json` files directly without requiring SimpleCov at runtime
-3. **Support multiple coverage formats**: Parse coverage data from multiple tools (SimpleCov, Coverage, etc.)
+cov-loupe 6.x and earlier read only `.resultset.json`. That meant a loader that adapted to the file's historical shape variations, a three-entry candidate list whose ordering had to be documented, `resultset` naming throughout the public API, and a runtime SimpleCov load to merge multi-suite resultsets.
 
-#### Key Considerations
+### Decision
 
-**Dependency weight**: SimpleCov itself has dependencies:
-- `docile` (~> 1.1)
-- `simplecov-html` (~> 0.11)
-- `simplecov_json_formatter` (~> 0.1)
+Read only `coverage.json` and require SimpleCov >= 1.0.
 
-**Use case separation**:
-- SimpleCov is needed when **running tests** to collect coverage
-- cov-loupe is needed when **inspecting coverage** after tests complete
-- These are temporally separated activities
+Consequences:
 
-**Deployment contexts**:
-- CI/CD: Coverage collection happens in test job, inspection might happen in a separate analysis job
-- Production: Some teams want to analyze coverage data without installing test dependencies
-- Developer machines: May want to inspect coverage without full test suite dependencies
+- One loader (`CoverageJsonLoader`) with no format detection and no suite merging.
+- Discovery checks a single path, `coverage/coverage.json` under the project root, with no cross-format precedence to explain. Other locations are reached with `--coverage-file`.
+- The public API uses `coverage_file` names only; the `resultset` names and their deprecation shims are gone.
+- Users on SimpleCov 0.x must upgrade SimpleCov, or stay on cov-loupe 6.x. See [Migrating to v7](../../user/migrations/MIGRATING_TO_V7.md).
 
-**Format stability**:
-- SimpleCov's `.resultset.json` format is stable and well-documented
-- The format is simple JSON with predictable structure
-- Breaking changes would affect all SimpleCov users, so the format is unlikely to change
+### `coverage.json` Format
 
-### Original Decision
+The parts cov-loupe reads:
 
-We initially chose to **make SimpleCov a development dependency only** and read `.resultset.json` files directly using Ruby's standard library JSON parser.
-
-### Revision: SimpleCov as Runtime Dependency
-
-cov-loupe now depends on SimpleCov at runtime for the following reasons:
-
-1. **Multi-suite merging**: Projects using multiple test suites (e.g., RSpec + Minitest) produce separate coverage results that must be merged using SimpleCov's `SimpleCov::Combine.combine` with `SimpleCov::Combine::ResultsCombiner`
-2. **Consistent calculations**: SimpleCov's coverage percentage algorithms handle edge cases that are difficult to replicate correctly
-3. **Format compatibility**: Changes to SimpleCov's internal data structures are automatically handled by using its API
-
-### Current Implementation
-
-cov-loupe currently depends on `amazing_print`, `mcp`, `logger`, and `simplecov` at runtime.
-
-Coverage data is read directly from JSON files via `ModelDataCache` and `ResultsetLoader`:
-```ruby
-resultset_path = Resolvers::ResolverHelpers.find_resultset(@root, resultset: resultset)
-data = ModelDataCache.instance.get(resultset_path, root: @root, logger: @logger)
-coverage_map = data.coverage_map
-coverage_timestamp = data.timestamp
-```
-
-Coverage calculations use simple algorithms in `CovLoupe::CoverageCalculator` (`summary`, `uncovered`, `detailed`):
-```ruby
-def summary(arr)
-  total = 0
-  covered = 0
-  arr.compact.each do |hits|
-    total += 1
-    covered += 1 if hits.to_i > 0
-  end
-  percentage = total.zero? ? 100.0 : ((covered.to_f * 100.0 / total) * 100).round / 100.0
-  { 'covered' => covered, 'total' => total, 'percentage' => percentage }
-end
-
-def uncovered(arr)
-  out = []
-  arr.each_with_index do |hits, i|
-    next if hits.nil?
-    out << (i + 1) if hits.to_i.zero?
-  end
-  out
-end
-
-def detailed(arr)
-  rows = []
-  arr.each_with_index do |hits, i|
-    h = hits&.to_i
-    rows << { 'line' => i + 1, 'hits' => h, 'covered' => h.positive? } if h
-  end
-  rows
-end
-```
-
-### SimpleCov .resultset.json Format
-
-The format we parse has this structure:
 ```json
 {
-  "RSpec": {
-    "coverage": {
-      "/absolute/path/to/file.rb": {
-        "lines": [null, 1, 3, 0, null, 5, ...]
-      }
-    },
-    "timestamp": 1633072800
+  "meta": {
+    "command_name": "RSpec",
+    "timestamp": "2026-07-01T12:00:00.000+00:00"
+  },
+  "coverage": {
+    "lib/foo.rb": {
+      "lines": [null, 1, 3, 0, "ignored", 5]
+    }
   }
 }
 ```
 
-Where:
-- Top level keys are test suite names (e.g., "RSpec", "Minitest")
-- `coverage` contains file paths mapped to coverage data
-- `lines` is an array where each index represents a line number (0-indexed)
-- Array values: `null` = not executable, `0` = not covered, `>0` = hit count
-- `timestamp` is Unix timestamp when coverage was collected
+- `coverage` maps project-relative file paths to per-file data; `CoverageRepository` expands the keys against the project root.
+- `lines` is an array where index N describes source line N+1: `null` = not executable, `0` = not covered, `>0` = hit count, `"ignored"` = excluded via `:nocov:` or `simplecov:disable` (mapped to `null` on load so excluded lines stay out of the counts).
+- `meta.timestamp` is when the coverage was collected, normalized to epoch seconds for staleness checks. A missing or unparseable value becomes 0, which disables time-based checks.
 
-### Resultset Discovery
+Other keys (`$schema`, `total`, `groups`, `errors`, `branches`, `methods`, source text) are ignored.
 
-We implement flexible discovery of `.resultset.json` files via `Resolvers::ResultsetPathResolver::DEFAULT_CANDIDATES`:
-```ruby
-DEFAULT_CANDIDATES = [
-  '.resultset.json',
-  'coverage/.resultset.json',
-  'tmp/.resultset.json'
-].freeze
-```
+## SimpleCov Dependency
 
-This supports common SimpleCov configurations without requiring SimpleCov to be loaded.
+### Status
+
+**Accepted** (v7.0.0) – SimpleCov is a runtime dependency (`>= 1.0, < 2.0`) but is never required by cov-loupe.
+
+### Context
+
+cov-loupe only reads a file SimpleCov wrote earlier, so it has no functional need to load SimpleCov. Earlier versions loaded it lazily to merge multi-suite resultsets; `coverage.json` is already merged, so that is gone.
+
+The dependency is kept as a version constraint. `coverage.json` only exists from SimpleCov 1.0.0 on, and cov-loupe almost always sits in the same bundle as the SimpleCov that produced the file. Declaring `>= 1.0` makes Bundler refuse a SimpleCov that cannot produce the input, which turns "cov-loupe cannot find coverage.json" into a resolution error at install time instead of a runtime surprise.
 
 ### Consequences
 
-#### Positive (Original Development-Only Approach)
-
-1. **Lightweight installation**: No transitive dependencies beyond `mcp` gem
-2. **Deployment flexibility**: Can analyze coverage in environments without test dependencies
-3. **Faster installation**: Fewer gems to download and install
-4. **Clear separation of concerns**: Coverage collection vs. coverage analysis are independent
-5. **CI/CD optimization**: Analysis jobs don't need full test suite dependencies
-6. **Production-safe**: Can be deployed to production environments if needed (e.g., for monitoring)
-
-#### Negative (Original Development-Only Approach)
-
-1. **Format dependency**: Tightly coupled to SimpleCov's JSON format
-2. **Breaking changes risk**: If SimpleCov changes `.resultset.json` structure, we must adapt
-3. **Limited to SimpleCov**: Cannot read coverage data from other Ruby coverage tools
-4. **Duplicate logic**: Coverage percentage calculations reimplemented (though simple)
-5. **Maintenance**: Must track SimpleCov format changes manually
-
-#### Trade-offs (Current Runtime Dependency Approach)
-
-- **Versus development-only dependency**: Heavier installation footprint, but better multi-suite support and format compatibility
-- **Versus multi-format support**: Simpler implementation but locked to SimpleCov ecosystem
-- **Versus custom merging logic**: More reliable but requires SimpleCov at runtime
-
-### Risk Mitigation
-
-1. **Format stability**: SimpleCov has maintained `.resultset.json` compatibility for years
-2. **Simple format**: JSON structure is straightforward and unlikely to change dramatically
-3. **Development dependency**: We still use SimpleCov in our own tests, so format changes would be detected immediately
-4. **Documentation**: AGENTS.md documents the format dependency explicitly
-5. **Error handling**: Robust error messages when format doesn't match expectations
-
-### Format Evolution Strategy
-
-If SimpleCov's format changes:
-1. **Minor additions** (new keys): Ignore unknown keys, only parse what we need
-2. **Breaking changes** (structure changes): Version detection logic to support multiple formats
-3. **Alternative formats**: Could add support for other coverage tools' JSON formats if needed
-
-### Current Limitations Accepted
-
-- Only supports SimpleCov (not Coverage gem, other tools)
-- Assumes standard `.resultset.json` locations
-- Multi-suite merging requires SimpleCov runtime dependency
-- No support for branch coverage (SimpleCov feature not widely used yet)
+- No SimpleCov code runs inside cov-loupe; JSON parsing uses the standard library.
+- `bundle install` fails clearly for projects pinned to SimpleCov 0.x.
+- The `compat` CI job pins SimpleCov to `1.0.0` and to the newest release so a SimpleCov point release that changes `coverage.json` fails there rather than for users.
 
 ### References
 
 - Gemspec dependencies: `cov-loupe.gemspec` (`spec.add_dependency` entries)
-- JSON parsing: `lib/cov_loupe/loaders/resultset_loader.rb` (`ResultsetLoader.load`)
+- JSON parsing: `lib/cov_loupe/loaders/coverage_json_loader.rb` (`CoverageJsonLoader.load`)
+- Coverage file discovery: `lib/cov_loupe/resolvers/coverage_file_path_resolver.rb` (`CoverageFilePathResolver::DEFAULT_COVERAGE_FILE`)
 - Coverage calculations: `lib/cov_loupe/coverage/coverage_calculator.rb` (`CoverageCalculator.summary`, `.uncovered`, `.detailed`)
-- Resultset discovery: `lib/cov_loupe/resolvers/resultset_path_resolver.rb` (`ResultsetPathResolver::DEFAULT_CANDIDATES`)
-- SimpleCov format documentation: https://github.com/simplecov-ruby/simplecov
-- Development usage: Uses SimpleCov in `spec/spec_helper.rb` to test itself
+- SimpleCov `coverage.json` schema: https://github.com/simplecov-ruby/simplecov/tree/main/schemas
+- Development usage: `spec/spec_helper.rb` runs SimpleCov on cov-loupe's own suite, and `CoverageReporter` reads the resulting `coverage.json`

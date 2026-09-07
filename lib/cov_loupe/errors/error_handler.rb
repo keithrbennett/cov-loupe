@@ -13,7 +13,7 @@ module CovLoupe
   #
   # convert_standard_error maps Ruby's built-in exceptions to the CovLoupe error hierarchy,
   # using the `context` parameter to choose more specific messages (e.g., Errno::ENOENT
-  # becomes ResultsetNotFoundError in :coverage_loading context but FileNotFoundError otherwise).
+  # becomes CoverageFileNotFoundError in :coverage_loading context but FileNotFoundError otherwise).
   class ErrorHandler
     attr_accessor :error_mode, :logger
 
@@ -80,7 +80,7 @@ module CovLoupe
 
     private def convert_enoent(error, context)
       if context == :coverage_loading
-        ResultsetNotFoundError.new('Coverage data not found', error)
+        CoverageFileNotFoundError.new('Coverage data not found', error)
       else
         filename = extract_filename(error.message)
         FileNotFoundError.new("File not found: #{filename}", error)

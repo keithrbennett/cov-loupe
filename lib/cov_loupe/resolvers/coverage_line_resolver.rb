@@ -8,7 +8,7 @@ module CovLoupe
     #
     # Resolution strategy (in order):
     # 1. Exact match on the normalized input path
-    # 2. Match after stripping the project root prefix (handles relative keys in resultsets)
+    # 2. Match after stripping the project root prefix (handles the project-relative keys SimpleCov writes)
     #
     # On case-insensitive volumes, all comparisons are case-normalized to avoid
     # false negatives. If multiple coverage entries normalize to the same path,

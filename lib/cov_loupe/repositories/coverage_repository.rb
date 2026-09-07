@@ -2,7 +2,7 @@
 
 require 'json'
 require_relative '../resolvers/resolver_helpers'
-require_relative '../loaders/resultset_loader'
+require_relative '../loaders/coverage_json_loader'
 require_relative '../errors/errors'
 require_relative '../paths/path_utils'
 
@@ -12,23 +12,23 @@ module CovLoupe
     # coverage data. It decouples data access concerns from the domain logic in CoverageModel.
     #
     # Its primary responsibilities are:
-    # 1. Locating the .resultset.json file using ResolverHelpers.
-    # 2. Loading and parsing the JSON data using ResultsetLoader (handling suite merging if needed).
+    # 1. Locating coverage.json using ResolverHelpers.
+    # 2. Loading and parsing the JSON data using CoverageJsonLoader.
     # 3. Normalizing all coverage map keys to absolute paths relative to the project root.
     #
     # @attr_reader coverage_map [Hash] A map of absolute file paths to coverage data.
-    # @attr_reader timestamp [Integer] The latest timestamp from the loaded coverage suites.
-    # @attr_reader resultset_path [String] The resolved absolute path to the .resultset.json file.
+    # @attr_reader timestamp [Integer] The coverage run timestamp in epoch seconds.
+    # @attr_reader coverage_file_path [String] The resolved absolute path to the coverage file.
     class CoverageRepository
-      attr_reader :coverage_map, :timestamp, :resultset_path
+      attr_reader :coverage_map, :timestamp, :coverage_file_path
 
-      def initialize(root:, resultset_path: nil, logger: nil)
+      def initialize(root:, coverage_file_path: nil, logger: nil)
         @root = root
         @logger = logger || CovLoupe.logger
 
         begin
           # 1. Locate the file
-          @resultset_path = resolve_resultset_path(resultset_path)
+          @coverage_file_path = resolve_coverage_file_path(coverage_file_path)
 
           # 2. Load the data
           loaded_data = load_data
@@ -46,12 +46,12 @@ module CovLoupe
         end
       end
 
-      private def resolve_resultset_path(path_arg)
-        Resolvers::ResolverHelpers.find_resultset(@root, resultset: path_arg)
+      private def resolve_coverage_file_path(path_arg)
+        Resolvers::ResolverHelpers.find_coverage_file(@root, coverage_file: path_arg)
       end
 
       private def load_data
-        ResultsetLoader.load(resultset_path: @resultset_path, logger: @logger)
+        CoverageJsonLoader.load(path: @coverage_file_path, logger: @logger)
       end
 
       # Detects volume case sensitivity from the project root directory.

@@ -7,14 +7,14 @@ RSpec.describe CovLoupe::StalenessMessageFormatter do
 
   describe 'output_chars: :ascii mode' do
     let(:unicode_path) { '/path/to/café/file.rb' }
-    let(:unicode_resultset) { '/project/données/coverage/.resultset.json' }
+    let(:unicode_coverage_file) { '/project/données/coverage/coverage.json' }
 
     describe '#format_project_details' do
       it 'converts file paths to ASCII' do
         formatter = described_class.new(
-          cov_timestamp:  cov_timestamp,
-          resultset_path: unicode_resultset,
-          output_chars:   :ascii
+          cov_timestamp:      cov_timestamp,
+          coverage_file_path: unicode_coverage_file,
+          output_chars:       :ascii
         )
 
         result = formatter.format_project_details(
@@ -32,11 +32,11 @@ RSpec.describe CovLoupe::StalenessMessageFormatter do
         end
       end
 
-      it 'converts resultset path to ASCII' do
+      it 'converts coverage_file path to ASCII' do
         formatter = described_class.new(
-          cov_timestamp:  cov_timestamp,
-          resultset_path: unicode_resultset,
-          output_chars:   :ascii
+          cov_timestamp:      cov_timestamp,
+          coverage_file_path: unicode_coverage_file,
+          output_chars:       :ascii
         )
 
         result = formatter.format_project_details(
@@ -53,11 +53,11 @@ RSpec.describe CovLoupe::StalenessMessageFormatter do
     end
 
     describe '#format_single_file_details' do
-      it 'converts resultset path to ASCII' do
+      it 'converts coverage_file path to ASCII' do
         formatter = described_class.new(
-          cov_timestamp:  cov_timestamp,
-          resultset_path: unicode_resultset,
-          output_chars:   :ascii
+          cov_timestamp:      cov_timestamp,
+          coverage_file_path: unicode_coverage_file,
+          output_chars:       :ascii
         )
 
         result = formatter.format_single_file_details(
@@ -78,9 +78,9 @@ RSpec.describe CovLoupe::StalenessMessageFormatter do
 
     it 'preserves Unicode in file paths' do
       formatter = described_class.new(
-        cov_timestamp:  cov_timestamp,
-        resultset_path: nil,
-        output_chars:   :fancy
+        cov_timestamp:      cov_timestamp,
+        coverage_file_path: nil,
+        output_chars:       :fancy
       )
 
       result = formatter.format_project_details(
@@ -98,8 +98,8 @@ RSpec.describe CovLoupe::StalenessMessageFormatter do
   describe 'default mode (no output_chars specified)' do
     it 'preserves Unicode by default' do
       formatter = described_class.new(
-        cov_timestamp:  cov_timestamp,
-        resultset_path: '/path/café/.resultset.json'
+        cov_timestamp:      cov_timestamp,
+        coverage_file_path: '/path/café/coverage.json'
       )
 
       result = formatter.format_project_details(

@@ -6,7 +6,7 @@
 >
 > `alias clp='cov-loupe -R docs/fixtures/demo_project'`  # -R = --root
 >
-> Replace `clp` with `cov-loupe` if you want to target your own project/resultset.
+> Replace `clp` with `cov-loupe` if you want to target your own project/coverage file.
 
 ## Table of Contents
 
@@ -19,7 +19,7 @@
 - [Advanced Filtering & Glob Patterns](#advanced-filtering-glob-patterns)
 - [Performance Optimization](#performance-optimization)
 - [Custom Output Processing](#custom-output-processing)
-- [Multi-Suite Coverage Merging](#multi-suite-coverage-merging)
+- [Multiple Test Suites](#multiple-test-suites)
 
 ---
 
@@ -37,7 +37,7 @@ The MCP server signals tool-call failures by returning a `tools/call` **result**
     "content": [
       {
         "type": "text",
-        "text": "Error: Coverage data not found at coverage/.resultset.json"
+        "text": "Error: Coverage data not found at coverage/coverage.json"
       }
     ],
     "isError": true
@@ -61,7 +61,7 @@ To override the default log file location, specify the `--log-file` (or `-l`) ar
 
 Use these JSON-RPC commands as smoke tests to confirm that the MCP server launches and responds over stdin with your configuration. They are not exhaustive error-contract tests; see [Testing Your Setup](MCP_INTEGRATION.md#testing-your-setup) for installation checks and [Error Responses](MCP_INTEGRATION.md#error-responses) for the full MCP failure model.
 
-**Note:** CLI flags set defaults for MCP tool calls, but per-request JSON parameters still win. Use `-R`/`-r` when you want server-wide defaults, or pass `root`/`resultset` per request.
+**Note:** CLI flags set defaults for MCP tool calls, but per-request JSON parameters still win. Use `-R`/`-c` when you want server-wide defaults, or pass `root`/`coverage_file` per request.
 
 ```sh
 # Get version (no parameters needed)
@@ -152,7 +152,7 @@ $ cov-loupe -S true list
 Coverage data stale (project): CovLoupe::CoverageDataProjectStaleError
 Coverage  - time: 2025-12-10T18:23:00Z (local 2025-12-11T02:23:00+08:00)
 Newer files (1):  - lib/cov_loupe/version.rb
-Resultset - /path/to/project/coverage/.resultset.json
+Coverage file - /path/to/project/coverage/coverage.json
 $ echo $?
 1
 ```
@@ -172,7 +172,7 @@ end
 
 ### Timestamp Warnings
 
-When coverage data lacks timestamps (e.g., manually created resultsets or older SimpleCov versions), cov-loupe displays a warning in both CLI and MCP modes:
+When coverage data lacks timestamps (e.g., a hand-written or third-party `coverage.json` without `meta.timestamp`), cov-loupe displays a warning in both CLI and MCP modes:
 
 ```
 WARNING: Coverage timestamps are missing. Time-based staleness checks were skipped.
@@ -194,19 +194,19 @@ Check your coverage tool configuration to ensure timestamps are recorded.
 
 **How to fix:**
 
-Modern SimpleCov versions automatically include timestamps in `.resultset.json`. If you see this warning:
+SimpleCov always writes `meta.timestamp` in `coverage.json`. If you see this warning:
 
-1. Ensure SimpleCov is up to date (`gem update simplecov`)
-2. Regenerate coverage data (`bundle exec rspec`)
-3. If using custom resultset generation, ensure timestamps are included
+1. Regenerate coverage data (`bundle exec rspec`)
+2. If another tool rewrites `coverage.json`, ensure it preserves `meta.timestamp`
 
-**Example timestamp in `.resultset.json`:**
+**Example timestamp in `coverage.json`:**
 ```json
 {
-  "RSpec": {
-    "coverage": { ... },
-    "timestamp": 1704067200
-  }
+  "meta": {
+    "command_name": "RSpec",
+    "timestamp": "2024-01-01T00:00:00.000+00:00"
+  },
+  "coverage": { ... }
 }
 ```
 
@@ -236,13 +236,13 @@ model.summary_for('app/models/order.rb')                   # Relative
 # Project A
 model_a = CovLoupe::CoverageModel.new(
   root: '/path/to/projects/service-a',
-  resultset: '/path/to/projects/service-a/coverage/.resultset.json'
+  coverage_file: '/path/to/projects/service-a/coverage/coverage.json'
 )
 
 # Project B
 model_b = CovLoupe::CoverageModel.new(
   root: '/path/to/projects/service-b',
-  resultset: '/path/to/projects/service-b/tmp/coverage/.resultset.json'
+  coverage_file: '/path/to/projects/service-b/tmp/coverage/coverage.json'
 )
 
 # Compare coverage
@@ -286,10 +286,10 @@ require 'cov_loupe'
 begin
   model = CovLoupe::CoverageModel.new(
     root: '/path/to/project',
-    resultset: '/nonexistent/.resultset.json'
+    coverage_file: '/nonexistent/coverage.json'
   )
 rescue CovLoupe::FileError => e
-  # Handle missing resultset
+  # Handle missing coverage file
   puts "Coverage file not found: #{e.message}"
 rescue CovLoupe::CoverageDataError => e
   # Handle corrupt/invalid coverage data
@@ -471,18 +471,18 @@ For platform-specific integration examples (GitHub Actions, GitLab CI, Jenkins, 
 
 ### Tracked Globs Overview
 
-**Default behavior:** By default, `--tracked-globs` is empty (`[]`), which means all files in the coverage resultset are shown. This ensures transparency—you see exactly what SimpleCov measured without any filtering.
+**Default behavior:** By default, `--tracked-globs` is empty (`[]`), which means all files in the coverage file are shown. This ensures transparency—you see exactly what SimpleCov measured without any filtering.
 
 **Why opt-in filtering?**
 - **Coverage results are not hidden** - Results are not excluded because their filespecs did not match default tracked globs
 - **Meaningful validation** - `missing_tracked_files` only flags files you explicitly expect to have coverage
 - **Project flexibility** - Different projects use different directory structures
 
-**Important:** Files lacking any coverage at all (not loaded during tests) will not appear in the resultset and therefore won't be visible with the default empty array. To detect such files, you must set `--tracked-globs` to match the files you expect to have coverage.
+**Important:** Files lacking any coverage at all (not loaded during tests) will not appear in the coverage file and therefore won't be visible with the default empty array. To detect such files, you must set `--tracked-globs` to match the files you expect to have coverage.
 
 **Two purposes of tracked globs:**
-1. **Exclude unwanted results** - Only show files from the resultset that match the patterns
-2. **Include files with or without coverage** - Report files that match the patterns but aren't in the resultset (reported in `missing_tracked_files` for `list`, `missing_from_coverage` for `totals`)
+1. **Exclude unwanted results** - Only show files from the coverage file that match the patterns
+2. **Include files with or without coverage** - Report files that match the patterns but aren't in the coverage file (reported in `missing_tracked_files` for `list`, `missing_from_coverage` for `totals`)
 
 **Best practice:** Set `COV_LOUPE_OPTS` to match your SimpleCov `track_files` configuration so `list`, `totals`, and missing-file reports use the same scope. See [`--tracked-globs`](CLI_USAGE.md#tracked-globs) for the canonical setup example.
 
@@ -577,7 +577,7 @@ end
 
 ### Reusing Coverage Models
 
-`CoverageModel` reads `.resultset.json` through a shared cache. The cache automatically reloads when the resultset file changes, and reusing one model for related queries avoids repeated model setup:
+`CoverageModel` reads the coverage file through a shared cache. The cache automatically reloads when that file changes, and reusing one model for related queries avoids repeated model setup:
 
 ```ruby
 # Good: Single model for related queries
@@ -725,12 +725,12 @@ The CLI supports annotated source viewing:
 # Show uncovered lines with context
 clp uncovered app/models/order.rb \
   -s uncovered \
-  -c 3  # -s = --source, -c = --context-lines
+  -n 3  # -s = --source, -n = --context-lines
 
 # Show full file with coverage annotations
 clp uncovered app/models/order.rb \
   -s full \
-  -c 0
+  -n 0
 ```
 
 **Programmatic Source Annotation:**
@@ -833,19 +833,13 @@ Net::HTTP.post(uri, coveralls_data.to_json, {
 
 ---
 
-## Multi-Suite Coverage Merging
+## Multiple Test Suites
 
-### How It Works
+SimpleCov merges the results of every suite that ran (e.g., RSpec + Cucumber) before writing `coverage.json`, so `cov-loupe` sees one combined coverage map and needs no merging of its own. All covered files from every suite are available to the CLI, library, and MCP tools.
 
-When a `.resultset.json` file contains multiple test suites (e.g., RSpec + Cucumber), `cov-loupe` automatically merges them using SimpleCov's combine logic. All covered files from every suite become available to the CLI, library, and MCP tools.
+**Staleness checks:** `coverage.json` carries a single `meta.timestamp` for the merged result. If only some suites were re-run after a change, staleness may be under-reported for files the other suites cover. Use `--raise-on-stale` (or `-S`) on the CLI, `raise_on_stale: true` via the Ruby API, or the MCP tool parameter to turn these warnings into hard failures, and treat multi-suite staleness flags as advisory rather than definitive.
 
-**Performance:** Single-suite projects avoid loading SimpleCov at runtime. Multi-suite resultsets trigger a lazy SimpleCov load only when needed, keeping the tool fast for the simpler coverage configurations.
-
-### Current Limitations
-
-**Staleness checks:** When suites are merged, we keep a single "latest suite" timestamp. This matches prior behavior but may under-report stale files if only some suites were re-run after a change. Use `--raise-on-stale` (or `-S`) on the CLI, `raise_on_stale: true` via the Ruby API, or the MCP tool parameter to turn these warnings into hard failures. A per-file timestamp refinement is planned; until then, treat multi-suite staleness flags as advisory rather than definitive.
-
-**Multiple resultset files:** Only suites stored inside a *single* `.resultset.json` are merged automatically. If your project produces separate resultset files (e.g., different CI jobs writing `coverage/job1/.resultset.json`, `coverage/job2/.resultset.json`), you must merge them yourself before pointing `cov-loupe` at the combined file.
+**Separate coverage files:** If your project produces separate coverage files (e.g., different CI jobs each writing their own `coverage.json`), merge them with SimpleCov's collation (`SimpleCov.collate`) before pointing `cov-loupe` at the combined output.
 
 ---
 

@@ -6,7 +6,7 @@ This document explains the timestamp constants used throughout the test suite fo
 
 ### `FIXTURE_COVERAGE_TIMESTAMP = 1_720_000_000`
 - **Human readable**: 2024-07-03 16:26:40 UTC (July 3rd, 2024)
-- **Purpose**: The "generated" timestamp for coverage data in `spec/fixtures/project1/coverage/.resultset.json`
+- **Purpose**: The "generated" timestamp for the mocked `coverage.json` documents built by `CoverageFileMockHelpers`
 - **Usage**: Used in tests that verify timestamp parsing and calculations with realistic coverage data
 
 ### `VERY_OLD_TIMESTAMP = 0`
@@ -45,4 +45,4 @@ date -d "2024-07-03 16:26:40 UTC" +%s
 - `spec/model_staleness_spec.rb` - Tests staleness detection logic
 - `spec/errors_stale_spec.rb` - Tests stale error message formatting
 - `spec/cli_error_spec.rb` - Tests CLI error handling for stale coverage
-- `spec/fixtures/project1/coverage/.resultset.json` - Contains the actual timestamp data
+- `spec/support/coverage_file_mock_helpers.rb` - Writes the timestamp into mocked coverage.json documents

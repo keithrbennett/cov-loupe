@@ -2,23 +2,70 @@
 
 require 'spec_helper'
 require 'cov_loupe/repositories/coverage_repository'
+require 'fileutils'
+require 'tmpdir'
 
 RSpec.describe CovLoupe::Repositories::CoverageRepository do
-  subject(:repo) { described_class.new(root: root, resultset_path: resultset_arg, logger: logger) }
+  subject(:repo) { described_class.new(root: root, coverage_file_path: coverage_file_arg, logger: logger) }
 
   let(:root) { (FIXTURES_DIR / 'project1').to_s }
-  let(:resultset_arg) { nil }
+  let(:coverage_file_arg) { nil }
   let(:logger) { instance_double('CovLoupe::Logger', safe_log: nil) }
 
-  # Helper to set up volume case sensitivity mocking and resultset with custom coverage data
+  # Helper to set up volume case sensitivity mocking and coverage_file with custom coverage data
   def setup_volume_and_coverage(case_sensitive:, coverage_data:)
     # Mock volume_case_sensitive? to return the specified value for any arguments
     # (can be called with a path or with no args, defaulting to Dir.pwd)
     allow(CovLoupe::PathUtils).to receive(:volume_case_sensitive?)
       .and_return(case_sensitive)
 
-    # Set up the resultset with the provided coverage data
-    mock_resultset_with_timestamp(root, FIXTURE_COVERAGE_TIMESTAMP, coverage: coverage_data)
+    # Set up the coverage_file with the provided coverage data
+    mock_coverage_with_timestamp(root, FIXTURE_COVERAGE_TIMESTAMP, coverage: coverage_data)
+  end
+
+  # End-to-end check of the coverage.json path: a real file on disk, found
+  # at the resolver's default location and loaded through the repository.
+  describe 'with a real coverage/coverage.json on disk' do
+    subject(:repo) { described_class.new(root: tmp_root, logger: logger) }
+
+    let(:tmp_root) { Dir.mktmpdir }
+    let(:foo_path) { File.join(tmp_root, 'lib', 'foo.rb') }
+    let(:timestamp) { '2026-07-01T12:00:00.000+00:00' }
+
+    before do
+      FileUtils.mkdir_p(File.dirname(foo_path))
+      FileUtils.mkdir_p(File.join(tmp_root, 'coverage'))
+      File.write(foo_path, "# frozen_string_literal: true\n")
+      File.write(File.join(tmp_root, 'coverage', 'coverage.json'), JSON.generate(
+        'meta'     => {
+          'schema_version'    => '1.0',
+          'simplecov_version' => '1.0.0',
+          'command_name'      => 'RSpec',
+          'timestamp'         => timestamp,
+        },
+        # SimpleCov 1.0 writes project-relative keys.
+        'coverage' => { 'lib/foo.rb' => { 'lines' => [1, 0, nil, 'ignored'] } },
+        'groups'   => {}
+      ))
+    end
+
+    after { FileUtils.remove_entry(tmp_root) }
+
+    it 'discovers coverage/coverage.json without an explicit path' do
+      expect(repo.coverage_file_path).to eq(File.join(tmp_root, 'coverage', 'coverage.json'))
+    end
+
+    it 'normalizes the project-relative key to an absolute project path' do
+      expect(repo.coverage_map.keys).to eq([foo_path])
+    end
+
+    it 'exposes the coverage lines with "ignored" markers mapped to nil' do
+      expect(repo.coverage_map.fetch(foo_path)['lines']).to eq([1, 0, nil, nil])
+    end
+
+    it 'reads the ISO 8601 meta timestamp as epoch seconds' do
+      expect(repo.timestamp).to eq(Time.parse(timestamp).to_i)
+    end
   end
 
   describe '#initialize' do
@@ -38,9 +85,9 @@ RSpec.describe CovLoupe::Repositories::CoverageRepository do
         expect(repo.timestamp).to be > 0
       end
 
-      it 'resolves resultset path' do
-        expected = File.join(root, 'coverage', '.resultset.json')
-        expect(repo.resultset_path).to eq(expected)
+      it 'resolves coverage_file path' do
+        expected = File.join(root, 'coverage', 'coverage.json')
+        expect(repo.coverage_file_path).to eq(expected)
       end
     end
 
@@ -56,19 +103,19 @@ RSpec.describe CovLoupe::Repositories::CoverageRepository do
     end
 
     context 'when loading fails' do
-      let(:resultset_arg) { '/nonexistent/path' }
+      let(:coverage_file_arg) { '/nonexistent/path' }
 
       it 'raises error' do
         expect do
           repo
-        end.to raise_error(CovLoupe::ResultsetNotFoundError)
+        end.to raise_error(CovLoupe::CoverageFileNotFoundError)
       end
     end
 
     context 'when underlying loader raises generic error' do
       before do
-        allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:find_resultset).and_return('dummy')
-        allow(CovLoupe::ResultsetLoader).to receive(:load).and_raise(RuntimeError.new('Boom'))
+        allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:find_coverage_file).and_return('dummy')
+        allow(CovLoupe::CoverageJsonLoader).to receive(:load).and_raise(RuntimeError.new('Boom'))
       end
 
       it 'wraps RuntimeError as UnknownError' do
@@ -79,10 +126,10 @@ RSpec.describe CovLoupe::Repositories::CoverageRepository do
     end
 
     # Tests for collision detection during path normalization.
-    # When multiple keys in the resultset normalize to the same absolute path,
+    # When multiple keys in the coverage_file normalize to the same absolute path,
     # this indicates problematic data that would cause silent overwrites.
     # The repository should detect and report these collisions with clear errors.
-    context 'when resultset contains duplicate normalized paths' do
+    context 'when coverage_file contains duplicate normalized paths' do
       # Tests the most common collision scenario: same file referenced by
       # both relative path and absolute path in the coverage data.
       # Example: "lib/foo.rb" and "/full/path/lib/foo.rb" both normalize
@@ -93,13 +140,13 @@ RSpec.describe CovLoupe::Repositories::CoverageRepository do
         let(:rel_foo_path) { 'lib/foo.rb' }
 
         before do
-          # Simulate a resultset with both relative and absolute paths for the same file
+          # Simulate a coverage_file with both relative and absolute paths for the same file
           # Note: the 'lines' arrays differ to show that data would be lost
           coverage_data = {
             rel_foo_path => { 'lines' => [1, 0, nil, 2] },
             abs_foo_path => { 'lines' => [1, 1, nil, 2] },
           }
-          mock_resultset_with_timestamp(root, FIXTURE_COVERAGE_TIMESTAMP, coverage: coverage_data)
+          mock_coverage_with_timestamp(root, FIXTURE_COVERAGE_TIMESTAMP, coverage: coverage_data)
         end
 
         it 'raises CoverageDataError with details about colliding keys including originals' do
@@ -118,14 +165,14 @@ RSpec.describe CovLoupe::Repositories::CoverageRepository do
         let(:abs_bar_path) { File.join(root, 'lib', 'bar.rb') }
 
         before do
-          # Simulate a resultset with collisions for multiple files
+          # Simulate a coverage_file with collisions for multiple files
           coverage_data = {
             'lib/foo.rb' => { 'lines' => [1, 0] },
             abs_foo_path => { 'lines' => [1, 1] },
             'lib/bar.rb' => { 'lines' => [2, 0] },
             abs_bar_path => { 'lines' => [2, 2] },
           }
-          mock_resultset_with_timestamp(root, FIXTURE_COVERAGE_TIMESTAMP, coverage: coverage_data)
+          mock_coverage_with_timestamp(root, FIXTURE_COVERAGE_TIMESTAMP, coverage: coverage_data)
         end
 
         it 'raises CoverageDataError listing all collisions in JSON format' do

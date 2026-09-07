@@ -12,7 +12,7 @@ RSpec.describe CovLoupe::AppConfig do
       expect(config.source_context).to eq(2)
       expect(config.error_mode).to eq(:log)
       expect(config.raise_on_stale).to be(false)
-      expect(config.resultset).to be_nil
+      expect(config.coverage_file).to be_nil
       expect(config.source_mode).to be_nil
       expect(config.tracked_globs).to eq([])
       expect(config.log_file).to be_nil
@@ -59,7 +59,7 @@ RSpec.describe CovLoupe::AppConfig do
     it 'returns hash suitable for CoverageModel.new' do
       config = described_class.new(
         root:           '/custom/root',
-        resultset:      '/custom/.resultset.json',
+        coverage_file:  '/custom/coverage.json',
         raise_on_stale: true,
         tracked_globs:  ['lib/**/*.rb']
       )
@@ -67,7 +67,7 @@ RSpec.describe CovLoupe::AppConfig do
       options = config.model_options
       expect(options).to eq({
         root:           '/custom/root',
-        resultset:      '/custom/.resultset.json',
+        coverage_file:  '/custom/coverage.json',
         raise_on_stale: true,
         tracked_globs:  ['lib/**/*.rb'],
       })
@@ -77,7 +77,7 @@ RSpec.describe CovLoupe::AppConfig do
       config = described_class.new
       options = config.model_options
       expect(options[:root]).to eq('.')
-      expect(options[:resultset]).to be_nil
+      expect(options[:coverage_file]).to be_nil
       expect(options[:raise_on_stale]).to be(false)
       expect(options[:tracked_globs]).to eq([])
     end

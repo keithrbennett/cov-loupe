@@ -1,0 +1,23 @@
+{
+  "$schema": "https://raw.githubusercontent.com/simplecov-ruby/simplecov/main/schemas/coverage-v1.0.schema.json",
+  "meta": {
+    "schema_version": "1.0",
+    "simplecov_version": "1.0.0",
+    "command_name": "RSpec"
+  },
+  "coverage": {
+    "lib/sample.rb": {
+      "lines": [
+        null,
+        null,
+        1,
+        0,
+        null,
+        2
+      ]
+    }
+  },
+  "groups": {},
+  "errors": {},
+  "_comment": "Test fixture without meta.timestamp to test the missing timestamp warning"
+}

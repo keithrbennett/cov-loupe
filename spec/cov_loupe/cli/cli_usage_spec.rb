@@ -41,7 +41,7 @@ RSpec.describe CovLoupe::CoverageCLI do
     [
       { args: ['list', '--format', 'json'],               expected: '--format' },
       { args: ['summary', 'lib/foo.rb', '--format=json'], expected: '--format=json' },
-      { args: ['list', '--resultset=path/to/file'],       expected: '--resultset=' },
+      { args: ['list', '--coverage-file=path/to/file'],       expected: '--coverage-file=' },
       { args: ['list', '--mode', 'mcp'],                  expected: '--mode' },
       { args: ['list', '-m', 'cli'],                      expected: '-m' },
       { args: ['summary', 'lib/foo.rb', '--mode=mcp'],    expected: '--mode=mcp' },

@@ -106,7 +106,7 @@ RSpec.describe CovLoupe::OptionParsers::ErrorHelper do
         error = OptionParser::InvalidArgument.new('invalid argument: bad')
         expect_error_output(
           error: error,
-          argv:  %w[--resultset coverage --source bad --format json],
+          argv:  %w[--coverage-file coverage --source bad --format json],
           text:  'Valid values for --source: f[ull]|u[ncovered]|n[one]'
         )
       end
@@ -115,7 +115,7 @@ RSpec.describe CovLoupe::OptionParsers::ErrorHelper do
         error = OptionParser::InvalidArgument.new('invalid argument: invalid')
         expect_error_output(
           error: error,
-          argv:  %w[--format json --sort-order=invalid --resultset coverage],
+          argv:  %w[--format json --sort-order=invalid --coverage-file coverage],
           text:  'Valid values for --sort-order: a[scending]|d[escending]'
         )
       end
@@ -193,7 +193,7 @@ RSpec.describe CovLoupe::OptionParsers::ErrorHelper do
 
       stderr_output = capture_stderr do
         helper.handle_option_parser_error(error,
-          argv: %w[--format json --resultset coverage])
+          argv: %w[--format json --coverage-file coverage])
       end
 
       expect(stderr_output).to include('Error: invalid argument: some error')
@@ -201,13 +201,13 @@ RSpec.describe CovLoupe::OptionParsers::ErrorHelper do
     end
 
     it 'does not show enum hint when all enum values are valid' do
-      error = OptionParser::MissingArgument.new('missing argument: --resultset')
+      error = OptionParser::MissingArgument.new('missing argument: --coverage-file')
 
       stderr_output = capture_stderr do
-        helper.handle_option_parser_error(error, argv: %w[--source full --resultset])
+        helper.handle_option_parser_error(error, argv: %w[--source full --coverage-file])
       end
 
-      expect(stderr_output).to match(/Error:.*missing argument.*--resultset/)
+      expect(stderr_output).to match(/Error:.*missing argument.*--coverage-file/)
       expect(stderr_output).not_to include('Valid values')
     end
   end

@@ -3,6 +3,24 @@
 [Back to main README](docs/index.md)
 
 
+## Unreleased
+
+### Breaking
+
+- **Only `coverage.json` is read, and SimpleCov >= 1.0 is required.** cov-loupe now reads SimpleCov's documented JSON formatter output, which SimpleCov 1.0.0 and later write alongside the HTML report. `.resultset.json`, SimpleCov's internal merge cache, is no longer read, and the `simplecov` dependency is now `>= 1.0, < 2.0`.
+    - **Old:** `.resultset.json` was the input; SimpleCov was loaded at runtime to merge multi-suite resultsets.
+    - **New:** `coverage.json` is the input. It is already merged across suites, so SimpleCov is never loaded. It is discovered at `coverage/coverage.json` under the project root (see below).
+    - Lines marked `"ignored"` by SimpleCov (`:nocov:` regions and `# simplecov:disable` directives) are treated as non-executable, so cov-loupe's percentages match SimpleCov's own report.
+    - The not-found message is now `Could not find coverage.json under "<root>"`, and stale-coverage errors label the file `Coverage file - <path>`.
+    - Projects that cannot upgrade SimpleCov should stay on cov-loupe 6.x. See [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md).
+- **The `resultset` names are replaced by `coverage_file` names.** The `--coverage-file` option (`-c`; see below), the `coverage_file` MCP tool argument, `CoverageModel.new(coverage_file:)`, `#coverage_file_path`, `CoverageReporter.report(coverage_file:)`, `CovLoupe::CoverageFileNotFoundError`, and `Resolvers::CoverageFilePathResolver` are the only spellings. `--resultset`, the `resultset` tool argument, `resultset:` keywords, `#resultset_path`, `ResultsetNotFoundError`, `ResultsetPathResolver`, `ResolverHelpers.find_resultset`, and `AppConfig#resultset` are gone, with no deprecation period. `ResultsetLoader` is replaced by `CoverageJsonLoader`, whose `Result` has `coverage_map` and `timestamp` only.
+    - `ResolverHelpers.create_resultset_resolver` and its `candidates:` keyword are removed. Instantiate `CoverageFilePathResolver.new(root:)` directly.
+    - See [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md) for the full rename table.
+- **Short options `-c` and `-n` reassigned.** The coverage file option is `-c`/`--coverage-file` (6.x: `-r`/`--resultset`), and `--context-lines` is now `-n` (was `-c`).
+    - `-r` now fails with `ambiguous option: -r`. An old `-c N` for context lines is parsed as `--coverage-file N` and fails with a not-found error, so update shell aliases, `COV_LOUPE_OPTS`, and MCP server `args`.
+    - The CLI not-found tip now reads `Specify a coverage file: cov-loupe -c PATH`.
+- **Only `coverage/coverage.json` is searched by default.** With no `--coverage-file`, cov-loupe looks only at `coverage/coverage.json` under the project root, where SimpleCov writes it. 6.x tried `.resultset.json`, `coverage/.resultset.json`, and `tmp/.resultset.json` in turn; use `--coverage-file` (`-c`) for any location other than the default.
+
 ## v6.1.0
 
 - In gemspec, change mcp gem's constraints from `'>= 0.15', '< 1.0'` to `'>= 0.15', '< 2.0'`

@@ -35,11 +35,11 @@ require 'cov_loupe'
 require 'cov_loupe/loaders/all'
 
 FIXTURES_DIR = Pathname.new(File.expand_path('fixtures', __dir__))
-FIXTURE_PROJECT1_RESULTSET_PATH = (FIXTURES_DIR / 'project1' / 'coverage' / '.resultset.json').to_s
+FIXTURE_PROJECT1_COVERAGE_PATH = (FIXTURES_DIR / 'project1' / 'coverage' / 'coverage.json').to_s
 
 # Test timestamp constants for consistent and documented test data
-# Main fixture coverage timestamp: 1720000000 = 2024-07-03 16:26:40 UTC
-# This represents when the coverage data in spec/fixtures/project1/coverage/.resultset.json was "generated"
+# Timestamp used by the mocked coverage.json documents (see CoverageFileMockHelpers):
+# 1720000000 = 2024-07-03 16:26:40 UTC
 FIXTURE_COVERAGE_TIMESTAMP = 1_720_000_000
 
 # Very old timestamp: 1 = 1970-01-01 00:00:01 UTC (Unix epoch + 1s)
@@ -57,49 +57,6 @@ TIMESTAMP_REGEX = /\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}\]/
 
 # Default timeout for integration tests (longer on JRuby due to startup overhead)
 INTEGRATION_TIMEOUT = RUBY_PLATFORM.include?('java') ? 15 : 5
-
-# Helper method to mock resultset file reading with fake coverage data
-# @param root [String] The test root directory
-# @param timestamp [Integer] The timestamp to use in the fake resultset
-# @param coverage [Hash] Optional custom coverage data (default: basic foo.rb and bar.rb)
-def mock_resultset_with_timestamp(root, timestamp, coverage: nil)
-  mock_resultset_with_metadata(root, { 'timestamp' => timestamp }, coverage: coverage)
-end
-
-def mock_resultset_with_created_at(root, created_at, coverage: nil)
-  mock_resultset_with_metadata(root, { 'created_at' => created_at }, coverage: coverage)
-end
-
-def mock_resultset_with_metadata(root, metadata, coverage: nil)
-  abs_root = File.absolute_path(root)
-  default_coverage = {
-    File.join(root, 'lib', 'foo.rb') => { 'lines' => [1, 0, nil, 2] },
-    File.join(root, 'lib', 'bar.rb') => { 'lines' => [0, 0, 1] },
-  }
-
-  fake_resultset_hash = {
-    'RSpec' => {
-      'coverage' => coverage || default_coverage,
-    }.merge(metadata),
-  }
-
-  allow(File).to receive(:read).and_call_original # Allow real File.read for other calls
-
-  allow(File).to receive(:read).with(end_with('.resultset.json'))
-    .and_return(JSON.generate(fake_resultset_hash))
-  allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:find_resultset)
-    .and_wrap_original do |method, search_root, resultset: nil|
-    mock_path = File.join(abs_root, 'coverage', '.resultset.json')
-    is_mock_target = resultset.nil? || resultset.to_s.empty? ||
-      File.absolute_path(resultset.to_s) == File.absolute_path(mock_path)
-
-    if File.absolute_path(search_root) == abs_root && is_mock_target
-      mock_path
-    else
-      method.call(search_root, resultset: resultset)
-    end
-  end
-end
 
 # Automatically require all files in spec/support and spec/shared_examples
 Dir[File.join(__dir__, 'support', '**', '*.rb')].each { |f| require f }
@@ -131,7 +88,7 @@ RSpec.configure do |config|
   config.include MCPToolTestHelpers
   config.include MockingHelpers
   config.include ControlFlowHelpers
-  config.include ResultsetMockHelpers
+  config.include CoverageFileMockHelpers
   config.include Spec::Support::McpIntegrationHelpers
 end
 

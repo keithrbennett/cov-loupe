@@ -60,7 +60,7 @@ RSpec.describe CovLoupe::CoverageCLI do
   end
 
   it 'emits detailed stale coverage info and exits 1' do
-    mock_resultset_with_timestamp(root, VERY_OLD_TIMESTAMP, coverage: {
+    mock_coverage_with_timestamp(root, VERY_OLD_TIMESTAMP, coverage: {
       File.join(root, 'lib', 'foo.rb') => { 'lines' => [1, 0, 1] },
     })
 
@@ -70,11 +70,11 @@ RSpec.describe CovLoupe::CoverageCLI do
     expect(err).to match(/File\s+- time:/)
     expect(err).to match('Coverage\s+- time:')
     expect(err).to match(/Delta\s+- file is [+-]?\d+s newer than coverage/)
-    expect(err).to match('Resultset\s+-')
+    expect(err).to match('Coverage file\s+-')
   end
 
   it 'honors --raise-on-stale=false to disable checks' do
-    mock_resultset_with_timestamp(root, VERY_OLD_TIMESTAMP, coverage: {
+    mock_coverage_with_timestamp(root, VERY_OLD_TIMESTAMP, coverage: {
       File.join(root, 'lib', 'foo.rb') => { 'lines' => [1, 0, 1] },
     })
 

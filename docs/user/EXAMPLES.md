@@ -8,7 +8,7 @@ Practical examples for common tasks with cov-loupe. Examples are organized by sk
 >
 > `alias clp='cov-loupe -R docs/fixtures/demo_project'  # -R = --root`
 >
-> Swap `clp` for `cov-loupe` to run against your own project and resultset.
+> Swap `clp` for `cov-loupe` to run against your own project and coverage file.
 > The demo fixture is a small Rails-like project in `docs/fixtures/demo_project` with intentional coverage gaps for testing `--tracked-globs`.
 
 ## Table of Contents
@@ -50,8 +50,8 @@ clp uncovered app/controllers/orders_controller.rb
 clp u app/controllers/orders_controller.rb
 
 # View uncovered code with context
-clp -s u -c 3 uncovered app/controllers/orders_controller.rb  # -s = --source (u = uncovered), -c = --context-lines
-clp -s u -c 3 u app/controllers/orders_controller.rb
+clp -s u -n 3 uncovered app/controllers/orders_controller.rb  # -s = --source (u = uncovered), -n = --context-lines
+clp -s u -n 3 u app/controllers/orders_controller.rb
 ```
 
 ### Find Coverage Gaps
@@ -95,8 +95,8 @@ clp -s f summary lib/api/client.rb  # f = full
 clp -s f s lib/api/client.rb
 
 # Focus on uncovered areas only
-clp -s u -c 5 uncovered lib/payments/refund_service.rb  # u = uncovered
-clp -s u -c 5 u lib/payments/refund_service.rb
+clp -s u -n 5 uncovered lib/payments/refund_service.rb  # u = uncovered
+clp -s u -n 5 u lib/payments/refund_service.rb
 ```
 
 ### Working with JSON Output
@@ -354,12 +354,12 @@ Lowest coverage files (< 80%):
 - `threshold:` - Coverage percentage below which files are included (default: 80)
 - `count:` - Maximum number of files to show (default: 5)
 - `root:` - Project root directory (defaults to `SimpleCov.root` when SimpleCov is loaded, otherwise `'.'`)
-- `resultset:` - Path or directory to `.resultset.json` (defaults to `SimpleCov.coverage_dir/.resultset.json` when SimpleCov is loaded)
-- `model:` - Pre-configured `CoverageModel` instance (optional, overrides `root:`/`resultset:`)
+- `coverage_file:` - Path to `coverage.json` or its directory (defaults to `SimpleCov.coverage_dir` when SimpleCov is loaded)
+- `model:` - Pre-configured `CoverageModel` instance (optional, overrides `root:`/`coverage_file:`)
 
 **Returns:** Formatted string, or `nil` if no files are below the threshold.
 
-**SimpleCov Integration:** When SimpleCov is loaded, `CoverageReporter.report` automatically uses SimpleCov's configured root and coverage directory. You can override these by passing explicit `root:` or `resultset:` parameters, or provide a custom `model:` instance.
+**SimpleCov Integration:** When SimpleCov is loaded, `CoverageReporter.report` automatically uses SimpleCov's configured root and coverage directory. You can override these by passing explicit `root:` or `coverage_file:` parameters, or provide a custom `model:` instance.
 
 ### Custom Coverage Directory
 
@@ -383,13 +383,13 @@ SimpleCov.at_exit do
 end
 ```
 
-Or specify the resultset path explicitly:
+Or specify the coverage file path explicitly:
 
 ```ruby
 report = CovLoupe::CoverageReporter.report(
   threshold: 80,
   count: 5,
-  resultset: 'reports/coverage/.resultset.json'
+  coverage_file: 'reports/coverage/coverage.json'
 )
 ```
 
@@ -483,7 +483,7 @@ test:
     reports:
       coverage_report:
         coverage_format: simplecov
-        path: coverage/.resultset.json
+        path: coverage/coverage.json
 ```
 
 ### Custom Success Predicate

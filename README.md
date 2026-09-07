@@ -26,14 +26,14 @@
 - **MCP server** - stdio (localhost nonnetwork) server assists AI analysis of your coverage
 - **Ruby library** - Programmatic API for custom tooling
 
-Works with any SimpleCov-generated `.resultset.json` file—no runtime dependency on your test suite. (New coverage.json file support coming soon.)
+Reads SimpleCov's `coverage.json`, the documented JSON formatter output that SimpleCov 1.0.0 and later write alongside the HTML report—no runtime dependency on your test suite.
 
 ### Key Features
 
 - ✅ **Multiple interfaces** - CLI, MCP server, and Ruby API
-- **Annotated source code** - `-s full|uncovered|none` / `--source full|uncovered|none` with `-c N` / `--context-lines N` for context lines
+- **Annotated source code** - `-s full|uncovered|none` / `--source full|uncovered|none` with `-n N` / `--context-lines N` for context lines
 - ✅ **Staleness detection** - Identify outdated coverage (missing files, timestamp mismatches, line count changes)
-- ✅ **Multi-suite support** - Automatic merging of multiple test suites (RSpec + Cucumber, etc.)
+- ✅ **Multi-suite aware** - Reads SimpleCov's already-merged `coverage.json`, so RSpec + Cucumber (etc.) appear as one coverage map
 - ✅ **Flexible path resolution** - Works with absolute or relative paths
 - ✅ **Comprehensive error handling** - Context-aware messages for each mode
 
@@ -69,7 +69,7 @@ If you are upgrading from a previous version, please refer to the [Migration Gui
 bundle exec rspec
 
 # Verify coverage was generated
-ls -l coverage/.resultset.json
+ls -l coverage/coverage.json
 ```
 
 ### Basic Usage
@@ -135,7 +135,7 @@ See [MCP Integration Guide](docs/user/MCP_INTEGRATION.md) for AI assistant setup
 
 ## Multi-Suite Coverage
 
-Projects with multiple test suites (RSpec + Cucumber, etc.) are automatically merged. See [Multi-Suite Coverage Merging](docs/user/ADVANCED_USAGE.md#multi-suite-coverage-merging) for details and current limitations.
+SimpleCov merges the results of every suite that ran (RSpec + Cucumber, etc.) before writing `coverage.json`, so cov-loupe sees one combined coverage map and does no merging of its own. See [Multiple Test Suites](docs/user/ADVANCED_USAGE.md#multiple-test-suites) for staleness caveats and how to combine separately produced coverage files.
 
 ## Documentation Index
 
@@ -159,6 +159,7 @@ Full documentation is available at **[https://keithrbennett.github.io/cov-loupe/
 - [CLI Fallback for LLMs](docs/user/CLI_FALLBACK_FOR_LLMS.md) - When MCP isn't available
 - [Sample MCP Prompts](docs/user/prompts/README.md) - Ready-to-use ChatGPT/Claude/Gemini prompts
 - [Migration Guides](docs/user/migrations/README.md)
+  - [Migrate to v7](docs/user/migrations/MIGRATING_TO_V7.md)
   - [Migrate to v6](docs/user/migrations/MIGRATING_TO_V6.md)
   - [Migrate to v5](docs/user/migrations/MIGRATING_TO_V5.md)
   - [Migrate to v4](docs/user/migrations/MIGRATING_TO_V4.md)
@@ -187,33 +188,40 @@ Full documentation is available at **[https://keithrbennett.github.io/cov-loupe/
 
 - **Ruby >= 3.2** (required by `mcp` gem dependency)
 - `mcp` gem >= 0.15 and < 2.0
-- SimpleCov-generated `.resultset.json` file
-- `simplecov` gem >= 0.21
+- `simplecov` gem >= 1.0 and < 2.0, and the `coverage.json` it generates
 
-Applications pinned to an older `mcp` version must upgrade it before installing cov-loupe v6.
+Applications pinned to an older `mcp` version must upgrade it before installing cov-loupe v6, and applications pinned to SimpleCov 0.x must upgrade SimpleCov before installing cov-loupe v7. See [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md).
 
 ### JRuby Compatibility
 
 The test suite passes on JRuby, and to the best of our knowledge the project is fully JRuby-compatible.
 If you encounter any JRuby-specific issues, please open a GitHub issue, including as much detail as possible.
 
-## Configuring the Resultset
+## Configuring the Coverage File
 
-`cov-loupe` automatically searches for `.resultset.json` in standard locations (`coverage/.resultset.json`, `.resultset.json`, `tmp/.resultset.json`). For non-standard locations:
+`cov-loupe` reads `coverage.json`, the output of SimpleCov's JSON formatter. It is described by a versioned JSON schema in the SimpleCov repository, and from SimpleCov 1.0.0 on the default HTML formatter writes it alongside its report, so most projects have one after every test run.
+
+SimpleCov's `.resultset.json` is not read. It is SimpleCov's internal merge cache with no compatibility promises. cov-loupe 6.x and earlier read only that file; 7.0 replaced it with `coverage.json`.
+
+**Discovery.** With no `--coverage-file` argument, `coverage/coverage.json` under the project root is used. That is where SimpleCov writes it by default; for any other location, pass `--coverage-file` (`-c`).
+
+When `--coverage-file` names a **directory**, `coverage.json` inside it is used. When it names a **file**, that file is used as given.
+
+For non-standard locations:
 
 ```sh
-# Command-line option (highest priority) - use -r or --resultset
-cov-loupe -r /path/to/your/coverage
+# Command-line option (highest priority) - use -c or --coverage-file
+cov-loupe -c /path/to/your/coverage
 
 # Environment variable (project-wide default)
-export COV_LOUPE_OPTS="-r /path/to/your/coverage"
+export COV_LOUPE_OPTS="-c /path/to/your/coverage"
 
 # MCP server configuration
 # Add to your MCP client config (used as defaults for MCP tools):
-# "args": ["-r", "/path/to/your/coverage"]
+# "args": ["-c", "/path/to/your/coverage"]
 ```
 
-**MCP precedence:** For MCP tool calls, per-request JSON parameters win over the CLI args used to start the server (including `COV_LOUPE_OPTS`). If neither is provided, built-in defaults are used (`root: '.'`, `raise_on_stale: false`, etc.). Coverage data is cached globally and automatically reloaded when the resultset file changes.
+**MCP precedence:** For MCP tool calls, per-request JSON parameters win over the CLI args used to start the server (including `COV_LOUPE_OPTS`). If neither is provided, built-in defaults are used (`root: '.'`, `raise_on_stale: false`, etc.). Coverage data is cached globally and automatically reloaded when the coverage file changes.
 
 See [CLI Usage Guide](docs/user/CLI_USAGE.md) for complete details.
 
@@ -353,7 +361,7 @@ cov-loupe summary lib/cov_loupe/model/model.rb
 cov-loupe uncovered lib/cov_loupe/cli.rb
 
 # View in context
-cov-loupe -s u -c 3 uncovered lib/cov_loupe/cli.rb  # -s = --source (u = uncovered, n = none to disable), -c = --context-lines
+cov-loupe -s u -n 3 uncovered lib/cov_loupe/cli.rb  # -s = --source (u = uncovered, n = none to disable), -n = --context-lines
 
 # Detailed hit counts
 cov-loupe detailed lib/cov_loupe/coverage/coverage_calculator.rb
@@ -399,7 +407,7 @@ cov-loupe --raise-on-stale yes # enforce stale coverage failures
 
 - **"command not found"** - See [Installation Guide](docs/user/INSTALLATION.md#require-path)
 - **"cannot load such file -- mcp"** - Requires Ruby >= 3.2. Verify: `ruby -v`
-- **"Could not find .resultset.json"** - Ensure SimpleCov is configured in your test suite, then run tests to generate coverage. See the [Configuring the Resultset](#configuring-the-resultset) section for more details.
+- **"Could not find coverage.json"** - Ensure SimpleCov is configured in your test suite, then run tests to generate coverage. See the [Configuring the Coverage File](#configuring-the-coverage-file) section for more details.
 - **MCP server won't connect** - Check PATH and Ruby version in [MCP Troubleshooting](docs/user/MCP_INTEGRATION.md#troubleshooting)
 - **RVM in sandboxed environments (macOS)** - RVM requires `/bin/ps` which may be blocked by sandbox restrictions. Use rbenv or chruby instead.
 
@@ -428,7 +436,7 @@ See [dev/DEVELOPMENT.md](docs/dev/DEVELOPMENT.md) for more.
 
 ## SimpleCov Dependency
 
-`cov-loupe` declares a runtime dependency on `simplecov` (>= 0.21) to support multi-suite merging using SimpleCov's combine helpers. The dependency is lazy-loaded only when needed, ensuring fast startup for single-suite projects.
+`cov-loupe` declares a runtime dependency on `simplecov` (`>= 1.0, < 2.0`) so that the project being inspected has a SimpleCov version that writes `coverage.json`. SimpleCov is never loaded at runtime: `coverage.json` is already merged across suites, so cov-loupe only reads the file.
 
 ## Contributing
 

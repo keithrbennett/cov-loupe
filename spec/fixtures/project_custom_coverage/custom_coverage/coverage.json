@@ -1,0 +1,33 @@
+{
+  "$schema": "https://raw.githubusercontent.com/simplecov-ruby/simplecov/main/schemas/coverage-v1.0.schema.json",
+  "meta": {
+    "schema_version": "1.0",
+    "simplecov_version": "1.0.0",
+    "command_name": "RSpec",
+    "timestamp": "2096-10-02T07:06:40.000Z"
+  },
+  "coverage": {
+    "lib/bar.rb": {
+      "lines": [
+        null,
+        null,
+        0,
+        0,
+        1
+      ]
+    },
+    "lib/foo.rb": {
+      "lines": [
+        null,
+        null,
+        1,
+        0,
+        null,
+        2
+      ]
+    }
+  },
+  "groups": {},
+  "errors": {},
+  "_comment": "Test fixture for custom coverage directory - timestamp 4000000000 = 2096-10-02T07:06:40Z"
+}

@@ -4,7 +4,7 @@ require 'spec_helper'
 require 'tempfile'
 
 RSpec.describe CovLoupe::CoverageCLI do
-  let(:fixture_root) { File.dirname(FIXTURE_PROJECT1_RESULTSET_PATH, 2) }
+  let(:fixture_root) { File.dirname(FIXTURE_PROJECT1_COVERAGE_PATH, 2) }
 
   # Windows refuses to delete a temporary directory while a file handle inside it
   # remains open, so we ensure the logger (and its file) are closed after each use.
@@ -339,9 +339,9 @@ RSpec.describe CovLoupe::CoverageCLI do
     ].each do |tc|
       it "warns about missing timestamps with real fixture data in #{tc[:desc]}" do
         no_timestamp_fixture = File.expand_path('../fixtures/project_no_timestamp', __dir__)
-        no_timestamp_resultset = File.join(no_timestamp_fixture, 'coverage', '.resultset.json')
+        no_timestamp_coverage_file = File.join(no_timestamp_fixture, 'coverage', 'coverage.json')
 
-        args = ['--root', no_timestamp_fixture, '--resultset', no_timestamp_resultset]
+        args = ['--root', no_timestamp_fixture, '--coverage-file', no_timestamp_coverage_file]
         args += ['--format', tc[:format]] if tc[:format] != 'table'
 
         stdout, stderr, _status = run_cli_with_status(*args)

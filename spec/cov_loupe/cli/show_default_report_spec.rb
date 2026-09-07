@@ -8,7 +8,7 @@ RSpec.describe CovLoupe::CoverageCLI do
 
   before do
     cli.config.root = root
-    cli.config.resultset = FIXTURE_PROJECT1_RESULTSET_PATH
+    cli.config.coverage_file = FIXTURE_PROJECT1_COVERAGE_PATH
     cli.config.raise_on_stale = false
     cli.config.tracked_globs = nil
   end

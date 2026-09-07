@@ -5,7 +5,7 @@
 ## Prerequisites
 
 - **Ruby >= 3.2** (required by the `mcp` dependency)
-- SimpleCov-generated `.resultset.json` file in your project
+- SimpleCov >= 1.0 and the `coverage/coverage.json` it generates
 
 ## Quick Install
 
@@ -77,7 +77,7 @@ If you don't have coverage data yet:
 bundle exec rspec  # or your test command
 
 # Verify coverage file exists
-ls -l coverage/.resultset.json
+ls -l coverage/coverage.json
 
 # Now test cov-loupe
 cov-loupe

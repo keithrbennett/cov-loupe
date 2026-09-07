@@ -10,7 +10,7 @@ RSpec.describe CovLoupe::Commands::RawCommand do
 
   before do
     cli_context.config.root = root
-    cli_context.config.resultset = FIXTURE_PROJECT1_RESULTSET_PATH
+    cli_context.config.coverage_file = FIXTURE_PROJECT1_COVERAGE_PATH
     cli_context.config.format = :table
   end
 

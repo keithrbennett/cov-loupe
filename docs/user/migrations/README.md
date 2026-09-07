@@ -4,6 +4,7 @@ Upgrade guides for major version changes in cov-loupe.
 
 ## Available Guides
 
+- [Migrating to v7](MIGRATING_TO_V7.md) - Upgrade from v6.x to v7.x
 - [Migrating to v6](MIGRATING_TO_V6.md) - Upgrade from v5.x to v6.x
 - [Migrating to v5](MIGRATING_TO_V5.md) - Upgrade from v4.x to v5.x
 - [Migrating to v4](MIGRATING_TO_V4.md) - Upgrade from v3.x to v4.x

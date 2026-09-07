@@ -11,4 +11,4 @@ Single-file tools (`summary`, `raw`, `detailed`, `uncovered`) call `CoverageLine
 Precompute a normalized-key index once per resolver (or per cached model data). Use that index for O(1) lookups while preserving ambiguity detection when multiple original keys normalize to the same value.
 
 ### Why this matters
-Large resultsets or frequent interactive queries can feel sluggish due to repeated normalization and full-map scans. Indexing would improve responsiveness without changing output semantics.
+Large coverage files or frequent interactive queries can feel sluggish due to repeated normalization and full-map scans. Indexing would improve responsiveness without changing output semantics.

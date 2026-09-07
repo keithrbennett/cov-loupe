@@ -36,7 +36,10 @@ Gem::Specification.new do |spec|
   # argument-validation failures as top-level JSON-RPC errors. Since 0.15, those failures are
   # tools/call results with isError: true, which is cov-loupe's documented response contract.
   spec.add_dependency 'mcp', '>= 0.15', '< 2.0'
-  spec.add_dependency 'simplecov', '>= 0.21', '< 2.0'
+  # cov-loupe reads coverage.json, which SimpleCov writes from 1.0.0 on. Declaring the
+  # dependency keeps a host project from resolving an older SimpleCov that only
+  # writes .resultset.json, which cov-loupe no longer reads.
+  spec.add_dependency 'simplecov', '>= 1.0', '< 2.0'
   spec.metadata['rubygems_mfa_required'] = 'true'
 
   spec.post_install_message = <<~MESSAGE

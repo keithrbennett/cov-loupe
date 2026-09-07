@@ -9,7 +9,7 @@ When the MCP server integration isn't working or available, LLMs can use the `co
 The `cov-loupe` CLI provides all the same functionality as the MCP tools:
 - JSON output via `-fJ` flag for machine-readable responses
 - Same coverage data: summaries, uncovered lines, detailed per-line data, project-wide tables
-- Same configuration options: custom resultset paths, staleness checking, etc.
+- Same configuration options: custom coverage file paths, staleness checking, etc.
 
 ## Sample Prompt for Users
 

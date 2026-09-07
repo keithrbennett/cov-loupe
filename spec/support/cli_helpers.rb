@@ -42,7 +42,7 @@ module CLITestHelpers
 
   private def fixture_cli_args(*argv)
     args = argv.flatten
-    fixture_root = File.dirname(FIXTURE_PROJECT1_RESULTSET_PATH, 2)
+    fixture_root = File.dirname(FIXTURE_PROJECT1_COVERAGE_PATH, 2)
 
     unless args.any? do |arg|
       arg == '--root' || arg.start_with?('--root=') || arg.start_with?('-R')
@@ -51,9 +51,9 @@ module CLITestHelpers
     end
 
     unless args.any? do |arg|
-      arg == '--resultset' || arg.start_with?('--resultset=') || arg.start_with?('-r')
+      arg == '--coverage-file' || arg.start_with?('--coverage-file=') || arg.start_with?('-c')
     end
-      args = ['--resultset', FIXTURE_PROJECT1_RESULTSET_PATH] + args
+      args = ['--coverage-file', FIXTURE_PROJECT1_COVERAGE_PATH] + args
     end
 
     args

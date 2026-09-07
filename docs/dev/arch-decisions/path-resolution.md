@@ -9,11 +9,11 @@
 
 ### Context
 
-SimpleCov's `.resultset.json` files contain file paths as keys in the coverage data hash. These paths are typically absolute paths from the machine where tests were run. Different operating systems use different path separators:
+SimpleCov's coverage files contain file paths as keys in the coverage data hash. Depending on the SimpleCov version these are project-relative or absolute paths from the machine where tests were run. Different operating systems use different path separators:
 - Unix/Linux/macOS: `/`
 - Windows: `\` (backslash)
 
-Early versions of cov-loupe included path normalization logic that converted backslashes to forward slashes, enabling cross-platform path matching. This was motivated by a theoretical use case: analyzing a `.resultset.json` file generated on one OS (e.g., Windows) on a different OS (e.g., Linux/macOS).
+Early versions of cov-loupe included path normalization logic that converted backslashes to forward slashes, enabling cross-platform path matching. This was motivated by a theoretical use case: analyzing a coverage file generated on one OS (e.g., Windows) on a different OS (e.g., Linux/macOS).
 
 Upon closer examination, this cross-OS scenario is unrealistic for several reasons:
 
@@ -30,7 +30,7 @@ Upon closer examination, this cross-OS scenario is unrealistic for several reaso
 
 ### Decision
 
-**Do not support analyzing `.resultset.json` files across different operating systems.**
+**Do not support analyzing coverage files across different operating systems.**
 
 Specifically:
 - Normalize backslashes to forward slashes on Windows only
@@ -50,7 +50,7 @@ Specifically:
 - **Honest API** – We don't promise cross-OS compatibility we can't fully deliver
 
 **Trade-offs:**
-- Users cannot analyze Windows `.resultset.json` files on Linux/macOS or vice versa
+- Users cannot analyze Windows coverage files on Linux/macOS or vice versa
     - This is acceptable because this scenario is impractical anyway
     - Users who encounter this should re-run tests in their current environment
 

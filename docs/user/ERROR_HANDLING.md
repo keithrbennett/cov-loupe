@@ -47,7 +47,7 @@ Available exception classes:
 - `CovLoupe::FileNotFoundError` - File does not exist on disk (subclass of `FileError`)
 - `CovLoupe::FilePermissionError` - File permission denied (subclass of `FileError`)
 - `CovLoupe::CoverageDataError` - Invalid or missing coverage data
-- `CovLoupe::ResultsetNotFoundError` - Coverage data file not found (subclass of `CoverageDataError`)
+- `CovLoupe::CoverageFileNotFoundError` - Coverage data file not found (subclass of `FileError`)
 - `CovLoupe::CoverageDataStaleError` - Coverage data is stale (when `raise_on_stale: true`)
 - `CovLoupe::CoverageDataProjectStaleError` - Project-wide staleness error
 - `CovLoupe::ConfigurationError` - Configuration problems
@@ -92,7 +92,7 @@ The error message is detailed and includes:
 
 - File and Coverage times (UTC and local) and line counts
 - A delta indicating how much newer the file is than coverage
-- The absolute path to the `.resultset.json` used
+- The absolute path to the `coverage.json` used
 
 **Example excerpt:**
 
@@ -102,5 +102,5 @@ Coverage data stale: Coverage data appears stale for lib/foo.rb
 File     - time: 2025-09-16T14:03:22Z (local 2025-09-16T07:03:22-07:00), lines: 226
 Coverage - time: 2025-09-15T21:11:09Z (local 2025-09-15T14:11:09-07:00), lines: 220
 Delta    - file is +123s newer than coverage
-Resultset - /path/to/project/coverage/.resultset.json
+Coverage file - /path/to/project/coverage/coverage.json
 ```

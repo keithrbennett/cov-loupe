@@ -129,7 +129,7 @@ This allows:
 - `project_totals` excludes any stale files ("missing", "newer", "length_mismatch", "error") from aggregate counts.
 - Totals include explicit `with_coverage`/`without_coverage` breakdowns so callers can reconcile what was omitted.
 - The `without_coverage` payload includes counts for three categories:
-    - `missing_from_coverage`: Tracked files that have no coverage data in the resultset
+    - `missing_from_coverage`: Tracked files that have no coverage data in the coverage file
     - `unreadable`: Files that exist but could not be read (e.g., due to permission errors, I/O issues, or staleness check failures)
     - `skipped`: Files that were skipped during list processing due to coverage data errors (e.g., malformed entries)
 - The `unreadable` count is populated from `list_result['unreadable_files']`, which is collected during staleness checking when files exist but cannot be accessed or validated.
@@ -145,15 +145,15 @@ checker.check_project!(coverage_map)  # with tracked_globs: ['lib/**/*.rb']
 
 This helps teams ensure new files are included in test runs.
 
-#### Resultset Path Consistency (SimpleCov)
+#### Coverage Path Consistency (SimpleCov)
 
-SimpleCov can emit mixed path forms for the same file when resultsets are merged across suites or
+SimpleCov can emit mixed path forms for the same file when results are merged across suites or
 environments (for example, absolute vs relative paths, or different roots). This is a SimpleCov
 data consistency risk, not a cov-loupe behavior. Downstream tools that normalize paths may treat
 one entry as overriding another when multiple keys map to the same absolute path.
 
 **Guidance:** Keep `SimpleCov.root` consistent across all suites and avoid manual path rewriting
-before merging resultsets.
+before merging results.
 
 ### Consequences
 

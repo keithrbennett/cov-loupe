@@ -35,7 +35,7 @@ RSpec.describe CovLoupe::StalenessChecker do
         timestamp
       end
 
-      checker = described_class.new(root: tmpdir, resultset: nil, mode: 'error',
+      checker = described_class.new(root: tmpdir, coverage_file: nil, mode: 'error',
         tracked_globs: nil, timestamp: ts)
 
       details = checker.send(:compute_file_staleness_details, file, coverage_lines)
@@ -143,7 +143,7 @@ RSpec.describe CovLoupe::StalenessChecker do
 
   context 'when file stat calls raise errors' do
     let(:checker) do
-      described_class.new(root: tmpdir, resultset: nil, mode: 'error',
+      described_class.new(root: tmpdir, coverage_file: nil, mode: 'error',
         tracked_globs: nil, timestamp: Time.now)
     end
 
@@ -179,7 +179,7 @@ RSpec.describe CovLoupe::StalenessChecker do
 
   context 'when handling safe_count_lines edge cases' do
     let(:checker) do
-      described_class.new(root: tmpdir, resultset: nil, mode: 'off', timestamp: Time.now)
+      described_class.new(root: tmpdir, coverage_file: nil, mode: 'off', timestamp: Time.now)
     end
 
     it 'returns 0 for non-existent file' do
@@ -246,7 +246,7 @@ RSpec.describe CovLoupe::StalenessChecker do
 
   context 'when rel has path prefix mismatches' do
     let(:checker) do
-      described_class.new(root: tmpdir, resultset: nil, mode: 'off', timestamp: Time.now)
+      described_class.new(root: tmpdir, coverage_file: nil, mode: 'off', timestamp: Time.now)
     end
 
     it 'returns relative path for files within project root' do
@@ -258,7 +258,7 @@ RSpec.describe CovLoupe::StalenessChecker do
       # Test the specific ArgumentError scenario: absolute path vs relative root
       # This simulates the bug scenario where coverage data has absolute paths
       # but the root is somehow processed as relative (edge case)
-      checker_with_relative_root = described_class.new(root: '.', resultset: nil, mode: 'off',
+      checker_with_relative_root = described_class.new(root: '.', coverage_file: nil, mode: 'off',
         timestamp: Time.now)
 
       # Override the @root to simulate the edge case where it's still relative
@@ -282,7 +282,7 @@ RSpec.describe CovLoupe::StalenessChecker do
       # Test the specific case where rel() would crash with ArgumentError
       # Instead of testing the full check_file! flow, just test that rel() works
 
-      checker_with_edge_case = described_class.new(root: '.', resultset: nil, mode: 'off',
+      checker_with_edge_case = described_class.new(root: '.', coverage_file: nil, mode: 'off',
         timestamp: Time.now)
       checker_with_edge_case.instance_variable_set(:@root, './subdir')
 
@@ -309,7 +309,7 @@ RSpec.describe CovLoupe::StalenessChecker do
 
     it 'allows project-level staleness checks to handle coverage outside root' do
       future_time = Time.at(Time.now.to_i + 3600)
-      checker_with_relative_root = described_class.new(root: '.', resultset: nil, mode: 'error',
+      checker_with_relative_root = described_class.new(root: '.', coverage_file: nil, mode: 'error',
         timestamp: future_time)
       checker_with_relative_root.instance_variable_set(:@root, './subdir')
 
@@ -336,7 +336,7 @@ RSpec.describe CovLoupe::StalenessChecker do
         FileUtils.mkdir_p(File.dirname(file))
         File.write(file, "puts 'hello'\n")
 
-        checker = described_class.new(root: tracked_root, resultset: nil, mode: :error,
+        checker = described_class.new(root: tracked_root, coverage_file: nil, mode: :error,
           tracked_globs: ['lib/**/*.rb'], timestamp: Time.now.to_i)
 
         expect do
@@ -354,7 +354,7 @@ RSpec.describe CovLoupe::StalenessChecker do
       write_file(file, %w[a b])
       coverage_map = { file => [1, 1] }
 
-      checker = described_class.new(root: tmpdir, resultset: nil, mode: :error,
+      checker = described_class.new(root: tmpdir, coverage_file: nil, mode: :error,
         timestamp: 0)
 
       details = checker.check_project!(coverage_map)
@@ -368,7 +368,7 @@ RSpec.describe CovLoupe::StalenessChecker do
     let(:checker_mode) { :off }
     let(:checker_timestamp) { Time.now.to_i }
     let(:checker) do
-      described_class.new(root: tmpdir, resultset: nil, mode: checker_mode,
+      described_class.new(root: tmpdir, coverage_file: nil, mode: checker_mode,
         timestamp: checker_timestamp)
     end
 
@@ -395,7 +395,7 @@ RSpec.describe CovLoupe::StalenessChecker do
       create_test_file(test_file, "puts 'test'\n")
       coverage_map = { test_file => [1] }
       checker_with_valid_timestamp = described_class.new(
-        root: tmpdir, resultset: nil, mode: :off, timestamp: Time.at(100)
+        root: tmpdir, coverage_file: nil, mode: :off, timestamp: Time.at(100)
       )
 
       allow(File).to receive(:mtime).with(test_file)
@@ -420,7 +420,7 @@ RSpec.describe CovLoupe::StalenessChecker do
     it 'raises error in error mode when unreadable files are present' do
       create_test_file(test_file, "line1\nline2\n")
       coverage_map = { test_file => [1, 1] }
-      error_checker = described_class.new(root: tmpdir, resultset: nil, mode: :error,
+      error_checker = described_class.new(root: tmpdir, coverage_file: nil, mode: :error,
         timestamp: Time.now.to_i)
 
       allow(File).to receive(:read).with(test_file)
@@ -446,7 +446,7 @@ RSpec.describe CovLoupe::StalenessChecker do
 
   context 'when performing additional checks' do
     it 'flags deleted files present only in coverage' do
-      checker = described_class.new(root: tmpdir, resultset: nil,
+      checker = described_class.new(root: tmpdir, coverage_file: nil,
         mode: :error, timestamp: Time.now.to_i)
       coverage_map = {
         File.join(tmpdir, 'lib', 'does_not_exist_anymore.rb') => { 'lines' => [1] },
@@ -457,7 +457,7 @@ RSpec.describe CovLoupe::StalenessChecker do
     end
 
     it 'does not raise for empty tracked_globs when nothing else is stale' do
-      checker = described_class.new(root: tmpdir, resultset: nil,
+      checker = described_class.new(root: tmpdir, coverage_file: nil,
         mode: :error,
         tracked_globs: [], timestamp: Time.now.to_i)
       expect do

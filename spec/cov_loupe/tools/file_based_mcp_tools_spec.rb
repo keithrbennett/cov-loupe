@@ -39,7 +39,7 @@ RSpec.describe 'File-based MCP Tools' do
           config[:tool_class].call(
             path:           'lib/example.rb',
             root:           '.',
-            resultset:      FIXTURE_PROJECT1_RESULTSET_PATH,
+            coverage_file:  FIXTURE_PROJECT1_COVERAGE_PATH,
             server_context: server_context
           )
         end.not_to raise_error

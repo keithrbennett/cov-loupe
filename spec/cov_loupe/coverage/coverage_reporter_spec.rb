@@ -120,16 +120,16 @@ RSpec.describe CovLoupe::CoverageReporter do
     end
   end
 
-  describe 'with custom resultset path' do
+  describe 'with custom coverage_file path' do
     let(:custom_root) { File.expand_path('spec/fixtures/project_custom_coverage') }
-    let(:custom_resultset) { File.join(custom_root, 'custom_coverage/.resultset.json') }
+    let(:custom_coverage_file) { File.join(custom_root, 'custom_coverage/coverage.json') }
 
-    it 'uses custom resultset path when provided' do
+    it 'uses custom coverage_file path when provided' do
       result = described_class.report(
-        threshold: 80,
-        count:     5,
-        root:      custom_root,
-        resultset: custom_resultset
+        threshold:     80,
+        count:         5,
+        root:          custom_root,
+        coverage_file: custom_coverage_file
       )
 
       expect(result).to be_a(String)
@@ -138,13 +138,13 @@ RSpec.describe CovLoupe::CoverageReporter do
       expect(result).to include('lib/foo.rb')  # ~33% coverage
     end
 
-    it 'uses custom resultset path without root' do
-      # When root is not specified, it should use the directory containing the resultset
+    it 'uses custom coverage_file path without root' do
+      # When root is not specified, it should use the directory containing the coverage_file
       Dir.chdir(custom_root) do
         result = described_class.report(
-          threshold: 80,
-          count:     5,
-          resultset: 'custom_coverage/.resultset.json'
+          threshold:     80,
+          count:         5,
+          coverage_file: 'custom_coverage/coverage.json'
         )
 
         expect(result).to be_a(String)

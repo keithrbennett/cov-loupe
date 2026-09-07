@@ -7,7 +7,7 @@
 require_relative '../lib/cov_loupe'
 
 def check_coverage_data
-  unless File.exist?('spec/fixtures/project1/coverage/.resultset.json')
+  unless File.exist?('spec/fixtures/project1/coverage/coverage.json')
     puts <<~DOC
       Error: Coverage data file not found.
 
@@ -33,8 +33,8 @@ def output_examples
   # Initialize coverage model
   # Using the built-in coverage data from running specs
   model = CovLoupe::CoverageModel.new(
-    root:      '.',
-    resultset: 'spec/fixtures/project1/coverage'
+    root:          '.',
+    coverage_file: 'spec/fixtures/project1/coverage'
   )
 
   puts <<~DOC

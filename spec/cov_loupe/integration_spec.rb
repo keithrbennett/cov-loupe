@@ -7,11 +7,11 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
 
   let(:project_root) { (FIXTURES_DIR / 'project1').to_s }
   let(:coverage_dir) { File.join(project_root, 'coverage') }
-  let(:resultset_path) { File.join(coverage_dir, '.resultset.json') }
+  let(:coverage_file_path) { File.join(coverage_dir, 'coverage.json') }
 
   describe 'End-to-End Coverage Model Functionality' do
     it 'loads fixture coverage and surfaces core stats across APIs' do
-      model = CovLoupe::CoverageModel.new(root: project_root, resultset: coverage_dir)
+      model = CovLoupe::CoverageModel.new(root: project_root, coverage_file: coverage_dir)
 
       aggregate_failures 'Model stats verification' do
         list_result = model.list
@@ -118,19 +118,19 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
         [
           {
             tool:          CovLoupe::Tools::FileCoverageSummaryTool,
-            args:          { path: 'lib/foo.rb', root: project_root, resultset: coverage_dir },
+            args:          { path: 'lib/foo.rb', root: project_root, coverage_file: coverage_dir },
             expected_keys: %w[file summary],
             check:         ->(data) { expect(data['summary']).to include('covered' => 2, 'total' => 3) },
           },
           {
             tool:          CovLoupe::Tools::FileCoverageRawTool,
-            args:          { path: 'lib/foo.rb', root: project_root, resultset: coverage_dir },
+            args:          { path: 'lib/foo.rb', root: project_root, coverage_file: coverage_dir },
             expected_keys: %w[file lines],
             check:         ->(data) { expect(data['lines']).to eq([nil, nil, 1, 0, nil, 2]) },
           },
           {
             tool:          CovLoupe::Tools::ProjectCoverageTool,
-            args:          { root: project_root, resultset: coverage_dir },
+            args:          { root: project_root, coverage_file: coverage_dir },
             expected_keys: %w[files counts],
             check:         ->(data) {
               expect(data['files'].length).to eq(2)
@@ -139,7 +139,7 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
           },
           {
             tool:          CovLoupe::Tools::ProjectCoverageTool,
-            args:          { root: project_root, resultset: coverage_dir, format: 'table' },
+            args:          { root: project_root, coverage_file: coverage_dir, format: 'table' },
             expected_keys: [],
             check:         ->(text) { expect(text).to include('lib/foo.rb') },
             is_text:       true,
@@ -163,7 +163,7 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
           CovLoupe::Tools::FileCoverageSummaryTool.call(
             path:           'lib/foo.rb',
             root:           project_root,
-            resultset:      coverage_dir,
+            coverage_file:  coverage_dir,
             server_context: server_context
           )
         )
@@ -172,7 +172,7 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
           CovLoupe::Tools::FileCoverageDetailedTool.call(
             path:           'lib/foo.rb',
             root:           project_root,
-            resultset:      coverage_dir,
+            coverage_file:  coverage_dir,
             server_context: server_context
           )
         )
@@ -186,17 +186,17 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
 
   describe 'Error Handling Integration' do
     it 'handles missing files gracefully' do
-      model = CovLoupe::CoverageModel.new(root: project_root, resultset: coverage_dir)
+      model = CovLoupe::CoverageModel.new(root: project_root, coverage_file: coverage_dir)
 
       expect do
         model.summary_for('lib/nonexistent.rb')
       end.to raise_error(CovLoupe::FileError, /No coverage entry found/)
     end
 
-    it 'handles invalid resultset paths gracefully' do
+    it 'handles invalid coverage_file paths gracefully' do
       expect do
-        CovLoupe::CoverageModel.new(root: project_root, resultset: '/nonexistent/path')
-      end.to raise_error(CovLoupe::ResultsetNotFoundError, /Specified resultset not found/)
+        CovLoupe::CoverageModel.new(root: project_root, coverage_file: '/nonexistent/path')
+      end.to raise_error(CovLoupe::CoverageFileNotFoundError, /Specified coverage file not found/)
     end
 
     it 'provides helpful CLI error messages' do
@@ -208,7 +208,7 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
   end
 
   describe 'Multi-File Scenarios' do
-    let(:model) { CovLoupe::CoverageModel.new(root: project_root, resultset: coverage_dir) }
+    let(:model) { CovLoupe::CoverageModel.new(root: project_root, coverage_file: coverage_dir) }
 
     it 'handles mixed coverage levels and project reports' do
       aggregate_failures do
@@ -239,7 +239,7 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
     let(:default_env) do
       {
         'RUBY_LIB'       => lib_path,
-        'COV_LOUPE_OPTS' => "--mode mcp --root #{project_root} --resultset #{coverage_dir} " \
+        'COV_LOUPE_OPTS' => "--mode mcp --root #{project_root} --coverage-file #{coverage_dir} " \
                             '--log-file /dev/null',
       }
     end
@@ -278,19 +278,19 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
           {
             id:    3,
             name:  'file_coverage_summary',
-            args:  { path: 'lib/foo.rb', root: project_root, resultset: coverage_dir },
+            args:  { path: 'lib/foo.rb', root: project_root, coverage_file: coverage_dir },
             check: ->(data) { expect(data['summary']).to include('covered' => 2, 'total' => 3) },
           },
           {
             id:    4,
             name:  'project_coverage',
-            args:  { root: project_root, resultset: coverage_dir },
+            args:  { root: project_root, coverage_file: coverage_dir },
             check: ->(data) { expect(data['files'].length).to eq(2) },
           },
           {
             id:    5,
             name:  'file_uncovered_lines',
-            args:  { path: 'lib/foo.rb', root: project_root, resultset: coverage_dir },
+            args:  { path: 'lib/foo.rb', root: project_root, coverage_file: coverage_dir },
             check: ->(data) { expect(data['uncovered']).to eq([4]) },
           },
         ].each do |tc|
@@ -340,9 +340,9 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
         80,
         'project_validate',
         {
-          code:      '->(m) { true }',
-          root:      project_root,
-          resultset: coverage_dir,
+          code:          '->(m) { true }',
+          root:          project_root,
+          coverage_file: coverage_dir,
         }
       )
       result = expect_jsonrpc_result(resp, 80)
@@ -359,9 +359,9 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
           8,
           'file_coverage_summary',
           {
-            path:      'nonexistent.rb',
-            root:      project_root,
-            resultset: coverage_dir,
+            path:          'nonexistent.rb',
+            root:          project_root,
+            coverage_file: coverage_dir,
           }
         )
         expect_jsonrpc_tool_error(file_error_resp, 8)
@@ -370,8 +370,8 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
           11,
           'project_coverage_totals',
           {
-            root:      project_root,
-            resultset: File.join(coverage_dir, 'nonexistent.resultset.json'),
+            root:          project_root,
+            coverage_file: File.join(coverage_dir, 'nonexistentcoverage.json'),
           }
         )
         expect_jsonrpc_tool_error(project_scope_error_resp, 11)
@@ -380,9 +380,9 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
           9,
           'project_validate',
           {
-            code:      'this is not valid ruby {',
-            root:      project_root,
-            resultset: coverage_dir,
+            code:          'this is not valid ruby {',
+            root:          project_root,
+            coverage_file: coverage_dir,
           }
         )
         expect_jsonrpc_tool_error(project_error_resp, 9)
@@ -411,13 +411,13 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
           {
             id:        202,
             name:      'project_coverage',
-            arguments: { root: project_root, resultset: coverage_dir, format: 'invalid_format' },
+            arguments: { root: project_root, coverage_file: coverage_dir, format: 'invalid_format' },
           },
           # invalid sort_order enum
           {
             id:        203,
             name:      'project_coverage',
-            arguments: { root: project_root, resultset: coverage_dir, sort_order: 'invalid' },
+            arguments: { root: project_root, coverage_file: coverage_dir, sort_order: 'invalid' },
           },
         ].each do |request|
           response = jsonrpc_tool_call(request[:id], request[:name], request[:arguments])
@@ -434,15 +434,15 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
         temp_project_root = File.join(tmp_root, 'project1')
         FileUtils.cp_r(project_root, temp_project_root)
 
-        temp_resultset = File.join(temp_project_root, 'coverage', '.resultset.json')
-        resultset = JSON.parse(File.read(temp_resultset))
-        resultset['RSpec']['timestamp'] = 1000
-        File.write(temp_resultset, JSON.generate(resultset))
+        temp_coverage_file = File.join(temp_project_root, 'coverage', 'coverage.json')
+        document = JSON.parse(File.read(temp_coverage_file))
+        document['meta']['timestamp'] = Time.at(1000).utc.iso8601
+        File.write(temp_coverage_file, JSON.generate(document))
 
         temp_coverage_dir = File.join(temp_project_root, 'coverage')
         stale_env = {
           'RUBY_LIB'       => lib_path,
-          'COV_LOUPE_OPTS' => "--mode mcp --root #{temp_project_root} --resultset #{temp_coverage_dir} " \
+          'COV_LOUPE_OPTS' => "--mode mcp --root #{temp_project_root} --coverage-file #{temp_coverage_dir} " \
                               '--log-file /dev/null',
         }
 
@@ -452,7 +452,7 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
             arguments: {
               path:           'lib/foo.rb',
               root:           temp_project_root,
-              resultset:      temp_coverage_dir,
+              coverage_file:  temp_coverage_dir,
               raise_on_stale: true,
             },
           }),
@@ -486,7 +486,7 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
 
       req = jsonrpc_request(10, 'tools/call', { name: 'version', arguments: {} })
       res = run_mcp_json(req, env: default_env.merge('COV_LOUPE_OPTS' =>
-        "--mode mcp --root #{project_root} --resultset #{coverage_dir} --log-file stderr"))
+        "--mode mcp --root #{project_root} --coverage-file #{coverage_dir} --log-file stderr"))
       expect_jsonrpc_result(parse_jsonrpc(res[:stdout]), 10)
 
       # Prohibits stdout logging

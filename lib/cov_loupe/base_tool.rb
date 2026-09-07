@@ -36,9 +36,10 @@ module CovLoupe
                      '(defaults to current workspace).',
         default:     '.',
       },
-      resultset:      {
+      coverage_file:  {
         type:        'string',
-        description: 'Path to the SimpleCov .resultset.json file (absolute or relative to root).',
+        description: 'Path to the SimpleCov coverage.json file, or to a directory ' \
+                     'containing one (absolute or relative to root).',
       },
       raise_on_stale: {
         type:        'boolean',
@@ -244,7 +245,7 @@ module CovLoupe
 
     # Default configuration when no context or explicit params are provided
     def self.default_model_options
-      { root: '.', resultset: nil, raise_on_stale: false, tracked_globs: [] }
+      { root: '.', coverage_file: nil, raise_on_stale: false, tracked_globs: [] }
     end
 
     # Resolves output_chars from tool parameter or server context.

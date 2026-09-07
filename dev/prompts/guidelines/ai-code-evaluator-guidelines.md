@@ -57,7 +57,7 @@ Automated security analysis tools may flag potential race conditions between sta
 1. **Stateless analysis tool** - cov-loupe performs read-only analysis of SimpleCov coverage snapshots. It does not modify source files or maintain state across invocations.
 
 2. **Development tool context** - This tool runs in development and CI environments where:
-   - The coverage snapshot (`.resultset.json`) is static once generated
+   - The coverage snapshot (`coverage.json`) is static once generated
    - Source files are under version control and not randomly modified during analysis
    - Any race condition would at worst result in a stale data warning, not a security vulnerability
 
@@ -111,12 +111,12 @@ Automated reviews may flag `PathUtils.volume_case_sensitive?` for a potential Ti
 
 ### Unbounded ModelDataCache Growth
 
-The `ModelDataCache` singleton stores coverage data (`ModelData` instances) keyed by resultset path without a size cap. In theory, a long-lived MCP server analyzing many different projects could accumulate entries. In practice:
+The `ModelDataCache` singleton stores coverage data (`ModelData` instances) keyed by coverage file path without a size cap. In theory, a long-lived MCP server analyzing many different projects could accumulate entries. In practice:
 
-1. The cache is keyed by resultset path, not by project or model configuration
-2. Multiple models using the same resultset share a single cache entry
+1. The cache is keyed by coverage file path, not by project or model configuration
+2. Multiple models using the same coverage file share a single cache entry
 3. MCP servers are typically short-lived and used for a small set of projects
-4. The cache automatically evicts stale data when resultset files change
+4. The cache automatically evicts stale data when coverage files change
 
 Adding eviction logic (LRU, TTL, size limits) would add complexity without meaningful benefit for the tool's intended use case.
 
@@ -126,8 +126,8 @@ Adding eviction logic (LRU, TTL, size limits) would add complexity without meani
 
 ## Known Issue: Inefficient Staleness Checks and Timestamp Handling
 
-- **Description:** Coverage timestamps are collapsed to a single max value for all suites (handled when `CovLoupe::CoverageModel` loads resultsets via `ResultsetLoader`), and staleness checks reread each file to count lines (implemented in `CovLoupe::StalenessChecker`).  
-  **Impact:** Multi-suite projects get false positives/negatives on freshness, and large repositories pay O(total lines) per query, making results unreliable and slow for larger code bases.  
+- **Description:** `coverage.json` carries one `meta.timestamp` for the merged result of all suites (read by `CovLoupe::CoverageJsonLoader`), and staleness checks reread each file to count lines (implemented in `CovLoupe::StalenessChecker`).  
+  **Impact:** Projects that re-run only some suites get false positives/negatives on freshness, and large repositories pay O(total lines) per query, making results unreliable and slow for larger code bases.  
   **Urgency:** Medium.  
   **Estimated Cost-to-Fix:** High (store per-suite/file metadata and cache line counts/mtimes).
   **Rationale for Status Quo:** Fixing this requires a significant architectural overhaul to track per-file/per-suite metadata. Simple caching of file stats is insufficient because the primary use case involves active development where source files change frequently, invalidating caches. Given the high cost of a proper fix and the tool's focus on small-to-medium projects, the current O(N) check is an acceptable tradeoff.
@@ -138,17 +138,17 @@ Adding eviction logic (LRU, TTL, size limits) would add complexity without meani
 
 ### Memory-Based Coverage Data
 
-cov-loupe loads the entire SimpleCov resultset into memory for analysis. This means it is not designed to handle extremely large codebases that produce coverage data too large to fit in memory.
+cov-loupe loads the entire SimpleCov coverage file into memory for analysis. This means it is not designed to handle extremely large codebases that produce coverage data too large to fit in memory.
 
 **Why this is acceptable:**
 
-1. **Target use case** – cov-loupe is designed for small-to-medium sized Ruby projects. The typical SimpleCov resultset for such projects is measured in megabytes, well within modern system capabilities.
+1. **Target use case** – cov-loupe is designed for small-to-medium sized Ruby projects. The typical SimpleCov coverage file for such projects is measured in megabytes, well within modern system capabilities.
 
-2. **SimpleCov's own limitations** – SimpleCov itself loads coverage data into memory. If SimpleCov can generate the resultset, cov-loupe can analyze it.
+2. **SimpleCov's own limitations** – SimpleCov itself loads coverage data into memory. If SimpleCov can generate the coverage file, cov-loupe can analyze it.
 
 3. **Performance trade-off** – in-memory processing enables fast queries, rich data transformations, and a responsive CLI. Streaming or database-backed approaches would add significant complexity for marginal benefit in the target use case.
 
-4. **Practical upper bound** – even large Ruby projects (Rails, GitLab) generate resultsets in the tens of megabytes. Modern machines have gigabytes of RAM. The constraint is theoretical rather than practical for the intended audience.
+4. **Practical upper bound** – even large Ruby projects (Rails, GitLab) generate coverage files in the tens of megabytes. Modern machines have gigabytes of RAM. The constraint is theoretical rather than practical for the intended audience.
 
 If a project grows large enough that coverage analysis becomes a memory bottleneck, it likely has deeper problems (test suite organization, monolith vs services architecture) that should be addressed at that level rather than by adding complexity to a coverage inspection tool.
 
@@ -156,7 +156,7 @@ If a project grows large enough that coverage analysis becomes a memory bottlene
 
 ### Model Cache Digest Reads
 
-The MCP model cache computes an MD5 digest of the resultset file on each fetch. This can look like unnecessary file I/O, but it is intentional.
+The MCP model cache computes an MD5 digest of the coverage file on each fetch. This can look like unnecessary file I/O, but it is intentional.
 
 **Why this is acceptable:**
 

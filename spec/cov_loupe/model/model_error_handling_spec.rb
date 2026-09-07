@@ -7,29 +7,20 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
   let(:root) { (FIXTURES_DIR / 'project1').to_s }
 
   describe 'initialization error handling' do
-    let(:valid_resultset) do
-      {
-        'RSpec'     => {
-          'coverage' => {
-            "lib/foo\x00bar.rb" => { 'lines' => [1, 0, 1] }, # Path with NULL byte
-          },
-        },
-        'timestamp' => 1000,
-      }
+    let(:valid_coverage_file) do
+      coverage_json_document(timestamp: 1000, coverage: {
+        "lib/foo\x00bar.rb" => { 'lines' => [1, 0, 1] }, # Path with NULL byte
+      })
     end
-    let(:malformed_resultset) do
-      {
-        'RSpec' => {
-          'coverage' => 'not_a_hash', # Should be a hash, not a string
-        },
-      }
+    let(:malformed_coverage_file) do
+      coverage_json_document(coverage: {}).merge('coverage' => 'not_a_hash') # Should be a hash
     end
 
     it 'raises CoverageDataError with message detail for invalid JSON format' do
       mock_json_parse_error(JSON::ParserError.new('unexpected token'))
 
       expect do
-        described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH)
+        described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH)
       end.to raise_error(CovLoupe::CoverageDataError) do |error|
         expect(error.message).to include('Invalid coverage data format', 'unexpected token')
       end
@@ -39,53 +30,37 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
       mock_file_read_error(Errno::EACCES.new('Permission denied'))
 
       expect do
-        described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH)
+        described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH)
       end.to raise_error(CovLoupe::FilePermissionError) do |error|
         expect(error.message).to include('Permission denied reading coverage data')
       end
     end
 
-    it 'raises CoverageDataError when resultset structure is invalid (TypeError)' do
-      mock_resultset_data(malformed_resultset)
+    it 'raises CoverageDataError when the coverage map is not a hash' do
+      mock_coverage_data(malformed_coverage_file)
 
       expect do
-        described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH)
-      end.to raise_error(CovLoupe::CoverageDataError) do |error|
-        expect(error.message).to include('Invalid coverage data structure')
-      end
+        described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH)
+      end.to raise_error(CovLoupe::CoverageDataError, /Not a SimpleCov coverage.json document/)
     end
 
-    it 'raises CoverageDataError when resultset structure causes NoMethodError' do
-      # Create a resultset structure that will cause NoMethodError
-      malformed_resultset = {
-        'RSpec' => {
-          'coverage' => {
-            'file.rb' => nil, # Should have 'lines' key, this will cause NoMethodError
-          },
-        },
-      }
-
-      allow(File).to receive(:open).and_call_original
-      allow(File).to receive(:open).with(end_with('.resultset.json'), 'r')
-        .and_return(StringIO.new(malformed_resultset.to_json))
-
+    it 'raises CoverageDataError when the coverage map causes NoMethodError' do
       broken_map = instance_double('CoverageMap')
       allow(broken_map).to receive(:each)
         .and_raise(NoMethodError.new("undefined method `upcase' for nil:NilClass"))
-      allow(CovLoupe::ResultsetLoader).to receive(:load).and_return(
-        CovLoupe::ResultsetLoader::Result.new(coverage_map: broken_map,
-          timestamp: 0, suite_names: ['RSpec'])
+      allow(CovLoupe::CoverageJsonLoader).to receive(:load).and_return(
+        CovLoupe::CoverageJsonLoader::Result.new(coverage_map: broken_map, timestamp: 0)
       )
 
       expect do
-        described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH)
+        described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH)
       end.to raise_error(CovLoupe::CoverageDataError) do |error|
         expect(error.message).to include('Invalid coverage data structure')
       end
     end
 
     it 'raises CoverageDataError when path operations raise ArgumentError' do
-      mock_resultset_data(valid_resultset, path_matcher: end_with('.resultset.json'))
+      mock_coverage_data(valid_coverage_file, path_matcher: end_with('coverage.json'))
 
       # Mock File.absolute_path to raise ArgumentError when called with the problematic path
       # But allow it to work for the root initialization
@@ -95,7 +70,7 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
       )
 
       expect do
-        described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH)
+        described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH)
       end.to raise_error(CovLoupe::CoverageDataError) do |error|
         expect(error.message).to include('Invalid path in coverage data', 'null byte')
       end
@@ -105,7 +80,7 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
       mock_json_parse_error(JSON::ParserError.new('765: unexpected token at line 3, column 5'))
 
       expect do
-        described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH)
+        described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH)
       end.to raise_error(CovLoupe::CoverageDataError) do |error|
         # Verify the original error message details are preserved
         expect(error.message).to include('765', 'line 3')
@@ -114,14 +89,14 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
 
     it 'provides helpful error for permission issues with file path' do
       # Mock to raise permission error with actual file path
-      resultset_path = File.join(root, 'coverage', '.resultset.json')
-      mock_file_read_error(Errno::EACCES.new(resultset_path), path_matcher: resultset_path)
+      coverage_file_path = File.join(root, 'coverage', 'coverage.json')
+      mock_file_read_error(Errno::EACCES.new(coverage_file_path), path_matcher: coverage_file_path)
 
       expect do
-        described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH)
+        described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH)
       end.to raise_error(CovLoupe::FilePermissionError) do |error|
         expect(error.message).to include('Permission denied')
-        expect(error.message).to include('.resultset.json')
+        expect(error.message).to include('coverage.json')
       end
     end
   end
@@ -131,65 +106,60 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
       mock_json_parse_error(JSON::ParserError.new('unexpected character at byte 42'))
 
       expect do
-        described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH)
+        described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH)
       end.to raise_error(CovLoupe::CoverageDataError) do |error|
         expect(error.message).to include('unexpected character at byte 42')
       end
     end
 
     it 'includes original exception message for Errno::EACCES' do
-      resultset_path = File.join(root, 'coverage', '.resultset.json')
-      mock_file_read_error(Errno::EACCES.new(resultset_path), path_matcher: resultset_path)
+      coverage_file_path = File.join(root, 'coverage', 'coverage.json')
+      mock_file_read_error(Errno::EACCES.new(coverage_file_path), path_matcher: coverage_file_path)
 
       expect do
-        described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH)
+        described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH)
       end.to raise_error(CovLoupe::FilePermissionError) do |error|
-        expect(error.message).to include(resultset_path)
+        expect(error.message).to include(coverage_file_path)
       end
     end
 
     it 'includes original exception message for TypeError' do
-      # Create a malformed resultset that will cause TypeError
-      malformed_resultset = {
-        'RSpec' => {
-          'coverage' => 'not_a_hash', # This will cause TypeError
-        },
-      }
-      mock_resultset_data(malformed_resultset)
+      allow(CovLoupe::CoverageJsonLoader).to receive(:load)
+        .and_raise(TypeError.new('no implicit conversion of String into Integer'))
 
       expect do
-        described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH)
+        described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH)
       end.to raise_error(CovLoupe::CoverageDataError) do |error|
-        expect(error.message).to include('Invalid coverage data structure', 'suite "RSpec"')
+        expect(error.message).to include('Invalid coverage data structure', 'no implicit conversion')
       end
     end
   end
 
-  describe 'RuntimeError handling from find_resultset' do
+  describe 'RuntimeError handling from find_coverage_file' do
     [
       {
-        desc:      'wraps RuntimeError as UnknownError',
-        error_msg: 'Specified resultset not found: /nonexistent/path/.resultset.json',
-        resultset: '/nonexistent/path',
+        desc:          'wraps RuntimeError as UnknownError',
+        error_msg:     'Specified coverage file not found: /nonexistent/path/coverage.json',
+        coverage_file: '/nonexistent/path',
       },
       {
-        desc:      'wraps RuntimeError with generic messages',
-        error_msg: 'Something went wrong during resultset lookup',
-        resultset: FIXTURE_PROJECT1_RESULTSET_PATH,
+        desc:          'wraps RuntimeError with generic messages',
+        error_msg:     'Something went wrong during coverage file lookup',
+        coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH,
       },
       {
-        desc:      'wraps RuntimeError without "resultset" in message',
-        error_msg: 'Some completely unrelated runtime error',
-        resultset: FIXTURE_PROJECT1_RESULTSET_PATH,
+        desc:          'wraps RuntimeError without "coverage file" in message',
+        error_msg:     'Some completely unrelated runtime error',
+        coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH,
       },
     ].each do |tc|
       it tc[:desc] do
-        allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:find_resultset).and_raise(
+        allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:find_coverage_file).and_raise(
           RuntimeError.new(tc[:error_msg])
         )
 
         expect do
-          described_class.new(root: root, resultset: tc[:resultset])
+          described_class.new(root: root, coverage_file: tc[:coverage_file])
         end.to raise_error(CovLoupe::UnknownError) do |error|
           expect(error.message).to include(tc[:error_msg])
         end
@@ -200,7 +170,7 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
   describe 'list error handling' do
     let(:logger) { nil }
     let(:model) do
-      described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH, logger: logger)
+      described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH, logger: logger)
     end
     let(:foo_path) { File.expand_path('lib/foo.rb', root) }
 
@@ -300,10 +270,10 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
           File.join(root, 'lib', 'bar.rb') => { 'lines' => [nil, nil, 0, 0, 1] },
         }
       end
-      let(:resultset_timestamp) { VERY_OLD_TIMESTAMP }
+      let(:coverage_file_timestamp) { VERY_OLD_TIMESTAMP }
 
       before do
-        mock_resultset_with_timestamp(root, resultset_timestamp, coverage: accurate_coverage)
+        mock_coverage_with_timestamp(root, coverage_file_timestamp, coverage: accurate_coverage)
         stub_foo_entry_fallback
       end
 
@@ -327,7 +297,7 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
       end
 
       context 'when coverage is current' do
-        let(:resultset_timestamp) { Time.now.to_i }
+        let(:coverage_file_timestamp) { Time.now.to_i }
 
         it 'raises data error if no staleness issues when raise_on_stale is true' do
           # This test verifies that data errors ARE raised when there are no staleness issues
@@ -346,7 +316,7 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
     it 'allows FileError from lookup_lines to propagate with detailed message' do
       # Resolver raises FileError with detailed messages (e.g., basename collisions, not found)
       # The model should let these propagate to preserve helpful diagnostics
-      model = described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH)
+      model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH)
 
       # Mock lookup_lines to raise FileError with a detailed message
       error_message = 'Multiple coverage entries match basename foo.rb: lib/foo.rb, test/foo.rb'
@@ -365,7 +335,7 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
     %i[summary_for raw_for uncovered_for detailed_for].each do |method|
       describe 'with raise_on_stale: false (default)' do
         it "#{method} returns coverage payload for deleted files" do
-          model = described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH)
+          model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH)
 
           # Mock lookup_lines to return coverage data
           allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:lookup_lines)
@@ -404,7 +374,7 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
 
       describe 'with raise_on_stale: true (strict mode)' do
         it "#{method} raises FileNotFoundError for deleted files" do
-          model = described_class.new(root: root, resultset: FIXTURE_PROJECT1_RESULTSET_PATH)
+          model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH)
 
           allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:lookup_lines)
             .and_return([1, 0, 1, nil])
@@ -421,20 +391,15 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
   end
 
   describe 'malformed coverage line array validation' do
-    let(:temp_resultset) { File.join(Dir.tmpdir, 'malformed_resultset.json') }
+    let(:temp_coverage_file) { File.join(Dir.tmpdir, 'malformed_coverage_file.json') }
     let(:foo_path) { File.join(root, 'lib', 'foo.rb') }
     let(:bar_path) { File.join(root, 'lib', 'bar.rb') }
 
-    def create_malformed_resultset(malformed_lines_for_foo)
-      {
-        'RSpec' => {
-          'timestamp' => Time.now.to_i,
-          'coverage'  => {
-            foo_path => { 'lines' => malformed_lines_for_foo },
-            bar_path => { 'lines' => [nil, nil, 0, 0, 1] },
-          },
-        },
-      }
+    def create_malformed_coverage_file(malformed_lines_for_foo)
+      coverage_json_document(timestamp: Time.now.to_i, coverage: {
+        foo_path => { 'lines' => malformed_lines_for_foo },
+        bar_path => { 'lines' => [nil, nil, 0, 0, 1] },
+      })
     end
 
     before do
@@ -444,15 +409,15 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
     end
 
     after do
-      FileUtils.rm_f(temp_resultset)
+      FileUtils.rm_f(temp_coverage_file)
     end
 
     %i[summary_for raw_for uncovered_for detailed_for].each do |method|
       it "#{method} raises CoverageDataError for malformed lines arrays with string elements" do
-        malformed_resultset = create_malformed_resultset([1, 0, 'invalid', 2])
-        File.write(temp_resultset, JSON.generate(malformed_resultset))
+        malformed_coverage_file = create_malformed_coverage_file([1, 0, 'invalid', 2])
+        File.write(temp_coverage_file, JSON.generate(malformed_coverage_file))
 
-        model = described_class.new(root: root, resultset: temp_resultset)
+        model = described_class.new(root: root, coverage_file: temp_coverage_file)
 
         expect do
           model.send(method, 'lib/foo.rb')
@@ -462,10 +427,10 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
       end
 
       it "#{method} raises CoverageDataError for malformed lines arrays with float elements" do
-        malformed_resultset = create_malformed_resultset([1, 0, 3.14, 2])
-        File.write(temp_resultset, JSON.generate(malformed_resultset))
+        malformed_coverage_file = create_malformed_coverage_file([1, 0, 3.14, 2])
+        File.write(temp_coverage_file, JSON.generate(malformed_coverage_file))
 
-        model = described_class.new(root: root, resultset: temp_resultset)
+        model = described_class.new(root: root, coverage_file: temp_coverage_file)
 
         expect do
           model.send(method, 'lib/foo.rb')
@@ -473,10 +438,10 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
       end
 
       it "#{method} raises CoverageDataError for malformed lines arrays with boolean elements" do
-        malformed_resultset = create_malformed_resultset([1, 0, true, 2])
-        File.write(temp_resultset, JSON.generate(malformed_resultset))
+        malformed_coverage_file = create_malformed_coverage_file([1, 0, true, 2])
+        File.write(temp_coverage_file, JSON.generate(malformed_coverage_file))
 
-        model = described_class.new(root: root, resultset: temp_resultset)
+        model = described_class.new(root: root, coverage_file: temp_coverage_file)
 
         expect do
           model.send(method, 'lib/foo.rb')
@@ -484,10 +449,10 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
       end
 
       it "#{method} raises CoverageDataError for malformed lines arrays with hash elements" do
-        malformed_resultset = create_malformed_resultset([1, 0, { 'key' => 'val' }, 2])
-        File.write(temp_resultset, JSON.generate(malformed_resultset))
+        malformed_coverage_file = create_malformed_coverage_file([1, 0, { 'key' => 'val' }, 2])
+        File.write(temp_coverage_file, JSON.generate(malformed_coverage_file))
 
-        model = described_class.new(root: root, resultset: temp_resultset)
+        model = described_class.new(root: root, coverage_file: temp_coverage_file)
 
         expect do
           model.send(method, 'lib/foo.rb')
@@ -495,10 +460,10 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
       end
 
       it "#{method} raises CoverageDataError for malformed lines arrays with array elements" do
-        malformed_resultset = create_malformed_resultset([1, 0, [1, 2], 2])
-        File.write(temp_resultset, JSON.generate(malformed_resultset))
+        malformed_coverage_file = create_malformed_coverage_file([1, 0, [1, 2], 2])
+        File.write(temp_coverage_file, JSON.generate(malformed_coverage_file))
 
-        model = described_class.new(root: root, resultset: temp_resultset)
+        model = described_class.new(root: root, coverage_file: temp_coverage_file)
 
         expect do
           model.send(method, 'lib/foo.rb')
@@ -507,10 +472,10 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
     end
 
     it 'list raises CoverageDataError when raise_on_stale is true and file has malformed lines' do
-      malformed_resultset = create_malformed_resultset([1, 0, 'invalid', 2])
-      File.write(temp_resultset, JSON.generate(malformed_resultset))
+      malformed_coverage_file = create_malformed_coverage_file([1, 0, 'invalid', 2])
+      File.write(temp_coverage_file, JSON.generate(malformed_coverage_file))
 
-      model = described_class.new(root: root, resultset: temp_resultset)
+      model = described_class.new(root: root, coverage_file: temp_coverage_file)
 
       expect do
         model.list(raise_on_stale: true)
@@ -524,10 +489,10 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
       expect(mock_logger).to receive(:safe_log)
         .with(a_string_including('Skipping coverage row')).at_least(:once)
 
-      malformed_resultset = create_malformed_resultset([1, 0, 'invalid', 2])
-      File.write(temp_resultset, JSON.generate(malformed_resultset))
+      malformed_coverage_file = create_malformed_coverage_file([1, 0, 'invalid', 2])
+      File.write(temp_coverage_file, JSON.generate(malformed_coverage_file))
 
-      model = described_class.new(root: root, resultset: temp_resultset, logger: mock_logger)
+      model = described_class.new(root: root, coverage_file: temp_coverage_file, logger: mock_logger)
 
       list_result = model.list(raise_on_stale: false)
       files = list_result['files']

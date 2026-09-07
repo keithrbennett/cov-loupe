@@ -1,0 +1,175 @@
+{
+  "$schema": "https://raw.githubusercontent.com/simplecov-ruby/simplecov/main/schemas/coverage-v1.0.schema.json",
+  "meta": {
+    "schema_version": "1.0",
+    "simplecov_version": "1.0.0",
+    "command_name": "DemoSuite",
+    "timestamp": "2025-12-10T12:51:26.000Z"
+  },
+  "coverage": {
+    "app/models/user.rb": {
+      "lines": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        1,
+        1,
+        null,
+        null,
+        1,
+        1,
+        null,
+        null,
+        1,
+        1,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    "app/models/order.rb": {
+      "lines": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        1,
+        1,
+        1,
+        null,
+        null,
+        1,
+        1,
+        null,
+        null,
+        1,
+        0,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    "app/controllers/orders_controller.rb": {
+      "lines": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        1,
+        1,
+        null,
+        null,
+        1,
+        1,
+        null,
+        null,
+        0,
+        0,
+        null,
+        null,
+        1,
+        1,
+        0,
+        null,
+        1,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    "lib/payments/processor.rb": {
+      "lines": [
+        null,
+        null,
+        null,
+        null,
+        1,
+        1,
+        null,
+        null,
+        1,
+        0,
+        null,
+        1,
+        null,
+        null,
+        null
+      ]
+    },
+    "lib/payments/refund_service.rb": {
+      "lines": [
+        null,
+        null,
+        null,
+        null,
+        1,
+        1,
+        null,
+        null,
+        1,
+        0,
+        null,
+        0,
+        null,
+        null,
+        null
+      ]
+    },
+    "lib/ops/jobs/report_job.rb": {
+      "lines": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        1,
+        1,
+        null,
+        null,
+        1,
+        0,
+        null,
+        1,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    "lib/api/client.rb": {
+      "lines": [
+        null,
+        null,
+        null,
+        null,
+        1,
+        1,
+        1,
+        null,
+        null,
+        1,
+        1,
+        null,
+        null,
+        1,
+        0,
+        null,
+        null,
+        null,
+        null,
+        1,
+        1,
+        null
+      ]
+    }
+  },
+  "groups": {},
+  "errors": {}
+}

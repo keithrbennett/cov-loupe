@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 
 module CovLoupe
-  VERSION = '6.1.0' unless defined?(CovLoupe::VERSION)
+  VERSION = '7.0.0.pre.1' unless defined?(CovLoupe::VERSION)
 end

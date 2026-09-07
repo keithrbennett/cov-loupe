@@ -42,13 +42,13 @@ module CovLoupe::Tools
     description 'What this tool does'
     input_schema(**input_schema_def)
 
-    def self.call(path:, root: nil, resultset: nil, raise_on_stale: nil,
+    def self.call(path:, root: nil, coverage_file: nil, raise_on_stale: nil,
       error_mode: 'log', server_context:)
       with_error_handling('MyTool', error_mode: error_mode) do
         model = create_model(
           server_context: server_context,
           root: root,
-          resultset: resultset,
+          coverage_file: coverage_file,
           raise_on_stale: raise_on_stale
         )
         data = model.my_method_for(path)

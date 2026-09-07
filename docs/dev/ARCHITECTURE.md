@@ -12,8 +12,8 @@ cov-loupe is organized around a single coverage data model that feeds three deli
 
 ## Coverage Data Pipeline
 
-1. **Resultset discovery** – The tool locates the `.resultset.json` file by checking a series of default paths or by using a path specified by the user. For a detailed explanation of the configuration options, see the [Configuring the Resultset](../index.md#configuring-the-resultset) section in the main README.
-2. **Parsing and normalization** – `CoverageModel` loads the chosen resultset once, extracts all test suites that expose `coverage` data (e.g., "RSpec", "Minitest"), merges them if multiple suites exist, and maps all file keys to absolute paths anchored at the configured project root. Timestamps are cached for staleness checks. SimpleCov is a runtime dependency and is loaded when multi-suite merges are required.
+1. **Coverage file discovery** – `CoverageFilePathResolver` locates SimpleCov's `coverage.json` at `coverage/coverage.json` under the project root, or at a path specified by the user (a file, or a directory containing it). For a detailed explanation of the configuration options, see the [Configuring the Coverage File](../index.md#configuring-the-coverage-file) section in the main README.
+2. **Parsing and normalization** – `CoverageJsonLoader` reads the chosen `coverage.json` once (the document is already merged across suites, and `"ignored"` line markers become `nil`), and `CoverageRepository` maps all file keys to absolute paths anchored at the configured project root. The `meta.timestamp` is kept for staleness checks. SimpleCov itself is never loaded.
 3. **Path relativizing** – `PathRelativizer` (powered by the centralized `PathUtils` module) produces relative paths for user-facing payloads without mutating the canonical data. Tool responses pass through `CoverageModel#relativize` before leaving the process.
 4. **Derived metrics** – `CoverageCalculator.summary`, `CoverageCalculator.uncovered`, and `CoverageCalculator.detailed` compute coverage stats from the raw `lines` arrays. `CoverageModel` exposes `summary_for`, `uncovered_for`, `detailed_for`, and `raw_for` helpers that wrap these calculations.
 5. **Staleness detection** – `StalenessChecker` compares source mtimes/line counts to coverage metadata. CLI flags and MCP arguments can promote warnings to hard failures (`--raise-on-stale true`) or simply mark rows as stale for display.
@@ -22,7 +22,7 @@ cov-loupe is organized around a single coverage data model that feeds three deli
 
 ### CLI (`CovLoupe::CoverageCLI`)
 
-- Builds on Ruby’s `OptionParser`, with global options such as `--resultset`, `--raise-on-stale`, `-fJ`, and `--source` modes.
+- Builds on Ruby’s `OptionParser`, with global options such as `--coverage-file`, `--raise-on-stale`, `-fJ`, and `--source` modes.
 - Subcommands (`list`, `summary`, `raw`, `uncovered`, `detailed`, `totals`, `validate`) translate to calls on `CoverageModel`.
 - **Subcommand Abbreviations** – Frequent CLI users can use single-character abbreviations for most subcommands: `l` (list), `s` (summary), `u` (uncovered), `d` (detailed), `r` (raw), `t` (totals), and `v` (validate). `version` has no abbreviation to avoid confusion with the common `-v` flag.
 - Uses `ErrorHandlerFactory.for_cli` to convert unexpected exceptions into friendly user messages while honoring `--error-mode`.
@@ -31,7 +31,7 @@ cov-loupe is organized around a single coverage data model that feeds three deli
 ### MCP Server (`CovLoupe::MCPServer`)
 
 - Assembles a list of tool classes and mounts them in `MCP::Server` using STDIO transport.
-- Relies on the same core model; each MCP request creates a fresh `CoverageModel` instance, but the underlying coverage data is cached in a global `ModelDataCache` singleton. The cache automatically reloads when the resultset file changes (validated via file signature: mtime, subsecond mtime, size, inode, and MD5 digest).
+- Relies on the same core model; each MCP request creates a fresh `CoverageModel` instance, but the underlying coverage data is cached in a global `ModelDataCache` singleton. The cache automatically reloads when the coverage file changes (validated via file signature: mtime, subsecond mtime, size, inode, and MD5 digest).
 - Configuration precedence in MCP: per-request JSON parameters override CLI arguments passed when the server starts (including `COV_LOUPE_OPTS`), which in turn override built-in defaults.
 - Tool-execution failures delegate to `BaseTool.handle_mcp_error`, which uses the MCP-specific handler and emits `MCP::Tool::Response` objects flagged with `isError: true`. Argument-validation failures are returned with `isError: true` by the MCP SDK before cov-loupe runs; protocol- or dispatch-level failures such as unknown tools remain JSON-RPC errors.
 
@@ -102,7 +102,7 @@ Comprehensive test coverage exists:
 ## Configuration Surface
 
 - **Environment defaults** – `COV_LOUPE_OPTS` applies baseline CLI flags before parsing the actual command line.
-- **Resultset overrides** – The location of the `.resultset.json` file can be specified via CLI options or in the MCP configuration. See [Configuring the Resultset](../index.md#configuring-the-resultset) for details.
+- **Coverage file overrides** – The location of `coverage.json` can be specified via CLI options or in the MCP configuration. See [Configuring the Coverage File](../index.md#configuring-the-coverage-file) for details.
 - **Tracked globs** – Glob patterns (e.g., `lib/**/*.rb`) that specify which files should have coverage. When provided, cov-loupe alerts you if any matching files are missing from the coverage data, helping catch untested files that were added to the project but never executed during test runs.
 - **Output character mode** – Global control of ASCII vs Unicode output via `-O/--output-chars` (CLI) or `output_chars` parameter (MCP). Default mode auto-detects terminal UTF-8 capability.
 - **Colorized source** – CLI-only flags (`--source`, `--context-lines`, `--color`) enhance human-readable reports when working locally.
