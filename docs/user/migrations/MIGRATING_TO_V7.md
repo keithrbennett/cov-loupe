@@ -97,7 +97,7 @@ rescue CovLoupe::CoverageFileNotFoundError
 **Migration:**
 
 - Replace every name in the left column with the one on the right. `--resultset` on the command line (including in `COV_LOUPE_OPTS` and MCP server `args`) now fails as an unknown option; the `resultset` MCP tool argument is rejected as an unexpected argument.
-- `CoverageJsonLoader.load(path:)` returns a `Result` with `coverage_map` and `timestamp` only. The `suite_names` member of the old `ResultsetLoader::Result` is gone, since `coverage.json` is a single merged result.
+- `CoverageJsonLoader.load(resolved_coverage_file:)` returns a `Result` with `coverage_map` and `timestamp` only. The `suite_names` member of the old `ResultsetLoader::Result` is gone, since `coverage.json` is a single merged result.
 
 ## Short Options `-c` and `-n` Reassigned {#short-options--c-and--n-reassigned}
 

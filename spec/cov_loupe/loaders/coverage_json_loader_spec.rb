@@ -9,7 +9,7 @@ RSpec.describe CovLoupe::CoverageJsonLoader do
   def write_and_load(dir, document)
     path = File.join(dir, 'coverage.json')
     File.write(path, JSON.generate(document))
-    described_class.load(path: path, logger: logger)
+    described_class.load(resolved_coverage_file: path, logger: logger)
   end
 
   describe '.load' do
@@ -92,7 +92,9 @@ RSpec.describe CovLoupe::CoverageJsonLoader do
     end
 
     it 'raises Errno::ENOENT when the file does not exist' do
-      expect { described_class.load(path: '/nonexistent/path/coverage.json', logger: logger) }
+      expect do
+        described_class.load(resolved_coverage_file: '/nonexistent/path/coverage.json', logger: logger)
+      end
         .to raise_error(Errno::ENOENT)
     end
 
@@ -107,7 +109,8 @@ RSpec.describe CovLoupe::CoverageJsonLoader do
           path = File.join(dir, 'coverage.json')
           File.write(path, tc[:content])
 
-          expect { described_class.load(path: path, logger: logger) }.to raise_error(JSON::ParserError)
+          expect { described_class.load(resolved_coverage_file: path, logger: logger) }
+            .to raise_error(JSON::ParserError)
         end
       end
     end

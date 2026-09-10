@@ -23,21 +23,22 @@ module CovLoupe
     # Sentinel the JSON formatter writes for lines excluded from coverage.
     IGNORED_LINE = 'ignored'
 
-    def self.load(path:, logger: nil)
+    def self.load(resolved_coverage_file:, logger: nil)
       logger ||= CovLoupe.logger
-      new(path: path, logger: logger).load
+      new(resolved_coverage_file: resolved_coverage_file, logger: logger).load
     end
 
-    def initialize(path:, logger:)
-      @path = path
+    def initialize(resolved_coverage_file:, logger:)
+      @resolved_coverage_file = resolved_coverage_file
       @logger = logger
     end
 
     def load
-      raw = JSON.parse(File.read(@path))
+      raw = JSON.parse(File.read(@resolved_coverage_file))
       unless raw.is_a?(Hash) && raw['coverage'].is_a?(Hash) && raw['meta'].is_a?(Hash)
         raise CoverageDataError,
-          "Not a SimpleCov coverage.json document (expected top-level \"coverage\" and \"meta\"): #{@path}"
+          'Not a SimpleCov coverage.json document (expected top-level "coverage" and "meta"): ' \
+          "#{@resolved_coverage_file}"
       end
 
       Result.new(

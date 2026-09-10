@@ -18,17 +18,17 @@ module CovLoupe
     #
     # @attr_reader coverage_map [Hash] A map of absolute file paths to coverage data.
     # @attr_reader timestamp [Integer] The coverage run timestamp in epoch seconds.
-    # @attr_reader coverage_file_path [String] The resolved absolute path to the coverage file.
+    # @attr_reader resolved_coverage_file [String] The resolved absolute path to the coverage file.
     class CoverageRepository
-      attr_reader :coverage_map, :timestamp, :coverage_file_path
+      attr_reader :coverage_map, :timestamp, :resolved_coverage_file
 
-      def initialize(root:, coverage_file_path: nil, logger: nil)
+      def initialize(root:, coverage_file: nil, logger: nil)
         @root = root
         @logger = logger || CovLoupe.logger
 
         begin
           # 1. Locate the file
-          @coverage_file_path = resolve_coverage_file_path(coverage_file_path)
+          @resolved_coverage_file = resolve_coverage_file(coverage_file)
 
           # 2. Load the data
           loaded_data = load_data
@@ -46,12 +46,12 @@ module CovLoupe
         end
       end
 
-      private def resolve_coverage_file_path(path_arg)
-        Resolvers::ResolverHelpers.find_coverage_file(@root, coverage_file: path_arg)
+      private def resolve_coverage_file(coverage_file)
+        Resolvers::ResolverHelpers.find_coverage_file(@root, coverage_file: coverage_file)
       end
 
       private def load_data
-        CoverageJsonLoader.load(path: @coverage_file_path, logger: @logger)
+        CoverageJsonLoader.load(resolved_coverage_file: @resolved_coverage_file, logger: @logger)
       end
 
       # Detects volume case sensitivity from the project root directory.

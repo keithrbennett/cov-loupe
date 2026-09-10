@@ -6,7 +6,7 @@ require 'fileutils'
 require 'tmpdir'
 
 RSpec.describe CovLoupe::Repositories::CoverageRepository do
-  subject(:repo) { described_class.new(root: root, coverage_file_path: coverage_file_arg, logger: logger) }
+  subject(:repo) { described_class.new(root: root, coverage_file: coverage_file_arg, logger: logger) }
 
   let(:root) { (FIXTURES_DIR / 'project1').to_s }
   let(:coverage_file_arg) { nil }
@@ -52,7 +52,7 @@ RSpec.describe CovLoupe::Repositories::CoverageRepository do
     after { FileUtils.remove_entry(tmp_root) }
 
     it 'discovers coverage/coverage.json without an explicit path' do
-      expect(repo.coverage_file_path).to eq(File.join(tmp_root, 'coverage', 'coverage.json'))
+      expect(repo.resolved_coverage_file).to eq(File.join(tmp_root, 'coverage', 'coverage.json'))
     end
 
     it 'normalizes the project-relative key to an absolute project path' do
@@ -87,7 +87,7 @@ RSpec.describe CovLoupe::Repositories::CoverageRepository do
 
       it 'resolves coverage_file path' do
         expected = File.join(root, 'coverage', 'coverage.json')
-        expect(repo.coverage_file_path).to eq(expected)
+        expect(repo.resolved_coverage_file).to eq(expected)
       end
     end
 

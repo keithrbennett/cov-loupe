@@ -95,9 +95,9 @@ module CovLoupe
 
     private def load_data(coverage_file_path, root, logger)
       repo = Repositories::CoverageRepository.new(
-        root:               root,
-        coverage_file_path: coverage_file_path,
-        logger:             logger || CovLoupe.logger
+        root:          root,
+        coverage_file: coverage_file_path,
+        logger:        logger || CovLoupe.logger
       )
 
       ModelData.new(
