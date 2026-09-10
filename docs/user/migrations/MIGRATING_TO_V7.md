@@ -22,7 +22,7 @@ cov-loupe now reads a single input: `coverage.json`, the output of SimpleCov's J
 **Rationale:**
 
 - `.resultset.json` is an undocumented internal file with no compatibility promises; `coverage.json` is the interface SimpleCov documents for downstream tools.
-- Supporting both formats required two loaders, content-based format detection, a format-first search order that had to be explained, and a runtime SimpleCov load to merge multi-suite resultsets. Reading one format removes all of that.
+- Reading `coverage.json` instead of `.resultset.json` removes the runtime SimpleCov load (needed to merge multi-suite resultsets) and the code that adapted to `.resultset.json`'s historical shape variations. Supporting *both* would have added a second loader and a format-precedence rule to document, so v7 switches outright.
 
 **Before (v6.x):**
 
