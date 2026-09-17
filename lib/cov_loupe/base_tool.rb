@@ -114,6 +114,7 @@ module CovLoupe
     # @param error_mode [Symbol, String] Error handling mode (:off, :log, :debug)
     # @param output_chars [Symbol, String, nil] Output character mode for error messages
     def self.with_error_handling(tool_name, error_mode:, output_chars: :default)
+      CovLoupe.logger.raise_if_initialization_failed!
       yield
     rescue => e
       handle_mcp_error(e, tool_name, error_mode: error_mode, output_chars: output_chars)
@@ -148,10 +149,20 @@ module CovLoupe
       # Normalize to a CovLoupe::Error so we can handle/log uniformly
       normalized = error.is_a?(CovLoupe::Error) \
         ? error : error_handler.convert_standard_error(error)
-      log_mcp_error(normalized, tool_name, error_handler)
+      logging_error = begin
+        log_mcp_error(normalized, tool_name, error_handler)
+        nil
+      rescue LoggingError => e
+        e
+      end
 
       # Convert error message to ASCII if needed
       error_message = normalized.user_friendly_message
+      # The preflight check and the logging attempt can raise the same cached
+      # LoggingError object; do not append that identical error twice.
+      if logging_error && !logging_error.equal?(normalized)
+        error_message += "\n#{logging_error.user_friendly_message}"
+      end
       error_message = OutputChars.convert(error_message, output_chars || :default)
       # Flag the failure in the tool result via isError: true so MCP clients
       # can distinguish failed tool calls from successful ones, rather than

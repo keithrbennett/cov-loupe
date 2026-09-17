@@ -10,6 +10,7 @@ workflows.
 - [Examples](EXAMPLES.md) – common coverage workflows
 - [Advanced Usage](ADVANCED_USAGE.md) – coverage file paths, staleness, predicates
 - [Error Handling](ERROR_HANDLING.md) – modes, exceptions, logging
+- [Logging](LOGGING.md) – log targets, initialization probes, and file creation
 - [MCP Integration](MCP_INTEGRATION.md) – configuring AI assistants
 - [CLI Fallback for LLMs](CLI_FALLBACK_FOR_LLMS.md) – when MCP isn't available
 - [Library API](LIBRARY_API.md) – embedding the gem in Ruby code

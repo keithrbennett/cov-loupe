@@ -43,42 +43,88 @@ RSpec.describe 'Logging Fallback Behavior' do
         CovLoupe::Logger.new(target: 'STDOUT', mode: :mcp)
       end.to raise_error(CovLoupe::ConfigurationError, /stdout.*not permitted/)
     end
+
+    it 'accepts stderr case-insensitively and with surrounding whitespace' do
+      logger = CovLoupe::Logger.new(target: '  STDERR  ', mode: :library)
+      io = StringIO.new
+      stdlib_logger = ::Logger.new(io)
+      logger.instance_variable_set(:@logger, stdlib_logger)
+
+      logger.info('stderr message')
+
+      expect(io.string).to include('stderr message')
+      expect(File.exist?('  STDERR  ')).to be false
+    end
   end
 
   describe 'CovLoupe.logger error handling' do
+    it 'does not leave a persistent log file until the first message is logged' do
+      logger = CovLoupe::Logger.new(target: nil, mode: :library)
+
+      expect(logger.instance_variable_get(:@logger)).to be_nil
+      expect(File.exist?('cov_loupe.log')).to be false
+
+      logger.info('first message')
+
+      expect(File.exist?('cov_loupe.log')).to be true
+      expect(File.read('cov_loupe.log')).to include('first message')
+    end
+
+    it 'probes an existing log file in append mode without truncating it' do
+      File.write('existing.log', "previous content\n")
+
+      logger = CovLoupe::Logger.new(target: 'existing.log', mode: :library)
+
+      expect(logger.instance_variable_get(:@init_error)).to be_nil
+      expect(File.read('existing.log')).to eq("previous content\n")
+    end
+
+    it 'handles a race where another process creates the target during probing' do
+      path = File.expand_path('race.log')
+      open_flags = File::WRONLY | File::CREAT | File::EXCL
+      allow(File).to receive(:exist?).with(path).and_return(false)
+      allow(File).to receive(:open).with(path, open_flags, 0o644).and_raise(Errno::EEXIST)
+      allow(File).to receive(:open).with(path, 'a').and_call_original
+
+      logger = CovLoupe::Logger.new(target: 'race.log', mode: :library)
+
+      expect(logger.instance_variable_get(:@init_error)).to be_nil
+    end
+
     context 'when file logging fails in library mode' do
-      it 'writes to fallback file but suppresses stderr' do
-        context = CovLoupe.create_context(
-          error_handler: CovLoupe::ErrorHandlerFactory.for_library,
-          log_target:    '/invalid/path/that/does/not/exist.log',
-          mode:          :library
-        )
-
-        stderr_output = nil
-        CovLoupe.with_context(context) do
-          _result, _out, stderr_output = capture_io do
-            CovLoupe.logger.info('test message')
-          end
-        end
-
-        expect(stderr_output).to be_empty
-        expect(File.exist?(fallback_file)).to be true
-        content = File.read(fallback_file)
-        expect(content).to include('MODE:library', 'MSG:test message')
+      it 'raises a logging configuration error during initialization' do
+        expect do
+          CovLoupe.create_context(
+            error_handler: CovLoupe::ErrorHandlerFactory.for_library,
+            log_target:    '/invalid/path/that/does/not/exist.log',
+            mode:          :library
+          )
+        end.to raise_error(CovLoupe::LoggingError, /Unable to use log target/)
       end
     end
 
     context 'when file logging fails in CLI mode' do
-      it 'writes to fallback file and prints warning to stderr exactly once' do
-        context = CovLoupe.create_context(
-          error_handler: CovLoupe::ErrorHandlerFactory.for_cli,
-          log_target:    '/invalid/path/that/does/not/exist.log',
-          mode:          :cli
-        )
+      it 'reports a probe failure immediately at initialization' do
+        stderr_output = capture_stderr do
+          CovLoupe::Logger.new(
+            target: '/invalid/path/that/does/not/exist.log',
+            mode:   :cli
+          )
+        end
 
+        expect(stderr_output).to include('Warning: Configuration error: Unable to use log target')
+        expect(File.exist?(fallback_file)).to be false
+      end
+
+      it 'writes to fallback file and prints each warning type exactly once' do
         stderr_output = nil
-        CovLoupe.with_context(context) do
-          capture_io do
+        capture_io do
+          context = CovLoupe.create_context(
+            error_handler: CovLoupe::ErrorHandlerFactory.for_cli,
+            log_target:    '/invalid/path/that/does/not/exist.log',
+            mode:          :cli
+          )
+          CovLoupe.with_context(context) do
             # First failure
             CovLoupe.logger.info('first failure')
             first_stderr = $stderr.string.dup
@@ -94,8 +140,9 @@ RSpec.describe 'Logging Fallback Behavior' do
 
         # Check stderr
         lines = stderr_output.split("\n")
-        warning_msg = "Warning: Logging failed. See #{fallback_file} for details."
-        expect(lines.count { |l| l.include?(warning_msg) }).to eq(1)
+        warning_msg = 'Warning: Configuration error: Unable to use log target'
+        expect(lines.count { |l| l.include?(warning_msg) }).to eq(2)
+        expect(lines.count { |l| l.include?('See COV-LOUPE-LOG-ERROR.log for details.') }).to eq(1)
 
         # Check fallback file
         expect(File.exist?(fallback_file)).to be true
@@ -105,24 +152,40 @@ RSpec.describe 'Logging Fallback Behavior' do
     end
 
     context 'when file logging fails in MCP server mode' do
-      it 'writes to fallback file but suppresses stderr' do
+      it 'returns a tool error when the logging target is unavailable' do
         context = CovLoupe.create_context(
           error_handler: CovLoupe::ErrorHandlerFactory.for_mcp_server,
           log_target:    '/invalid/path/that/does/not/exist.log',
           mode:          :mcp
         )
 
-        stderr_output = nil
-        CovLoupe.with_context(context) do
-          _result, _out, stderr_output = capture_io do
-            CovLoupe.logger.info('test message')
+        response = CovLoupe.with_context(context) do
+          CovLoupe::BaseTool.with_error_handling('test_tool', error_mode: :log) do
+            raise 'business error'
           end
         end
 
-        expect(stderr_output).to be_empty
+        expect(response).to be_error
+        expect(response.content.first['text']).to include('Unable to use log target')
+      end
+
+      it 'raises a logging configuration error when a write is attempted' do
+        context = CovLoupe.create_context(
+          error_handler: CovLoupe::ErrorHandlerFactory.for_mcp_server,
+          log_target:    '/invalid/path/that/does/not/exist.log',
+          mode:          :mcp
+        )
+
+        expect do
+          CovLoupe.with_context(context) do
+            CovLoupe.logger.info('test message')
+          end
+        end.to raise_error(CovLoupe::LoggingError, /Unable to use log target/)
+
         expect(File.exist?(fallback_file)).to be true
         content = File.read(fallback_file)
         expect(content).to include('MODE:mcp', 'MSG:test message')
+        expect(content.lines.count).to eq(1)
       end
     end
 
@@ -181,11 +244,34 @@ RSpec.describe 'Logging Fallback Behavior' do
         logger.info('test message')
       end
 
-      expect(stderr_output).to include("Warning: Logging failed. See #{fallback_file} for details.")
+      expect(stderr_output).to include('Warning: Configuration error: Unable to use log target')
 
       expect(File.exist?(fallback_file)).to be true
       content = File.read(fallback_file)
       expect(content).to include('MODE:cli', 'ERROR:runtime error', 'MSG:test message')
+    end
+
+    it 'handles a late logger-construction failure in CLI mode' do
+      logger = CovLoupe::Logger.new(target: 'late-cli.log', mode: :cli)
+      allow(logger).to receive(:build_logger).and_raise(Errno::EACCES, 'permission denied')
+
+      stderr_output = capture_stderr { logger.info('late CLI failure') }
+
+      expect(stderr_output).to include(
+        'Warning: Configuration error: Unable to use log target',
+        'See COV-LOUPE-LOG-ERROR.log for details.'
+      )
+      expect(File.read(fallback_file)).to include('MODE:cli', 'MSG:late CLI failure')
+    end
+
+    it 'wraps a late logger-construction failure as LoggingError' do
+      logger = CovLoupe::Logger.new(target: 'late.log', mode: :mcp)
+      allow(logger).to receive(:build_logger).and_raise(Errno::EACCES, 'permission denied')
+
+      expect { logger.info('late failure') }
+        .to raise_error(CovLoupe::LoggingError, /Unable to use log target/)
+      expect { logger.raise_if_initialization_failed! }
+        .to raise_error(CovLoupe::LoggingError, /Unable to use log target/)
     end
   end
 

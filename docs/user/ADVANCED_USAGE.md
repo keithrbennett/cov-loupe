@@ -51,7 +51,7 @@ This lets MCP clients programmatically distinguish a failed tool call from a suc
 
 ### MCP Server Logging
 
-The MCP server logs tool-execution errors and other cov-loupe diagnostics to `cov_loupe.log` in the current directory by default. Argument-validation failures emitted by the MCP SDK before cov-loupe runs do not reach this logger.
+The MCP server logs tool-execution errors and other cov-loupe diagnostics to `cov_loupe.log` in the current directory by default. See the [logging initialization and target testing guide](LOGGING.md#log-file-initialization-and-target-testing) for details about startup probing, append-mode checks, cached failures, and file creation. Argument-validation failures emitted by the MCP SDK before cov-loupe runs do not reach this logger.
 
 To override the default log file location, specify the `--log-file` (or `-l`) argument wherever and however you configure your MCP server. For example, to log to a different file path, include `-l /path/to/logfile.log` in your server configuration. To log to standard error, use `-l stderr`. To disable logging entirely, use `-l :off` (cross-platform alternative to `/dev/null`).
 

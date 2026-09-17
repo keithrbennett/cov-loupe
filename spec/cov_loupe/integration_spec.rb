@@ -500,6 +500,30 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
       expect(res_err[:status].exitstatus).not_to eq(0)
     end
 
+    it 'returns an MCP tool error when the log target fails startup probing' do
+      require 'tmpdir'
+
+      Dir.mktmpdir do |working_directory|
+        Dir.chdir(working_directory) do
+          invalid_target = File.join(working_directory, 'missing', 'server.log')
+          env = default_env.merge('COV_LOUPE_OPTS' =>
+            "--mode mcp --root #{project_root} --coverage-file #{coverage_dir} " \
+            "--log-file #{invalid_target}")
+
+          response = run_mcp_json(jsonrpc_request(301, 'tools/call', {
+            name: 'version', arguments: {}
+          }), env: env)
+          parsed = parse_jsonrpc(response[:stdout])
+
+          expect_jsonrpc_tool_error(parsed, 301)
+          expect(response[:stderr]).to include('Unable to use log target')
+          error_text = parsed.dig('result', 'content', 0, 'text')
+          expect(error_text.scan('Unable to use log target').count).to eq(1)
+          expect(File.exist?('cov_loupe.log')).to be false
+        end
+      end
+    end
+
     it 'handles multiple sequential requests' do
       requests = [
         jsonrpc_request(100, 'tools/list'),

@@ -11,6 +11,7 @@ module CovLoupe
   # Hierarchy:
   #   Error
   #     ├── ConfigurationError     — setup/config problems
+  #     │   └── LoggingError       — logging target setup/write problems
   #     ├── UnknownError           — unclassified exceptions
   #     ├── FileError              — file/path problems
   #     │     ├── FileNotFoundError
@@ -41,6 +42,15 @@ module CovLoupe
   class ConfigurationError < Error
     def user_friendly_message
       "Configuration error: #{message}"
+    end
+  end
+
+  class LoggingError < ConfigurationError
+    attr_reader :target
+
+    def initialize(target, message, original_error = nil)
+      @target = target
+      super("Unable to use log target #{target.inspect}: #{message}", original_error)
     end
   end
 

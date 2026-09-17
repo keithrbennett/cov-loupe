@@ -7,6 +7,7 @@
 - [Running Issues](#running-issues)
 - [Coverage Data Issues](#coverage-data-issues)
 - [MCP Server Issues](#mcp-server-issues)
+- [Logging Target Issues](#logging-target-issues)
 - [Diagnostic Commands](#diagnostic-commands)
 
 ## Running Issues
@@ -84,6 +85,27 @@ one entry as overriding another if two keys map to the same file.
 
 **Recommendation:** Keep `SimpleCov.root` consistent across suites and avoid manual path rewriting
 when merging results.
+
+## Logging Target Issues
+
+cov-loupe probes file-based logging targets when the logger is initialized. If
+the target cannot be accessed, the failure is reported early instead of waiting
+for the first diagnostic. See the [logging initialization and target testing
+guide](LOGGING.md#log-file-initialization-and-target-testing) for the complete
+behavior.
+
+Check the following when you see an `Unable to use log target` message:
+
+- Verify that the configured directory exists and is writable by the process.
+- Check the path supplied by `--log-file`/`-l`, `COV_LOUPE_OPTS`, or the MCP
+  server configuration.
+- Use `-l stderr` to send diagnostics to standard error while troubleshooting,
+  or use `-l :off` to disable logging.
+- In CLI mode, a later write failure may also be recorded in
+  `COV-LOUPE-LOG-ERROR.log` in the current directory.
+- In MCP mode, a logging initialization failure causes affected tool calls to
+  return `isError: true`; correct the target or disable logging and restart the
+  server.
 
 ## MCP Server Issues
 

@@ -5,6 +5,7 @@
 
 # Directory for untracked AI reports, of which there may be many
 /untracked/
+/reports/
 
 # Bundler
 /.bundle/
@@ -73,4 +74,3 @@ mise.toml
 /2*md
 /todo*
 /to-do*
-

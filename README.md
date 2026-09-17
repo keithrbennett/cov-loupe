@@ -151,6 +151,7 @@ Full documentation is available at **[https://keithrbennett.github.io/cov-loupe/
 - [Advanced Usage](docs/user/ADVANCED_USAGE.md) - Staleness detection, error modes, path resolution
 - [Library API](docs/user/LIBRARY_API.md) - Ruby API documentation
 - [Error Handling](docs/user/ERROR_HANDLING.md) - Error modes and exceptions
+- [Logging](docs/user/LOGGING.md) - Log targets, initialization probes, and file creation
 - [MCP Integration](docs/user/MCP_INTEGRATION.md) - AI assistant configuration
 - [Troubleshooting](docs/user/TROUBLESHOOTING.md) - Common issues
 

@@ -480,7 +480,7 @@ If these work, your setup is correct!
 
 ### Checking Logs
 
-The MCP server logs tool-execution errors and other cov-loupe diagnostics to `cov_loupe.log` in the current directory by default. Argument-validation failures emitted by the MCP SDK before cov-loupe runs do not reach this logger.
+The MCP server logs tool-execution errors and other cov-loupe diagnostics to `cov_loupe.log` in the current directory by default. See the [logging initialization and target testing guide](LOGGING.md#log-file-initialization-and-target-testing) for details about startup probing, append-mode checks, cached failures, and file creation. Argument-validation failures emitted by the MCP SDK before cov-loupe runs do not reach this logger.
 
 ```sh
 # Watch logs in real-time

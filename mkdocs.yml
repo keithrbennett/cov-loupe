@@ -88,6 +88,7 @@ nav:
       - Library API: user/LIBRARY_API.md
       - Advanced Usage: user/ADVANCED_USAGE.md
       - Error Handling: user/ERROR_HANDLING.md
+      - Logging: user/LOGGING.md
       - Troubleshooting: user/TROUBLESHOOTING.md
       - CLI Fallback for LLMs: user/CLI_FALLBACK_FOR_LLMS.md
       - Installing a Prerelease: user/installing-a-prelease-version-of-covloupe.md

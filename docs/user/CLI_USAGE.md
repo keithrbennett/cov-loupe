@@ -676,7 +676,7 @@ clp -l stderr                   # Log to standard error
 clp -l :off                     # Disable logging entirely
 ```
 
-**Default:** `./cov_loupe.log`
+**Default:** `./cov_loupe.log` — see the [logging initialization and target testing guide](LOGGING.md#log-file-initialization-and-target-testing).
 
 **Warning:** Log files may grow unbounded in long-running or CI usage. Consider using a log rotation tool or periodically cleaning up the log file if this is a concern.
 

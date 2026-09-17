@@ -180,7 +180,8 @@ module CovLoupe
     private def internal_default_context
       @internal_default_context ||= AppContext.new(
         error_handler: ErrorHandlerFactory.for_cli,
-        log_target:    nil
+        log_target:    nil,
+        mode:          :cli
       )
     end
 

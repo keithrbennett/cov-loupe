@@ -10,8 +10,36 @@ This document describes the breaking changes introduced in version 7.0.0.
 - [`resultset` Names Removed from the CLI, MCP Tools, and Library API](#resultset-names-removed-from-the-cli-mcp-tools-and-library-api)
 - [Short Options `-c` and `-n` Reassigned](#short-options--c-and--n-reassigned)
 - [Only `coverage/coverage.json` Is Searched by Default](#only-coveragecoveragejson-is-searched-by-default)
+- [Logging Targets Are Probed and Created Lazily](#logging-targets-are-probed-and-created-lazily)
 
 ---
+
+## Logging Targets Are Probed and Created Lazily {#logging-targets-are-probed-and-created-lazily}
+
+v7 validates file-based logging targets when a logger is initialized, but delays
+creating the persistent log file until the first diagnostic is written. This
+prevents idle MCP servers from leaving empty `cov_loupe.log` files behind while
+still detecting an invalid destination early.
+
+Existing targets are checked in append mode. Missing targets are temporarily
+created and removed during the probe, so a successful startup check does not
+leave an empty file. Probe failures are cached and are not retried for every
+message.
+
+**Before (v6.x):** logger construction eagerly created the configured log file,
+including when an MCP server never emitted a diagnostic.
+
+**After (v7.0):** the target is probed during initialization, and the persistent
+file is created only on the first actual log write. Library-mode contexts raise
+`CovLoupe::LoggingError` for an unusable target; CLI mode reports a warning; and
+MCP mode returns `isError: true` for every affected tool call. The ambient
+`CovLoupe.logger` default context uses CLI-mode reporting for compatibility; use
+an explicitly created `mode: :library` context when library-mode raising is
+required.
+
+The `stderr` target is also normalized consistently with `stdout` and `:off`, so
+case differences, surrounding whitespace, and symbol values such as `:stderr`
+select the standard-error stream rather than a file path.
 
 ## Only `coverage.json` Is Read; SimpleCov 1.0 Is Required {#only-coveragejson-is-read-simplecov-10-is-required}
 

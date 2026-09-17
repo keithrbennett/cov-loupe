@@ -5,7 +5,8 @@ require 'time'
 require_relative '../errors/errors'
 
 module CovLoupe
-  # Custom logger that gracefully handles logging failures.
+  # Logger that validates its target at startup and creates the underlying logger
+  # only when the first message is written.
   #
   # Log targets:
   #   - File path (default: ./cov_loupe.log)
@@ -15,9 +16,11 @@ module CovLoupe
   #
   # 'stdout' is never a valid target because it would corrupt command output.
   #
-  # If the primary log target fails (e.g., permission denied), the logger falls back
-  # to writing to COV-LOUPE-LOG-ERROR.log and emits a one-time stderr warning in CLI mode.
-  # The safe_log method never raises, making it safe for use in rescue blocks.
+  # A failed startup probe is reported according to the active mode: library mode
+  # raises, MCP mode reports an error result for tool calls, and CLI mode warns on
+  # stderr. Later write failures fall back to COV-LOUPE-LOG-ERROR.log and emit a
+  # one-time stderr warning in CLI mode. The safe_log method suppresses logging
+  # failures, making it safe for use in rescue blocks.
   class Logger
     DEFAULT_LOG_FILESPEC = './cov_loupe.log'
     FALLBACK_LOG_FILE = 'COV-LOUPE-LOG-ERROR.log'
@@ -25,7 +28,7 @@ module CovLoupe
     attr_reader :target
 
     def initialize(target:, mode: :library)
-      if target.to_s.strip.downcase == 'stdout'
+      if normalized_target(target) == 'stdout'
         raise ConfigurationError,
           'Logging to stdout is not permitted because it corrupts command output. ' \
           "Use 'stderr', a file path, or ':off' to disable logging."
@@ -35,15 +38,12 @@ module CovLoupe
       @target = target
       @init_error = nil
       @stderr_warning_emitted = false
+      @fallback_warning_emitted = false
       @disabled = logging_disabled?(target)
+      @logger = nil
 
-      return if @disabled
-
-      begin
-        @logger = build_logger(target)
-      rescue => e
-        @init_error = e
-      end
+      @init_error = logging_error_for(probe_logger_target(target)) unless @disabled
+      report_initialization_error if @init_error
     end
 
     def info(msg)
@@ -73,24 +73,86 @@ module CovLoupe
       # Silently ignore all logging failures
     end
 
+    def raise_if_initialization_failed!
+      raise @init_error if @init_error
+    end
+
+    private def normalized_target(target)
+      target.to_s.strip.downcase
+    end
+
     private def logging_disabled?(target)
       return false if target.nil?
 
-      target.to_s.strip.downcase == ':off'
+      normalized_target(target) == ':off'
+    end
+
+    private def stderr_target?(target)
+      normalized_target(target) == 'stderr'
+    end
+
+    private def report_initialization_error
+      if @mode == :library
+        raise @init_error
+      else
+        warn_stderr_once(@init_error)
+      end
+    end
+
+    private def probe_logger_target(target)
+      return if stderr_target?(target)
+
+      path = File.expand_path(target || DEFAULT_LOG_FILESPEC)
+      if File.exist?(path)
+        verify_append_access(path)
+        return
+      end
+
+      created = false
+      # Open write-only and create only if missing. EXCL makes creation race-safe;
+      # EEXIST is handled by opening the file in append mode below.
+      open_flags = File::WRONLY | File::CREAT | File::EXCL
+      begin
+        File.open(path, open_flags, 0o644) do
+          created = true
+        end
+      rescue Errno::EEXIST
+        verify_append_access(path)
+      ensure
+        File.delete(path) if created && File.exist?(path)
+      end
+      nil
+    rescue => e
+      e
+    end
+
+    private def verify_append_access(path)
+      # Opening in append mode is the access check; no write is needed.
+      File.open(path, 'a') {} # rubocop:disable Style/FileTouch
     end
 
     private def log_with_level(level, msg)
+      unless @logger || @init_error
+        begin
+          @logger = build_logger(@target)
+        rescue => e
+          @init_error = logging_error_for(e)
+        end
+      end
+
       if @init_error
         handle_logging_error(@init_error, msg)
       else
         @logger.send(level, msg)
       end
+    rescue LoggingError
+      raise
     rescue => e
       handle_logging_error(e, msg)
     end
 
     private def build_logger(target)
-      io_or_path = if target == 'stderr'
+      io_or_path = if stderr_target?(target)
         $stderr
       else
         path = target || DEFAULT_LOG_FILESPEC
@@ -103,8 +165,13 @@ module CovLoupe
     end
 
     private def handle_logging_error(error, original_msg)
+      logging_error = logging_error_for(error)
       write_fallback_file(error, original_msg)
-      warn_stderr_once if @mode == :cli
+      raise logging_error if %i[library mcp].include?(@mode)
+
+      warn_stderr_once(logging_error, fallback: true) if @mode == :cli
+    rescue LoggingError
+      raise
     rescue
       # Silently ignore all fallback failures
     end
@@ -118,11 +185,25 @@ module CovLoupe
       # Best effort - ignore write failures
     end
 
-    private def warn_stderr_once
-      return if @stderr_warning_emitted
+    private def warn_stderr_once(error, fallback: false)
+      if fallback
+        return if @fallback_warning_emitted
 
-      @stderr_warning_emitted = true
-      $stderr.puts "Warning: Logging failed. See #{FALLBACK_LOG_FILE} for details."
+        @fallback_warning_emitted = true
+      else
+        return if @stderr_warning_emitted
+
+        @stderr_warning_emitted = true
+      end
+      message = "Warning: #{error.user_friendly_message}"
+      message += " See #{FALLBACK_LOG_FILE} for details." if fallback
+      $stderr.puts message
+    end
+
+    private def logging_error_for(error)
+      return error if error.nil? || error.is_a?(LoggingError)
+
+      LoggingError.new(@target, error.message, error)
     end
   end
 end

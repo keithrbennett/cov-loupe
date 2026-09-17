@@ -43,6 +43,12 @@ RSpec.describe CovLoupe do
     end
   end
 
+  describe 'default context' do
+    it 'uses CLI logging mode for the internal default context' do
+      expect(described_class.context.mode).to eq(:cli)
+    end
+  end
+
   describe 'executable' do
     it 'does not require RubyGems when RubyGems starts disabled' do
       require 'open3'

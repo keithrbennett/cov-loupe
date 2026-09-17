@@ -7,6 +7,16 @@
 
 ### Breaking
 
+- **Logging targets are validated during initialization.** Library mode raises
+  `CovLoupe::LoggingError` immediately for an unusable target; CLI mode reports a
+  warning; and MCP mode returns `isError: true` for every affected tool call. The
+  underlying logger remains lazy, so a successful startup probe does not create a
+  persistent log file until the first diagnostic is written. The internal
+  default context used by the CLI is explicitly configured for CLI-mode logging
+  so startup configuration failures are reported through the CLI error path.
+- **Stderr log targets are normalized consistently.** Values such as `stderr`,
+  `STDERR`, `:stderr`, and values with surrounding whitespace now all select the
+  standard-error stream instead of being interpreted as file paths.
 - **Only `coverage.json` is read, and SimpleCov >= 1.0 is required.** cov-loupe now reads SimpleCov's documented JSON formatter output, which SimpleCov 1.0.0 and later write alongside the HTML report. `.resultset.json`, SimpleCov's internal merge cache, is no longer read, and the `simplecov` dependency is now `>= 1.0, < 2.0`.
     - **Old:** `.resultset.json` was the input; SimpleCov was loaded at runtime to merge multi-suite resultsets.
     - **New:** `coverage.json` is the input. It is already merged across suites, so SimpleCov is never loaded. It is discovered at `coverage/coverage.json` under the project root (see below).

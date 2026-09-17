@@ -55,6 +55,17 @@ RSpec.describe CovLoupe::Resolvers::CoverageFilePathResolver do
         /Could not find coverage.json/)
     end
 
+    it 'preserves the coverage-file error when logger setup fails' do
+      allow(CovLoupe).to receive(:logger).and_raise(CovLoupe::LoggingError.new(
+        '/invalid/log', 'permission denied'
+      ))
+
+      expect do
+        resolver.find_coverage_file
+      end.to raise_error(CovLoupe::CoverageFileNotFoundError,
+        /Could not find coverage.json/)
+    end
+
     it 'accepts a coverage file path already nested under the provided root without double-prefixing' do
       project_root = (FIXTURES_DIR / 'project1').to_s
       resolver = described_class.new(root: project_root)

@@ -64,7 +64,7 @@ Three failure categories map to two response shapes:
 MCP clients can detect argument-validation and tool-execution failures programmatically by checking
 the result's `isError` field. Protocol- and dispatch-level failures do not contain a tool result.
 
-- **Logging enabled** - Tool-execution errors handled by cov-loupe go to `cov_loupe.log` in the current directory by default; MCP SDK argument-validation failures do not reach cov-loupe's logger
+- **Logging enabled** - Tool-execution errors handled by cov-loupe go to `cov_loupe.log` in the current directory by default; see the [logging initialization and target testing guide](LOGGING.md#log-file-initialization-and-target-testing); MCP SDK argument-validation failures do not reach cov-loupe's logger
 - **Clean error messages** - User-friendly messages, no stack traces by default
 
 ## Custom Error Handlers
