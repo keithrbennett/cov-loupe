@@ -7,6 +7,8 @@
 > `alias clp='cov-loupe -R docs/fixtures/demo_project'`  # -R = --root
 >
 > Replace `clp` with `cov-loupe` if you want to target your own project/coverage file.
+>
+> The fixture's coverage timestamp is deliberately set far in the future, so the outputs below — including `--raise-on-stale` / `-S` runs — are reproducible on a fresh clone.
 
 ## Table of Contents
 
@@ -117,6 +119,11 @@ A file is considered stale when any of the following are true:
 clp -S true summary app/models/order.rb  # -S = --raise-on-stale
 ```
 
+> On this fixture the command succeeds even on a fresh clone, because its coverage timestamp is
+> future-dated. Against your own project it fails with a stale-data error when a source file's
+> mtime postdates the coverage run. (Via the Ruby API this surfaces as
+> `CovLoupe::CoverageDataStaleError`.)
+
 **Ruby API:**
 ```ruby
 model = CovLoupe::CoverageModel.new(
@@ -145,7 +152,8 @@ Detects system-wide staleness issues:
 **CLI Usage:**
 
 You can see if _any_ files in the project are stale by running the (implicit here) `list` command
-with `--raise-on-stale` and checking the exit code:
+with `--raise-on-stale` and checking the exit code. The transcript below is illustrative —
+captured from a project with files newer than its coverage, not from the demo fixture:
 
 ```sh
 $ cov-loupe -S true list

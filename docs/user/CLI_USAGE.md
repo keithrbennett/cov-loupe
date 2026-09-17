@@ -8,6 +8,7 @@ Complete reference for using cov-loupe from the command line.
 > `alias clp='cov-loupe -R docs/fixtures/demo_project'`  # -R = --root
 > Replace `clp` with `cov-loupe` to run commands against your own project.
 > The demo fixture is a small Rails-like project in `docs/fixtures/demo_project` with intentional coverage gaps for testing `--tracked-globs`.
+> Its coverage timestamp is deliberately set far in the future, so the outputs below are reproducible on a fresh clone.
 
 ## Table of Contents
 

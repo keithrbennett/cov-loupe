@@ -10,6 +10,7 @@ Practical examples for common tasks with cov-loupe. Examples are organized by sk
 >
 > Swap `clp` for `cov-loupe` to run against your own project and coverage file.
 > The demo fixture is a small Rails-like project in `docs/fixtures/demo_project` with intentional coverage gaps for testing `--tracked-globs`.
+> Its coverage timestamp is deliberately set far in the future, so the outputs below are reproducible on a fresh clone.
 
 ## Table of Contents
 

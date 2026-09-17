@@ -454,6 +454,7 @@ echo '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"file_cover
 - JSON-RPC messages must be on a single line. Multi-line JSON will cause parse errors.
 - CLI flags like `-R` set server defaults, but per-request JSON parameters still win.
 - The `root` parameter is optional and defaults to `.` (current directory).
+- The `docs/fixtures/demo_project` example above uses a committed fixture whose coverage timestamp is deliberately set far in the future, so its responses are reproducible on a fresh clone.
 - If you see text such as `Resolving dependencies...` before the JSON-RPC response, your launcher polluted `stdout` before MCP startup. See [Stdout Must Stay Clean During MCP Startup](#stdout-must-stay-clean-during-mcp-startup).
 
 ### Testing in AI Assistant

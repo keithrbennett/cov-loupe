@@ -8,6 +8,8 @@ Each file contains a single line of JSON (NDJSON-ready), so you can pipe it dire
 
 **Target Project:** These inputs are designed to work with the demo project located at `docs/fixtures/demo_project`.
 
+The fixture's coverage timestamp is deliberately set far in the future, so the example responses are reproducible on a fresh clone.
+
 ### Running the Examples
 
 From the repository root:
