@@ -10,6 +10,24 @@ because it would corrupt CLI output or the MCP JSON-RPC stream.
 File logging is intentionally explicit and has no built-in rotation. Users who
 choose a file target are responsible for cleanup or external log rotation.
 
+## Concurrent processes and agents
+
+Do not configure multiple concurrent agents or processes to write to the same
+log file when separate log files are practical. This applies to CLI processes,
+MCP server processes, and independent library users or contexts. The underlying
+logger appends to the file, so concurrent entries will usually be preserved, but
+cov-loupe does not provide cross-process file locking or guaranteed ordering of
+entries. Messages may therefore appear out of order or become interleaved,
+particularly on network filesystems or if the file is rotated while processes
+are still running.
+
+Use a distinct log target for each concurrent worker, for example
+`logs/cov-loupe-agent-1.log` and `logs/cov-loupe-agent-2.log`. For CLI and MCP,
+pass each process a different `--log-file` value. For library usage, configure a
+different `CovLoupe.default_log_file` or `CovLoupe.active_log_file` for each
+independent worker. Calls sharing one logger within a single process remain
+serialized by the underlying Ruby logger.
+
 ## Log file initialization and target testing
 
 Logger setup performs a best-effort probe of file targets so configuration failures

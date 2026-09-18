@@ -679,7 +679,7 @@ clp -l :off                     # Disable logging entirely
 
 **Default:** `stderr` — see the [logging initialization and target testing guide](LOGGING.md#log-file-initialization-and-target-testing).
 
-**Warning:** Explicit log files may grow unbounded in long-running or CI usage. cov-loupe does not rotate them; use external rotation or periodically clean them up.
+**Warning:** Explicit log files may grow unbounded in long-running or CI usage. cov-loupe does not rotate them; use external rotation or periodically clean them up. If multiple agents or processes run concurrently, give each one a different log file; see [Concurrent processes and agents](LOGGING.md#concurrent-processes-and-agents).
 
 ### `-e, --error-mode MODE`
 
