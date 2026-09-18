@@ -1,11 +1,12 @@
-# Builds docs on PRs and deploys to GitHub Pages on main.
+# Builds docs on PRs and deploys to GitHub Pages on version tags.
 name: Docs
 
 on:
   push:
     branches:
       - main
-    # Anchor paths so pull_request can reuse the same list.
+    tags:
+      - 'v[0-9]*'
     paths: &docs_paths
       - 'docs/**'
       - 'mkdocs.yml'
@@ -21,8 +22,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
-    name: Build docs
+  docs:
+    name: Build and deploy docs
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -38,20 +39,6 @@ jobs:
       - name: Build docs
         run: mkdocs build --strict
 
-  deploy:
-    name: Deploy docs
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-
-      - name: Install dependencies
-        run: pip install -r requirements-lock.txt
-
       - name: Deploy to GitHub Pages
+        if: github.event_name == 'push' && github.ref_type == 'tag'
         run: mkdocs gh-deploy --force
