@@ -1,4 +1,4 @@
-# Builds docs on PRs and deploys to GitHub Pages on version tags.
+# Builds docs on PRs and docs-related pushes to main; deploys on version tags.
 name: Docs
 
 on:
@@ -11,6 +11,12 @@ on:
       - 'docs/**'
       - 'mkdocs.yml'
       - '.github/workflows/deploy-docs.yml'
+      - 'Rakefile'
+      - 'Gemfile'
+      - 'Gemfile.lock'
+      - 'requirements-lock.txt'
+      - 'bin/*docs*'
+      - 'lib/cov_loupe/scripts/*doc*'
   pull_request:
     paths: *docs_paths
 
@@ -28,6 +34,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0'
+          bundler-cache: true
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
@@ -37,8 +49,9 @@ jobs:
         run: pip install -r requirements-lock.txt
 
       - name: Build docs
-        run: mkdocs build --strict
+        if: github.ref_type != 'tag'
+        run: bundle exec rake docs:build
 
-      - name: Deploy to GitHub Pages
+      - name: Build and deploy docs
         if: github.event_name == 'push' && github.ref_type == 'tag'
-        run: mkdocs gh-deploy --force
+        run: bundle exec rake docs:deploy

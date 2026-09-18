@@ -149,7 +149,10 @@ source .venv-docs/bin/activate  # macOS/Linux
 # Or on Windows: .venv-docs\Scripts\activate
 
 # Build static site
-mkdocs build
+bundle exec rake docs:build
+
+# Build and deploy the current checkout to GitHub Pages (use a version-tag checkout)
+bundle exec rake docs:deploy
 
 # Serve locally with live reload (opens at http://127.0.0.1:8000)
 mkdocs serve

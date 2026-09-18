@@ -1,0 +1,8 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Builds and deploys documentation using mkdocs.
+
+SCRIPT_DIR = File.expand_path('..', __dir__)
+
+exec(RbConfig.ruby, File.join(SCRIPT_DIR, 'bin', 'build-docs'), '--deploy')

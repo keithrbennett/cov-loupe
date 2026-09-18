@@ -89,6 +89,11 @@ namespace :docs do
     sh 'bin/build-docs'
   end
 
+  desc 'Build and deploy documentation with mkdocs'
+  task :deploy do
+    sh 'bin/deploy-docs'
+  end
+
   desc 'Set up python environment for docs'
   task :setup do
     CovLoupe::Scripts::SetupDocServer.new.call

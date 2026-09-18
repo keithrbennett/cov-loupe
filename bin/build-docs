@@ -1,25 +1,30 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
+
 # Builds documentation using mkdocs, creating a virtual environment if needed.
 
-require "fileutils"
-
-SCRIPT_DIR = File.expand_path("..", __dir__)
-VENV_DIR = File.join(SCRIPT_DIR, ".docs-venv")
+SCRIPT_DIR = File.expand_path('..', __dir__)
+VENV_DIR = File.join(SCRIPT_DIR, '.docs-venv')
 
 def run(*cmd)
   system(*cmd) || abort("Command failed: #{cmd.join(' ')}")
 end
 
-if system("which mkdocs > /dev/null 2>&1")
-  run("mkdocs", "build", "--strict")
-else
-  venv_bin = File.join(VENV_DIR, "bin")
+def mkdocs_command
+  return 'mkdocs' if system('command -v mkdocs > /dev/null 2>&1')
 
-  unless File.directory?(venv_bin)
-    puts "Creating virtual environment..."
-    run("python3", "-m", "venv", VENV_DIR)
-    run(File.join(venv_bin, "pip"), "install", "-r", File.join(SCRIPT_DIR, "requirements-lock.txt"))
+  venv_bin = File.join(VENV_DIR, 'bin')
+  mkdocs_path = File.join(venv_bin, 'mkdocs')
+
+  unless File.executable?(mkdocs_path)
+    puts 'Creating virtual environment...'
+    run('python3', '-m', 'venv', VENV_DIR)
+    run(File.join(venv_bin, 'pip'), 'install', '-r', File.join(SCRIPT_DIR, 'requirements-lock.txt'))
   end
 
-  run(File.join(venv_bin, "mkdocs"), "build", "--strict")
+  mkdocs_path
 end
+
+mkdocs = mkdocs_command
+run(mkdocs, 'build', '--strict')
+run(mkdocs, 'gh-deploy', '--force') if ARGV.delete('--deploy')
