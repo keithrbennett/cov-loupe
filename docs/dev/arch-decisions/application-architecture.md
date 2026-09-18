@@ -262,7 +262,8 @@ end
 
 **MCP Server Mode** (`lib/cov_loupe/base_tool.rb`):
 1. Each tool wraps execution in a rescue block
-2. Uses `for_mcp_server` handler to log errors to `./cov_loupe.log`
+2. Uses `for_mcp_server` handler to report errors through the configured target,
+   which defaults to `stderr`
 3. Returns a `tools/call` result with `isError: true` and the friendly message in the content (matching the result shape that the MCP SDK uses for argument-validation failures; a JSON-RPC `error` is reserved for protocol- or dispatch-level failures such as unknown tools)
 4. Server continues running (no crashes)
 

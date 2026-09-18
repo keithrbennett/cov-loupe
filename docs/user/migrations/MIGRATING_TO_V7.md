@@ -10,36 +10,53 @@ This document describes the breaking changes introduced in version 7.0.0.
 - [`resultset` Names Removed from the CLI, MCP Tools, and Library API](#resultset-names-removed-from-the-cli-mcp-tools-and-library-api)
 - [Short Options `-c` and `-n` Reassigned](#short-options--c-and--n-reassigned)
 - [Only `coverage/coverage.json` Is Searched by Default](#only-coveragecoveragejson-is-searched-by-default)
-- [Logging Targets Are Probed and Created Lazily](#logging-targets-are-probed-and-created-lazily)
+- [Logging Defaults, Target Probing, and Lazy File Creation](#logging-defaults-target-probing-and-lazy-file-creation)
 
 ---
 
-## Logging Targets Are Probed and Created Lazily {#logging-targets-are-probed-and-created-lazily}
+## Logging Defaults, Target Probing, and Lazy File Creation {#logging-defaults-target-probing-and-lazy-file-creation}
 
-v7 validates file-based logging targets when a logger is initialized, but delays
-creating the persistent log file until the first diagnostic is written. This
-prevents idle MCP servers from leaving empty `cov_loupe.log` files behind while
-still detecting an invalid destination early.
+v7 changes the default logging policy and validates explicit file-based logging
+targets when a logger is initialized. CLI and MCP sessions now log to `stderr`
+by default, while library contexts have logging disabled by default. Persistent
+file logging requires an explicit target via `--log-file`,
+`CovLoupe.default_log_file`, or `CovLoupe.active_log_file`.
+
+The implicit `./cov_loupe.log` target and `COV-LOUPE-LOG-ERROR.log` fallback are
+removed. Explicit file targets still have no built-in rotation, so users who
+choose them are responsible for cleanup or external rotation.
+
+For explicit file targets, v7 delays creating the persistent log file until the
+first diagnostic is written. This prevents idle MCP servers from leaving empty
+files behind while still detecting an invalid destination early.
 
 Existing targets are checked in append mode. Missing targets are temporarily
 created and removed during the probe, so a successful startup check does not
 leave an empty file. Probe failures are cached and are not retried for every
 message.
 
-**Before (v6.x):** logger construction eagerly created the configured log file,
-including when an MCP server never emitted a diagnostic.
+**Before (v6.x):** CLI and MCP sessions defaulted to `./cov_loupe.log`, and
+logger construction eagerly created the configured log file, including when an
+MCP server never emitted a diagnostic.
 
-**After (v7.0):** the target is probed during initialization, and the persistent
-file is created only on the first actual log write. Library-mode contexts raise
-`CovLoupe::LoggingError` for an unusable target; CLI mode reports a warning; and
-MCP mode returns `isError: true` for every affected tool call. The ambient
-`CovLoupe.logger` default context uses CLI-mode reporting for compatibility; use
-an explicitly created `mode: :library` context when library-mode raising is
-required.
+**After (v7.0):** CLI and MCP default to `stderr`; library contexts are quiet by
+default; explicit file targets are probed during initialization and created only
+on the first actual log write. Library mode raises `CovLoupe::LoggingError` for
+an unusable explicit target; CLI mode reports a warning; and MCP mode returns
+`isError: true` for a logging-target failure. Logging failures are secondary
+diagnostics and do not replace the original MCP tool error.
 
 The `stderr` target is also normalized consistently with `stdout` and `:off`, so
 case differences, surrounding whitespace, and symbol values such as `:stderr`
 select the standard-error stream rather than a file path.
+
+**Migration:**
+
+- If you relied on the default `cov_loupe.log`, add an explicit `--log-file`
+  path (or configure `CovLoupe.default_log_file` / `CovLoupe.active_log_file`).
+  Otherwise, use the new `stderr` default or `:off`.
+- If you relied on `COV-LOUPE-LOG-ERROR.log` as an implicit emergency log,
+  configure an explicit file target and arrange any desired external rotation.
 
 ## Only `coverage.json` Is Read; SimpleCov 1.0 Is Required {#only-coveragejson-is-read-simplecov-10-is-required}
 

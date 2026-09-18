@@ -7,13 +7,20 @@
 
 ### Breaking
 
+- **Logging defaults and fallback behavior changed.** CLI and MCP sessions now
+  log to `stderr` by default, while library usage is quiet by default. The
+  previous implicit `./cov_loupe.log` target and `COV-LOUPE-LOG-ERROR.log`
+  fallback are removed. Persistent logging requires an explicit file target via
+  `--log-file`, `CovLoupe.default_log_file`, or `CovLoupe.active_log_file`; users
+  who choose a file target are responsible for cleanup or external rotation.
+  Logging failures no longer replace the original MCP tool error.
 - **Logging targets are validated during initialization.** Library mode raises
   `CovLoupe::LoggingError` immediately for an unusable target; CLI mode reports a
   warning; and MCP mode returns `isError: true` for every affected tool call. The
   underlying logger remains lazy, so a successful startup probe does not create a
   persistent log file until the first diagnostic is written. The internal
-  default context used by the CLI is explicitly configured for CLI-mode logging
-  so startup configuration failures are reported through the CLI error path.
+  context is quiet for library callers; CLI and MCP entry points create their
+  own mode-specific logging contexts.
 - **Stderr log targets are normalized consistently.** Values such as `stderr`,
   `STDERR`, `:stderr`, and values with surrounding whitespace now all select the
   standard-error stream instead of being interpreted as file paths.

@@ -28,10 +28,10 @@ The project aims to keep documented interfaces as compatible as practical across
 Logging is configured through the active context. See the [logging initialization
 and target testing guide](LOGGING.md#log-file-initialization-and-target-testing)
 for startup probes, lazy file creation, and mode-specific logging failures. In
-an explicitly created library-mode context, an unusable log target raises
-`CovLoupe::LoggingError` when the context is created. The ambient default context
-used by `CovLoupe.logger` is configured in CLI mode for compatibility, so an
-unusable default target is reported as a warning instead.
+an explicitly created library-mode context, logging is off by default and an
+unusable explicit log target raises `CovLoupe::LoggingError` when the context is
+created. The ambient default context is also quiet; CLI and MCP entry points
+create their own mode-specific contexts with `stderr` as the default target.
 
 ## Quick Start
 

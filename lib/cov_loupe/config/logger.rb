@@ -9,21 +9,20 @@ module CovLoupe
   # only when the first message is written.
   #
   # Log targets:
-  #   - File path (default: ./cov_loupe.log)
+  #   - File path (explicit persistent target)
   #   - 'stderr' for stream output
   #   - ':off' to disable logging entirely
-  #   - nil for default file logging
+  #   - nil for the mode-specific default (stderr for CLI/MCP, off for library)
   #
   # 'stdout' is never a valid target because it would corrupt command output.
   #
   # A failed startup probe is reported according to the active mode: library mode
   # raises, MCP mode reports an error result for tool calls, and CLI mode warns on
-  # stderr. Later write failures fall back to COV-LOUPE-LOG-ERROR.log and emit a
-  # one-time stderr warning in CLI mode. The safe_log method suppresses logging
-  # failures, making it safe for use in rescue blocks.
+  # stderr. CLI and MCP sessions default to stderr; library sessions default to
+  # logging off. The safe_log method suppresses logging failures, making it safe
+  # for use in rescue blocks.
   class Logger
-    DEFAULT_LOG_FILESPEC = './cov_loupe.log'
-    FALLBACK_LOG_FILE = 'COV-LOUPE-LOG-ERROR.log'
+    DEFAULT_LOG_TARGET = 'stderr'
 
     attr_reader :target
 
@@ -35,14 +34,17 @@ module CovLoupe
       end
 
       @mode = mode
-      @target = target
+      @target = if target.nil?
+        mode == :library ? ':off' : DEFAULT_LOG_TARGET
+      else
+        target
+      end
       @init_error = nil
       @stderr_warning_emitted = false
-      @fallback_warning_emitted = false
-      @disabled = logging_disabled?(target)
+      @disabled = logging_disabled?(@target)
       @logger = nil
 
-      @init_error = logging_error_for(probe_logger_target(target)) unless @disabled
+      @init_error = logging_error_for(probe_logger_target(@target)) unless @disabled
       report_initialization_error if @init_error
     end
 
@@ -82,8 +84,6 @@ module CovLoupe
     end
 
     private def logging_disabled?(target)
-      return false if target.nil?
-
       normalized_target(target) == ':off'
     end
 
@@ -102,7 +102,7 @@ module CovLoupe
     private def probe_logger_target(target)
       return if stderr_target?(target)
 
-      path = File.expand_path(target || DEFAULT_LOG_FILESPEC)
+      path = File.expand_path(target)
       if File.exist?(path)
         verify_append_access(path)
         return
@@ -141,22 +141,21 @@ module CovLoupe
       end
 
       if @init_error
-        handle_logging_error(@init_error, msg)
+        handle_logging_error(@init_error)
       else
         @logger.send(level, msg)
       end
     rescue LoggingError
       raise
     rescue => e
-      handle_logging_error(e, msg)
+      handle_logging_error(e)
     end
 
     private def build_logger(target)
       io_or_path = if stderr_target?(target)
         $stderr
       else
-        path = target || DEFAULT_LOG_FILESPEC
-        File.expand_path(path)
+        File.expand_path(target)
       end
 
       ::Logger.new(io_or_path).tap do |l|
@@ -164,39 +163,18 @@ module CovLoupe
       end
     end
 
-    private def handle_logging_error(error, original_msg)
+    private def handle_logging_error(error)
       logging_error = logging_error_for(error)
-      write_fallback_file(error, original_msg)
       raise logging_error if %i[library mcp].include?(@mode)
 
-      warn_stderr_once(logging_error, fallback: true) if @mode == :cli
-    rescue LoggingError
-      raise
-    rescue
-      # Silently ignore all fallback failures
+      warn_stderr_once(logging_error) if @mode == :cli
     end
 
-    private def write_fallback_file(error, original_msg)
-      File.open(FALLBACK_LOG_FILE, 'a') do |f|
-        timestamp = Time.now.iso8601
-        f.puts "[#{timestamp}] MODE:#{@mode} ERROR:#{error.message} MSG:#{original_msg}"
-      end
-    rescue
-      # Best effort - ignore write failures
-    end
+    private def warn_stderr_once(error)
+      return if @stderr_warning_emitted
 
-    private def warn_stderr_once(error, fallback: false)
-      if fallback
-        return if @fallback_warning_emitted
-
-        @fallback_warning_emitted = true
-      else
-        return if @stderr_warning_emitted
-
-        @stderr_warning_emitted = true
-      end
+      @stderr_warning_emitted = true
       message = "Warning: #{error.user_friendly_message}"
-      message += " See #{FALLBACK_LOG_FILE} for details." if fallback
       $stderr.puts message
     end
 

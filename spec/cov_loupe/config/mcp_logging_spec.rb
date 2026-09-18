@@ -34,4 +34,22 @@ RSpec.describe 'MCP Mode Logging' do
     # After the run, the original active context should be restored.
     expect(CovLoupe.active_log_file).to eq(original_target)
   end
+
+  it 'defaults MCP logging to stderr' do
+    original_default = CovLoupe.default_log_file
+    CovLoupe.default_log_file = nil
+    mcp_server_double = instance_double(CovLoupe::MCPServer, run: true)
+    captured_context = nil
+    allow(CovLoupe::MCPServer).to receive(:new) do |context:|
+      captured_context = context
+      mcp_server_double
+    end
+
+    CovLoupe.run(%w[--mode mcp])
+
+    expect(captured_context.log_target).to be_nil
+    expect(captured_context.logger.target).to eq('stderr')
+  ensure
+    CovLoupe.default_log_file = original_default
+  end
 end

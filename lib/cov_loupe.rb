@@ -179,9 +179,9 @@ module CovLoupe
 
     private def internal_default_context
       @internal_default_context ||= AppContext.new(
-        error_handler: ErrorHandlerFactory.for_cli,
+        error_handler: ErrorHandlerFactory.for_library,
         log_target:    nil,
-        mode:          :cli
+        mode:          :library
       )
     end
 

@@ -108,7 +108,7 @@ module CovLoupe
         exit 0
       end
       parser.on('-l', '--log-file PATH', String,
-        "Log file path (default ./cov_loupe.log, use 'stderr' for stream output, :off to disable)") do |value|
+        'Log target (default stderr, use a file path for persistent logging, :off to disable)') do |value|
         config.log_file = value
       end
       parser.on('-m', '--mode MODE', String,
@@ -118,7 +118,7 @@ module CovLoupe
       parser.on('-e', '--error-mode MODE', String,
         'Error handling mode: o[ff]|l[og]|d[ebug] (default: log)',
         '  off:   silent',
-        '  log:   log errors to file',
+        '  log:   log errors to the configured target',
         '  debug: verbose with backtraces') do |value|
         config.error_mode = normalize_error_mode(value)
       end

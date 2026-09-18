@@ -666,7 +666,8 @@ Without globs, this array is empty (no expectations = no violations).
 
 ### `-l, --log-file PATH`
 
-Log file location. Use 'stderr' to log to a standard stream.
+Log target. The default is `stderr`; use a file path for persistent logging.
+Use 'stderr' to log to a standard stream.
 Use ':off' to disable logging entirely (cross-platform alternative to /dev/null).
 Logging to 'stdout' is not permitted because it would corrupt command output.
 
@@ -676,9 +677,9 @@ clp -l stderr                   # Log to standard error
 clp -l :off                     # Disable logging entirely
 ```
 
-**Default:** `./cov_loupe.log` — see the [logging initialization and target testing guide](LOGGING.md#log-file-initialization-and-target-testing).
+**Default:** `stderr` — see the [logging initialization and target testing guide](LOGGING.md#log-file-initialization-and-target-testing).
 
-**Warning:** Log files may grow unbounded in long-running or CI usage. Consider using a log rotation tool or periodically cleaning up the log file if this is a concern.
+**Warning:** Explicit log files may grow unbounded in long-running or CI usage. cov-loupe does not rotate them; use external rotation or periodically clean them up.
 
 ### `-e, --error-mode MODE`
 

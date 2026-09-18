@@ -101,8 +101,6 @@ Check the following when you see an `Unable to use log target` message:
   server configuration.
 - Use `-l stderr` to send diagnostics to standard error while troubleshooting,
   or use `-l :off` to disable logging.
-- In CLI mode, a later write failure may also be recorded in
-  `COV-LOUPE-LOG-ERROR.log` in the current directory.
 - In MCP mode, a logging initialization failure causes affected tool calls to
   return `isError: true`; correct the target or disable logging and restart the
   server.
@@ -137,7 +135,8 @@ Check the following when you see an `Unable to use log target` message:
    claude mcp list  # For Claude Code
    codex mcp list   # For Codex
    gemini mcp list  # For Gemini
-   tail -f cov_loupe.log  # Check logs
+   # MCP hosts capture the server's stderr by default.
+   # For a persistent file, configure --log-file PATH and inspect that path.
    ```
 
 4. **Restart AI assistant** - Config changes often require restart
@@ -309,10 +308,10 @@ If the above doesn't solve your problem:
    cov-loupe --error-mode debug summary lib/cov_loupe/cli.rb
    ```
 
-2. **Check logs:**
+2. **Check diagnostics:**
    ```bash
-   # MCP server logs
-   tail -50 cov_loupe.log
+   # MCP hosts capture stderr by default.
+   # For a persistent file, configure --log-file PATH and inspect that path.
 
    # Or specify custom log location (--log-file or -l)
    cov-loupe -l /tmp/debug.log summary lib/cov_loupe/cli.rb

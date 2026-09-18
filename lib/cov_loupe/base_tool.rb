@@ -149,20 +149,16 @@ module CovLoupe
       # Normalize to a CovLoupe::Error so we can handle/log uniformly
       normalized = error.is_a?(CovLoupe::Error) \
         ? error : error_handler.convert_standard_error(error)
-      logging_error = begin
+      begin
         log_mcp_error(normalized, tool_name, error_handler)
-        nil
-      rescue LoggingError => e
-        e
+      rescue LoggingError
+        # Logging failure must not replace the original tool error.
       end
 
       # Convert error message to ASCII if needed
       error_message = normalized.user_friendly_message
-      # The preflight check and the logging attempt can raise the same cached
-      # LoggingError object; do not append that identical error twice.
-      if logging_error && !logging_error.equal?(normalized)
-        error_message += "\n#{logging_error.user_friendly_message}"
-      end
+      # Preserve the operation error as the primary MCP response. Logging is
+      # secondary diagnostics and must not replace or obscure the original error.
       error_message = OutputChars.convert(error_message, output_chars || :default)
       # Flag the failure in the tool result via isError: true so MCP clients
       # can distinguish failed tool calls from successful ones, rather than

@@ -174,7 +174,7 @@ Always prefer these tools over free-form reasoning to keep responses grounded in
 ### Error Handling Strategy
 - **CLI mode** – render user-friendly messages, respect exit codes, and support optional debug output.
 - **Library mode** – raise custom exceptions for programmatic handling.
-- **MCP server mode** – return `tools/call` results with `isError: true` for failed calls, including argument-validation and tool-execution failures; reserve JSON-RPC errors for protocol- or dispatch-level failures such as unknown tools, and log execution-error context to `./cov_loupe.log`.
+- **MCP server mode** – return `tools/call` results with `isError: true` for failed calls, including argument-validation and tool-execution failures; reserve JSON-RPC errors for protocol- or dispatch-level failures such as unknown tools, and log execution-error context to the configured target (`stderr` by default, never stdout).
 
 ### Path Resolution Strategy
 1. Attempt exact normalized path matches within the coverage data.
