@@ -1,0 +1,15 @@
+/* Enhance code blocks */
+.highlight {
+  border-radius: 0.2rem;
+}
+
+/* Improve table styling */
+table {
+  border-radius: 0.2rem;
+  overflow: hidden;
+}
+
+/* Add subtle shadows to content cards */
+.md-content {
+  box-shadow: 0 0.2rem 0.5rem rgba(0, 0, 0, 0.05);
+}
