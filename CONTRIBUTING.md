@@ -117,13 +117,13 @@ This project uses [MkDocs](https://www.mkdocs.org/) with the [Material theme](ht
 To run the documentation locally:
 
 ```bash
-pip3 install -r requirements.txt
-mkdocs serve
+source bin/set-up-python-for-doc-server
+bin/start-doc-server
 ```
 
 The documentation will be available at <http://127.0.0.1:8000>.
 
-For detailed platform-specific installation instructions and troubleshooting, see [Documentation Development](docs/dev/DEVELOPMENT.md#documentation-development).
+For setup details, dependency updates, publishing, and troubleshooting, see [Documentation Server](docs/dev/DOC_SERVER.md).
 
 ---
 

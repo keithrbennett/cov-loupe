@@ -108,6 +108,7 @@ nav:
       - Overview: dev/README.md
       - Architecture: dev/ARCHITECTURE.md
       - Development: dev/DEVELOPMENT.md
+      - Documentation Server: dev/DOC_SERVER.md
       - Releasing: dev/RELEASING.md
       - Future Enhancements: dev/FUTURE_ENHANCEMENTS.md
       - Architecture Decisions:

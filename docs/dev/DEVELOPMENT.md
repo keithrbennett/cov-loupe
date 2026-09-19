@@ -83,80 +83,7 @@ before { setup_mcp_response_stub }
 
 This project uses [MkDocs](https://www.mkdocs.org/) with the [Material theme](https://squidfunk.github.io/mkdocs-material/) for documentation.
 
-### Installing MkDocs
-
-**Recommended: Using a Virtual Environment (all platforms)**
-
-Virtual environments isolate Python dependencies and don't require system-level permissions.
-
-```bash
-# Create virtual environment
-python3 -m venv .venv-docs
-
-# Activate it
-source .venv-docs/bin/activate  # macOS/Linux
-# Or on Windows: .venv-docs\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Deactivate when done (optional)
-deactivate
-```
-
-Note: Virtual environment directories (`.venv/`, `.venv-*/`, `venv/`) are already in `.gitignore`.
-
-**Alternative: System/User Installation**
-
-**macOS:**
-```bash
-# Using Homebrew
-brew install mkdocs
-pip3 install mkdocs-material mkdocs-awesome-pages-plugin pymdown-extensions
-
-# Or using pip only
-pip3 install -r requirements.txt
-```
-
-**Linux (Ubuntu/Debian):**
-```bash
-# Install pip if needed
-sudo apt update
-sudo apt install python3-pip
-
-# Install MkDocs and dependencies
-pip3 install -r requirements.txt
-
-# Add pip bin directory to PATH if mkdocs command not found
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
-source ~/.bashrc
-```
-
-**Windows:**
-```powershell
-# Using pip (requires Python 3)
-pip install -r requirements.txt
-
-# Or install individually
-pip install mkdocs mkdocs-material mkdocs-awesome-pages-plugin pymdown-extensions
-```
-
-### Building Documentation
-
-```bash
-# If using virtual environment, activate it first
-source .venv-docs/bin/activate  # macOS/Linux
-# Or on Windows: .venv-docs\Scripts\activate
-
-# Build static site
-bundle exec rake docs:build
-
-# Build and deploy the current checkout to GitHub Pages (use a version-tag checkout)
-bundle exec rake docs:deploy
-
-# Serve locally with live reload (opens at http://127.0.0.1:8000)
-mkdocs serve
-```
+For the local docs server, dependency updates and audits, and publishing, see [Documentation Server](DOC_SERVER.md).
 
 ### Documentation Structure
 
@@ -169,16 +96,8 @@ mkdocs serve
 
 1. Create or edit markdown files in the `docs/` directory
 2. Add new pages to the `nav` section in `mkdocs.yml`
-3. Test locally with `mkdocs serve`
+3. Test locally with `bin/start-doc-server` and `bin/build-docs` (see [Documentation Server](DOC_SERVER.md))
 4. Commit changes along with your code changes
-
-### Troubleshooting MkDocs
-
-**Command not found after pip install:**
-- Ensure pip's bin directory is in your PATH
-- macOS: `export PATH="$HOME/Library/Python/3.x/bin:$PATH"`
-- Linux: `export PATH="$HOME/.local/bin:$PATH"`
-- Or run via Python: `python3 -m mkdocs serve`
 
 ## Troubleshooting
 
