@@ -32,6 +32,11 @@ namespace :security do
     sh 'bundle exec ruby-audit'
   end
 
+  desc 'Audit locked Python docs dependencies for vulnerabilities with pip-audit'
+  task :pip_audit do
+    sh 'bin/audit-docs-deps'
+  end
+
   desc 'Run all security audits'
   task :all do
     failures = []
@@ -46,6 +51,12 @@ namespace :security do
       Rake::Task['security:ruby_audit'].invoke
     rescue => e
       failures << "ruby-audit failed: #{e.message}"
+    end
+
+    begin
+      Rake::Task['security:pip_audit'].invoke
+    rescue => e
+      failures << "pip-audit failed: #{e.message}"
     end
 
     if failures.empty?
