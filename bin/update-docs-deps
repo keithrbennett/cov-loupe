@@ -45,7 +45,9 @@ cat > "$PROJECT_ROOT/requirements-lock.txt" <<EOF
 
 EOF
 
-pip freeze >> "$PROJECT_ROOT/requirements-lock.txt"
+# setuptools and wheel are only installed above as build tooling for the venv;
+# they are not docs dependencies, so keep them out of the lock file.
+pip freeze --exclude setuptools --exclude wheel >> "$PROJECT_ROOT/requirements-lock.txt"
 
 echo "→ Deactivating virtual environment..."
 deactivate
