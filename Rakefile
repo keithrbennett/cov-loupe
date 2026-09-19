@@ -29,12 +29,7 @@ namespace :security do
 
   desc 'Audit Ruby and RubyGems for known vulnerabilities with ruby_audit'
   task :ruby_audit do
-    sh 'bundle exec ruby-audit'
-  end
-
-  desc 'Audit locked Python docs dependencies for vulnerabilities with pip-audit'
-  task :pip_audit do
-    sh 'bin/audit-docs-deps'
+    sh 'bundle exec ruby-audit check'
   end
 
   desc 'Run all security audits'
@@ -54,7 +49,7 @@ namespace :security do
     end
 
     begin
-      Rake::Task['security:pip_audit'].invoke
+      Rake::Task['docs:audit'].invoke
     rescue => e
       failures << "pip-audit failed: #{e.message}"
     end
@@ -103,6 +98,16 @@ namespace :docs do
   desc 'Build and deploy documentation with mkdocs'
   task :deploy do
     sh 'bin/deploy-docs'
+  end
+
+  desc 'Audit locked documentation dependencies for known vulnerabilities (pip-audit)'
+  task :audit do
+    sh 'bin/audit-docs-deps'
+  end
+
+  desc 'Regenerate requirements-lock.txt from requirements.txt'
+  task :update_deps do
+    sh 'bin/update-docs-deps'
   end
 
   desc 'Set up python environment for docs'

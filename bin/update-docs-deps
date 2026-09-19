@@ -1,63 +1,58 @@
 #!/usr/bin/env bash
-# Updates the locked documentation dependencies (requirements-lock.txt)
+# Updates the locked documentation dependencies (requirements-lock.txt).
 #
 # Usage:
 #   bin/update-docs-deps
 #
 # This script:
-# 1. Creates a clean Python virtual environment
+# 1. Creates a temporary virtual environment outside the project tree
 # 2. Installs dependencies from requirements.txt (version ranges)
-# 3. Freezes exact versions to requirements-lock.txt
-# 4. Cleans up the temporary venv
+# 3. Freezes the resolved versions to requirements-lock.txt
+# 4. Removes the temporary venv, even if a step fails or is interrupted
 #
-# Run this after updating version ranges in requirements.txt
+# requirements-lock.txt is replaced only if every step succeeds.
+# Requires network access to PyPI.
+#
+# Run this after changing version ranges in requirements.txt, or to pick up
+# security fixes (see bin/audit-docs-deps). Afterward, review the diff and run
+# bin/build-docs to confirm the docs still build.
 
 set -e  # Exit on error
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-VENV_DIR="$PROJECT_ROOT/.venv-docs-update"
+
+# Explicit template: bare `mktemp -d` is not supported by older BSD/macOS mktemp
+VENV_DIR="$(mktemp -d "${TMPDIR:-/tmp}/update-docs-deps.XXXXXX")"
+trap 'rm -rf "$VENV_DIR"' EXIT
 
 echo "→ Creating temporary virtual environment..."
 python3 -m venv "$VENV_DIR"
 
-echo "→ Activating virtual environment..."
-source "$VENV_DIR/bin/activate"
-
 echo "→ Upgrading pip..."
-pip install --upgrade pip setuptools wheel --quiet
+"$VENV_DIR/bin/pip" install --upgrade pip --quiet
 
 echo "→ Installing dependencies from requirements.txt..."
-pip install -r "$PROJECT_ROOT/requirements.txt" --quiet
+"$VENV_DIR/bin/pip" install -r "$PROJECT_ROOT/requirements.txt" --quiet
 
-echo "→ Freezing dependencies to requirements-lock.txt..."
-cat > "$PROJECT_ROOT/requirements-lock.txt" <<EOF
+echo "→ Freezing dependencies..."
+# Build the new lock file inside the temp dir so a failure cannot leave a
+# truncated requirements-lock.txt behind.
+NEW_LOCK="$VENV_DIR/requirements-lock.txt"
+cat > "$NEW_LOCK" <<EOF
 # Locked documentation build dependencies
-# Generated: $(date +%Y-%m-%d)
-# Python: 3.12+
-#
-# This file pins exact versions to ensure reproducible documentation builds.
-# To update: run \`bin/update-docs-deps\` or manually:
-#   1. Update version ranges in requirements.txt
-#   2. pip install -r requirements.txt in a clean venv
-#   3. pip freeze > requirements-lock.txt
-#   4. Test that docs build successfully
-
+# Requires Python 3.10 or newer.
+# Generated: $(date +%Y-%m-%d) by bin/update-docs-deps from requirements.txt.
 EOF
+# Older Pythons preinstall setuptools and wheel in new venvs; they are not docs
+# dependencies, so keep them out of the lock file.
+"$VENV_DIR/bin/pip" freeze --exclude setuptools --exclude wheel >> "$NEW_LOCK"
 
-# setuptools and wheel are only installed above as build tooling for the venv;
-# they are not docs dependencies, so keep them out of the lock file.
-pip freeze --exclude setuptools --exclude wheel >> "$PROJECT_ROOT/requirements-lock.txt"
-
-echo "→ Deactivating virtual environment..."
-deactivate
-
-echo "→ Removing temporary virtual environment..."
-rm -rf "$VENV_DIR"
+cp "$NEW_LOCK" "$PROJECT_ROOT/requirements-lock.txt"
 
 echo "✓ requirements-lock.txt updated successfully"
 echo ""
 echo "Next steps:"
 echo "  1. Review the changes: git diff requirements-lock.txt"
-echo "  2. Test the docs build: mkdocs build"
-echo "  3. Commit the updated lock file"
+echo "  2. Test the docs build: bin/build-docs"
+echo "  3. Audit the result: bin/audit-docs-deps"

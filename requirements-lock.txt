@@ -1,14 +1,6 @@
 # Locked documentation build dependencies
-# Generated: 2026-09-19
-# Python: 3.12+
-#
-# This file pins exact versions to ensure reproducible documentation builds.
-# To update: run `bin/update-docs-deps` or manually:
-#   1. Update version ranges in requirements.txt
-#   2. pip install -r requirements.txt in a clean venv
-#   3. pip freeze > requirements-lock.txt
-#   4. Test that docs build successfully
-
+# Requires Python 3.10 or newer.
+# Generated: 2026-09-19 by bin/update-docs-deps from requirements.txt.
 babel==2.18.0
 backrefs==8.0
 bracex==3.0.1
