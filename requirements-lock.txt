@@ -1,5 +1,5 @@
 # Locked documentation build dependencies
-# Generated: 2025-12-23
+# Generated: 2026-09-19
 # Python: 3.12+
 #
 # This file pins exact versions to ensure reproducible documentation builds.
@@ -9,45 +9,41 @@
 #   3. pip freeze > requirements-lock.txt
 #   4. Test that docs build successfully
 
-babel==2.17.0
-backrefs==6.1
-bracex==2.6
-certifi==2025.11.12
-charset-normalizer==3.4.4
-click==8.3.1
+babel==2.18.0
+backrefs==8.0
+bracex==3.0.1
+certifi==2026.7.22
+charset-normalizer==3.5.1
+click==8.5.0
 colorama==0.4.6
 csscompressor==0.9.5
 ghp-import==2.1.0
-gitdb==4.0.12
-GitPython==3.1.45
 htmlmin2==0.1.13
-idna==3.11
+idna==3.20
 Jinja2==3.1.6
 jsmin==3.0.1
-Markdown==3.10
+Markdown==3.10.3
 MarkupSafe==3.0.3
 mergedeep==1.3.4
 mkdocs==1.6.1
 mkdocs-awesome-pages-plugin==2.10.1
-mkdocs-get-deps==0.2.0
-mkdocs-git-revision-date-localized-plugin==1.5.0
-mkdocs-include-markdown-plugin==7.2.0
-mkdocs-material==9.7.1
+mkdocs-get-deps==0.2.2
+mkdocs-include-markdown-plugin==7.3.0
+mkdocs-material==9.7.7
 mkdocs-material-extensions==1.3.1
 mkdocs-minify-plugin==0.8.0
 natsort==8.4.0
-packaging==25.0
+packaging==26.3
 paginate==0.5.7
-pathspec==0.12.1
-platformdirs==4.5.1
-Pygments==2.19.2
-pymdown-extensions==10.19.1
+pathspec==1.1.1
+platformdirs==4.11.11
+Pygments==2.21.0
+pymdown-extensions==11.0.2
 python-dateutil==2.9.0.post0
 PyYAML==6.0.3
 pyyaml_env_tag==1.1
-requests==2.32.5
+requests==2.34.2
 six==1.17.0
-smmap==5.0.2
-urllib3==2.6.2
+urllib3==2.8.0
 watchdog==6.0.0
-wcmatch==10.1
+wcmatch==11.0.1
