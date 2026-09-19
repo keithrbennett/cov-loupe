@@ -18,4 +18,4 @@ mkdocs-minify-plugin>=0.6.4,<1.0.0
 mkdocs-include-markdown-plugin>=6.0.4,<8.0.0
 
 # Extensions (usually included with mkdocs-material, but listed for completeness)
-pymdown-extensions>=11.0.1,<12.0
+pymdown-extensions>=12.0.1,<13.0
