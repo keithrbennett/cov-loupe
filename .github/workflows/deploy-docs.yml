@@ -1,4 +1,4 @@
-# Builds docs on PRs and docs-related pushes to main; deploys on version tags.
+# Builds docs on PRs and docs-related pushes to main; deploys on final release tags (vX.Y.Z).
 name: Docs
 
 on:
@@ -6,7 +6,8 @@ on:
     branches:
       - main
     tags:
-      - 'v[0-9]*'
+      # Final releases only; pre-release tags (v7.0.0.pre.1, v7.0.0-rc1) do not match.
+      - 'v[0-9]+.[0-9]+.[0-9]+'
     paths: &docs_paths
       - 'docs/**'
       - 'mkdocs.yml'

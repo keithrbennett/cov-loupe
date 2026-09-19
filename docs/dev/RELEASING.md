@@ -76,7 +76,7 @@ git tag -a v#{version} -m "Version #{version}"
 ```bash
 git push origin main --follow-tags
 ```
-    - Only pushes with a version tag matching `v[0-9]*` deploy the documentation. Pull requests and pushes to `main` that change documentation-related files build the site for validation, but only matching version-tag pushes deploy it.
+    - Only pushes of a final release tag (`vX.Y.Z`, e.g. `v7.0.0`) deploy the documentation; pre-release tags such as `v7.0.0.pre.1` do not. Pull requests and pushes to `main` that change documentation-related files build the site for validation, but only final release tag pushes deploy it.
 
 ### 6. Publish Gem
 
