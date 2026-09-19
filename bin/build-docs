@@ -11,16 +11,14 @@ def run(*cmd)
 end
 
 def mkdocs_command
-  return 'mkdocs' if system('command -v mkdocs > /dev/null 2>&1')
-
   venv_bin = File.join(VENV_DIR, 'bin')
   mkdocs_path = File.join(venv_bin, 'mkdocs')
+  return mkdocs_path if File.executable?(mkdocs_path)
+  return 'mkdocs' if system('command -v mkdocs > /dev/null 2>&1')
 
-  unless File.executable?(mkdocs_path)
-    puts 'Creating virtual environment...'
-    run('python3', '-m', 'venv', VENV_DIR)
-    run(File.join(venv_bin, 'pip'), 'install', '-r', File.join(SCRIPT_DIR, 'requirements-lock.txt'))
-  end
+  puts 'Creating virtual environment...'
+  run('python3', '-m', 'venv', VENV_DIR)
+  run(File.join(venv_bin, 'pip'), 'install', '-r', File.join(SCRIPT_DIR, 'requirements-lock.txt'))
 
   mkdocs_path
 end

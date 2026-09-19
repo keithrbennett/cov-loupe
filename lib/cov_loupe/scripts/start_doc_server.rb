@@ -25,10 +25,9 @@ module CovLoupe
       end
 
       private def resolve_mkdocs_path
-        return 'mkdocs' if command_exists?('mkdocs')
-
         mkdocs_path = File.join(VENV_DIR, 'bin', 'mkdocs')
         return mkdocs_path if command_exists?(mkdocs_path)
+        return 'mkdocs' if command_exists?('mkdocs')
 
         puts 'Documentation virtual environment not found; setting it up...'
         SetupDocServer.new.call

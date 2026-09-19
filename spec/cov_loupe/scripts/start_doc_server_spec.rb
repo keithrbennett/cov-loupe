@@ -14,25 +14,32 @@ RSpec.describe CovLoupe::Scripts::StartDocServer do
       allow($stdout).to receive(:flush)
     end
 
-    context 'when mkdocs is found globally' do
-      before do
-        allow(script).to receive(:command_exists?).with('mkdocs').and_return(true)
-      end
-
-      it 'executes the global mkdocs' do
-        expect(script).to receive(:exec).with('mkdocs', 'serve')
-        script.call
-      end
-    end
-
     context 'when mkdocs is found in the docs venv' do
       before do
-        allow(script).to receive(:command_exists?).with('mkdocs').and_return(false)
         allow(script).to receive(:command_exists?).with('.docs-venv/bin/mkdocs').and_return(true)
       end
 
       it 'executes the venv mkdocs' do
         expect(script).to receive(:exec).with('.docs-venv/bin/mkdocs', 'serve')
+        script.call
+      end
+
+      it 'prefers the venv mkdocs over a global one' do
+        allow(script).to receive(:command_exists?).with('mkdocs').and_return(true)
+
+        expect(script).to receive(:exec).with('.docs-venv/bin/mkdocs', 'serve')
+        script.call
+      end
+    end
+
+    context 'when only a global mkdocs is found' do
+      before do
+        allow(script).to receive(:command_exists?).with('.docs-venv/bin/mkdocs').and_return(false)
+        allow(script).to receive(:command_exists?).with('mkdocs').and_return(true)
+      end
+
+      it 'executes the global mkdocs' do
+        expect(script).to receive(:exec).with('mkdocs', 'serve')
         script.call
       end
     end

@@ -4,8 +4,7 @@
 # For contributors: Install any version within these ranges to build docs locally.
 # For CI: Use requirements-lock.txt for reproducible builds (see dev/prompts/ai-code-evaluator-guidelines.md).
 #
-# NOTE: Docs CI pins Python 3.12 because mkdocs-include-markdown-plugin
-# does not yet ship wheels compatible with Python 3.13.
+# Requires Python 3.10 or newer. Docs CI uses Python 3.13.
 
 # MkDocs and theme
 mkdocs>=1.5.0,<2.0.0
