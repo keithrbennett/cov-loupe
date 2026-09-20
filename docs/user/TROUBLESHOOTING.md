@@ -227,7 +227,7 @@ This does not change MCP itself. It only changes whether the RubyGems wrapper st
   export NOEXEC_DISABLE=1
   exec cov-loupe -m mcp "$@"
   ```
-  Then point your MCP client at that wrapper script.
+  Then point your MCP client at that wrapper script. For copy-and-paste setup steps, including the command for each client, see [Step by Step: The Launch Wrapper](MCP_INTEGRATION.md#step-by-step-the-launch-wrapper).
 - Preferred fix: settle the current project's bundle, then retry normal startup:
   ```bash
   bundle install

@@ -40,8 +40,8 @@ Reads SimpleCov's `coverage.json`, the documented JSON formatter output that Sim
 ### Practical Use Cases
 
 - Query coverage data from AI assistants, e.g.:
-  - "Using cov-loupe, analyze test coverage data and write a report to a markdown file containing a free text analysis of each issue and then two tables, one sorted in descending order of urgency, the other in ascending order of level of effort."
-  - "Using cov-loupe, generate a table of directories and their average coverage rates, in ascending order of coverage."
+  - "Using the cov-loupe MCP server, analyze test coverage data and write a report to a markdown file containing a free text analysis of each issue and then two tables, one sorted in descending order of urgency, the other in ascending order of level of effort."
+  - "Using the cov-loupe MCP server, generate a table of directories and their average coverage rates, in ascending order of coverage."
 - Find files with the lowest coverage
 - Investigate specific files or directories
 - Generate CI/CD coverage reports

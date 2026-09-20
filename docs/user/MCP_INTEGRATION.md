@@ -10,7 +10,13 @@
 - [Setup by Client](#setup-by-client)
     - [Claude Code](#claude-code)
     - [Codex](#codex)
-    - [Gemini](#gemini)
+    - [Antigravity](#antigravity)
+    - [GitHub Copilot CLI](#github-copilot-cli)
+    - [Cursor](#cursor)
+    - [VS Code](#vs-code)
+    - [Kimi Code](#kimi-code)
+    - [OpenCode](#opencode)
+    - [Pi](#pi)
     - [Kilo](#kilo)
 - [Stdout Must Stay Clean During MCP Startup](#stdout-must-stay-clean-during-mcp-startup)
 - [Available MCP Tools](#available-mcp-tools-functions)
@@ -21,7 +27,9 @@
 
 ## Setup by Client
 
-> **Note:** MCP tools and their configuration methods evolve rapidly. The commands and approaches listed below may have changed by the time you read this. Check your client's documentation (e.g., `claude mcp --help`, `codex mcp --help`) for the most current instructions.
+> **Tip:** If you use RVM (or otherwise see `Resolving dependencies...` printed before the MCP handshake), skip straight to [the launch wrapper](#step-by-step-the-launch-wrapper). It takes one minute and prevents a common startup failure in every client below.
+
+> **Note:** MCP tools and their configuration methods evolve rapidly. The commands and approaches listed below may have changed by the time you read this. Check your client's documentation (e.g., `claude mcp --help`, `codex mcp --help`, `agy mcp --help`, `opencode mcp --help`) for the most current instructions.
 
 ### Claude Code
 
@@ -43,21 +51,22 @@ claude mcp list
 # Get server details
 claude mcp get cov-loupe
 
-# Remove if needed (use --scope to match where it was added)
-claude mcp remove cov-loupe                # Removes from local scope (default)
-claude mcp remove --scope user cov-loupe   # Removes from user scope
-claude mcp remove --scope project cov-loupe # Removes from project scope
+# Remove if needed. Without --scope, it is removed from whichever scope it exists in;
+# use --scope to be explicit (or if the same name exists in more than one scope)
+claude mcp remove cov-loupe
+claude mcp remove --scope user cov-loupe
+claude mcp remove --scope project cov-loupe
 ```
 
 ### Codex
 
-`mcp add` expects first the display name, then the executable (filename or path). The executable's filename is sufficient if it is in the PATH, but you may also specify the fully qualified path if necessary (e.g. `/a/b/cov-loupe`).
+`mcp add` expects first the display name, then `--`, then the executable (filename or path) and its arguments. The executable's filename is sufficient if it is in the PATH, but you may also specify the fully qualified path if necessary (e.g. `/a/b/cov-loupe`).
 
 Using the Codex CLI:
 
 ```sh
-# Add the MCP server
-codex mcp add cov-loupe cov-loupe -m mcp
+# Add the MCP server (global; stored in ~/.codex/config.toml)
+codex mcp add cov-loupe -- cov-loupe -m mcp
 
 # List configured servers
 codex mcp list
@@ -65,12 +74,11 @@ codex mcp list
 # Show server details
 codex mcp get cov-loupe
 
-# Remove if needed (check codex documentation for scope options if applicable)
+# Remove if needed
 codex mcp remove cov-loupe
 ```
 
-**Important:** Codex does not pass environment variables like `GEM_HOME`/`GEM_PATH` to MCP servers
-by default. After adding the server, you **must** manually edit `~/.codex/config.toml` to add the 'env_vars' setting:
+**Important:** Codex starts MCP servers with a minimal environment and does not pass `GEM_HOME`/`GEM_PATH` by default. If you installed `cov-loupe` with `gem install` under RVM (where Ruby finds gems through those two variables), Codex cannot find the gem and the launcher fails with `can't find gem cov-loupe`. Codex shows no error: `codex mcp list` reports the server as `enabled`, but it never starts, and the model may answer without it (or invent an answer). After adding the server, you **must** manually edit `~/.codex/config.toml` to add the `env_vars` setting:
 
 ```toml
 [mcp_servers.cov-loupe]
@@ -83,37 +91,187 @@ env_vars = ["GEM_HOME", "GEM_PATH"]  # Add this line manually
 You'll need to manually add it back after running `codex mcp add` again.
 To avoid this, consider editing `~/.codex/config.toml` directly instead of using `remove`/`add` commands.
 
-If Codex starts `cov-loupe` in a fresh repo and you see `Resolving dependencies...` before the MCP handshake, point Codex at a small wrapper script instead of `cov-loupe` directly:
+**Watch the position of `--`.** It goes right after the server name and *before* the command: `codex mcp add cov-loupe -- cov-loupe -m mcp` (name, `--`, command, arguments). If you put the command before the `--`, as in `codex mcp add cov-loupe cov-loupe -- -m mcp`, Codex stores the `--` as a literal argument: `args = ["--", "-m", "mcp"]`, and `cov-loupe` fails with `Unknown subcommand: '-m'`. After adding, confirm that the `Args` column of `codex mcp list` shows `-m mcp` with no leading `--`.
+
+If Codex starts `cov-loupe` in a repo and you see `Resolving dependencies...` before the MCP handshake, use the [launch wrapper](#step-by-step-the-launch-wrapper) below instead of `cov-loupe` directly.
+
+### Antigravity
+
+Antigravity's CLI is `agy`. `mcp add` expects first the display name, then the executable and its arguments; flags (such as `--env`) must come before the name, and `--` is needed so `-m` is not parsed as a flag.
 
 ```sh
-#!/usr/bin/env bash
-export NOEXEC_DISABLE=1
-exec cov-loupe -m mcp "$@"
-```
-
-That disables `rubygems-bundler`'s `noexec` hook before the RubyGems launcher runs, which keeps `stdout` clean for MCP startup.
-
-### Gemini
-
-`mcp add` expects first the display name, then the executable (filename or path). The executable's filename is sufficient if it is in the PATH, but you may also specify the fully qualified path if necessary (e.g. `/a/b/cov-loupe`).
-
-Using the Gemini CLI:
-
-```sh
-# Add the MCP server
-gemini mcp add cov-loupe cov-loupe -- -m mcp
+# Add the MCP server (user-wide; stored in ~/.gemini/config/mcp_config.json)
+agy mcp add cov-loupe cov-loupe -- -m mcp
 
 # List configured servers
-gemini mcp list
+agy mcp list
 
-# Remove if needed (check gemini documentation for scope options if applicable)
-gemini mcp remove cov-loupe
+# Temporarily turn the server off or on without removing it
+agy mcp disable cov-loupe
+agy mcp enable cov-loupe
+
+# Remove if needed
+agy mcp remove cov-loupe
 ```
 
+`agy mcp` has no `--scope` option; configuration is user-wide.
 
-**Environment variables you can set:**
+**Gemini CLI:** Google has [replaced Gemini CLI with Antigravity CLI](https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/); Gemini CLI stopped serving free, AI Pro, and Ultra personal accounts on June 18, 2026. Access through Gemini Code Assist Standard or Enterprise licenses is unchanged. If you are on one of those, `gemini mcp add cov-loupe cov-loupe -- -m mcp` adds the server to the project (`.gemini/settings.json`); add `--scope user` for user-wide configuration (`~/.gemini/settings.json`). `gemini mcp remove` takes the same `--scope` option, and its default scope is also project.
 
-- `COV_LOUPE_OPTS` - Default CLI options (though less useful for MCP mode)
+### GitHub Copilot CLI
+
+`mcp add` expects the display name, then `--`, then the command and its arguments. It always writes to your user configuration, `~/.copilot/mcp-config.json`.
+
+```sh
+# Add the MCP server (user-wide)
+copilot mcp add cov-loupe -- cov-loupe -m mcp
+
+# List configured servers, or show one
+copilot mcp list
+copilot mcp get cov-loupe
+
+# Remove if needed (user configuration only)
+copilot mcp remove cov-loupe
+```
+
+Copilot also reads project servers from `.mcp.json` or `.github/mcp.json` in the workspace. Those can't be managed with `copilot mcp add/remove`; edit the file instead.
+
+`copilot mcp list` only reads configuration. To see whether the server actually starts, run any prompt with debug logging and look for the connection lines:
+
+```sh
+copilot -p "hi" --log-level debug --log-dir /tmp/copilot-logs
+grep "cov-loupe" /tmp/copilot-logs/*
+```
+
+You should see `MCP client for cov-loupe connected`.
+
+### Cursor
+
+Cursor reads `mcp.json` files: `~/.cursor/mcp.json` (all projects) or `.cursor/mcp.json` (one project), using the `mcpServers` format. Cursor launches servers **without** your shell's `GEM_HOME`/`GEM_PATH`, so if you installed `cov-loupe` with `gem install` under RVM (where Ruby finds gems through those two variables), you need to pass them explicitly (Cursor expands `${env:NAME}` from its own environment):
+
+```json
+{
+  "mcpServers": {
+    "cov-loupe": {
+      "command": "cov-loupe",
+      "args": ["-m", "mcp"],
+      "env": {
+        "GEM_HOME": "${env:GEM_HOME}",
+        "GEM_PATH": "${env:GEM_PATH}"
+      }
+    }
+  }
+}
+```
+
+Without the `env` block, `cursor-agent mcp list-tools cov-loupe` fails with `Connection failed` and `can't find gem cov-loupe` from the launcher.
+
+Cursor also asks you to approve each server before it will start it. Approve it from the command line, and repeat this if you later edit the server's entry, because the approval is reset by a change:
+
+```sh
+cursor-agent mcp enable cov-loupe
+cursor-agent mcp list                    # should show: cov-loupe: ready
+cursor-agent mcp list-tools cov-loupe    # starts the server and lists its 9 tools; no model needed
+```
+
+To remove the server, delete its entry from `mcp.json` (or run `cursor-agent mcp disable cov-loupe` to stop it loading while keeping the entry).
+
+### VS Code
+
+VS Code (with Copilot Chat's agent mode) stores MCP servers in an `mcp.json` file. The top-level key is `servers` (not `mcpServers`). You can add a server to your user profile from the command line:
+
+```sh
+code --add-mcp '{"name":"cov-loupe","command":"cov-loupe","args":["-m","mcp"]}'
+```
+
+For one project only, create `.vscode/mcp.json`:
+
+```json
+{
+  "servers": {
+    "cov-loupe": {
+      "type": "stdio",
+      "command": "cov-loupe",
+      "args": ["-m", "mcp"]
+    }
+  }
+}
+```
+
+There is no command-line remove; delete the `cov-loupe` entry from the file, or use the editor's `MCP: List Servers` command, which also shows each server's status.
+
+Editors started from a desktop launcher often don't inherit your shell environment, so if the server fails to start, use the [launch wrapper](#step-by-step-the-launch-wrapper) with its absolute path.
+
+### Kimi Code
+
+Kimi Code (`kimi`) has no `mcp add`/`mcp remove` subcommands. MCP servers are declared in `mcp.json` files, each with a top-level `mcpServers` object:
+
+| Scope | File |
+|-------|------|
+| User-global | `~/.kimi-code/mcp.json` (or `$KIMI_CODE_HOME/mcp.json` if that variable is set) |
+| Project root (shared with other tools) | `.mcp.json` at the repository root |
+| Project-local (Kimi-specific) | `.kimi-code/mcp.json` in the current directory |
+
+```json
+{
+  "mcpServers": {
+    "cov-loupe": {
+      "command": "cov-loupe",
+      "args": ["-m", "mcp"]
+    }
+  }
+}
+```
+
+To add the server, create the file or merge this entry into an existing `mcpServers` object. To remove it, delete the `cov-loupe` entry from the file where it was added. MCP servers load at session start, so start a new session (e.g. `/new`) or restart `kimi` afterward. You can also ask Kimi to make the change for you with the `/mcp-config` skill.
+
+Project-root and project-local entries launch commands at session start, so Kimi loads them only in folders you have marked as trusted. In an untrusted folder it skips them and prints `this folder is not trusted; skipped 1 project-level MCP server: cov-loupe`. To trust the folder, run `kimi` there interactively and choose "Trust this folder"; non-interactive runs (`kimi -p`) cannot ask. The user-global `mcp.json` needs no trust, so it is the simplest choice if you want cov-loupe available everywhere.
+
+### OpenCode
+
+OpenCode can add servers interactively with `opencode mcp add` (it prompts for name, type, and command), and `opencode mcp list` shows what is configured and its status. There is no `opencode mcp remove`; to add non-interactively or to remove a server, edit the config file directly. For global configuration, use `~/.config/opencode/opencode.json`; for project-local configuration, use `opencode.json` in the project root:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "cov-loupe": {
+      "type": "local",
+      "command": ["cov-loupe", "-m", "mcp"],
+      "enabled": true
+    }
+  }
+}
+```
+
+To remove the server, delete the `cov-loupe` entry from `mcp` (or set `"enabled": false` to keep the entry but not start it), then restart OpenCode.
+
+### Pi
+
+Pi does not include built-in MCP support. To use cov-loupe with Pi, install the community [`pi-mcp-adapter`](https://github.com/nicobailon/pi-mcp-adapter) extension and restart Pi:
+
+```sh
+pi install npm:pi-mcp-adapter
+```
+
+The adapter reads standard `mcp.json` files: `.mcp.json` in the project root (project-specific), or `~/.config/mcp/mcp.json` (all projects). Add the server to either one:
+
+```json
+{
+  "mcpServers": {
+    "cov-loupe": {
+      "command": "cov-loupe",
+      "args": ["-m", "mcp"]
+    }
+  }
+}
+```
+
+By default `pi install` is user-wide; add `-l` (`pi install npm:pi-mcp-adapter -l`) to install it for the current project only. In non-interactive runs (`pi -p`), Pi ignores project-local extensions (including a `-l` install) unless you pass `--approve` to trust project-local files for that run.
+
+The adapter exposes MCP tools through a single `mcp` proxy tool and connects to servers lazily, so ask Pi to search for or call the cov-loupe tools (for example, "Using the cov-loupe MCP server, show me the version"). Inside Pi, `/mcp` shows the adapter's status and `/mcp setup` walks through configuration.
+
+To remove the server, delete the `cov-loupe` entry from the `mcp.json` file where you added it and run `/reload` (or restart Pi). To remove the adapter itself, run `pi remove npm:pi-mcp-adapter`. See the adapter's README for its other config locations and precedence rules.
 
 ### Kilo
 
@@ -146,11 +304,52 @@ For root-cause details, diagnostic commands, and the upstream RVM tracking issue
 
 For MCP usage, start with the normal launch path and only bypass the RubyGems stub if startup is still noisy.
 
-- Most reliable workaround for wrapper-heavy Ruby environments: launch through a tiny shell wrapper that exports `NOEXEC_DISABLE=1` before calling `cov-loupe -m mcp`.
+- Most reliable workaround for wrapper-heavy Ruby environments: launch through a tiny shell wrapper that exports `NOEXEC_DISABLE=1` before calling `cov-loupe -m mcp`. See [Step by Step: The Launch Wrapper](#step-by-step-the-launch-wrapper).
 - Preferred fix: in the current project, run `bundle install` so the bundle is settled, then retry normal `cov-loupe -m mcp` startup.
 - Good follow-up check: confirm `Gemfile.lock` exists and `bundle check` succeeds before retrying the MCP client.
 - Fallback: if you cannot settle the bundle or still need a launch path that does not depend on the working directory's bundle state, invoke the real executable directly instead of the RubyGems wrapper.
 - Good for local development from a checkout: point the MCP client at the checkout's [`exe/cov-loupe`](https://github.com/keithrbennett/cov-loupe/blob/main/exe/cov-loupe) directly.
+
+### Step by Step: The Launch Wrapper
+
+If you would rather not think about Bundler at all, do this once. It works in every project directory, whether or not the project's bundle is settled.
+
+**1. Create the wrapper** in a directory that is on your `PATH` (`~/.local/bin` is a common choice; check with `echo $PATH`):
+
+```sh
+mkdir -p ~/.local/bin
+cat > ~/.local/bin/cov-loupe-no-bundler <<'EOF'
+#!/usr/bin/env bash
+export NOEXEC_DISABLE=1
+exec cov-loupe -m mcp "$@"
+EOF
+chmod +x ~/.local/bin/cov-loupe-no-bundler
+```
+
+The script already includes `-m mcp`, so the client commands below don't need it.
+
+**2. Check that it works.** You should see a JSON line and nothing else before it:
+
+```sh
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"version","arguments":{}}}' | cov-loupe-no-bundler
+```
+
+**3. Register `cov-loupe-no-bundler` instead of `cov-loupe -m mcp`.** If `cov-loupe` is already registered with your client, remove it first (see that client's section above):
+
+| Client | Command |
+|--------|---------|
+| Claude Code | `claude mcp add cov-loupe cov-loupe-no-bundler` |
+| Codex | `codex mcp add cov-loupe -- cov-loupe-no-bundler` (then add `env_vars`, as described in the [Codex](#codex) section) |
+| Antigravity | `agy mcp add cov-loupe cov-loupe-no-bundler` |
+| GitHub Copilot CLI | `copilot mcp add cov-loupe -- cov-loupe-no-bundler` |
+| Cursor | In `mcp.json`: `"command": "cov-loupe-no-bundler"` and no `args` (keep the `env` block described in the [Cursor](#cursor) section) |
+| VS Code | `code --add-mcp '{"name":"cov-loupe","command":"cov-loupe-no-bundler"}'` |
+| Kimi Code, Pi | In `mcp.json`: `"command": "cov-loupe-no-bundler"` and no `args` |
+| OpenCode, Kilo | In `opencode.json`: `"command": ["cov-loupe-no-bundler"]` |
+
+If a client can't find the script (some launch servers with a minimal `PATH`), give it the absolute path instead, e.g. `/home/you/.local/bin/cov-loupe-no-bundler`.
+
+`NOEXEC_DISABLE=1` turns off the `rubygems-bundler` hook that RVM installs, which is what prints `Resolving dependencies...` to `stdout`. It doesn't change what `cov-loupe` does.
 
 See [Troubleshooting](TROUBLESHOOTING.md#rubygems-wrapper-prints-to-stdout-before-mcp-startup) for wrapper examples and direct-executable fallback configuration.
 
@@ -378,46 +577,48 @@ Example `help` payload excerpt:
 
 ## Example Prompts for AI Assistants
 
-(Hopefully, your AI agent will not need you to explicitly specify "Using cov-loupe",
-but this is included here because we have seen cases where it does not know to use cov-loupe.)
+(Hopefully, your AI agent will not need you to say "Using the cov-loupe MCP server", but it is included
+here on purpose. Agents sometimes run the `cov-loupe` command-line app through the shell instead of
+calling the MCP server, even when the server is installed.)
+
 ### Coverage Analysis
 
 ```
-Using cov-loupe, show me a table of all files and their coverage percentages.
+Using the cov-loupe MCP server, show me a table of all files and their coverage percentages.
 ```
 
 ```
-Using cov-loupe, find files with less than 80% coverage and tell me which ones to prioritize.
+Using the cov-loupe MCP server, find files with less than 80% coverage and tell me which ones to prioritize.
 ```
 
 ```
-Using cov-loupe, analyze the coverage for lib/cov_loupe/tools/ and suggest improvements.
+Using the cov-loupe MCP server, analyze the coverage for lib/cov_loupe/tools/ and suggest improvements.
 ```
 
 ### Finding Coverage Gaps
 
 ```
-Using cov-loupe, show me the uncovered lines in lib/cov_loupe/base_tool.rb and explain what they do.
+Using the cov-loupe MCP server, show me the uncovered lines in lib/cov_loupe/base_tool.rb and explain what they do.
 ```
 
 ```
-Using cov-loupe, find the most important uncovered code in lib/cov_loupe/tools/file_coverage_detailed_tool.rb.
+Using the cov-loupe MCP server, find the most important uncovered code in lib/cov_loupe/tools/file_coverage_detailed_tool.rb.
 ```
 
 ### Test Generation
 
 ```
-Using cov-loupe, find uncovered lines in lib/cov_loupe/staleness/staleness_checker.rb and write *meaningful* RSpec tests for them.
+Using the cov-loupe MCP server, find uncovered lines in lib/cov_loupe/staleness/staleness_checker.rb and write *meaningful* RSpec tests for them.
 ```
 
 ```
-Using cov-loupe, analyze coverage gaps in lib/cov_loupe/tools/ and generate test cases.
+Using the cov-loupe MCP server, analyze coverage gaps in lib/cov_loupe/tools/ and generate test cases.
 ```
 
 ### Coverage Reporting
 
 ```
-Using cov-loupe, create a markdown report of:
+Using the cov-loupe MCP server, create a markdown report of:
 - Files with worst coverage
 - Most critical coverage gaps
 - Recommended action items
@@ -463,20 +664,39 @@ Once configured, try these prompts in your AI assistant:
 
 1. **Basic connectivity:**
    ```
-   Using cov-loupe, show me the version.
+   Using the cov-loupe MCP server, show me the version.
    ```
 
 2. **List tools:**
    ```
-   Using cov-loupe, what tools are available?
+   Using the cov-loupe MCP server, what tools are available?
    ```
 
 3. **Simple query:**
    ```
-   Using cov-loupe, show me all files with coverage.
+   Using the cov-loupe MCP server, show me all files with coverage.
    ```
 
 If these work, your setup is correct!
+
+#### Confirm the server actually starts
+
+A server can be registered and still fail to start, and most `list` commands only read the configuration. `claude mcp list` (shows `✔ Connected`), `opencode mcp list` (shows `connected`), and `cursor-agent mcp list` (shows `ready`, once approved) do try to start it; `codex mcp list`, `agy mcp list`, and Kimi's config do not, so `enabled` there proves nothing. Use a real request to be sure. These non-interactive versions each call the `version` tool once (run them from a project directory, and compare the answer with `cov-loupe --version`):
+
+| Client | Command |
+|--------|---------|
+| Claude Code | `claude -p "Call the cov-loupe MCP version tool and reply with only the version." --allowedTools mcp__cov-loupe__version` |
+| Codex | `codex exec -c 'mcp_servers.cov-loupe.tools.version.approval_mode="approve"' "Call the cov-loupe MCP version tool (not the shell) and reply with only the version."` |
+| GitHub Copilot CLI | `copilot -p "hi" --log-level debug --log-dir /tmp/copilot-logs`, then `grep cov-loupe /tmp/copilot-logs/*` and look for `MCP client for cov-loupe connected` |
+| Cursor | `cursor-agent mcp list-tools cov-loupe` (after `cursor-agent mcp enable cov-loupe`); lists the tools without using a model |
+| Kimi Code | `kimi -p "Call the cov-loupe MCP version tool and reply with only the version."` |
+| OpenCode | `opencode run -m <provider/model> "Call the cov-loupe MCP version tool and reply with only the version."` |
+| Pi | `pi -p "Use the mcp tool to call the cov-loupe version tool and reply with only the version."` (add `--approve` if the adapter is installed with `-l`) |
+
+Notes:
+
+- Non-interactive runs can't answer permission prompts. Without the `approval_mode` setting, `codex exec` reports `MCP tool call requires approval, but approval policy is never`. Cursor's `cursor-agent -p` rejects MCP tool execution unless you pass `--force`, and Antigravity's `agy -p` denies MCP tool calls the same way unless an allow rule for `mcp(cov-loupe/version)` is in its `settings.json`, so test Antigravity interactively.
+- A model that can't reach the server may still answer, using the shell or a guess. If the version doesn't match `cov-loupe --version`, or the client didn't report a tool call to `cov-loupe`, treat it as a failure.
 
 ### Checking Logs
 
@@ -542,11 +762,13 @@ For troubleshooting, add error mode when configuring the server:
 claude mcp add cov-loupe cov-loupe -- -m mcp --error-mode debug
 
 # Codex
-codex mcp add cov-loupe cov-loupe -m mcp --error-mode debug
+codex mcp add cov-loupe -- cov-loupe -m mcp --error-mode debug
 
-# Gemini
-gemini mcp add cov-loupe cov-loupe -- -m mcp --error-mode debug
+# Antigravity
+agy mcp add cov-loupe cov-loupe -- -m mcp --error-mode debug
 ```
+
+For Kimi Code, OpenCode, and Pi, add `"--error-mode", "debug"` to the `args` (or `command`) array in the config file.
 
 ## Next Steps
 

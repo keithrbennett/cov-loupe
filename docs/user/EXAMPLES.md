@@ -285,33 +285,33 @@ end
 
 ### Coverage Analysis
 
-"Using cov-loupe, show me a table of all files sorted by coverage percentage."
+"Using the cov-loupe MCP server, show me a table of all files sorted by coverage percentage."
 
-"Using cov-loupe, find the 10 files with the lowest coverage and create a markdown report with:
+"Using the cov-loupe MCP server, find the 10 files with the lowest coverage and create a markdown report with:
 1. File path
 2. Current coverage %
 3. Number of uncovered lines"
 
-"Using cov-loupe, analyze the lib/payments/ directory and identify which files should be prioritized for additional testing based on coverage gaps and file complexity."
+"Using the cov-loupe MCP server, analyze the lib/payments/ directory and identify which files should be prioritized for additional testing based on coverage gaps and file complexity."
 
 ### Finding Specific Issues
 
-"Using cov-loupe, show me the uncovered lines in app/controllers/orders_controller.rb with 5 lines of context around each uncovered block."
+"Using the cov-loupe MCP server, show me the uncovered lines in app/controllers/orders_controller.rb with 5 lines of context around each uncovered block."
 
-"Using cov-loupe, find all files in lib/payments/ with less than 80% coverage and list the specific uncovered line numbers for each."
+"Using the cov-loupe MCP server, find all files in lib/payments/ with less than 80% coverage and list the specific uncovered line numbers for each."
 
 ### Test Generation
 
-"Using cov-loupe, identify the uncovered lines in lib/ops/jobs/report_job.rb and write *meaningful* RSpec tests to cover them."
+"Using the cov-loupe MCP server, identify the uncovered lines in lib/ops/jobs/report_job.rb and write *meaningful* RSpec tests to cover them."
 
-"Using cov-loupe, analyze coverage gaps in the app/controllers/ directory and generate a test plan prioritizing:
+"Using the cov-loupe MCP server, analyze coverage gaps in the app/controllers/ directory and generate a test plan prioritizing:
 1. Public API methods
 2. Error handling paths
 3. Edge cases"
 
 ### Reporting
 
-"Using cov-loupe, create a coverage report showing:
+"Using the cov-loupe MCP server, create a coverage report showing:
 - Overall project coverage percentage
 - Top 5 files with worst coverage
 - Recommended next steps to improve coverage
