@@ -38,6 +38,14 @@ RSpec.describe CovLoupe::Logger do
       expect(File.exist?('  STDERR  ')).to be false
     end
 
+    it 'writes formatted messages to $stderr when the target is stderr' do
+      logger = described_class.new(target: 'stderr', mode: :library)
+
+      expect { logger.warn('to the console') }.to output(
+        /\A\[\d{4}-\d{2}-\d{2}T[^\]]+\] WARN: to the console\n\z/
+      ).to_stderr
+    end
+
     it 'defaults CLI and MCP logging to stderr' do
       %i[cli mcp].each do |mode|
         logger = described_class.new(target: nil, mode: mode)

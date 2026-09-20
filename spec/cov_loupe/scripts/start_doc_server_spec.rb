@@ -44,6 +44,25 @@ RSpec.describe CovLoupe::Scripts::StartDocServer do
       end
     end
 
+    context 'when mkdocs is still unavailable after setup' do
+      let(:setup_script) { instance_double(CovLoupe::Scripts::SetupDocServer, call: nil) }
+
+      before do
+        allow(script).to receive(:command_exists?).and_return(false)
+        allow(CovLoupe::Scripts::SetupDocServer).to receive(:new).and_return(setup_script)
+      end
+
+      it 'prints guidance to stderr and exits with status 1 without exec-ing' do
+        allow(script).to receive(:exec)
+
+        expect { script.call }
+          .to output(/mkdocs not found.*bin\/set-up-python-for-doc-server.*rake docs:setup/m)
+          .to_stderr
+          .and raise_error(SystemExit) { |error| expect(error.status).to eq(1) }
+        expect(script).not_to have_received(:exec)
+      end
+    end
+
     context 'when mkdocs is missing before setup' do
       let(:setup_script) { instance_double(CovLoupe::Scripts::SetupDocServer, call: nil) }
 

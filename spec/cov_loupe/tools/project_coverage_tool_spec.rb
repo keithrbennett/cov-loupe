@@ -414,6 +414,98 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
     end
   end
 
+  describe 'table format exclusion categories and skipped rows' do
+    let(:presenter_stubs) do
+      {
+        relative_files:                 [],
+        relative_skipped_files:         [],
+        relative_missing_tracked_files: [],
+        relative_newer_files:           [],
+        relative_deleted_files:         [],
+        relative_length_mismatch_files: [],
+        relative_unreadable_files:      [],
+        timestamp_status:               'ok',
+      }
+    end
+
+    def table_output_with(overrides)
+      model = instance_double(CovLoupe::CoverageModel, format_table: "Mock\nTable")
+      allow(CovLoupe::CoverageModel).to receive(:new).and_return(model)
+
+      presenter = instance_double(CovLoupe::Presenters::ProjectCoveragePresenter,
+        presenter_stubs.merge(overrides))
+      allow(CovLoupe::Presenters::ProjectCoveragePresenter).to receive(:new).and_return(presenter)
+
+      described_class.call(root: root, format: 'table', server_context: server_context)
+        .content.first['text']
+    end
+
+    {
+      relative_missing_tracked_files: ['Missing tracked files (2):', %w[lib/a.rb lib/b.rb]],
+      relative_newer_files:           ['Files newer than coverage (1):', %w[lib/newer.rb]],
+      relative_deleted_files:         ['Deleted files with coverage (1):', %w[lib/gone.rb]],
+      relative_length_mismatch_files: ['Line count mismatches (1):', %w[lib/mismatch.rb]],
+      relative_unreadable_files:      ['Unreadable files (1):', %w[lib/locked.rb]],
+    }.each do |stub_name, (heading, files)|
+      it "lists #{stub_name.to_s.delete_prefix('relative_').tr('_', ' ')} under '#{heading}'" do
+        output = table_output_with(stub_name => files)
+
+        expect(output).to include('Files excluded from coverage:', heading)
+        files.each { |file| expect(output).to include("  - #{file}") }
+        expect(output).to include('Run with --raise-on-stale to exit when files are excluded.')
+      end
+    end
+
+    it 'omits categories that have no entries' do
+      output = table_output_with(relative_newer_files: %w[lib/newer.rb])
+
+      expect(output).to include('Files newer than coverage (1):')
+      expect(output).not_to include('Missing tracked files', 'Deleted files', 'Unreadable files',
+        'Line count mismatches')
+    end
+
+    context 'with skipped rows' do
+      let(:skipped_rows) do
+        [
+          { 'file' => 'lib/bad.rb', 'error' => 'invalid coverage data' },
+          { 'file' => 'lib/worse.rb', 'error' => 'lines is not an array' },
+        ]
+      end
+
+      it 'reports each skipped row in the exclusions summary' do
+        output = table_output_with(relative_skipped_files: skipped_rows)
+
+        expect(output).to include(
+          'Files skipped due to errors (2):',
+          '  - lib/bad.rb: invalid coverage data',
+          '  - lib/worse.rb: lines is not an array'
+        )
+      end
+
+      it 'appends a pluralized skipped-rows warning' do
+        output = table_output_with(relative_skipped_files: skipped_rows)
+
+        expect(output).to include(
+          'WARNING: 2 coverage rows skipped due to errors:',
+          'Run again with --raise-on-stale to exit when rows are skipped.'
+        )
+      end
+
+      it 'uses the singular form for a single skipped row' do
+        output = table_output_with(relative_skipped_files: skipped_rows.first(1))
+
+        expect(output).to include('WARNING: 1 coverage row skipped due to errors:')
+        expect(output).not_to include('1 coverage rows')
+      end
+    end
+
+    it 'emits no skipped-rows warning when nothing was skipped' do
+      output = table_output_with({})
+
+      expect(output).to eq("Mock\nTable")
+    end
+  end
+
   describe 'output_chars parameter with table format' do
     it 'uses Unicode box-drawing by default' do
       output = described_class.call(
