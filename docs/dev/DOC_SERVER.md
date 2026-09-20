@@ -108,17 +108,22 @@ This runs `mkdocs build --strict`, using `.docs-venv` if it exists and otherwise
 
 ## Publishing Documentation
 
-The GitHub Actions workflow publishes documentation only for final release tags matching `vX.Y.Z` (for
-example `v7.0.0`). Pre-release tags such as `v7.0.0.pre.1` or `v7.0.0-rc1` do not publish documentation.
+The GitHub Actions workflow publishes a GitHub Pages artifact only for final release tags matching `vX.Y.Z`
+(for example `v7.0.0`). Pre-release tags such as `v7.0.0.pre.1` or `v7.0.0-rc1` do not publish documentation.
 Pull requests and documentation-related pushes to `main` only build the site for validation. The web
 documentation is refreshed when the next final release tag is published.
 
-The workflow publishes with `mkdocs gh-deploy --force`, which pushes the built site to the `gh-pages` branch.
-To deploy from a local checkout instead, check out the version tag and run `bundle exec rake docs:deploy`.
+To republish a released version, open the **Docs** workflow in GitHub Actions, choose **Run workflow**, and
+select that version tag. A manual run on a pre-release tag fails at the workflow's release-tag check. GitHub
+runs the workflow file as it exists at the selected tag, so tags that predate this workflow (such as `v6.1.0`)
+cannot be republished this way.
 
 Repository settings required for publishing:
 
-- GitHub Pages must be configured to publish from the `gh-pages` branch (**Settings > Pages**).
+- GitHub Pages must be configured to deploy from **GitHub Actions**.
+- The `github-pages` environment must allow deployments from `v*` tags (**Settings > Environments >
+  github-pages > Deployment branches and tags**). Otherwise, tag deploys are rejected with "not allowed to
+  deploy to github-pages due to environment protection rules".
 
 ## Key Files
 
@@ -129,7 +134,6 @@ Repository settings required for publishing:
 - `bin/set-up-python-for-doc-server` - First-time interactive environment setup.
 - `bin/start-doc-server` - Starts `mkdocs serve` with the project configuration.
 - `bin/build-docs` - Runs `mkdocs build --strict` with the project configuration.
-- `bin/deploy-docs` - Builds and deploys the documentation with `mkdocs gh-deploy`.
 - `bin/audit-docs-deps` - Audits `requirements-lock.txt` for known vulnerabilities with `pip-audit`.
 - `bin/update-docs-deps` - Regenerates `requirements-lock.txt` from `requirements.txt`.
 

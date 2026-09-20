@@ -25,4 +25,3 @@ end
 
 mkdocs = mkdocs_command
 run(mkdocs, 'build', '--strict')
-run(mkdocs, 'gh-deploy', '--force') if ARGV.delete('--deploy')

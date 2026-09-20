@@ -95,11 +95,6 @@ namespace :docs do
     sh 'bin/build-docs'
   end
 
-  desc 'Build and deploy documentation with mkdocs'
-  task :deploy do
-    sh 'bin/deploy-docs'
-  end
-
   desc 'Audit locked documentation dependencies for known vulnerabilities (pip-audit)'
   task :audit do
     sh 'bin/audit-docs-deps'

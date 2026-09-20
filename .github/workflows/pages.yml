@@ -1,0 +1,101 @@
+# Builds docs on PRs and docs-related pushes to main; deploys Pages on final release tags (vX.Y.Z).
+name: Docs
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      # Final releases only; pre-release tags (v7.0.0.pre.1, v7.0.0-rc1) do not match.
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+    # GitHub does not evaluate path filters for tag pushes; these limit
+    # documentation validation for pull requests and pushes to main only.
+    paths: &docs_paths
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - '.github/workflows/pages.yml'
+      - 'Rakefile'
+      - 'Gemfile'
+      - 'Gemfile.lock'
+      - 'requirements-lock.txt'
+      - 'bin/*docs*'
+      - 'lib/cov_loupe/scripts/*doc*'
+  pull_request:
+    paths: *docs_paths
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build docs
+    runs-on: ubuntu-latest
+
+    steps:
+      # The push tag filter does not apply to workflow_dispatch, so check manual runs here.
+      - name: Require final release tag
+        if: github.ref_type == 'tag'
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Tag '$TAG' is not a final release tag (vX.Y.Z); documentation is not published for pre-releases."
+            exit 1
+          fi
+
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0'
+          bundler-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: requirements-lock.txt
+
+      - name: Set up documentation environment
+        run: bundle exec rake docs:setup
+
+      - name: Build documentation
+        run: bundle exec rake docs:build
+
+      - name: Configure GitHub Pages
+        if: github.ref_type == 'tag'
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        if: github.ref_type == 'tag'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    if: >
+      github.ref_type == 'tag' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
