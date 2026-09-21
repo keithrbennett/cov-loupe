@@ -821,7 +821,7 @@ When `raise_on_stale: true` is enabled in `CoverageModel.new`, the model will ra
 
 ## Related Documentation
 
-- [Examples](EXAMPLES.md) - Practical cookbook-style examples
+- [Ruby Library Examples](examples/ruby-library-examples.md) - Practical cookbook-style examples
 - [CLI Usage](CLI_USAGE.md) - Command-line interface reference
 - [Error Handling](ERROR_HANDLING.md) - Detailed error handling documentation
 - [MCP Integration](MCP_INTEGRATION.md) - AI assistant integration

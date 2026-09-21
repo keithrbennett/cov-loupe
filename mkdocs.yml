@@ -78,7 +78,15 @@ nav:
   - Getting Started:
       - Installation: user/INSTALLATION.md
       - Quick Start: QUICKSTART.md
-      - Examples: user/EXAMPLES.md
+  - Examples:
+      - Overview: user/EXAMPLES.md
+      - AI Assistant Prompts: user/examples/ai-assistant-prompts.md
+      - Quick Start Examples: user/examples/quick-start-examples.md
+      - CLI Examples: user/examples/cli-examples.md
+      - Ruby Library Examples: user/examples/ruby-library-examples.md
+      - Test Run Integration: user/examples/test-run-integration.md
+      - CI/CD Integration: user/examples/ci-cd-integration.md
+      - Advanced Usage Examples: user/examples/advanced-usage-examples.md
       - MCP Input Examples: examples/mcp-inputs.md
       - Success Predicate Examples: examples/success_predicates.md
   - User Guide:

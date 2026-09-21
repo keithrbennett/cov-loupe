@@ -42,6 +42,7 @@ Reads SimpleCov's `coverage.json`, the documented JSON formatter output that Sim
 - Query coverage data from AI assistants, e.g.:
   - "Using the cov-loupe MCP server, analyze test coverage data and write a report to a markdown file containing a free text analysis of each issue and then two tables, one sorted in descending order of urgency, the other in ascending order of level of effort."
   - "Using the cov-loupe MCP server, generate a table of directories and their average coverage rates, in ascending order of coverage."
+  - For prompts that explain what your tests miss and why it matters, see [AI Assistant Prompts](docs/user/examples/ai-assistant-prompts.md).
 - Find files with the lowest coverage
 - Investigate specific files or directories
 - Generate CI/CD coverage reports
@@ -147,7 +148,7 @@ Full documentation is available at **[https://keithrbennett.github.io/cov-loupe/
 - [User Docs Overview](docs/user/README.md) - Map of all end-user guides
 - [Installation](docs/user/INSTALLATION.md) - Setup for different environments
 - [CLI Usage](docs/user/CLI_USAGE.md) - Command-line reference
-- [Examples](docs/user/EXAMPLES.md) - Common use cases
+- [Examples](docs/user/EXAMPLES.md) - AI assistant prompts, CLI and Ruby recipes, CI/CD integration
 - [Advanced Usage](docs/user/ADVANCED_USAGE.md) - Staleness detection, error modes, path resolution
 - [Library API](docs/user/LIBRARY_API.md) - Ruby API documentation
 - [Error Handling](docs/user/ERROR_HANDLING.md) - Error modes and exceptions
@@ -340,7 +341,7 @@ Use `--raise-on-stale true` (or `-S true`) to turn these warnings into hard fail
 
 Run `rexe -h` to see all available options, or visit the [rexe project page](https://github.com/keithrbennett/rexe) for more examples.
 
-For comprehensive JSON processing examples, see [user/EXAMPLES.md](docs/user/EXAMPLES.md).
+For comprehensive JSON processing examples, see [CLI Examples](docs/user/examples/cli-examples.md#working-with-json-output).
 
 ### CI/CD Integration
 

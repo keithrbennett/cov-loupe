@@ -7,7 +7,7 @@ workflows.
 
 - [Installation](INSTALLATION.md) – environment setup across platforms
 - [CLI Usage](CLI_USAGE.md) – command reference with examples
-- [Examples](EXAMPLES.md) – common coverage workflows
+- [Examples](EXAMPLES.md) – AI assistant prompts, CLI and Ruby recipes, CI/CD integration
 - [Advanced Usage](ADVANCED_USAGE.md) – coverage file paths, staleness, predicates
 - [Error Handling](ERROR_HANDLING.md) – modes, exceptions, logging
 - [Logging](LOGGING.md) – log targets, initialization probes, and file creation

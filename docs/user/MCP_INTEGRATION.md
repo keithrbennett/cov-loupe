@@ -774,5 +774,5 @@ For Kimi Code, OpenCode, and Pi, add `"--error-mode", "debug"` to the `args` (or
 
 - **[CLI Fallback for LLMs](CLI_FALLBACK_FOR_LLMS.md)** - Using CLI when MCP isn't available
 - **[CLI Usage](CLI_USAGE.md)** - Complete CLI reference
-- **[Examples](EXAMPLES.md)** - Example prompts and workflows
+- **[AI Assistant Prompts](examples/ai-assistant-prompts.md)** - Prompts that get real analysis from the MCP server, not just tables
 - **[Troubleshooting](TROUBLESHOOTING.md)** - Detailed troubleshooting guide
