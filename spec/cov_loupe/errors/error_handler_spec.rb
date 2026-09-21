@@ -90,6 +90,46 @@ RSpec.describe CovLoupe::ErrorHandler do
     expect(e.user_friendly_message).to include('Invalid coverage data structure')
   end
 
+  describe 'NoMethodError message rewriting' do
+    [
+      {
+        desc:     'the backtick quoting used before Ruby 3.4',
+        message:  "undefined method `fetch' for #<Hash:0x123>",
+        expected: "Invalid coverage data structure - missing method 'fetch' on object",
+      },
+      {
+        desc:     'the receiver wording used before Ruby 3.3',
+        message:  "undefined method `fetch' for nil:NilClass",
+        expected: "Invalid coverage data structure - missing method 'fetch' on nil:NilClass",
+      },
+      {
+        desc:     'the straight-quote format used since Ruby 3.4',
+        message:  "undefined method 'fetch' for an instance of Hash",
+        expected: "Invalid coverage data structure - missing method 'fetch' on an instance of Hash",
+      },
+    ].each do |tc|
+      it "rewrites #{tc[:desc]}" do
+        result = handler.convert_standard_error(NoMethodError.new(tc[:message]))
+
+        expect(result.message).to eq(tc[:expected])
+      end
+    end
+
+    it 'rewrites the message of a real NoMethodError raised by the running Ruby' do
+      error = begin
+        nil.fetch_missing
+      rescue NoMethodError => e
+        e
+      end
+
+      result = handler.convert_standard_error(error)
+
+      # Ruby < 3.4 words the receiver as "nil:NilClass" rather than "nil", so match the
+      # rewritten fragment instead of the whole message.
+      expect(result.message).to include("missing method 'fetch_missing' on nil")
+    end
+  end
+
   it 'wraps RuntimeError as UnknownError' do
     error = RuntimeError.new('Could not find coverage.json under /path; run tests')
     result = handler.convert_standard_error(error)

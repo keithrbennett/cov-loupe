@@ -103,17 +103,6 @@ module CovLoupe
         lines.join("\n")
       end
 
-      def format_detailed_rows(rows)
-        # Simple aligned columns: line, hits, covered
-        out = []
-        out << format('%6s  %6s  %7s', 'Line', 'Hits', 'Covered')
-        out << format('%6s  %6s  %7s', '-----', '----', '-------')
-        rows.each do |r|
-          out << format('%6d  %6d  %5s', r['line'], r['hits'], r['covered'] ? 'yes' : 'no')
-        end
-        out.join("\n")
-      end
-
       attr_reader :color_enabled, :output_chars
 
       private def fetch_raw(model, path)

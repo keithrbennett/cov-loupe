@@ -242,23 +242,6 @@ RSpec.describe CovLoupe::Formatters::SourceFormatter do
     end
   end
 
-  describe '#format_detailed_rows' do
-    it 'formats rows into a table' do
-      # Detailed mode should align numeric columns and boolean covered flags.
-      rows = [
-        { 'line' => 1, 'hits' => 5, 'covered' => true },
-        { 'line' => 2, 'hits' => 0, 'covered' => false },
-      ]
-      # Expected table:
-      #   Line    Hits  Covered
-      #   -----   ----  -------
-      #       1      5      yes
-      #       2      0       no
-      result = formatter.format_detailed_rows(rows)
-      expect(result).to include('Line', 'Hits', 'Covered', '5', 'yes', 'no')
-    end
-  end
-
   describe 'private #fetch_raw error handling' do
     let(:mock_logger) { instance_double(CovLoupe::Logger) }
 

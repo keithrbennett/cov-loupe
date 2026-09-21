@@ -155,10 +155,7 @@ module CovLoupe
       # Build rows in lenient mode to collect all data even if some files have errors
       # This ensures staleness checking can examine all files, not just the ones before
       # the first error. We'll re-raise any errors after staleness checking if needed.
-      rows, coverage_lines_by_path = build_list_rows(
-        tracked_globs:  tracked_globs,
-        raise_on_stale: false # Always use lenient mode for row building
-      )
+      rows, coverage_lines_by_path = build_list_rows(tracked_globs: tracked_globs)
       project_staleness_details = project_staleness_report(
         tracked_globs:          tracked_globs,
         raise_on_stale:         raise_on_stale, # Honor raise_on_stale for staleness checks
@@ -295,11 +292,11 @@ module CovLoupe
       )
     end
 
-    private def build_list_rows(tracked_globs:, raise_on_stale:)
+    private def build_list_rows(tracked_globs:)
       coverage_lines_by_path = {}
       rows = coverage_map.filter_map do |abs_path, entry|
         # Extract lines directly from the entry to avoid O(n^2) resolver scans
-        coverage_lines = coverage_lines_for_listing(abs_path, entry, raise_on_stale)
+        coverage_lines = coverage_lines_for_listing(abs_path, entry)
         next unless coverage_lines
 
         coverage_lines_by_path[abs_path] = coverage_lines
@@ -319,7 +316,7 @@ module CovLoupe
       [filter_rows_by_globs(rows, tracked_globs), coverage_lines_by_path]
     end
 
-    private def coverage_lines_for_listing(abs_path, entry, raise_on_stale)
+    private def coverage_lines_for_listing(abs_path, entry)
       # Try to extract lines directly from the entry (O(1) operation)
       # Only fall back to resolver if the entry is malformed
       lines = extract_lines_from_entry(entry)
@@ -329,10 +326,8 @@ module CovLoupe
       Resolvers::ResolverHelpers.lookup_lines(coverage_map, abs_path, root: @root,
         volume_case_sensitive: volume_case_sensitive)
     rescue FileError, CoverageDataError => e
-      # When raise_on_stale is true, raise all errors immediately for strict validation
-      # When false, skip files with errors and report them in skipped_files for lenient mode
-      raise e if raise_on_stale
-
+      # Skip files with errors and report them in skipped_files; `list` re-raises the
+      # first one afterwards when raise_on_stale is set.
       @logger.safe_log("Skipping coverage row for #{abs_path}: #{e.message}")
       @skipped_rows << {
         'file'        => abs_path,

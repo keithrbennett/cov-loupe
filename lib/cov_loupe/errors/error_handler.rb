@@ -150,7 +150,8 @@ module CovLoupe
     end
 
     private def extract_method_info(message)
-      match = message.match(/undefined method `(.+?)' for (.+)$/)
+      # Ruby < 3.4 quotes the method name as `name'; Ruby >= 3.4 uses 'name'.
+      match = message.match(/undefined method [`'](.+?)' for (.+)$/)
       if match
         method_name = match[1]
         object_info = match[2].gsub(/#<.*?>/, 'object')

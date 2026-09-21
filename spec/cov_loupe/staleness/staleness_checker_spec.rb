@@ -444,6 +444,91 @@ RSpec.describe CovLoupe::StalenessChecker do
     end
   end
 
+  context 'when the file mtime is at the coverage timestamp boundary' do
+    # Coverage is written after the tests finish, so a file saved in the same second as
+    # the coverage timestamp must not be reported as newer; one saved a second later must be.
+    let(:file) { File.join(tmpdir, 'lib', 'boundary.rb') }
+    let(:timestamp) { Time.at(1_700_000_000) }
+    let(:checker) do
+      described_class.new(root: tmpdir, coverage_file: nil, mode: :off, timestamp: timestamp)
+    end
+
+    before do
+      write_file(file, %w[a b])
+    end
+
+    [
+      { desc: 'is not newer when mtime equals the timestamp', offset: 0, newer: false },
+      { desc: 'is newer when mtime is one second after the timestamp', offset: 1, newer: true },
+    ].each do |tc|
+      it "the file check #{tc[:desc]}" do
+        mtime = Time.at(timestamp.to_i + tc[:offset])
+        File.utime(mtime, mtime, file)
+
+        details = checker.send(:compute_file_staleness_details, file, [1, 1])
+
+        expect(details[:newer]).to be(tc[:newer])
+      end
+
+      it "the project check #{tc[:desc]}" do
+        mtime = Time.at(timestamp.to_i + tc[:offset])
+        File.utime(mtime, mtime, file)
+
+        details = checker.check_project!({ file => [1, 1] })
+
+        expect(details[:newer_files]).to eq(tc[:newer] ? ['lib/boundary.rb'] : [])
+      end
+    end
+  end
+
+  context 'when a file has more than one problem' do
+    # The source file was written now, long after the coverage timestamp of 100, so it
+    # is also newer than the coverage.
+    let(:file) { File.join(tmpdir, 'lib', 'both.rb') }
+    let(:checker) do
+      described_class.new(root: tmpdir, coverage_file: nil, mode: :off, timestamp: Time.at(100))
+    end
+
+    before do
+      write_file(file, %w[a b])
+    end
+
+    it 'reports a newer file that cannot be read only as unreadable' do
+      allow(File).to receive(:read).and_call_original
+      allow(File).to receive(:read).with(file).and_raise(Errno::EACCES.new('Permission denied'))
+
+      details = checker.check_project_with_lines!({ file => [1, 1] }, coverage_files: [file])
+
+      aggregate_failures do
+        expect(details[:unreadable_files]).to eq(['lib/both.rb'])
+        expect(details[:newer_files]).to eq([])
+        expect(details[:file_statuses][file]).to eq('error')
+      end
+    end
+
+    it 'reports a newer file with a wrong line count only as a length mismatch' do
+      details = checker.check_project_with_lines!({ file => [1, 1, 1] }, coverage_files: [file])
+
+      aggregate_failures do
+        expect(details[:length_mismatch_files]).to eq(['lib/both.rb'])
+        expect(details[:newer_files]).to eq([])
+        expect(details[:file_statuses][file]).to eq('length_mismatch')
+      end
+    end
+
+    it 'reports a deleted file as deleted, not also as a length mismatch' do
+      gone = File.join(tmpdir, 'lib', 'gone.rb')
+
+      details = checker.check_project_with_lines!({ gone => [1, 1, 1] }, coverage_files: [gone])
+
+      aggregate_failures do
+        expect(details[:deleted_files]).to eq(['lib/gone.rb'])
+        expect(details[:length_mismatch_files]).to eq([])
+        expect(details[:file_statuses][gone]).to eq('missing')
+      end
+    end
+  end
+
   context 'when performing additional checks' do
     it 'flags deleted files present only in coverage' do
       checker = described_class.new(root: tmpdir, coverage_file: nil,

@@ -32,6 +32,56 @@ RSpec.describe CovLoupe::TableFormatter do
     end
   end
 
+  describe '.format column widths and borders' do
+    [
+      {
+        desc:    'sizes a column from data that is longer than its header',
+        headers: %w[A],
+        rows:    [%w[longer]],
+        table:   <<~TABLE,
+          +--------+
+          | A      |
+          +--------+
+          | longer |
+          +--------+
+        TABLE
+      },
+      {
+        desc:    'sizes a column from a header that is longer than its data',
+        headers: %w[Header],
+        rows:    [%w[x]],
+        table:   <<~TABLE,
+          +--------+
+          | Header |
+          +--------+
+          | x      |
+          +--------+
+        TABLE
+      },
+      {
+        desc:       'sizes each column independently and joins columns with junction characters',
+        headers:    %w[Name Qty],
+        rows:       [%w[apple 3], %w[fig 12]],
+        alignments: %i[left right],
+        table:      <<~TABLE,
+          +-------+-----+
+          | Name  | Qty |
+          +-------+-----+
+          | apple |   3 |
+          | fig   |  12 |
+          +-------+-----+
+        TABLE
+      },
+    ].each do |tc|
+      it tc[:desc] do
+        output = described_class.format(headers: tc[:headers], rows: tc[:rows],
+          alignments: tc[:alignments], output_chars: :ascii)
+
+        expect(output).to eq(tc[:table].chomp)
+      end
+    end
+  end
+
   describe '.format_vertical' do
     it 'renders key/value pairs as a two-column table' do
       result = described_class.format_vertical({ 'foo' => 1, 'bar' => 2 })
