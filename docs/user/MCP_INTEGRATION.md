@@ -29,7 +29,9 @@
 
 > **Tip:** If you use RVM (or otherwise see `Resolving dependencies...` printed before the MCP handshake), skip straight to [the launch wrapper](#step-by-step-the-launch-wrapper). It takes one minute and prevents a common startup failure in every client below.
 
-> **Note:** MCP tools and their configuration methods evolve rapidly. The commands and approaches listed below may have changed by the time you read this. Check your client's documentation (e.g., `claude mcp --help`, `codex mcp --help`, `agy mcp --help`, `opencode mcp --help`) for the most current instructions.
+> **Note:** This section is best-effort research meant to help you get started. Not every client has been fully verified, and these tools change quickly, so commands and file locations may differ by the time you read this. If something doesn't work, check your client's own documentation (e.g., `claude mcp --help`, `codex mcp --help`, `agy mcp --help`, `opencode mcp --help`).
+
+> **Note:** If you try a one-shot, non-interactive test (for example, running your client with `-p` or `exec`) and it fails, it may be because there is nobody to answer the client's permission prompt for the MCP tool call, so the call is blocked or denied even though the server itself works. Pre-authorize the tool in your client's settings, or test interactively. See also [Confirm the server actually starts](#confirm-the-server-actually-starts).
 
 ### Claude Code
 
@@ -198,7 +200,7 @@ For one project only, create `.vscode/mcp.json`:
 }
 ```
 
-There is no command-line remove; delete the `cov-loupe` entry from the file, or use the editor's `MCP: List Servers` command, which also shows each server's status.
+There is no command-line remove; delete the `cov-loupe` entry from the file. The editor's `MCP: List Servers` command lets you start, stop, restart, and view the output of a server.
 
 Editors started from a desktop launcher often don't inherit your shell environment, so if the server fails to start, use the [launch wrapper](#step-by-step-the-launch-wrapper) with its absolute path.
 
@@ -275,11 +277,10 @@ To remove the server, delete the `cov-loupe` entry from the `mcp.json` file wher
 
 ### Kilo
 
-For global configuration, create or edit `~/.config/kilo/opencode.json`. For project-local configuration, use `opencode.json` in the project root:
+For global configuration, create or edit `~/.config/kilo/kilo.json`. For project-local configuration, use `kilo.json` in the project root or `.kilo/kilo.json` (`kilo.jsonc` is also supported):
 
 ```json
 {
-  "$schema": "https://kilo.ai/config.json",
   "mcp": {
     "cov-loupe": {
       "type": "local",
@@ -290,7 +291,9 @@ For global configuration, create or edit `~/.config/kilo/opencode.json`. For pro
 }
 ```
 
-**Note:** Ensure `cov-loupe` is in your PATH. If installed via Bundler, you may need to use the full path (e.g., `bundle exec cov-loupe`) or create a wrapper script.
+`kilo mcp list` shows the configured servers. There is no `kilo mcp remove`; to remove the server, delete its entry from `mcp` (or set `"enabled": false` to keep it but not start it), then restart Kilo.
+
+**Note:** Ensure `cov-loupe` is in your `PATH`, or use the [launch wrapper](#step-by-step-the-launch-wrapper).
 
 ## Stdout Must Stay Clean During MCP Startup
 
@@ -345,7 +348,8 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"version","
 | Cursor | In `mcp.json`: `"command": "cov-loupe-no-bundler"` and no `args` (keep the `env` block described in the [Cursor](#cursor) section) |
 | VS Code | `code --add-mcp '{"name":"cov-loupe","command":"cov-loupe-no-bundler"}'` |
 | Kimi Code, Pi | In `mcp.json`: `"command": "cov-loupe-no-bundler"` and no `args` |
-| OpenCode, Kilo | In `opencode.json`: `"command": ["cov-loupe-no-bundler"]` |
+| OpenCode | In `opencode.json`: `"command": ["cov-loupe-no-bundler"]` |
+| Kilo | In `kilo.json`: `"command": ["cov-loupe-no-bundler"]` |
 
 If a client can't find the script (some launch servers with a minimal `PATH`), give it the absolute path instead, e.g. `/home/you/.local/bin/cov-loupe-no-bundler`.
 
@@ -695,7 +699,6 @@ A server can be registered and still fail to start, and most `list` commands onl
 
 Notes:
 
-- Non-interactive runs can't answer permission prompts. Without the `approval_mode` setting, `codex exec` reports `MCP tool call requires approval, but approval policy is never`. Cursor's `cursor-agent -p` rejects MCP tool execution unless you pass `--force`, and Antigravity's `agy -p` denies MCP tool calls the same way unless an allow rule for `mcp(cov-loupe/version)` is in its `settings.json`, so test Antigravity interactively.
 - A model that can't reach the server may still answer, using the shell or a guess. If the version doesn't match `cov-loupe --version`, or the client didn't report a tool call to `cov-loupe`, treat it as a failure.
 
 ### Checking Logs
