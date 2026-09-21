@@ -188,7 +188,7 @@ module CovLoupe
       # Global options that users commonly place after subcommands by mistake
       global_options = %w[-c --coverage-file -R --root -f --format -o --sort-order -s --source
         -n --context-lines -S --raise-on-stale -g --tracked-globs
-        -l --log-file --error-mode --color -m --mode -v --version
+        -l --log-file -e --error-mode -C --color -m --mode -v --version
         -p --path-for
         -O --output-chars]
 

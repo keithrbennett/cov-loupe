@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
+require 'tmpdir'
 
 RSpec.describe CovLoupe::CoverageCLI, 'format option' do
   def run_cli(*argv)
@@ -102,6 +103,9 @@ RSpec.describe CovLoupe::CoverageCLI, 'format option' do
       ['short -S after list', %w[list -S error], '-S'],
       ['short -v after list', %w[list -v], '-v'],
       ['short -p after list', %w[list -p repo], '-p'],
+      ['short -O after list', %w[list -O ascii], '-O'],
+      ['short -e after list', %w[list -e debug], '-e'],
+      ['short -C after list', %w[list -C true], '-C'],
       ['short -v after totals', %w[totals -v], '-v'],
       ['short -v after summary', %w[summary lib/foo.rb -v], '-v'],
 
@@ -115,6 +119,7 @@ RSpec.describe CovLoupe::CoverageCLI, 'format option' do
       ['--version after totals', %w[totals --version], '--version'],
       ['--version after summary', %w[summary lib/foo.rb --version], '--version'],
       ['--path-for after list', %w[list --path-for repo], '--path-for'],
+      ['--output-chars after list', %w[list --output-chars ascii], '--output-chars'],
 
       # Different subcommands
       ['option after summary', %w[summary lib/foo.rb --format json], '--format'],

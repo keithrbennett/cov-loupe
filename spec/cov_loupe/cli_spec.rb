@@ -80,8 +80,36 @@ RSpec.describe CovLoupe::CoverageCLI do
       { abbrev: 'v', full: 'validate',  args: ['-i', '->(m) { true }'] },
     ].each do |tc|
       it "resolves '#{tc[:abbrev]}' to '#{tc[:full]}'" do
-        _stdout, _stderr, status = run_fixture_cli_with_status(tc[:abbrev], *tc[:args])
-        expect(status).to eq(0)
+        abbrev_out, _err, abbrev_status = run_fixture_cli_with_status(tc[:abbrev], *tc[:args])
+        full_out, _err, full_status = run_fixture_cli_with_status(tc[:full], *tc[:args])
+
+        aggregate_failures do
+          expect(abbrev_status).to eq(0)
+          expect(abbrev_status).to eq(full_status)
+          expect(abbrev_out).to eq(full_out)
+        end
+      end
+    end
+  end
+
+  describe 'backtrace output for user-facing errors' do
+    # Logging is disabled so that only the CLI's own stderr output is measured. In debug
+    # mode the CLI prints the first 5 backtrace frames after the friendly message.
+    [
+      { mode: 'debug', frames: 5 },
+      { mode: 'log', frames: 0 },
+      { mode: 'off', frames: 0 },
+    ].each do |tc|
+      it "prints #{tc[:frames]} backtrace frames with --error-mode #{tc[:mode]}" do
+        _out, err, status = run_fixture_cli_with_status(
+          '--error-mode', tc[:mode], '--log-file', ':off', 'summary', 'lib/does_not_exist.rb'
+        )
+
+        aggregate_failures do
+          expect(status).to eq(1)
+          expect(err).to include('No coverage entry found')
+          expect(err.scan(/:\d+:in /).size).to eq(tc[:frames])
+        end
       end
     end
   end
