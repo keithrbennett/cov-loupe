@@ -240,7 +240,7 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
       {
         'RUBY_LIB'       => lib_path,
         'COV_LOUPE_OPTS' => "--mode mcp --root #{project_root} --coverage-file #{coverage_dir} " \
-                            '--log-file /dev/null',
+                            '--log-file :off',
       }
     end
 
@@ -443,7 +443,7 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
         stale_env = {
           'RUBY_LIB'       => lib_path,
           'COV_LOUPE_OPTS' => "--mode mcp --root #{temp_project_root} --coverage-file #{temp_coverage_dir} " \
-                              '--log-file /dev/null',
+                              '--log-file :off',
         }
 
         resp = run_mcp_json(
