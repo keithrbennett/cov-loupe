@@ -23,6 +23,7 @@ Do not report issues that are already listed in `docs/dev/FUTURE_ENHANCEMENTS.md
   - [RuboCop Metrics Cops Disabled](#rubocop-metrics-cops-disabled)
   - [Method Length and Complexity](#method-length-and-complexity)
   - [RuboCop Cache and Sandboxed Environments](#rubocop-cache-and-sandboxed-environments)
+  - [Duplicate-Looking Error and Skipped-Row Output](#duplicate-looking-error-and-skipped-row-output)
 - [Testing & CI](#testing-ci)
   - [No Coverage Floor or CI Gate](#no-coverage-floor-or-ci-gate)
 - [Dependency Management](#dependency-management)
@@ -270,6 +271,16 @@ Use `bundle exec rubocop --cache false` in sandboxed environments. This adds app
 **Why caching is not disabled by default:**
 
 The 3-second speedup is valuable for frequent local development. Developers in non-sandboxed environments (the common case) benefit from faster linting. The issue only affects specific sandboxed AI tools and CI environments, which can use the `--cache false` flag when needed.
+
+### Duplicate-Looking Error and Skipped-Row Output
+
+Reviewers may flag two places where the same information appears to be printed twice.
+
+**1. CLI user-facing errors (`CoverageCLI#handle_user_facing_error`).** `error_handler.handle_error` writes a log line (`Error in CLI: Class: message`) through the logger, then the friendly message is printed with `warn`. These are different outputs for different audiences: the log line is a developer artifact controlled by `--error-mode` (`off` suppresses it, `debug` adds backtraces), while the friendly message is the user-facing text. Merging them would make `--error-mode` unable to control logging independently.
+
+**2. MCP `project_coverage` table output.** Skipped rows appear both in the "Files excluded from coverage" summary (as "Files skipped due to errors") and in the standalone "WARNING: N coverage rows skipped due to errors" block. The tool's specs assert both strings, so removing either changes the contract seen by MCP clients. The CLI table mode was deduplicated; the MCP output is deliberately left as is. The formatting code itself is not duplicated: both paths use `CovLoupe::Formatters::CoverageWarnings`.
+
+**Guidance:** Do not report either as a defect. Changing them is a deliberate output-contract change, not a bug fix.
 
 [⬆ Back to top](#table-of-contents)
 

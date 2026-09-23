@@ -5,6 +5,7 @@ require_relative '../presenters/project_coverage_presenter'
 require_relative '../config/option_normalizers'
 require_relative '../output_chars'
 require_relative '../formatters/formatters'
+require_relative '../formatters/coverage_warnings'
 
 module CovLoupe
   module Tools
@@ -88,14 +89,9 @@ module CovLoupe
             output_chars:   output_chars_sym
           )
 
-          exclusions = format_exclusions_summary(presenter, output_chars_sym)
-          table += exclusions unless exclusions.empty?
-
-          timestamp_warning = format_timestamp_warning(presenter)
-          table += timestamp_warning unless timestamp_warning.empty?
-
-          skipped_warning = format_skipped_rows_warning(presenter, output_chars_sym)
-          table += skipped_warning unless skipped_warning.empty?
+          table += Formatters::CoverageWarnings.exclusions_summary(presenter, output_chars_sym)
+          table += Formatters::CoverageWarnings.timestamp_warning(presenter)
+          table += Formatters::CoverageWarnings.skipped_rows_warning(presenter, output_chars_sym)
 
           ::MCP::Tool::Response.new([{ 'type' => 'text', 'text' => table }])
         end
@@ -104,97 +100,11 @@ module CovLoupe
           payload = presenter.relativized_payload
 
           if payload['timestamp_status'] == 'missing'
-            payload['warnings'] = [
-              'Coverage timestamps are missing. Time-based staleness checks were skipped.',
-              'Files may appear "ok" even if source code is newer than the coverage data.',
-              'Check your coverage tool configuration to ensure timestamps are recorded.',
-            ]
+            payload['warnings'] = Formatters::CoverageWarnings::TIMESTAMP_WARNING_LINES.dup
           end
 
           formatted = Formatters.format(payload, format_sym, output_chars: output_chars_sym)
           ::MCP::Tool::Response.new([{ 'type' => 'text', 'text' => formatted }])
-        end
-
-        private def format_exclusions_summary(presenter, output_chars)
-          missing = presenter.relative_missing_tracked_files
-          newer = presenter.relative_newer_files
-          deleted = presenter.relative_deleted_files
-          length_mismatch = presenter.relative_length_mismatch_files
-          unreadable = presenter.relative_unreadable_files
-          skipped = presenter.relative_skipped_files
-
-          return '' if missing.empty? && newer.empty? && deleted.empty? &&
-            length_mismatch.empty? && unreadable.empty? && skipped.empty?
-
-          convert_path = ->(path) { OutputChars.convert(path, output_chars) }
-
-          output = ["\nFiles excluded from coverage:"]
-
-          unless missing.empty?
-            output << "\nMissing tracked files (#{missing.length}):"
-            missing.each { |file| output << "  - #{convert_path.call(file)}" }
-          end
-
-          unless newer.empty?
-            output << "\nFiles newer than coverage (#{newer.length}):"
-            newer.each { |file| output << "  - #{convert_path.call(file)}" }
-          end
-
-          unless deleted.empty?
-            output << "\nDeleted files with coverage (#{deleted.length}):"
-            deleted.each { |file| output << "  - #{convert_path.call(file)}" }
-          end
-
-          unless length_mismatch.empty?
-            output << "\nLine count mismatches (#{length_mismatch.length}):"
-            length_mismatch.each { |file| output << "  - #{convert_path.call(file)}" }
-          end
-
-          unless unreadable.empty?
-            output << "\nUnreadable files (#{unreadable.length}):"
-            unreadable.each { |file| output << "  - #{convert_path.call(file)}" }
-          end
-
-          unless skipped.empty?
-            output << "\nFiles skipped due to errors (#{skipped.length}):"
-            skipped.each do |row|
-              file_path = OutputChars.convert(row['file'], output_chars)
-              error_msg = OutputChars.convert(row['error'], output_chars)
-              output << "  - #{file_path}: #{error_msg}"
-            end
-          end
-
-          output << "\nRun with --raise-on-stale to exit when files are excluded."
-          output.join("\n")
-        end
-
-        private def format_timestamp_warning(presenter)
-          return '' unless presenter.timestamp_status == 'missing'
-
-          <<~WARNING
-
-            WARNING: Coverage timestamps are missing. Time-based staleness checks were skipped.
-            Files may appear "ok" even if source code is newer than the coverage data.
-            Check your coverage tool configuration to ensure timestamps are recorded.
-          WARNING
-        end
-
-        private def format_skipped_rows_warning(presenter, output_chars)
-          skipped = presenter.relative_skipped_files
-          return '' if skipped.nil? || skipped.empty?
-
-          count = skipped.length
-          output = [
-            '',
-            "WARNING: #{count} coverage row#{count == 1 ? '' : 's'} skipped due to errors:",
-          ]
-          skipped.each do |row|
-            file_path = OutputChars.convert(row['file'], output_chars)
-            error_msg = OutputChars.convert(row['error'], output_chars)
-            output << "  - #{file_path}: #{error_msg}"
-          end
-          output << 'Run again with --raise-on-stale to exit when rows are skipped.'
-          output.join("\n")
         end
       end
     end

@@ -62,7 +62,8 @@ RSpec.describe CovLoupe::CoverageCLI do
           cli.show_default_report(sort_order: :ascending, output: $stdout)
         end
 
-        expect(warnings).to include('WARNING: 1 coverage row skipped due to errors')
+        expect(warnings).to include('Files skipped due to errors (1):')
+        expect(warnings.scan('lib/foo.rb').length).to eq(1)
         expect(warnings).to include('lib/foo.rb')
         expect(warnings).to include('corrupt data')
       end

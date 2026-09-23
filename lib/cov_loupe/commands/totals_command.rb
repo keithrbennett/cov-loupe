@@ -2,6 +2,7 @@
 
 require_relative 'base_command'
 require_relative '../presenters/project_totals_presenter'
+require_relative '../formatters/coverage_warnings'
 
 module CovLoupe
   module Commands
@@ -49,7 +50,8 @@ module CovLoupe
           #{without_breakdown_line}
         BREAKDOWN
 
-        warn_missing_timestamps(presenter)
+        text = Formatters::CoverageWarnings.timestamp_warning(presenter)
+        warn text unless text.empty?
       end
 
       private def format_with_coverage_line(with_coverage)
@@ -75,17 +77,6 @@ module CovLoupe
           "unreadable = #{without_by_type[StaleStatus::UNREADABLE]}, " \
           "skipped (errors) = #{without_by_type[StaleStatus::SKIPPED]}"
         [without_coverage_line, without_breakdown_line]
-      end
-
-      private def warn_missing_timestamps(presenter)
-        return unless presenter.timestamp_status == 'missing'
-
-        warn <<~WARNING
-
-          WARNING: Coverage timestamps are missing. Time-based staleness checks were skipped.
-          Files may appear "ok" even if source code is newer than the coverage data.
-          Check your coverage tool configuration to ensure timestamps are recorded.
-        WARNING
       end
     end
   end

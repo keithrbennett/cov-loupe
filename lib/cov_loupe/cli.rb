@@ -8,6 +8,7 @@ require_relative 'option_parsers/error_helper'
 require_relative 'option_parsers/env_options_parser'
 require_relative 'presenters/project_coverage_presenter'
 require_relative 'output_chars'
+require_relative 'formatters/coverage_warnings'
 require_relative 'resources'
 
 module CovLoupe
@@ -111,16 +112,20 @@ module CovLoupe
           tracked_globs:  nil,
           output_chars:   config.output_chars
         )
-        show_exclusions_summary(presenter, $stderr)
-        warn_missing_timestamps(presenter, $stderr)
+        # The exclusions summary already lists skipped rows.
+        warn_report_text(Formatters::CoverageWarnings.exclusions_summary(presenter, config.output_chars))
       else
         require_relative 'formatters/formatters'
         output.puts Formatters.format(presenter.relativized_payload, config.format,
           output_chars: config.output_chars)
+        warn_report_text(Formatters::CoverageWarnings.skipped_rows_warning(presenter, config.output_chars))
       end
 
-      warn_skipped_rows(presenter)
-      warn_missing_timestamps(presenter)
+      warn_report_text(Formatters::CoverageWarnings.timestamp_warning(presenter))
+    end
+
+    private def warn_report_text(text)
+      warn text unless text.empty?
     end
 
     private def parse_options!(argv)
@@ -213,74 +218,6 @@ module CovLoupe
       warn message
       warn error.backtrace.first(5).join("\n") if config.error_mode == :debug && error.backtrace
       exit 1
-    end
-
-    private def warn_skipped_rows(presenter)
-      skipped = presenter.relative_skipped_files
-      return if skipped.nil? || skipped.empty?
-
-      count = skipped.length
-      warn ''
-      warn "WARNING: #{count} coverage row#{count == 1 ? '' : 's'} skipped due to errors:"
-      skipped.each do |row|
-        # Paths are already relativized by presenter
-        file_path = OutputChars.convert(row['file'], config.output_chars)
-        error_msg = OutputChars.convert(row['error'], config.output_chars)
-        warn "  - #{file_path}: #{error_msg}"
-      end
-      warn 'Run again with --raise-on-stale to exit when rows are skipped.'
-    end
-
-    private def output_file_list(output, files, header)
-      return if files.empty?
-
-      output.puts "\n#{header} (#{files.length}):"
-      files.each do |file|
-        output.puts('  - ' + OutputChars.convert(file, config.output_chars))
-      end
-    end
-
-    private def warn_missing_timestamps(presenter, output = $stderr)
-      return unless presenter.timestamp_status == 'missing'
-
-      output.puts <<~WARNING
-
-        WARNING: Coverage timestamps are missing. Time-based staleness checks were skipped.
-        Files may appear "ok" even if source code is newer than the coverage data.
-        Check your coverage tool configuration to ensure timestamps are recorded.
-      WARNING
-    end
-
-    private def show_exclusions_summary(presenter, output)
-      missing = presenter.relative_missing_tracked_files
-      newer = presenter.relative_newer_files
-      deleted = presenter.relative_deleted_files
-      length_mismatch = presenter.relative_length_mismatch_files
-      unreadable = presenter.relative_unreadable_files
-      skipped = presenter.relative_skipped_files
-
-      # Only show if there are any exclusions
-      return if missing.empty? && newer.empty? && deleted.empty? &&
-        length_mismatch.empty? && unreadable.empty? && skipped.empty?
-
-      output.puts "\nFiles excluded from coverage:"
-
-      output_file_list(output, missing, 'Missing tracked files')
-      output_file_list(output, newer, 'Files newer than coverage')
-      output_file_list(output, deleted, 'Deleted files with coverage')
-      output_file_list(output, length_mismatch, 'Line count mismatches')
-      output_file_list(output, unreadable, 'Unreadable files')
-
-      unless skipped.empty?
-        output.puts "\nFiles skipped due to errors (#{skipped.length}):"
-        skipped.each do |row|
-          file_path = OutputChars.convert(row['file'], config.output_chars)
-          error_msg = OutputChars.convert(row['error'], config.output_chars)
-          output.puts "  - #{file_path}: #{error_msg}"
-        end
-      end
-
-      output.puts "\nRun with --raise-on-stale to exit when files are excluded."
     end
   end
 end
