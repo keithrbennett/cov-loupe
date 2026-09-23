@@ -181,9 +181,9 @@ All RuboCop Metrics cops (AbcSize, BlockLength, ClassLength, CyclomaticComplexit
 2. **Comprehensive error handling adds necessary lines** – This project prioritizes reliability through extensive error handling with context-rich messages. Error handling code is inherently verbose but critical for user experience across three modes (CLI, library, MCP).
 
 3. **Quality maintained through other means** – The codebase achieves:
-   - 100% line coverage (1815/1815 lines)
-   - 94% branch coverage
-   - 0 RuboCop violations (all non-Metrics cops)
+   - High line coverage — check current numbers with `cov-loupe totals` rather than trusting a hardcoded figure here, since they shift with every commit
+   - Branch coverage is measured by SimpleCov (`spec/spec_helper.rb`); `cov-loupe` itself doesn't track branches, so check `coverage/coverage.json`'s `meta.branch_coverage` / per-file `branches` data or the HTML report directly — see [Migrating to v4](../../../docs/user/migrations/MIGRATING_TO_V4.md#removed-branch-only-coverage-support) for why
+   - Clean RuboCop run (all non-Metrics cops) — check with `bundle exec rubocop` rather than trusting a hardcoded count here, since it shifts with every commit
    - Comprehensive code review
    - Clear inline documentation for complex logic
    - Voluntary file size restraint (most files < 200 lines)
