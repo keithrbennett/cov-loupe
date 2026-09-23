@@ -579,54 +579,7 @@ Example `help` payload excerpt:
 }
 ```
 
-## Example Prompts for AI Assistants
-
-(Hopefully, your AI agent will not need you to say "Using the cov-loupe MCP server", but it is included
-here on purpose. Agents sometimes run the `cov-loupe` command-line app through the shell instead of
-calling the MCP server, even when the server is installed.)
-
-### Coverage Analysis
-
-```
-Using the cov-loupe MCP server, show me a table of all files and their coverage percentages.
-```
-
-```
-Using the cov-loupe MCP server, find files with less than 80% coverage and tell me which ones to prioritize.
-```
-
-```
-Using the cov-loupe MCP server, analyze the coverage for lib/cov_loupe/tools/ and suggest improvements.
-```
-
-### Finding Coverage Gaps
-
-```
-Using the cov-loupe MCP server, show me the uncovered lines in lib/cov_loupe/base_tool.rb and explain what they do.
-```
-
-```
-Using the cov-loupe MCP server, find the most important uncovered code in lib/cov_loupe/tools/file_coverage_detailed_tool.rb.
-```
-
-### Test Generation
-
-```
-Using the cov-loupe MCP server, find uncovered lines in lib/cov_loupe/staleness/staleness_checker.rb and write *meaningful* RSpec tests for them.
-```
-
-```
-Using the cov-loupe MCP server, analyze coverage gaps in lib/cov_loupe/tools/ and generate test cases.
-```
-
-### Coverage Reporting
-
-```
-Using the cov-loupe MCP server, create a markdown report of:
-- Files with worst coverage
-- Most critical coverage gaps
-- Recommended action items
-```
+For prompts that go beyond tables and counts, see [AI Assistant Prompts](examples/ai-assistant-prompts.md).
 
 ## Testing Your Setup
 
