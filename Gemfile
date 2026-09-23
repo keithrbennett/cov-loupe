@@ -7,7 +7,7 @@ gemspec
 # Development dependencies
 gem 'rake', '~> 13.4'
 gem 'rspec', '~> 3.13'
-gem 'rubocop', '~> 1.88.0'
+gem 'rubocop', '~> 1.91.0'
 gem 'rubocop-rspec', '~> 3.10.0'
 
 # simplecov is a runtime dependency, constrained by the gemspec (>= 1.0, < 2.0).
