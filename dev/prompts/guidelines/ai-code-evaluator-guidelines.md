@@ -23,6 +23,8 @@ Do not report issues that are already listed in `docs/dev/FUTURE_ENHANCEMENTS.md
   - [RuboCop Metrics Cops Disabled](#rubocop-metrics-cops-disabled)
   - [Method Length and Complexity](#method-length-and-complexity)
   - [RuboCop Cache and Sandboxed Environments](#rubocop-cache-and-sandboxed-environments)
+- [Testing & CI](#testing-ci)
+  - [No Coverage Floor or CI Gate](#no-coverage-floor-or-ci-gate)
 - [Dependency Management](#dependency-management)
   - [Documentation Dependencies: Version Ranges vs. Lock Files](#documentation-dependencies-version-ranges-vs-lock-files)
 - [Documentation Structure](#documentation-structure)
@@ -268,6 +270,28 @@ Use `bundle exec rubocop --cache false` in sandboxed environments. This adds app
 **Why caching is not disabled by default:**
 
 The 3-second speedup is valuable for frequent local development. Developers in non-sandboxed environments (the common case) benefit from faster linting. The issue only affects specific sandboxed AI tools and CI environments, which can use the `--cache false` flag when needed.
+
+[⬆ Back to top](#table-of-contents)
+
+## Testing & CI
+
+### No Coverage Floor or CI Gate
+
+Neither `spec/spec_helper.rb` nor `.github/workflows/test.yml` enforces a hard minimum-coverage gate: `SimpleCov.minimum_coverage` is never called, and the Codecov upload step (`.github/workflows/test.yml:56`) sets `fail_ci_if_error: false`. AI reviewers may flag this as a missing safeguard against coverage regressions.
+
+**Why this is intentional:**
+
+1. **Self-reporting already exists** – `spec_helper.rb`'s `SimpleCov.at_exit` hook calls `CovLoupe::CoverageReporter.report(threshold: 80, count: 5)` and prints the result on every run, so any file dropping below 80% coverage is surfaced locally and in CI. This is deliberately a report, not a hard fail.
+
+2. **100% line coverage is the real standard, and it's visible** – the project currently sits at 100% line coverage on every tracked file (verify with `cov-loupe totals`), so any regression is a visible drop from 100%, not a slide within a tolerated band. A hard gate would mostly duplicate what reviewers already see in the PR diff and Codecov's PR comment.
+
+3. **`fail_ci_if_error: false` guards the upload step, not coverage regressions** – it prevents a transient Codecov outage, network hiccup, or token issue from failing the entire test matrix (5 Ruby versions × 3 OSes). That would be a false-positive CI failure, not a caught coverage regression.
+
+4. **A hard threshold is brittle at a 100% baseline** – with 100% as the current standard, `SimpleCov.minimum_coverage` would have to be set to 100, failing the build on any single untested line, including lines temporarily added mid-refactor within a PR. Reviewer judgment tolerates in-progress states that a hard gate would block outright.
+
+5. **Enforcement tooling exists for cov-loupe's users, not turned on here** – the `validate` command exists precisely so consumers of cov-loupe can build their own coverage gates. This project intentionally relies on reviewer discipline plus the existing SimpleCov/Codecov visibility rather than self-applying a hard gate in its own CI.
+
+**Guidance:** Do not report the absence of `SimpleCov.minimum_coverage` or `fail_ci_if_error: false` as a missing safeguard. Both are deliberate; reviewer discipline plus the existing report step and Codecov visibility are the intended enforcement mechanism.
 
 [⬆ Back to top](#table-of-contents)
 
