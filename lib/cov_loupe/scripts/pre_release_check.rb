@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'digest'
 require 'fileutils'
 require 'json'
 require 'pathname'
@@ -46,9 +47,14 @@ module CovLoupe
           build_gem!
           puts '✓ Gem built successfully'
 
-          puts "\nBuild complete! To finish the release, run:"
+          puts "\nBuild complete! #{@gem_file.basename} is the authoritative artifact; do not rebuild it."
           puts
-          puts "  git tag -a #{@tag_name} -m 'Version #{@version}'"
+          puts "  Built from commit: #{@head_sha}"
+          puts "  SHA256: #{@gem_sha256}"
+          puts
+          puts 'To finish the release, run:'
+          puts
+          puts "  git tag -a #{@tag_name} -m 'Version #{@version}' #{@head_sha}"
           puts '  git push origin main --follow-tags'
           puts "  gem push #{@gem_file.basename}"
           puts
@@ -70,13 +76,13 @@ module CovLoupe
 
       private def verify_sync!
         run_command(%w[git fetch origin --tags], print_output: true)
-        local = run_command(%w[git rev-parse HEAD], print_output: false).strip
+        @head_sha = run_command(%w[git rev-parse HEAD], print_output: false).strip
         remote = run_command(%w[git rev-parse origin/main], print_output: false).strip
-        return if local == remote
+        return if @head_sha == remote
 
         base = run_command(%w[git merge-base HEAD origin/main], print_output: false).strip
 
-        if base == local
+        if base == @head_sha
           abort_with('Local main is behind origin. Pull before releasing.')
         elsif base == remote
           abort_with('Local main is ahead of origin. Push before releasing.')
@@ -173,6 +179,7 @@ module CovLoupe
         FileUtils.rm_f(@gem_file)
         run_command(%w[gem build cov-loupe.gemspec], print_output: true)
         abort_with("Gem file #{@gem_file} not found after build.") unless @gem_file.exist?
+        @gem_sha256 = Digest::SHA256.file(@gem_file).hexdigest
       end
     end
   end

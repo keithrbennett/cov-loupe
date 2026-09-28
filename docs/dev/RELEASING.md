@@ -13,6 +13,14 @@ script watches it. Otherwise, it starts a new run and waits for the result.
 Both push and manually dispatched runs count: the current `test.yml` workflow runs
 the same jobs for those events. If that changes, use `--rerun-ci` for a fresh check.
 
+The script then builds the gem once and prints the commit SHA it was built from
+and the gem's SHA256. That gem file is the single authoritative release artifact:
+it must not be rebuilt after tagging, because the script verifies a clean tree,
+the `main` branch, and `HEAD == origin/main` before building, and the gemspec
+builds its file list from `git ls-files`. Tagging does not change the file
+contents, so rebuilding after tagging adds risk without adding value. Tagging,
+pushing, and `gem push` remain manual steps.
+
 Use `bin/pre-release-check --rerun-ci` to start a fresh run even when HEAD already
 passed. This is useful when CI configuration or external dependencies need a new
 check. The script waits up to about five minutes for a dispatched run to appear.
@@ -66,20 +74,23 @@ run, including with `--rerun-ci`, also needs Actions write access. The installed
 
 ### 4. Build Verification
 
-- [ ] **Build gem**: Verify gem builds without errors
+- [ ] **Run pre-release check**: Build the release gem with the script
 ```bash
-gem build cov-loupe.gemspec
+bin/pre-release-check
 ```
+    - Note the build commit SHA and SHA256 it prints
+    - The `cov-loupe-<version>.gem` file it produces is the authoritative release artifact
 
-- [ ] **Test installation**: Install and test locally
+- [ ] **Test installation**: Install and test the exact file the script produced
 ```bash
-gem install cov-loupe-*.gem
+gem install ./cov-loupe-<version>.gem
 cov-loupe --version
 cov-loupe --help
 # Test on actual project
 cd /path/to/test/project
 cov-loupe list
 ```
+    - Uninstall or use a sandbox environment to avoid shadowing your development setup
 
 ### 5. Git Release
 
@@ -88,11 +99,15 @@ cov-loupe list
 git add lib/cov_loupe/version.rb RELEASE_NOTES.md
 git commit -m "Release version #{version}"
 ```
+    - This commit must come before `bin/pre-release-check` (step 4), which
+      requires a clean, synced tree
 
-- [ ] **Create tag**: Tag the release
+- [ ] **Create tag**: Tag the release at the commit the gem was built from
 ```bash
-git tag -a v#{version} -m "Version #{version}"
+git tag -a v#{version} -m "Version #{version}" <build-commit-sha>
 ```
+    - Use the exact SHA printed by `bin/pre-release-check` so the tag cannot
+      drift to a different commit if HEAD moves
 
 - [ ] **Push**: Push commits and tags
 ```bash
@@ -102,12 +117,16 @@ git push origin main --follow-tags
 
 ### 6. Publish Gem
 
-- [ ] **Build final gem**: Build from tagged version
+- [ ] **Push the gem built by `bin/pre-release-check`**: Do not build again
+    - The gem built in step 4 is the authoritative artifact; do not run
+      `gem build` again after tagging
+    - Optionally confirm the file hash before pushing:
 ```bash
-gem build cov-loupe.gemspec
+sha256sum cov-loupe-#{version}.gem
 ```
+    - Compare against the SHA256 printed by the script
 
-- [ ] **Push to RubyGems**: Publish the gem
+- [ ] **Push to RubyGems**: Publish the exact file the script built
 ```bash
 gem push cov-loupe-#{version}.gem
 ```

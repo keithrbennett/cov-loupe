@@ -10,6 +10,14 @@ RSpec.describe CovLoupe::Scripts::PreReleaseCheck do
     let(:root) { Pathname.new('/fake/root') }
     let(:version_file) { root.join('lib/cov_loupe/version.rb') }
     let(:release_notes) { root.join('RELEASE_NOTES.md') }
+    let(:head_sha) { 'abc123def4567890' }
+    let(:gem_sha256) { 'a' * 64 }
+    let(:fake_gem) do
+      gem_double = instance_double(Pathname, basename: 'cov-loupe-1.2.3.gem')
+      allow(gem_double).to receive(:exist?).and_return(true)
+      gem_double
+    end
+    let(:sha256_double) { instance_double(Digest::Base, hexdigest: gem_sha256) }
 
     before do
       # Speed up tests by not actually sleeping
@@ -36,10 +44,9 @@ RSpec.describe CovLoupe::Scripts::PreReleaseCheck do
 
       # Mock Gem build
       allow(FileUtils).to receive(:rm_f)
-      fake_gem = instance_double(Pathname, basename: 'cov-loupe-1.2.3.gem')
-      allow(fake_gem).to receive(:exist?).and_return(true)
       allow(described_class::ROOT).to receive(:join).with('cov-loupe-1.2.3.gem')
         .and_return(fake_gem)
+      allow(Digest::SHA256).to receive(:file).with(fake_gem).and_return(sha256_double)
     end
 
     # Helper to mock run! output for specific commands
@@ -112,15 +119,21 @@ RSpec.describe CovLoupe::Scripts::PreReleaseCheck do
       mock_commands(
         git_clean_commands +
         branch_commands('main') +
-        sync_commands(local: 'sha1', remote: 'sha1') +
-        ci_commands(head_sha: 'sha1') +
+        sync_commands(local: head_sha, remote: head_sha) +
+        ci_commands(head_sha: head_sha) +
         tag_check_commands
       )
-      # 6. Gem build
       mock_command(%w[gem build cov-loupe.gemspec], '')
 
       _result, out, _err = capture_io { script.call }
-      expect(out).to include('✓ Gem built successfully')
+      aggregate_failures do
+        expect(out).to include('✓ Gem built successfully')
+        expect(out).to include("Built from commit: #{head_sha}")
+        expect(out).to include("SHA256: #{gem_sha256}")
+        expect(out).to include("git tag -a v1.2.3 -m 'Version 1.2.3' #{head_sha}")
+        expect(out).to include('gem push cov-loupe-1.2.3.gem')
+        expect(out).to include('is the authoritative artifact; do not rebuild it')
+      end
     end
 
     it 'aborts if git is not clean' do
@@ -197,8 +210,6 @@ RSpec.describe CovLoupe::Scripts::PreReleaseCheck do
     end
 
     context 'when verifying CI' do
-      let(:head_sha) { 'abc123def456' }
-
       def setup_release
         mock_commands(
           git_clean_commands +
