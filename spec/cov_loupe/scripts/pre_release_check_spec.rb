@@ -209,6 +209,36 @@ RSpec.describe CovLoupe::Scripts::PreReleaseCheck do
       expect(err).to include("Add a '## v1.2.3' section to RELEASE_NOTES.md before releasing.")
     end
 
+    it 'warns when Unreleased notes still contain content' do
+      mock_commands(
+        git_clean_commands +
+        branch_commands('main') +
+        sync_commands(local: head_sha, remote: head_sha) +
+        ci_commands(head_sha: head_sha) +
+        tag_check_commands
+      )
+      mock_command(%w[gem build cov-loupe.gemspec], '')
+      allow(release_notes).to receive(:read)
+        .and_return("## v1.2.3\n\n- Release changes\n\n## Unreleased\n\n- Future change\n")
+
+      _result, _out, err = capture_io { script.call }
+
+      expect(err).to include("still has content under '## Unreleased'")
+    end
+
+    it 'checks the release heading before querying CI' do
+      allow(Open3).to receive(:capture3).and_call_original
+      mock_commands(git_clean_commands)
+      allow(release_notes).to receive(:read).and_return("## Unreleased\n\n- Changes\n")
+
+      _result, _out, err = capture_io do
+        expect { script.call }.to raise_error(SystemExit)
+      end
+
+      expect(err).to include("Add a '## v1.2.3' section")
+      expect(Open3).not_to have_received(:capture3).with(*ci_list_command(head_sha))
+    end
+
     context 'when verifying CI' do
       def setup_release
         mock_commands(

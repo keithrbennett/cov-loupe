@@ -5,6 +5,7 @@ require 'fileutils'
 require 'json'
 require 'pathname'
 require_relative 'command_execution'
+require_relative 'release_metadata'
 
 module CovLoupe
   module Scripts
@@ -25,6 +26,13 @@ module CovLoupe
           verify_git_clean!
           puts '✓ Git working tree is clean'
 
+          @version = fetch_version
+          @tag_name = "v#{@version}"
+          puts "✓ Preparing release for version #{@version}"
+
+          verify_release_notes!
+          warn_about_unreleased_content!
+
           verify_branch!
           puts '✓ On main branch'
 
@@ -34,11 +42,6 @@ module CovLoupe
           verify_ci_passed!
           puts '✓ GitHub Actions CI passed'
 
-          @version = fetch_version
-          @tag_name = "v#{@version}"
-          puts "✓ Preparing release for version #{@version}"
-
-          verify_release_notes!
           puts "✓ Release notes found for #{@tag_name}"
 
           verify_tag_new!
@@ -155,17 +158,26 @@ module CovLoupe
       private def fetch_version
         version_file = ROOT.join('lib/cov_loupe/version.rb')
         version_source = version_file.read
-        version = version_source[/VERSION\s*=\s*["'](.+?)["']/, 1]
-        abort_with("Could not find VERSION constant in #{version_file}") unless version
+        version = ReleaseMetadata.version_from(version_source)
+        abort_with("Could not find exactly one VERSION constant in #{version_file}") unless version
+        abort_with("Invalid release version in #{version_file}: #{version}") unless
+          ReleaseMetadata.valid_version?(version)
         version
       end
 
       private def verify_release_notes!
         release_notes = ROOT.join('RELEASE_NOTES.md').read
-        version_pattern = /^## .*\b#{Regexp.escape(@tag_name)}\b/
-        unless release_notes.match?(version_pattern)
+        unless ReleaseMetadata.release_heading?(release_notes, @version)
           abort_with("Add a '## #{@tag_name}' section to RELEASE_NOTES.md before releasing.")
         end
+      end
+
+      private def warn_about_unreleased_content!
+        release_notes = ROOT.join('RELEASE_NOTES.md').read
+        return unless ReleaseMetadata.unreleased_content?(release_notes)
+
+        warn("WARNING: RELEASE_NOTES.md still has content under '## Unreleased'; " \
+             "review whether it belongs in #{@tag_name}.")
       end
 
       private def verify_tag_new!

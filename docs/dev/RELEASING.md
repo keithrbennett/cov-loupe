@@ -33,10 +33,16 @@ run, including with `--rerun-ci`, also needs Actions write access. The installed
 
 ## Pre-Release Checklist
 
+Before preparing a release, run `bundle exec rake "release:bump[VERSION]"`, replacing
+`VERSION` with the release version (for example, `7.1.0` or `7.1.0.pre.1`). The task
+validates the version and updates both `lib/cov_loupe/version.rb` and the first-level
+`RELEASE_NOTES.md` heading together. Review the resulting diff and stage the two files
+when ready. The task stops if the version is invalid, the `Unreleased` heading is
+missing or duplicated, or the release heading already exists.
+
 ### 1. Documentation Review
 
-- [ ] **RELEASE_NOTES.md**: Update version header
-    - Update the version section header to final version (e.g., `## v#{version}`)
+- [ ] **RELEASE_NOTES.md**: Review release notes after running `release:bump`
     - For major releases: Ensure all breaking changes are documented with migration examples
     - Verify new features and bug fixes are listed
 

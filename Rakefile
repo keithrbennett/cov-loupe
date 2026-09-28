@@ -68,12 +68,18 @@ desc 'Run all security audits'
 task security: 'security:all'
 
 require_relative 'lib/cov_loupe/scripts/pre_release_check'
+require_relative 'lib/cov_loupe/scripts/release_bump'
 require_relative 'lib/cov_loupe/scripts/latest_ci_status'
 require_relative 'lib/cov_loupe/scripts/setup_doc_server'
 require_relative 'lib/cov_loupe/scripts/start_doc_server'
 
 namespace :release do
-  desc 'Run pre-release checks (git status, CI, version bump)'
+  desc 'Set the gem version and rename the Unreleased notes heading'
+  task :bump, [:version] do |_task, args|
+    CovLoupe::Scripts::ReleaseBump.new(args[:version]).call
+  end
+
+  desc 'Run pre-release checks (working tree, notes, CI, and gem build)'
   task :check do
     CovLoupe::Scripts::PreReleaseCheck.new.call
   end
