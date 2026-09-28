@@ -31,6 +31,7 @@ module CovLoupe
           puts "✓ Preparing release for version #{@version}"
 
           verify_release_notes!
+          puts "✓ Release notes found for #{@tag_name}"
           warn_about_unreleased_content!
 
           verify_branch!
@@ -41,8 +42,6 @@ module CovLoupe
 
           verify_ci_passed!
           puts '✓ GitHub Actions CI passed'
-
-          puts "✓ Release notes found for #{@tag_name}"
 
           verify_tag_new!
           puts "✓ Tag #{@tag_name} does not yet exist"

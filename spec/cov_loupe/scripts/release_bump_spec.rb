@@ -26,8 +26,7 @@ RSpec.describe CovLoupe::Scripts::ReleaseBump do
     _out, _err = capture_io { bump.call }
 
     expect(version_file.read).to include("VERSION = '7.1.0'")
-    expect(notes_file.read).to include("## v7.1.0\n")
-    expect(notes_file.read).not_to include('## Unreleased')
+    expect(notes_file.read).to include("## Unreleased\n\n## v7.1.0\n\n- Changes for the next release\n")
   end
 
   it 'accepts the project prerelease version format' do

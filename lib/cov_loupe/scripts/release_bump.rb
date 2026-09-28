@@ -29,7 +29,11 @@ module CovLoupe
           ReleaseMetadata.release_heading?(notes_source, @version)
 
         updated_version = ReleaseMetadata.replace_version(version_source, @version)
-        updated_notes = notes_source.sub(ReleaseMetadata::UNRELEASED_HEADING, "## v#{@version}")
+        updated_notes = notes_source.sub(ReleaseMetadata::UNRELEASED_HEADING) do |heading|
+          carriage_return = heading.end_with?("\r") ? "\r" : ''
+          newline = "#{carriage_return}\n"
+          "## Unreleased#{newline}#{newline}## v#{@version}#{carriage_return}"
+        end
 
         version_file.write(updated_version)
         notes_file.write(updated_notes)
