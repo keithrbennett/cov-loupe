@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cov-loupe:schema:v1:detailed",
+  "title": "cov-loupe v1 detailed file coverage",
+  "type": "object",
+  "required": ["schema_version", "file", "lines", "summary"],
+  "properties": {
+    "schema_version": {"const": 1, "description": "Version of this payload shape."},
+    "file": {"type": "string", "description": "Absolute or project-relative source path."},
+    "lines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["line", "hits", "covered"],
+        "properties": {
+          "line": {"type": "integer", "minimum": 1, "description": "One-based source line number."},
+          "hits": {"type": "integer", "minimum": 0, "description": "Execution count."},
+          "covered": {"type": "boolean", "description": "Whether hits is greater than zero."}
+        }
+      },
+      "description": "Coverable lines and hit counts."
+    },
+    "summary": {
+      "type": "object",
+      "required": ["covered", "total", "percentage"],
+      "properties": {
+        "covered": {"type": "integer", "minimum": 0, "description": "Lines with at least one hit."},
+        "total": {"type": "integer", "minimum": 0, "description": "Coverable lines."},
+        "percentage": {"type": ["number", "null"], "minimum": 0, "maximum": 100, "description": "Covered percent, or null when there are no coverable lines."}
+      }
+    },
+    "stale": {"type": "string", "enum": ["ok", "missing", "newer", "length_mismatch", "error"], "description": "File staleness, present in CLI and MCP output."},
+    "source": {"$ref": "#/$defs/source", "description": "Optional annotated source rows from CLI --source."}
+  },
+  "$defs": {
+    "source": {
+      "type": ["array", "null"],
+      "items": {"$ref": "#/$defs/source_row"}
+    },
+    "source_row": {
+      "type": "object",
+      "required": ["line", "code", "hits", "covered"],
+      "properties": {
+        "line": {"type": "integer", "minimum": 1, "description": "One-based source line number."},
+        "code": {"type": "string", "description": "Source text."},
+        "hits": {"type": ["integer", "null"], "minimum": 0, "description": "Hit count, or null for a non-code line."},
+        "covered": {"type": ["boolean", "null"], "description": "Coverage status, or null for a non-code line."}
+      }
+    }
+  }
+}

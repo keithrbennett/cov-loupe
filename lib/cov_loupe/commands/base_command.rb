@@ -6,6 +6,7 @@ require_relative '../formatters/source_formatter'
 require_relative '../model/model'
 require_relative '../errors/errors'
 require_relative '../output_chars'
+require_relative '../payload_schema'
 
 module CovLoupe
   module Commands
@@ -56,7 +57,8 @@ module CovLoupe
       protected def maybe_output_structured_format?(obj, model)
         return false if config.format == :table
 
-        puts CovLoupe::Formatters.format(model.relativize(obj), config.format,
+        payload = PayloadSchema.add(model.relativize(obj))
+        puts CovLoupe::Formatters.format(payload, config.format,
           output_chars: config.output_chars)
         true
       end
@@ -64,16 +66,8 @@ module CovLoupe
       protected def emit_structured_format_with_optional_source?(data, model, path)
         return false if config.format == :table
 
-        relativized = model.relativize(data)
-        if config.source_mode
-          payload = relativized.merge('source' => build_source_payload(model, path))
-          puts CovLoupe::Formatters.format(payload, config.format,
-            output_chars: config.output_chars)
-        else
-          puts CovLoupe::Formatters.format(relativized, config.format,
-            output_chars: config.output_chars)
-        end
-        true
+        payload = config.source_mode ? data.merge('source' => build_source_payload(model, path)) : data
+        maybe_output_structured_format?(payload, model)
       end
 
       protected def build_source_payload(model, path)

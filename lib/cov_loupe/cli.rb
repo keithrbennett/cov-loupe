@@ -9,6 +9,7 @@ require_relative 'option_parsers/env_options_parser'
 require_relative 'presenters/project_coverage_presenter'
 require_relative 'output_chars'
 require_relative 'formatters/coverage_warnings'
+require_relative 'payload_schema'
 require_relative 'resources'
 
 module CovLoupe
@@ -116,7 +117,7 @@ module CovLoupe
         warn_report_text(Formatters::CoverageWarnings.exclusions_summary(presenter, config.output_chars))
       else
         require_relative 'formatters/formatters'
-        output.puts Formatters.format(presenter.relativized_payload, config.format,
+        output.puts Formatters.format(PayloadSchema.add(presenter.relativized_payload), config.format,
           output_chars: config.output_chars)
         warn_report_text(Formatters::CoverageWarnings.skipped_rows_warning(presenter, config.output_chars))
       end

@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cov-loupe:schema:v1:list",
+  "title": "cov-loupe v1 project coverage list",
+  "type": "object",
+  "required": ["schema_version", "files", "skipped_files", "missing_tracked_files", "newer_files", "deleted_files", "length_mismatch_files", "unreadable_files", "timestamp_status"],
+  "properties": {
+    "schema_version": {"const": 1, "description": "Version of this payload shape."},
+    "files": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/file_row"},
+      "description": "Coverage rows ordered by percentage."
+    },
+    "skipped_files": {"type": "array", "items": {"$ref": "#/$defs/skipped_row"}, "description": "Files skipped because coverage data could not be processed."},
+    "missing_tracked_files": {"$ref": "#/$defs/paths", "description": "Tracked files absent from coverage data."},
+    "newer_files": {"$ref": "#/$defs/paths", "description": "Sources newer than the coverage timestamp."},
+    "deleted_files": {"$ref": "#/$defs/paths", "description": "Coverage entries whose source files are missing."},
+    "length_mismatch_files": {"$ref": "#/$defs/paths", "description": "Files whose source line count differs from coverage data."},
+    "unreadable_files": {"$ref": "#/$defs/paths", "description": "Source files that could not be read."},
+    "timestamp_status": {"type": "string", "enum": ["ok", "missing"], "description": "Whether the coverage timestamp is available."},
+    "counts": {"$ref": "#/$defs/counts", "description": "Optional CLI/MCP summary; absent from the library list."},
+    "warnings": {"type": "array", "items": {"type": "string"}, "description": "Optional MCP warnings when timestamps are missing."}
+  },
+  "$defs": {
+    "file_row": {
+      "type": "object",
+      "required": ["file", "covered", "total", "percentage", "stale"],
+      "properties": {
+        "file": {"type": "string", "description": "Absolute or project-relative source path."},
+        "covered": {"type": "integer", "minimum": 0, "description": "Lines with at least one hit."},
+        "total": {"type": "integer", "minimum": 0, "description": "Coverable lines."},
+        "percentage": {"type": ["number", "null"], "minimum": 0, "maximum": 100, "description": "Covered percent, or null when there are no coverable lines."},
+        "stale": {"type": "string", "enum": ["ok", "missing", "newer", "length_mismatch", "error"], "description": "File staleness."}
+      }
+    },
+    "skipped_row": {
+      "type": "object",
+      "required": ["file", "error", "error_class"],
+      "properties": {
+        "file": {"type": "string", "description": "Absolute or project-relative source path."},
+        "error": {"type": "string", "description": "Reason the row was skipped."},
+        "error_class": {"type": "string", "description": "Ruby exception class name."}
+      }
+    },
+    "paths": {"type": "array", "items": {"type": "string"}},
+    "counts": {
+      "type": "object",
+      "required": ["total", "ok", "stale"],
+      "properties": {
+        "total": {"type": "integer", "minimum": 0, "description": "Number of coverage rows."},
+        "ok": {"type": "integer", "minimum": 0, "description": "Fresh rows."},
+        "stale": {"type": "integer", "minimum": 0, "description": "Stale rows."}
+      }
+    }
+  }
+}

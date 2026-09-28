@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cov-loupe:schema:v1:help",
+  "title": "cov-loupe v1 MCP tool help",
+  "type": "object",
+  "required": ["schema_version", "tools", "resources"],
+  "properties": {
+    "schema_version": {"const": 1, "description": "Version of this payload shape."},
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["tool", "label", "use_when", "avoid_when", "inputs"],
+        "properties": {
+          "tool": {"type": "string", "description": "MCP tool name."},
+          "label": {"type": "string", "description": "Short display label."},
+          "use_when": {"type": "string", "description": "When to call the tool."},
+          "avoid_when": {"type": "string", "description": "When another tool fits better."},
+          "inputs": {"type": "array", "items": {"type": "string"}, "description": "Accepted argument guidance."}
+        }
+      },
+      "description": "Guidance for available MCP tools."
+    },
+    "resources": {
+      "type": "object",
+      "required": ["repo", "docs", "docs-local"],
+      "properties": {
+        "repo": {"type": "string", "description": "Public repository URL."},
+        "docs": {"type": "string", "description": "Public documentation URL."},
+        "docs-local": {"type": "string", "description": "Absolute path to the local README."}
+      }
+    }
+  }
+}

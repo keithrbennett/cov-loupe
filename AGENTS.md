@@ -161,6 +161,7 @@ Always prefer these tools over free-form reasoning to keep responses grounded in
 - Always select an MCP tool over ad-hoc reasoning for coverage data. Unsure which one fits? Call `help`.
 - Available tools: `file_coverage_summary`, `file_coverage_detailed`, `file_uncovered_lines`, `file_coverage_raw`, `project_coverage`, `project_coverage_totals`, `project_validate`, `help`, and `version`.
 - Check `result.isError` before parsing tool response content. `isError: false` means the tool succeeded; `isError: true` means the call failed (bad path, invalid predicate, stale coverage, missing required argument, invalid enum, etc.) and the `content` carries a friendly error message. A top-level JSON-RPC `error` object (not a `result`) indicates a protocol- or dispatch-level failure, such as an unknown tool.
+- Successful library coverage hashes and structured CLI and MCP tool payloads start with integer `schema_version`; use it to detect incompatible payload shapes. Error responses have no such field. See [Schema Version](docs/user/LIBRARY_API.md#schema-version) for compatibility rules.
 - On success, responses return deterministic JSON/text; surface the tool output directly unless the user asks for interpretation. Note that `project_coverage` now includes `skipped_files`, `missing_tracked_files`, `newer_files`, `deleted_files`, `length_mismatch_files`, and `unreadable_files` arrays in its output to report any files that could not be processed due to errors or staleness.
 
 ## Development Conventions

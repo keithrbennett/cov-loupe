@@ -177,6 +177,20 @@ RSpec.describe CovLoupe::BaseTool do
   end
 
   describe '.respond_json' do
+    it 'puts schema_version first without changing the input' do
+      payload = { 'ok' => true }
+      response = described_class.respond_json(payload)
+      data = JSON.parse(response.content.first['text'])
+
+      expect(data.keys.first).to eq('schema_version')
+      expect(data['schema_version']).to eq(CovLoupe::SCHEMA_VERSION)
+      expect(payload).to eq('ok' => true)
+    end
+
+    it 'rejects non-hash payloads' do
+      expect { described_class.respond_json([]) }.to raise_error(TypeError, /must be a Hash/)
+    end
+
     it 'does not flag successful responses as errors' do
       response = described_class.respond_json({ 'ok' => true })
 

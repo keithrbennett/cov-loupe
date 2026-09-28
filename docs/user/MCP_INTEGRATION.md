@@ -378,12 +378,13 @@ cov-loupe exposes 9 MCP tools:
 ### JSON Response Format
 
 For tools that return structured data, `cov-loupe` serializes the data as a JSON string and returns it inside a `text` part of the MCP response.
+Successful structured payloads begin with integer `schema_version`. Library coverage hashes carry the same field. The [shipped JSON Schemas](../../lib/cov_loupe/schemas/v1/) define the payloads; see [Schema Version](LIBRARY_API.md#schema-version) for schema lookup and compatibility rules. Check `result.isError` before parsing the content.
 
 **Example:**
 ```json
 {
   "type": "text",
-  "text": "{\"file\":\"lib/foo.rb\",\"summary\":{\"covered\":10,\"total\":20,\"percentage\":50.0},\"stale\":\"ok\"}"
+  "text": "{\"schema_version\":1,\"file\":\"lib/foo.rb\",\"summary\":{\"covered\":10,\"total\":20,\"percentage\":50.0},\"stale\":\"ok\"}"
 }
 ```
 
@@ -510,22 +511,22 @@ These tools analyze individual files. All require `path` parameter.
 
 **`file_coverage_summary`** - Covered/total/percentage summary
 ```json
-{"file": "...", "summary": {"covered": 12, "total": 14, "percentage": 85.71}, "stale": "ok"}
+{"schema_version": 1, "file": "...", "summary": {"covered": 12, "total": 14, "percentage": 85.71}, "stale": "ok"}
 ```
 
 **`file_uncovered_lines`** - List uncovered line numbers
 ```json
-{"file": "...", "uncovered": [5, 9, 12], "summary": {...}, "stale": "ok"}
+{"schema_version": 1, "file": "...", "uncovered": [5, 9, 12], "summary": {...}, "stale": "ok"}
 ```
 
 **`file_coverage_detailed`** - Per-line hit counts
 ```json
-{"file": "...", "lines": [{"line": 1, "hits": 1, "covered": true}, ...], "summary": {...}, "stale": "ok"}
+{"schema_version": 1, "file": "...", "lines": [{"line": 1, "hits": 1, "covered": true}, ...], "summary": {...}, "stale": "ok"}
 ```
 
 **`file_coverage_raw`** - Raw SimpleCov lines array
 ```json
-{"file": "...", "lines": [1, 0, null, 5, 2, null, 1], "stale": "ok"}
+{"schema_version": 1, "file": "...", "lines": [1, 0, null, 5, 2, null, 1], "stale": "ok"}
 ```
 
 **Staleness values:** `"ok"` (fresh), `"missing"` (missing), `"newer"` (timestamp), `"length_mismatch"` (length), `"error"` (staleness check error)
@@ -536,12 +537,12 @@ These tools analyze individual files. All require `path` parameter.
 - Parameters: `sort_order` (`ascending`|`descending`), `tracked_globs` (array), `format` (`json`|`pretty_json`|`yaml`|`amazing_print`|`inspect`|`puts`|`pretty_print`|`table`)
 - Default format: `json`
 - Returns: JSON object (format dependent):
-  - JSON/pretty_json/yaml/amazing_print/inspect/puts/pretty_print: `{"files": [...], "counts": {"total": N, "ok": N, "stale": N}, "skipped_files": [...], "missing_tracked_files": [...], "newer_files": [...], "deleted_files": [...], "length_mismatch_files": [...], "unreadable_files": [...], "timestamp_status": "ok|missing", "warnings": [...]}`
+  - JSON/pretty_json/yaml/amazing_print/inspect/puts/pretty_print: `{"schema_version": 1, "files": [...], "counts": {"total": N, "ok": N, "stale": N}, "skipped_files": [...], "missing_tracked_files": [...], "newer_files": [...], "deleted_files": [...], "length_mismatch_files": [...], "unreadable_files": [...], "timestamp_status": "ok|missing", "warnings": [...]}`
   - Table: Plain text table with box-drawing characters
 
 **`project_coverage_totals`** - Aggregated line totals
 - Parameters: `tracked_globs` (array), `raise_on_stale`
-- Returns: `{"lines":{"total":N,"covered":N,"uncovered":N,"percentage":Float,"included_files":N,"excluded_files":N},"tracking":{"enabled":Boolean,"globs":[String]},"files":{"total":N,"with_coverage":{"total":N,"ok":N,"stale":{"total":N,"by_type":{"missing_from_disk":N,"newer":N,"length_mismatch":N,"unreadable":N}}},"without_coverage":{"total":N,"by_type":{"missing_from_coverage":N,"unreadable":N,"skipped":N}}},"timestamp_status":"ok|missing","warnings":[String]}`
+- Returns: `{"schema_version":1,"lines":{"total":N,"covered":N,"uncovered":N,"percentage":Float,"included_files":N,"excluded_files":N},"tracking":{"enabled":Boolean,"globs":[String]},"files":{"total":N,"with_coverage":{"total":N,"ok":N,"stale":{"total":N,"by_type":{"missing_from_disk":N,"newer":N,"length_mismatch":N,"unreadable":N}}},"without_coverage":{"total":N,"by_type":{"missing_from_coverage":N,"unreadable":N,"skipped":N}}},"timestamp_status":"ok|missing","warnings":[String]}`
 - `without_coverage` is only present when tracking is enabled (tracked globs provided).
 - `warnings` is present when `timestamp_status` is `"missing"`.
 
@@ -549,7 +550,7 @@ These tools analyze individual files. All require `path` parameter.
 
 **`project_validate`** - Validate coverage against custom policies
 - Parameters: Either `code` (Ruby string) OR `file` (path to Ruby file), plus optional `root`, `coverage_file`, `raise_on_stale`, `error_mode`
-- Returns: `{"result": Boolean}` where `true` means policy passed, `false` means the predicate evaluated to false (the tool itself succeeded, so `isError: false`)
+- Returns: `{"schema_version": 1, "result": Boolean}` for Boolean predicates. The tool does not coerce the predicate result, so `result` may be another JSON value; a false result still has `isError: false` because the tool call succeeded.
 - Execution errors (syntax error in the predicate, missing predicate file, etc.) return `isError: true` with the friendly error message in `content`
 - Security Warning: Predicates execute as arbitrary Ruby code with full system privileges. Only use predicate files from trusted sources.
 - Examples:
@@ -571,6 +572,7 @@ These tools analyze individual files. All require `path` parameter.
 Example `help` payload excerpt:
 ```json
 {
+  "schema_version": 1,
   "resources": {
     "repo": "https://github.com/keithrbennett/cov-loupe",
     "docs": "https://keithrbennett.github.io/cov-loupe/",

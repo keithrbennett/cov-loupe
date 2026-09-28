@@ -1,8 +1,11 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
+require 'tmpdir'
 
 RSpec.describe CovLoupe::CoverageModel do
+  include PayloadSchemaTestHelpers
+
   subject(:model) { described_class.new(root: root) }
 
   let(:root) { (FIXTURES_DIR / 'project1').to_s }
@@ -85,11 +88,12 @@ RSpec.describe CovLoupe::CoverageModel do
       result = model.list
       expect(result).to be_a(Hash)
       expect(result.keys).to contain_exactly(
+        'schema_version',
         'files', 'skipped_files', 'missing_tracked_files', 'newer_files', 'deleted_files',
         'length_mismatch_files', 'unreadable_files', 'timestamp_status'
       )
       expect(result['timestamp_status']).to be_a(Symbol).or be_a(String)
-      result.except('timestamp_status').each_value { |v| expect(v).to be_a(Array) }
+      result.except('schema_version', 'timestamp_status').each_value { |v| expect(v).to be_a(Array) }
     end
 
     it 'sorts files correctly' do
@@ -168,6 +172,7 @@ RSpec.describe CovLoupe::CoverageModel do
           'error_class' => 'CovLoupe::CoverageDataError'
         )
       )
+      expect_schema_valid('list', result)
     end
 
     it 'reports newer_files' do
@@ -189,6 +194,47 @@ RSpec.describe CovLoupe::CoverageModel do
 
       expect(result['deleted_files']).to include(deleted_file)
     end
+  end
+
+  it 'puts schema_version first in every public coverage hash' do
+    {
+      list:           [[], 'list'],
+      summary_for:    [['lib/foo.rb'], 'summary'],
+      raw_for:        [['lib/foo.rb'], 'raw'],
+      uncovered_for:  [['lib/foo.rb'], 'uncovered'],
+      detailed_for:   [['lib/foo.rb'], 'detailed'],
+      project_totals: [[], 'totals'],
+    }.each do |method, (args, schema_name)|
+      result = model.public_send(method, *args)
+      expect(result.keys.first).to eq('schema_version')
+      expect(result['schema_version']).to eq(CovLoupe::SCHEMA_VERSION)
+      expect_schema_valid(schema_name, result)
+    end
+  end
+
+  it 'preserves schema_version and key order when relativizing a model result' do
+    result = model.relativize(model.summary_for('lib/foo.rb'))
+
+    expect(result.keys.first).to eq('schema_version')
+    expect(result['schema_version']).to eq(CovLoupe::SCHEMA_VERSION)
+    expect(result['file']).to eq('lib/foo.rb')
+  end
+
+  it 'validates tracked files missing coverage and stale files with missing timestamps' do
+    tracked_list = model.list(tracked_globs: ['lib/**/*.rb'])
+    tracked_totals = model.project_totals(tracked_globs: ['lib/**/*.rb'])
+    stale_model = described_class.new(root: (FIXTURES_DIR / 'project_no_timestamp').to_s)
+    stale_list = stale_model.list
+    stale_totals = stale_model.project_totals
+
+    expect(tracked_list['missing_tracked_files']).not_to be_empty
+    expect(tracked_totals['files']).to have_key('without_coverage')
+    expect(stale_list['files'].first['stale']).to eq('length_mismatch')
+    expect(stale_totals['lines']['percentage']).to be_nil
+    expect_schema_valid('list', tracked_list)
+    expect_schema_valid('totals', tracked_totals)
+    expect_schema_valid('list', stale_list)
+    expect_schema_valid('totals', stale_totals)
   end
 
   describe '#project_totals' do
@@ -401,11 +447,9 @@ RSpec.describe CovLoupe::CoverageModel do
         expect(model_with_globs).to have_received(:filter_rows_by_globs)
           .with(anything, tracked_globs).twice
 
-        # Project totals (delegates to list with globs)
-        expect(model_with_globs).to receive(:list)
-          .with(hash_including(tracked_globs: tracked_globs))
-          .and_call_original
-        model_with_globs.project_totals
+        # Project totals uses the configured globs for its internal list.
+        totals = model_with_globs.project_totals
+        expect(totals['tracking']).to include('enabled' => true, 'globs' => tracked_globs)
 
         # Format table
         allow(model_with_globs).to receive(:prepare_rows).and_return([])

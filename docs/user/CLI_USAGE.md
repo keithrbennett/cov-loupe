@@ -150,6 +150,7 @@ clp -s full s app/models/order.rb  # -s = --source
 **Output (JSON format):**
 ```json
 {
+  "schema_version": 1,
   "file": "app/models/order.rb",
   "summary": {
     "covered": 6,
@@ -277,6 +278,7 @@ Coverage: 6/7 lines (85.71%)
 **Output (JSON format):**
 ```json
 {
+  "schema_version": 1,
   "file": "app/models/order.rb",
   "lines": [
     { "line": 6, "hits": 1, "covered": true },
@@ -342,6 +344,7 @@ File: app/models/order.rb
 **Output (JSON format):**
 ```json
 {
+  "schema_version": 1,
   "file": "app/models/order.rb",
   "lines": [null, null, null, null, null, 1, 1, 1, null, null, 1, 1, null, null, 1, 0, null, null, null, null],
   "stale": "ok"
@@ -393,6 +396,7 @@ File breakdown:
 **Output (JSON format):**
 ```json
 {
+  "schema_version": 1,
   "lines": {
     "total": 47,
     "covered": 38,
@@ -821,9 +825,11 @@ Default for `list` subcommand. Uses Unicode box-drawing characters.
 ### JSON Format
 
 Machine-readable output. Paths are relative to project root.
+Every structured CLI format and library coverage hash begins with integer `schema_version`. The [shipped JSON Schemas](../../lib/cov_loupe/schemas/v1/) define these shapes; see [Schema Version](LIBRARY_API.md#schema-version) for schema lookup and compatibility rules.
 
 ```json
 {
+  "schema_version": 1,
   "file": "app/models/order.rb",
   "summary": {
     "covered": 6,

@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cov-loupe:schema:v1:totals",
+  "title": "cov-loupe v1 project coverage totals",
+  "type": "object",
+  "required": ["schema_version", "lines", "tracking", "files", "timestamp_status"],
+  "properties": {
+    "schema_version": {"const": 1, "description": "Version of this payload shape."},
+    "lines": {
+      "type": "object",
+      "required": ["covered", "uncovered", "total", "percentage", "included_files", "excluded_files"],
+      "properties": {
+        "covered": {"type": "integer", "minimum": 0, "description": "Covered lines in included files."},
+        "uncovered": {"type": "integer", "minimum": 0, "description": "Uncovered lines in included files."},
+        "total": {"type": "integer", "minimum": 0, "description": "Coverable lines in included files."},
+        "percentage": {"type": ["number", "null"], "minimum": 0, "maximum": 100, "description": "Covered percent, or null when there are no included coverable lines."},
+        "included_files": {"type": "integer", "minimum": 0, "description": "Fresh files counted in line totals."},
+        "excluded_files": {"type": "integer", "minimum": 0, "description": "Stale files excluded from line totals."}
+      }
+    },
+    "tracking": {
+      "type": "object",
+      "required": ["enabled", "globs"],
+      "properties": {
+        "enabled": {"type": "boolean", "description": "Whether tracked globs were supplied."},
+        "globs": {"type": "array", "items": {"type": "string"}, "description": "Active tracked glob patterns."}
+      }
+    },
+    "files": {
+      "type": "object",
+      "required": ["total", "with_coverage"],
+      "properties": {
+        "total": {"type": "integer", "minimum": 0, "description": "Files with or without coverage."},
+        "with_coverage": {"$ref": "#/$defs/with_coverage"},
+        "without_coverage": {"$ref": "#/$defs/without_coverage", "description": "Present only when tracked globs are enabled."}
+      }
+    },
+    "timestamp_status": {"type": "string", "enum": ["ok", "missing"], "description": "Whether the coverage timestamp is available."},
+    "warnings": {"type": "array", "items": {"type": "string"}, "description": "Optional MCP warnings when timestamps are missing."}
+  },
+  "$defs": {
+    "with_coverage": {
+      "type": "object",
+      "required": ["total", "ok", "stale"],
+      "properties": {
+        "total": {"type": "integer", "minimum": 0, "description": "Files with coverage entries."},
+        "ok": {"type": "integer", "minimum": 0, "description": "Fresh coverage entries."},
+        "stale": {
+          "type": "object",
+          "required": ["total", "by_type"],
+          "properties": {
+            "total": {"type": "integer", "minimum": 0, "description": "Stale coverage entries."},
+            "by_type": {
+              "type": "object",
+              "required": ["missing_from_disk", "newer", "length_mismatch", "unreadable"],
+              "properties": {
+                "missing_from_disk": {"type": "integer", "minimum": 0, "description": "Deleted sources."},
+                "newer": {"type": "integer", "minimum": 0, "description": "Sources newer than coverage."},
+                "length_mismatch": {"type": "integer", "minimum": 0, "description": "Line-count mismatches."},
+                "unreadable": {"type": "integer", "minimum": 0, "description": "Sources that could not be read."}
+              }
+            }
+          }
+        }
+      }
+    },
+    "without_coverage": {
+      "type": "object",
+      "required": ["total", "by_type"],
+      "properties": {
+        "total": {"type": "integer", "minimum": 0, "description": "Tracked files without usable coverage."},
+        "by_type": {
+          "type": "object",
+          "required": ["missing_from_coverage", "unreadable", "skipped"],
+          "properties": {
+            "missing_from_coverage": {"type": "integer", "minimum": 0, "description": "Tracked files absent from coverage data."},
+            "unreadable": {"type": "integer", "minimum": 0, "description": "Tracked files that could not be read."},
+            "skipped": {"type": "integer", "minimum": 0, "description": "Files skipped because coverage data was invalid."}
+          }
+        }
+      }
+    }
+  }
+}

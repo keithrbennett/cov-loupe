@@ -6,6 +6,7 @@ This document describes the breaking changes introduced in version 7.0.0.
 
 ## Table of Contents
 
+- [Structured Output Has a Schema Version](#structured-output-has-a-schema-version)
 - [Only `coverage.json` Is Read; SimpleCov 1.0 Is Required](#only-coveragejson-is-read-simplecov-10-is-required)
 - [`resultset` Names Removed from the CLI, MCP Tools, and Library API](#resultset-names-removed-from-the-cli-mcp-tools-and-library-api)
 - [Short Options `-c` and `-n` Reassigned](#short-options--c-and--n-reassigned)
@@ -13,6 +14,14 @@ This document describes the breaking changes introduced in version 7.0.0.
 - [Logging Defaults, Target Probing, and Lazy File Creation](#logging-defaults-target-probing-and-lazy-file-creation)
 
 ---
+
+## Structured Output Has a Schema Version {#structured-output-has-a-schema-version}
+
+Every hash returned by a public `CoverageModel` coverage method, successful structured CLI payload (`-f json`, `pretty_json`, `yaml`, and the other non-table formats), and structured MCP tool payload now starts with top-level integer `"schema_version": 1`. The existing payload keys remain at the top level; there is no wrapper. For example, a file summary begins `{"schema_version":1,"file":"lib/foo.rb",...}`. MCP clients should check `result.isError` before parsing the tool content.
+
+Library methods such as `CoverageModel#summary_for`, `#list`, and `#project_totals` now include this field, so saved JSON, YAML, or Marshal output carries the marker automatically. `relativize` preserves it. Table and text output, CLI `validate` exit codes, MCP `version` text, and error responses are unchanged. This version is separate from the gem version and from SimpleCov's `schema_version` in the input `coverage.json` file. See [Schema Version](../LIBRARY_API.md#schema-version) for the compatibility rules.
+
+**Migration:** If a consumer compares exact top-level key sets or iterates every top-level key, account for `schema_version` before processing the coverage fields. Check that its value is `1` when reading saved payloads, and ignore other unknown keys.
 
 ## Logging Defaults, Target Probing, and Lazy File Creation {#logging-defaults-target-probing-and-lazy-file-creation}
 

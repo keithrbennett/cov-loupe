@@ -15,6 +15,7 @@ require_relative '../resolvers/resolver_helpers'
 require_relative '../paths/glob_utils'
 require_relative '../model/model_data_cache'
 require_relative '../paths/path_utils'
+require_relative '../payload_schema'
 
 module CovLoupe
   # Core domain model for querying SimpleCov coverage data.
@@ -95,7 +96,7 @@ module CovLoupe
     # Returns { 'file' => <absolute_path>, 'lines' => [hits|nil,...] }
     def raw_for(path, raise_on_stale: @default_raise_on_stale)
       file_abs, coverage_lines = coverage_data_for(path, raise_on_stale: raise_on_stale)
-      { 'file' => file_abs, 'lines' => coverage_lines }
+      PayloadSchema.add('file' => file_abs, 'lines' => coverage_lines)
     end
 
     def relativize(payload)
@@ -105,27 +106,27 @@ module CovLoupe
     # Returns { 'file' => <absolute_path>, 'summary' => {'covered'=>, 'total'=>, 'percentage'=>} }
     def summary_for(path, raise_on_stale: @default_raise_on_stale)
       file_abs, coverage_lines = coverage_data_for(path, raise_on_stale: raise_on_stale)
-      { 'file' => file_abs, 'summary' => CoverageCalculator.summary(coverage_lines) }
+      PayloadSchema.add('file' => file_abs, 'summary' => CoverageCalculator.summary(coverage_lines))
     end
 
     # Returns { 'file' => <absolute_path>, 'uncovered' => [line,...], 'summary' => {...} }
     def uncovered_for(path, raise_on_stale: @default_raise_on_stale)
       file_abs, coverage_lines = coverage_data_for(path, raise_on_stale: raise_on_stale)
-      {
+      PayloadSchema.add({
         'file'      => file_abs,
         'uncovered' => CoverageCalculator.uncovered(coverage_lines),
         'summary'   => CoverageCalculator.summary(coverage_lines),
-      }
+      })
     end
 
     # Returns { 'file' => <absolute_path>, 'lines' => [{'line'=>,'hits'=>,'covered'=>},...], 'summary' => {...} }
     def detailed_for(path, raise_on_stale: @default_raise_on_stale)
       file_abs, coverage_lines = coverage_data_for(path, raise_on_stale: raise_on_stale)
-      {
+      PayloadSchema.add({
         'file'    => file_abs,
         'lines'   => CoverageCalculator.detailed(coverage_lines),
         'summary' => CoverageCalculator.summary(coverage_lines),
-      }
+      })
     end
 
     # Returns a list of coverage data for all tracked files.
@@ -151,6 +152,11 @@ module CovLoupe
     def list(sort_order: DEFAULT_SORT_ORDER,
       raise_on_stale: @default_raise_on_stale,
       tracked_globs: @default_tracked_globs)
+      PayloadSchema.add(unversioned_list(sort_order: sort_order,
+        raise_on_stale: raise_on_stale, tracked_globs: tracked_globs))
+    end
+
+    private def unversioned_list(sort_order:, raise_on_stale:, tracked_globs:)
       @skipped_rows = []
       # Build rows in lenient mode to collect all data even if some files have errors
       # This ensures staleness checking can examine all files, not just the ones before
@@ -196,7 +202,7 @@ module CovLoupe
     def project_totals(
       tracked_globs: @default_tracked_globs, raise_on_stale: @default_raise_on_stale
     )
-      list_result = list(sort_order: :ascending, raise_on_stale: raise_on_stale,
+      list_result = unversioned_list(sort_order: :ascending, raise_on_stale: raise_on_stale,
         tracked_globs: tracked_globs)
 
       rows = list_result['files']
@@ -212,12 +218,12 @@ module CovLoupe
       without_coverage = without_coverage_payload(list_result, tracking['enabled'])
       files = files_payload(with_coverage, without_coverage)
 
-      {
+      PayloadSchema.add({
         'lines'            => line_totals,
         'tracking'         => tracking,
         'files'            => files,
         'timestamp_status' => list_result['timestamp_status'],
-      }
+      })
     end
 
     def staleness_for(path)
@@ -352,7 +358,7 @@ module CovLoupe
     end
 
     private def prepare_rows(rows, sort_order:, raise_on_stale:, tracked_globs:)
-      files = rows || list(sort_order: sort_order, raise_on_stale: raise_on_stale,
+      files = rows || unversioned_list(sort_order: sort_order, raise_on_stale: raise_on_stale,
         tracked_globs: tracked_globs)['files']
 
       files = sort_rows(files.dup, sort_order: sort_order)

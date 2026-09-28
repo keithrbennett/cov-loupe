@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cov-loupe:schema:v1:validate_result",
+  "title": "cov-loupe v1 project validation result",
+  "type": "object",
+  "required": ["schema_version", "result"],
+  "properties": {
+    "schema_version": {"const": 1, "description": "Version of this payload shape."},
+    "result": {
+      "type": ["null", "boolean", "number", "string", "array", "object"],
+      "description": "JSON-serializable value returned by the predicate. Usually Boolean; the current tool does not coerce it."
+    }
+  }
+}

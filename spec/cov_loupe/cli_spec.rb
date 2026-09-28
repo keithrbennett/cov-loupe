@@ -4,6 +4,8 @@ require 'spec_helper'
 require 'tempfile'
 
 RSpec.describe CovLoupe::CoverageCLI do
+  include PayloadSchemaTestHelpers
+
   let(:fixture_root) { File.dirname(FIXTURE_PROJECT1_COVERAGE_PATH, 2) }
 
   # Windows refuses to delete a temporary directory while a file handle inside it
@@ -31,6 +33,32 @@ RSpec.describe CovLoupe::CoverageCLI do
     def with_json_output(command, *args)
       output = run_cli('--format', 'json', command, *args)
       yield JSON.parse(output)
+    end
+
+    [
+      ['list', []],
+      ['summary', ['lib/foo.rb']],
+      ['raw', ['lib/foo.rb']],
+      ['uncovered', ['lib/foo.rb']],
+      ['detailed', ['lib/foo.rb']],
+      ['totals', []],
+    ].each do |command, args|
+      it "puts schema_version first for #{command}" do
+        with_json_output(command, *args) do |data|
+          expect(data.keys.first).to eq('schema_version')
+          expect(data['schema_version']).to eq(CovLoupe::SCHEMA_VERSION)
+          expect_schema_valid(command, data)
+        end
+      end
+    end
+
+    it 'puts schema_version first in YAML output' do
+      output = run_cli('--format', 'yaml', 'summary', 'lib/foo.rb')
+      data = YAML.safe_load(output)
+
+      expect(data.keys.first).to eq('schema_version')
+      expect(data['schema_version']).to eq(CovLoupe::SCHEMA_VERSION)
+      expect_schema_valid('summary', data)
     end
 
     [
@@ -164,7 +192,28 @@ RSpec.describe CovLoupe::CoverageCLI do
   it 'can include source in JSON payload (nil if file missing)' do
     output = run_cli('--format', 'json', '--source', 'full', 'summary', 'lib/foo.rb')
     data = JSON.parse(output)
+    expect(data.keys.first).to eq('schema_version')
     expect(data).to have_key('source')
+    expect_schema_valid('summary', data)
+  end
+
+  %w[summary uncovered detailed].each do |command|
+    it "validates #{command} with annotated source rows" do
+      data = JSON.parse(run_cli('--format', 'json', '--source', 'full', command, 'lib/foo.rb'))
+
+      expect(data['source']).to be_an(Array)
+      expect_schema_valid(command, data)
+    end
+  end
+
+  it 'validates structured list and totals with missing tracked files' do
+    %w[list totals].each do |command|
+      data = JSON.parse(run_cli('--format', 'json', '--tracked-globs', 'lib/**/*.rb', command))
+
+      expect(data.dig('files', 'without_coverage')).not_to be_nil if command == 'totals'
+      expect(data['missing_tracked_files']).not_to be_empty if command == 'list'
+      expect_schema_valid(command, data)
+    end
   end
 
   describe 'log file configuration' do

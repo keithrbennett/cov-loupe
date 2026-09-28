@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cov-loupe:schema:v1:raw",
+  "title": "cov-loupe v1 raw file coverage",
+  "type": "object",
+  "required": ["schema_version", "file", "lines"],
+  "properties": {
+    "schema_version": {"const": 1, "description": "Version of this payload shape."},
+    "file": {"type": "string", "description": "Absolute or project-relative source path."},
+    "lines": {
+      "type": "array",
+      "items": {"type": ["integer", "null"], "minimum": 0},
+      "description": "SimpleCov hit counts; null denotes a non-code line."
+    },
+    "stale": {"type": "string", "enum": ["ok", "missing", "newer", "length_mismatch", "error"], "description": "File staleness, present in CLI and MCP output."}
+  }
+}

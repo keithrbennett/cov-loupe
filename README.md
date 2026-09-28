@@ -120,14 +120,15 @@ require "cov_loupe"
 
 model = CovLoupe::CoverageModel.new
 list_result = model.list
+# => { "schema_version" => 1, "files" => [...], ... }
 files = list_result["files"]
 # => [{ "file" => "/path/to/project/lib/cov_loupe/model/model.rb", "covered" => 114, "total" => 118, "percentage" => 96.61, "stale" => "ok" }, ...]
 
 summary = model.summary_for("lib/cov_loupe/model/model.rb")
-# => { "file" => "/path/to/project/lib/cov_loupe/model/model.rb", "summary" => { "covered" => 114, "total" => 118, "percentage" => 96.61 } }
+# => { "schema_version" => 1, "file" => "/path/to/project/lib/cov_loupe/model/model.rb", "summary" => { "covered" => 114, "total" => 118, "percentage" => 96.61 } }
 ```
 
-Use `model.relativize(...)` when you want library payloads with project-relative paths. See [Library API](docs/user/LIBRARY_API.md) for details.
+Use `model.relativize(...)` when you want library payloads with project-relative paths. It preserves `schema_version`. See [Library API](docs/user/LIBRARY_API.md#schema-version) for the payload compatibility rules.
 
 **MCP Server:**
 See [MCP Integration Guide](docs/user/MCP_INTEGRATION.md) for AI assistant setup.
@@ -312,6 +313,7 @@ Multi-line, indented JSON (`-fJ`) reports still emit valid JSON to `stdout`; the
 ```text
 $ cov-loupe -fJ list
 {
+  "schema_version": 1,
   "files": [
     { "file": "lib/foo.rb", "covered": 2, "total": 3, "percentage": 66.67, "stale": "ok" },
     { "file": "lib/bar.rb", "covered": 1, "total": 3, "percentage": 33.33, "stale": "ok" }

@@ -16,6 +16,11 @@ RSpec.describe 'CovLoupe::VERSION' do
   end
 
   describe 'basic properties' do
+    it 'defines an integer schema version independent of the gem version' do
+      expect(CovLoupe::SCHEMA_VERSION).to eq(1)
+      expect(CovLoupe::SCHEMA_VERSION).to be_an(Integer)
+    end
+
     it 'defines a VERSION constant' do
       expect(CovLoupe.const_defined?(:VERSION)).to be true
     end

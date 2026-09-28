@@ -29,6 +29,9 @@ This document provides a checklist for releasing new versions of cov-loupe.
 - [ ] **Version**: Update `lib/cov_loupe/version.rb` to release version
     - Remove `.pre.X` suffix for stable releases
 
+- [ ] **Payload schema**: If a structured payload shape changed incompatibly since the last release, increment `CovLoupe::SCHEMA_VERSION`, copy the current `lib/cov_loupe/schemas/vN/` directory to the new version and edit the new copy, update the pinned value in `spec/cov_loupe/version_spec.rb`, and document the change in `RELEASE_NOTES.md` and the migration guide
+    - Confirm earlier schema directories are unchanged since the last release (for example, `git --no-pager diff <last-tag> -- lib/cov_loupe/schemas/v1/`)
+
 ### 3. Cleanup
 
 - [ ] **Untracked files**: Review `git status` for files that should be:

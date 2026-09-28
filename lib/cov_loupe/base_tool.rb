@@ -8,6 +8,7 @@ require_relative 'model/model'
 require_relative 'presenters/coverage_payload_presenter'
 require_relative 'output_chars'
 require_relative 'config/option_normalizers'
+require_relative 'payload_schema'
 
 module CovLoupe
   # Base class for all MCP tool implementations.
@@ -174,13 +175,14 @@ module CovLoupe
     # Respond with JSON as a resource to avoid clients mutating content types.
     # The resource embeds the JSON string with a clear MIME type.
     #
-    # @param payload [Object] The data to serialize as JSON
+    # @param payload [Hash] The data to serialize as JSON
     # @param name [String] Logical name for the JSON resource (informational)
     # @param pretty [Boolean] Use pretty formatting with indentation
     # @param output_chars [Symbol, String, nil] Output character mode (:default, :fancy, :ascii)
     # @return [MCP::Tool::Response] Response containing the JSON string
     def self.respond_json(payload, name: 'data.json', pretty: false, output_chars: :default)
       ascii_only = ascii_only?(output_chars)
+      payload = PayloadSchema.add(payload)
       json = if pretty
         ascii_only ? JSON.pretty_generate(payload, ascii_only: true) : JSON.pretty_generate(payload)
       else

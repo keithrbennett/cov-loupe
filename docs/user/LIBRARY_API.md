@@ -7,6 +7,7 @@ Use this gem programmatically to inspect coverage without running the CLI or MCP
 ## Table of Contents
 
 - [Quick Start](#quick-start)
+- [Schema Version](#schema-version)
 - [Method Reference](#method-reference)
 - [Return Types](#return-types)
 - [Error Handling](#error-handling)
@@ -19,6 +20,7 @@ The following are the supported interfaces that users should depend on:
 
 - **`CovLoupe.run`** – Entry point for running the tool in CLI or MCP mode
 - **`CovLoupe::CoverageModel`** – Primary class for querying coverage data
+- **`CovLoupe::SCHEMA_VERSION`** – Integer version of structured coverage payload shapes
 - **Methods documented in this guide** – `list`, `summary_for`, `uncovered_for`, `detailed_for`, `raw_for`, `format_table`, `project_totals`, and `relativize`
 
 All other constants, classes, modules, and internal methods not listed above are implementation details and may change between releases without notice.
@@ -57,6 +59,7 @@ model = CovLoupe::CoverageModel.new(
 
 # List all files with coverage summary
 list_result = model.list
+# => { 'schema_version' => 1, 'files' => [...], ... }
 files = list_result['files']
 # Per-file queries
 
@@ -66,6 +69,29 @@ uncovered = model.uncovered_for(target)
 detailed = model.detailed_for(target)
 raw = model.raw_for(target)
 ```
+
+## Schema Version
+
+The hash returned by each public coverage query (`list`, `summary_for`, `uncovered_for`, `detailed_for`, `raw_for`, and `project_totals`) starts with `'schema_version' => CovLoupe::SCHEMA_VERSION`. The value is currently `1`. The key stays with the hash when you call `model.relativize` or serialize it to JSON, YAML, or Marshal. It is independent of the gem's `CovLoupe::VERSION` and of SimpleCov's `schema_version` in the input `coverage.json` file. Methods returning text or status values do not add the key.
+
+The shipped [JSON Schema files](../../lib/cov_loupe/schemas/v1/) define the eight v1 payload shapes: `summary`, `raw`, `uncovered`, `detailed`, `list`, `totals`, `validate_result`, and `help`. Each file uses JSON Schema draft 2020-12. `CovLoupe::PayloadSchema.schema_path('list', version: 1)` returns the installed file path; an unknown name or version raises `ArgumentError`. Library `list` and CLI/MCP project coverage share `list.json`: presentation-only `counts` and `warnings` are optional. The schema IDs use URNs until stable public schema URLs are available.
+
+For a previously saved JSON result, load the schema matching the result's own version before using its coverage fields. Add `json_schemer` to your application's dependencies for this example:
+
+```ruby
+require 'json'
+require 'json_schemer'
+require 'cov_loupe'
+
+saved = JSON.parse(File.read('saved-coverage.json'))
+schema_path = CovLoupe::PayloadSchema.schema_path('list', version: saved.fetch('schema_version'))
+schema = JSONSchemer.schema(JSON.parse(File.read(schema_path)))
+raise 'Invalid saved coverage payload' unless schema.valid?(saved)
+
+files = saved.fetch('files')
+```
+
+The schema version increments when a key is removed, renamed, or moved, or when a value's type or meaning changes. An incompatible change gets a new `vN` directory copied from the previous version and then edited; earlier version directories are never modified. Adding a key is compatible: add it to the current version's schema file without bumping the version. Consumers must ignore unknown keys so compatible additions remain readable; avoid relying on an exact top-level key set or processing every top-level key as coverage data.
 
 ## Method Reference
 
@@ -83,6 +109,7 @@ Returns coverage summary for all files in the coverage file.
 **Example:**
 ```ruby
 list_result = model.list
+# => { 'schema_version' => 1, 'files' => [...], ... }
 files = list_result['files']
 # => [ { 'file' => '/abs/path/lib/foo.rb', 'covered' => 12, 'total' => 14, 'percentage' => 85.71, 'stale' => "ok" }, ... ]
 
@@ -107,10 +134,10 @@ Returns coverage summary for a specific file.
 **Example:**
 ```ruby
 summary = model.summary_for(target)
-# => { 'file' => '/abs/.../lib/foo.rb', 'summary' => {'covered'=>12, 'total'=>14, 'percentage'=>85.71} }
+# => { 'schema_version' => 1, 'file' => '/abs/.../lib/foo.rb', 'summary' => {'covered'=>12, 'total'=>14, 'percentage'=>85.71} }
 ```
 
-**Note:** `CoverageModel#summary_for` returns the file path and summary only. The CLI and MCP tools add a `stale` field via `CoveragePayloadPresenter`; if you need staleness in library code, call `model.staleness_for(path)` separately.
+**Note:** `CoverageModel#summary_for` returns the schema version, file path, and summary. The CLI and MCP tools add a `stale` field via `CoveragePayloadPresenter`; if you need staleness in library code, call `model.staleness_for(path)` separately.
 
 ### `uncovered_for(path)`
 
@@ -126,7 +153,7 @@ Returns list of uncovered line numbers for a specific file.
 **Example:**
 ```ruby
 uncovered = model.uncovered_for("lib/foo.rb")
-# => { 'file' => '/abs/.../lib/foo.rb', 'uncovered' => [5, 9, 12], 'summary' => { ... } }
+# => { 'schema_version' => 1, 'file' => '/abs/.../lib/foo.rb', 'uncovered' => [5, 9, 12], 'summary' => { ... } }
 ```
 
 ### `detailed_for(path)`
@@ -143,7 +170,7 @@ Returns per-line coverage details with hit counts.
 **Example:**
 ```ruby
 detailed = model.detailed_for("lib/foo.rb")
-# => { 'file' => '/abs/.../lib/foo.rb', 'lines' => [{'line' => 1, 'hits' => 1, 'covered' => true}, ...], 'summary' => { ... } }
+# => { 'schema_version' => 1, 'file' => '/abs/.../lib/foo.rb', 'lines' => [{'line' => 1, 'hits' => 1, 'covered' => true}, ...], 'summary' => { ... } }
 ```
 
 ### `raw_for(path)`
@@ -160,7 +187,7 @@ Returns raw SimpleCov lines array for a specific file.
 **Example:**
 ```ruby
 raw = model.raw_for("lib/foo.rb")
-# => { 'file' => '/abs/.../lib/foo.rb', 'lines' => [nil, 1, 0, 3, ...] }
+# => { 'schema_version' => 1, 'file' => '/abs/.../lib/foo.rb', 'lines' => [nil, 1, 0, 3, ...] }
 ```
 
 ### `format_table(rows = nil, sort_order: :descending, raise_on_stale: model default, tracked_globs: model default, output_chars: :default)`
@@ -202,6 +229,7 @@ Returns aggregated coverage totals across all files.
 ```ruby
 totals = model.project_totals
 # => {
+#      'schema_version' => 1,
 #      'lines' => { 'total' => 123, 'covered' => 100, 'uncovered' => 23, 'percentage' => 81.3 },
 #      'tracking' => { 'enabled' => true, 'globs' => ['lib/**/*.rb'] },
 #      'files' => { 'total' => 4, 'with_coverage' => { 'total' => 4, 'ok' => 4, 'stale' => { ... } } }
@@ -227,10 +255,10 @@ Converts absolute file paths in coverage data to relative paths from project roo
 **Example:**
 ```ruby
 summary = model.summary_for('lib/cov_loupe/model/model.rb')
-# => { 'file' => '/path/to/project/lib/cov_loupe/model/model.rb', ... }
+# => { 'schema_version' => 1, 'file' => '/path/to/project/lib/cov_loupe/model/model.rb', ... }
 
 relative_summary = model.relativize(summary)
-# => { 'file' => 'lib/cov_loupe/model/model.rb', ... }
+# => { 'schema_version' => 1, 'file' => 'lib/cov_loupe/model/model.rb', ... }
 
 # Works with arrays too
 list_result = model.list
@@ -246,6 +274,7 @@ Returns `Hash` with file data and staleness metadata:
 
 ```ruby
 {
+  'schema_version' => Integer, # Currently 1; first top-level key
   'files' => [
     {
       'file' => String,       # Absolute file path
@@ -271,6 +300,7 @@ Returns `Hash`:
 
 ```ruby
 {
+  'schema_version' => Integer, # Currently 1; first top-level key
   'file' => String,       # Absolute file path
   'summary' => {
     'covered' => Integer, # Number of covered lines
@@ -288,6 +318,7 @@ Returns `Hash`:
 
 ```ruby
 {
+  'schema_version' => Integer, # Currently 1; first top-level key
   'file' => String,       # Absolute file path
   'uncovered' => Array<Integer>,  # Line numbers that are not covered
   'summary' => {
@@ -304,6 +335,7 @@ Returns `Hash`:
 
 ```ruby
 {
+  'schema_version' => Integer, # Currently 1; first top-level key
   'file' => String,       # Absolute file path
   'lines' => Array<Hash>, # Per-line coverage details
   'summary' => {
@@ -329,6 +361,7 @@ Returns `Hash`:
 
 ```ruby
 {
+  'schema_version' => Integer, # Currently 1; first top-level key
   'file' => String,              # Absolute file path
   'lines' => Array<Integer | nil>   # SimpleCov lines array (nil = irrelevant, 0 = uncovered, >0 = hit count)
 }
@@ -340,6 +373,7 @@ Returns `Hash`:
 
 ```ruby
 {
+  'schema_version' => Integer, # Currently 1; first top-level key
   'lines' => {
     'total' => Integer,            # Total relevant lines across all files
     'covered' => Integer,          # Total covered lines

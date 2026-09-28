@@ -103,7 +103,8 @@ module CovLoupe
             payload['warnings'] = Formatters::CoverageWarnings::TIMESTAMP_WARNING_LINES.dup
           end
 
-          formatted = Formatters.format(payload, format_sym, output_chars: output_chars_sym)
+          formatted = Formatters.format(PayloadSchema.add(payload), format_sym,
+            output_chars: output_chars_sym)
           ::MCP::Tool::Response.new([{ 'type' => 'text', 'text' => formatted }])
         end
       end
