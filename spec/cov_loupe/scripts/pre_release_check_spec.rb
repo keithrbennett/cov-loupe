@@ -84,18 +84,24 @@ RSpec.describe CovLoupe::Scripts::PreReleaseCheck do
       commands
     end
 
-    def ci_commands(head_sha:, run_id: '999', created_at: nil)
-      created_at ||= (Time.now + 10).iso8601
+    def ci_list_command(head_sha)
+      %w[gh run list --workflow test.yml --branch main --limit 100] +
+        ['--commit', head_sha, '--json', described_class::CI_RUN_FIELDS]
+    end
+
+    def ci_commands(head_sha:, run_id: '999')
       runs_json = JSON.generate([
-        { 'databaseId' => run_id, 'headSha' => head_sha, 'createdAt' => created_at },
+        { 'databaseId' => run_id, 'headSha' => head_sha, 'status' => 'completed',
+          'conclusion' => 'success', 'event' => 'push' },
       ])
 
-      [
-        [%w[gh workflow run test.yml --ref main], ''],
-        [%w[gh run list --workflow test.yml --branch main --limit 10] \
-           + %w[--json databaseId,headSha,createdAt], runs_json],
-        [['gh', 'run', 'watch', run_id, '--exit-status'], ''],
-      ]
+      [[ci_list_command(head_sha), runs_json]]
+    end
+
+    def mock_ci_run_lists(head_sha, *run_batches)
+      status = instance_double(Process::Status, success?: true)
+      results = run_batches.map { |runs| [JSON.generate(runs), '', status] }
+      allow(Open3).to receive(:capture3).with(*ci_list_command(head_sha)).and_return(*results)
     end
 
     def tag_check_commands(tag = 'v1.2.3')
@@ -193,92 +199,91 @@ RSpec.describe CovLoupe::Scripts::PreReleaseCheck do
     context 'when verifying CI' do
       let(:head_sha) { 'abc123def456' }
 
-      it 'finds the correct workflow run by matching HEAD SHA' do
+      def setup_release
         mock_commands(
           git_clean_commands +
           branch_commands('main') +
           sync_commands(local: head_sha, remote: head_sha) +
-          ci_commands(head_sha: head_sha, run_id: '12345') +
           tag_check_commands
         )
         mock_command(%w[gem build cov-loupe.gemspec], '')
-
-        expect { suppress_io { script.call } }.not_to raise_error
-        expect(Open3).to have_received(:popen2e).with('gh', 'run', 'watch', '12345', '--exit-status')
       end
 
-      it 'ignores runs for different HEAD SHAs' do
-        # Mock two runs: one for a different SHA, one for our SHA
-        runs_json = JSON.generate([
-          { 'databaseId' => '11111', 'headSha' => 'wrongsha123', 'createdAt' => (Time.now + 10).iso8601 },
-          { 'databaseId' => '12345', 'headSha' => head_sha, 'createdAt' => (Time.now + 10).iso8601 },
-        ])
-
-        mock_commands(
-          git_clean_commands +
-          branch_commands('main') +
-          sync_commands(local: head_sha, remote: head_sha) +
-          [
-            [%w[gh workflow run test.yml --ref main], ''],
-            [%w[gh run list --workflow test.yml --branch main --limit 10] \
-               + %w[--json databaseId,headSha,createdAt], runs_json],
-            [['gh', 'run', 'watch', '12345', '--exit-status'], ''],
-          ] +
-          tag_check_commands
-        )
-        mock_command(%w[gem build cov-loupe.gemspec], '')
-
-        expect { suppress_io { script.call } }.not_to raise_error
-        expect(Open3).to have_received(:popen2e).with('gh', 'run', 'watch', '12345', '--exit-status')
-        expect(Open3).not_to have_received(:popen2e).with('gh', 'run', 'watch', '11111', '--exit-status')
+      def run_data(id:, sha: head_sha, status: 'completed', conclusion: 'success', event: 'push')
+        { 'databaseId' => id, 'headSha' => sha, 'status' => status,
+          'conclusion' => conclusion, 'event' => event }
       end
 
-      it 'ignores runs created before the trigger time' do
-        # Mock an old run (before trigger) and a new run (after trigger)
-        trigger_time = Time.now
-        old_run_time = (trigger_time - 60).iso8601
-        new_run_time = (trigger_time + 10).iso8601
-
-        runs_json = JSON.generate([
-          { 'databaseId' => '11111', 'headSha' => head_sha, 'createdAt' => old_run_time },
-          { 'databaseId' => '12345', 'headSha' => head_sha, 'createdAt' => new_run_time },
+      it 'reuses a successful run for HEAD without dispatching or watching' do
+        setup_release
+        mock_ci_run_lists(head_sha, [
+          run_data(id: 111, sha: 'wrongsha'),
+          run_data(id: 123, conclusion: 'failure'),
+          run_data(id: 456),
         ])
 
-        mock_commands(
-          git_clean_commands +
-          branch_commands('main') +
-          sync_commands(local: head_sha, remote: head_sha) +
-          [
-            [%w[gh workflow run test.yml --ref main], ''],
-            [%w[gh run list --workflow test.yml --branch main --limit 10] \
-               + %w[--json databaseId,headSha,createdAt], runs_json],
-            [['gh', 'run', 'watch', '12345', '--exit-status'], ''],
-          ] +
-          tag_check_commands
-        )
-        mock_command(%w[gem build cov-loupe.gemspec], '')
-
-        expect { suppress_io { script.call } }.not_to raise_error
-        expect(Open3).to have_received(:popen2e).with('gh', 'run', 'watch', '12345', '--exit-status')
-        expect(Open3).not_to have_received(:popen2e).with('gh', 'run', 'watch', '11111', '--exit-status')
+        _result, out, _err = capture_io { script.call }
+        expect(out).to include('Using successful CI run 456')
+        expect(Open3).not_to have_received(:popen2e).with(*%w[gh workflow run test.yml --ref main])
+        expect(Open3).not_to have_received(:popen2e).with('gh', 'run', 'watch', anything, '--exit-status')
       end
 
-      it 'times out if no matching run is found' do
-        # Mock runs that never match our criteria
-        runs_json = JSON.generate([
-          { 'databaseId' => '11111', 'headSha' => 'wrongsha', 'createdAt' => (Time.now + 10).iso8601 },
-        ])
+      it 'watches an existing run for HEAD while it is in progress' do
+        setup_release
+        mock_ci_run_lists(head_sha, [run_data(id: 123, status: 'in_progress', conclusion: nil)])
+        mock_command(%w[gh run watch 123 --exit-status], '')
 
-        mock_commands(
-          git_clean_commands +
-          branch_commands('main') +
-          sync_commands(local: head_sha, remote: head_sha) +
-          [
-            [%w[gh workflow run test.yml --ref main], ''],
-            [%w[gh run list --workflow test.yml --branch main --limit 10] \
-               + %w[--json databaseId,headSha,createdAt], runs_json],
-          ]
-        )
+        expect { suppress_io { script.call } }.not_to raise_error
+        expect(Open3).to have_received(:popen2e).with(*%w[gh run watch 123 --exit-status])
+        expect(Open3).not_to have_received(:popen2e).with(*%w[gh workflow run test.yml --ref main])
+      end
+
+      it 'dispatches and watches a new run when no successful run exists' do
+        setup_release
+        old_run = run_data(id: 111, conclusion: 'failure', event: 'workflow_dispatch')
+        new_run = run_data(id: 222, status: 'queued', conclusion: nil, event: 'workflow_dispatch')
+        mock_ci_run_lists(head_sha, [old_run], [old_run], [new_run, old_run])
+        mock_command(%w[gh workflow run test.yml --ref main], '')
+        mock_command(%w[gh run watch 222 --exit-status], '')
+
+        expect { suppress_io { script.call } }.not_to raise_error
+        expect(Open3).to have_received(:popen2e).with(*%w[gh workflow run test.yml --ref main])
+        expect(Open3).to have_received(:popen2e).with(*%w[gh run watch 222 --exit-status])
+      end
+
+      it 'forces a fresh run with --rerun-ci even when HEAD already passed' do
+        forced_script = described_class.new(rerun_ci: true)
+        setup_release
+        old_run = run_data(id: 111)
+        new_run = run_data(id: 222, event: 'workflow_dispatch')
+        mock_ci_run_lists(head_sha, [old_run], [new_run, old_run])
+        mock_command(%w[gh workflow run test.yml --ref main], '')
+        mock_command(%w[gh run watch 222 --exit-status], '')
+
+        _result, out, _err = capture_io { forced_script.call }
+        expect(out).to include('Starting a fresh CI run (--rerun-ci)')
+        expect(Open3).to have_received(:popen2e).with(*%w[gh workflow run test.yml --ref main])
+        expect(Open3).to have_received(:popen2e).with(*%w[gh run watch 222 --exit-status])
+      end
+
+      it 'ignores unrelated new runs while finding the dispatched run' do
+        setup_release
+        wrong_sha = run_data(id: 111, sha: 'wrongsha', event: 'workflow_dispatch')
+        push_run = run_data(id: 222, event: 'push')
+        new_run = run_data(id: 333, event: 'workflow_dispatch')
+        mock_ci_run_lists(head_sha, [], [wrong_sha, push_run, new_run])
+        mock_command(%w[gh workflow run test.yml --ref main], '')
+        mock_command(%w[gh run watch 333 --exit-status], '')
+
+        expect { suppress_io { script.call } }.not_to raise_error
+        expect(Open3).to have_received(:popen2e).with(*%w[gh run watch 333 --exit-status])
+      end
+
+      it 'times out if no dispatched run appears' do
+        setup_release
+        mock_ci_run_lists(head_sha, [], [])
+        mock_command(%w[gh workflow run test.yml --ref main], '')
+        stub_const('CovLoupe::Scripts::PreReleaseCheck::CI_POLL_ATTEMPTS', 1)
 
         _result, _out, err = capture_io do
           expect { script.call }.to raise_error(SystemExit)
@@ -286,23 +291,26 @@ RSpec.describe CovLoupe::Scripts::PreReleaseCheck do
         expect(err).to include("Timed out waiting for workflow run to appear for HEAD SHA #{head_sha}")
       end
 
-      it 'handles JSON parsing errors gracefully' do
-        mock_commands(
-          git_clean_commands +
-          branch_commands('main') +
-          sync_commands(local: head_sha, remote: head_sha) +
-          [
-            [%w[gh workflow run test.yml --ref main], ''],
-            [%w[gh run list --workflow test.yml --branch main --limit 10] \
-               + %w[--json databaseId,headSha,createdAt], 'invalid json{'],
-          ]
-        )
+      it 'reports invalid JSON from GitHub' do
+        setup_release
+        mock_command(ci_list_command(head_sha), 'invalid json{')
 
         _result, _out, err = capture_io do
           expect { script.call }.to raise_error(SystemExit)
         end
         expect(err).to include('Failed to parse GitHub API response')
       end
+    end
+  end
+
+  describe 'command-line options' do
+    it 'prints a concise error for an unknown option' do
+      executable = described_class::ROOT.join('bin/pre-release-check').to_s
+      _out, err, status = Open3.capture3(RbConfig.ruby, executable, '--bogus')
+
+      expect(status.exitstatus).to eq(1)
+      expect(err).to include('invalid option: --bogus', 'Usage: bin/pre-release-check [--rerun-ci]')
+      expect(err).not_to include('bin/pre-release-check:')
     end
   end
 end

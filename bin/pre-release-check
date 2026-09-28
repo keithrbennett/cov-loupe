@@ -1,8 +1,23 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+require 'optparse'
 require_relative '../lib/cov_loupe/scripts/pre_release_check'
 
 if __FILE__ == $PROGRAM_NAME
-  CovLoupe::Scripts::PreReleaseCheck.new.call
+  options = { rerun_ci: false }
+  parser = OptionParser.new do |opts|
+    opts.banner = 'Usage: bin/pre-release-check [--rerun-ci]'
+    opts.on('--rerun-ci', 'Start a fresh CI run even if HEAD already passed') do
+      options[:rerun_ci] = true
+    end
+  end
+  begin
+    parser.parse!
+  rescue OptionParser::ParseError => e
+    abort "#{e.message}\n#{parser}"
+  end
+  abort parser.to_s unless ARGV.empty?
+
+  CovLoupe::Scripts::PreReleaseCheck.new(**options).call
 end

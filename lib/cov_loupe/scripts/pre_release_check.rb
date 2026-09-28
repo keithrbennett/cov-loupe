@@ -3,7 +3,6 @@
 require 'fileutils'
 require 'json'
 require 'pathname'
-require 'time'
 require_relative 'command_execution'
 
 module CovLoupe
@@ -12,6 +11,13 @@ module CovLoupe
       include CommandExecution
 
       ROOT = Pathname.new(__dir__).join('../../..').expand_path
+      CI_RUN_FIELDS = 'databaseId,headSha,status,conclusion,event'
+      CI_POLL_ATTEMPTS = 100
+      CI_POLL_INTERVAL = 3
+
+      def initialize(rerun_ci: false)
+        @rerun_ci = rerun_ci
+      end
 
       def call
         Dir.chdir(ROOT) do
@@ -80,55 +86,64 @@ module CovLoupe
       end
 
       private def verify_ci_passed!
-        # Capture current HEAD SHA and timestamp before triggering
         head_sha = run_command(%w[git rev-parse HEAD], print_output: false).strip
-        trigger_time = Time.now
+        runs = ci_runs(head_sha)
 
-        # Trigger the workflow
-        run_command(%w[gh workflow run test.yml --ref main], print_output: true)
-        puts 'Waiting for workflow to initialize...'
+        unless @rerun_ci
+          successful_run = runs.find do |run|
+            run['status'] == 'completed' && run['conclusion'] == 'success'
+          end
+          if successful_run
+            puts "Using successful CI run #{successful_run['databaseId']} for HEAD SHA #{head_sha}."
+            return
+          end
 
-        # Poll for the specific workflow run matching HEAD SHA and created after trigger time
-        run_id = find_triggered_run_id(head_sha, trigger_time)
-        abort_with('Failed to retrieve the CI run ID.') if run_id.empty?
-
-        puts "Monitoring CI build (Run ID: #{run_id})..."
-        run_command(['gh', 'run', 'watch', run_id, '--exit-status'], print_output: true)
-      end
-
-      private def find_triggered_run_id(head_sha, trigger_time)
-        max_attempts = 30
-        poll_interval = 2
-        attempts = 0
-
-        while attempts < max_attempts
-          sleep poll_interval
-          attempts += 1
-
-          # Get runs with databaseId, headSha, and createdAt fields
-          runs_json = run_command(
-            %w[gh run list --workflow test.yml --branch main --limit 10] \
-              + %w[--json databaseId,headSha,createdAt],
-            print_output: false
-          ).strip
-
-          next if runs_json.empty?
-
-          begin
-            runs = JSON.parse(runs_json)
-            # Find the newest run matching our HEAD SHA and created after trigger time
-            matching_run = runs.find do |run|
-              run['headSha'] == head_sha &&
-                Time.parse(run['createdAt']) >= trigger_time
-            end
-
-            return matching_run['databaseId'].to_s if matching_run
-          rescue JSON::ParserError => e
-            abort_with("Failed to parse GitHub API response: #{e.message}")
+          running_run = runs.find { |run| run['status'] != 'completed' }
+          if running_run
+            watch_ci_run(running_run['databaseId'])
+            return
           end
         end
 
+        existing_run_ids = runs.map { |run| run['databaseId'] }
+        puts 'Starting a fresh CI run (--rerun-ci); ignoring existing runs for HEAD.' if @rerun_ci
+        run_command(%w[gh workflow run test.yml --ref main], print_output: true)
+        puts 'Waiting for workflow to initialize...'
+
+        run_id = find_triggered_run_id(head_sha, existing_run_ids)
+        watch_ci_run(run_id)
+      end
+
+      private def watch_ci_run(run_id)
+        puts "Monitoring CI build (Run ID: #{run_id})..."
+        run_command(['gh', 'run', 'watch', run_id.to_s, '--exit-status'], print_output: true)
+      end
+
+      private def find_triggered_run_id(head_sha, existing_run_ids)
+        CI_POLL_ATTEMPTS.times do |attempt|
+          runs = ci_runs(head_sha)
+          matching_run = runs.find do |run|
+            run['event'] == 'workflow_dispatch' && !existing_run_ids.include?(run['databaseId'])
+          end
+          return matching_run['databaseId'] if matching_run
+
+          sleep CI_POLL_INTERVAL if attempt < CI_POLL_ATTEMPTS - 1
+        end
+
         abort_with("Timed out waiting for workflow run to appear for HEAD SHA #{head_sha}")
+      end
+
+      private def ci_runs(head_sha)
+        runs_json = run_command(
+          %w[gh run list --workflow test.yml --branch main --limit 100] +
+            ['--commit', head_sha, '--json', CI_RUN_FIELDS],
+          print_output: false
+        )
+        return [] if runs_json.empty?
+
+        JSON.parse(runs_json).select { |run| run['headSha'] == head_sha }
+      rescue JSON::ParserError => e
+        abort_with("Failed to parse GitHub API response: #{e.message}")
       end
 
       private def fetch_version

@@ -4,6 +4,25 @@
 
 This document provides a checklist for releasing new versions of cov-loupe.
 
+## Automated pre-release check
+
+Run `bin/pre-release-check` from a clean, synced `main` branch after committing the
+version and release notes. The script looks for a successful `test.yml` run for the
+exact HEAD commit and reuses it. If that commit has a run still in progress, the
+script watches it. Otherwise, it starts a new run and waits for the result.
+Both push and manually dispatched runs count: the current `test.yml` workflow runs
+the same jobs for those events. If that changes, use `--rerun-ci` for a fresh check.
+
+Use `bin/pre-release-check --rerun-ci` to start a fresh run even when HEAD already
+passed. This is useful when CI configuration or external dependencies need a new
+check. The script waits up to about five minutes for a dispatched run to appear.
+
+The check requires GitHub CLI (`gh`) installed and authenticated for this repository.
+Run `gh auth status` to verify the login, or `gh auth login` to authenticate. The
+account or token needs Actions read access to list and watch runs. Starting a new
+run, including with `--rerun-ci`, also needs Actions write access. The installed
+`gh` must support `gh run list --commit`; check with `gh run list --help`.
+
 ## Pre-Release Checklist
 
 ### 1. Documentation Review
