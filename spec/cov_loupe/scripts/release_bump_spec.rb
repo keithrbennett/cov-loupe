@@ -38,7 +38,7 @@ RSpec.describe CovLoupe::Scripts::ReleaseBump do
   end
 
   it 'rejects an invalid version without changing either file' do
-    invalid_bump = described_class.new('07.1.0')
+    invalid_bump = described_class.new('7.1.0+build.1')
     original_version = version_file.read
     original_notes = notes_file.read
 
@@ -46,7 +46,7 @@ RSpec.describe CovLoupe::Scripts::ReleaseBump do
       expect { invalid_bump.call }.to raise_error(SystemExit)
     end
 
-    expect(err).to include('Invalid release version: 07.1.0')
+    expect(err).to include('Invalid release version: 7.1.0+build.1')
     expect(version_file.read).to eq(original_version)
     expect(notes_file.read).to eq(original_notes)
   end

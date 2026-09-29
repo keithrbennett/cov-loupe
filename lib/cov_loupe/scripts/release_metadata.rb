@@ -3,22 +3,24 @@
 module CovLoupe
   module Scripts
     module ReleaseMetadata
-      VERSION_PATTERN = %r{\A
-        (?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)
-        (?:[.-](?<prerelease>[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?
-        (?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?
-      \z}x
+      # Shape check: at least MAJOR.MINOR.PATCH, dot-separated. Gem::Version does the rest.
+      VERSION_PATTERN = /\A\d+\.\d+\.\d+(?:\.[0-9A-Za-z]+)*\z/
       VERSION_LINE = /^([ \t]*VERSION[ \t]*=[ \t]*)(['"])([^'"\r\n]+)\2/
       UNRELEASED_HEADING = /^## Unreleased[ \t]*\r?$/
 
+      # A version is valid only if RubyGems accepts it AND Gem::Version#to_s reproduces it
+      # verbatim. #to_s is what `gem build` uses for the built gem's filename, so this is the
+      # precise test for "will the artifact filename match our VERSION string and release tag".
+      # It rejects forms RubyGems accepts but rewrites, e.g. "7.1.0-rc.1" becomes
+      # "7.1.0.pre.rc.1", and rejects build metadata ("+build.1") outright via
+      # Gem::Version.correct?. It does NOT reject other RubyGems-legal oddities that #to_s
+      # happens to preserve verbatim, such as a leading zero ("07.1.0") or an upper-case
+      # prerelease token ("7.1.0.RC1") — those are unusual but pose no filename-mismatch risk.
       def self.valid_version?(version)
-        match = version.match(VERSION_PATTERN)
-        return false unless match
+        return false unless version.is_a?(String)
+        return false unless version.match?(VERSION_PATTERN) && Gem::Version.correct?(version)
 
-        prerelease_parts = match[:prerelease]&.split('.') || []
-        prerelease_parts.none? do |part|
-          part.match?(/\A\d+\z/) && part.length > 1 && part.start_with?('0')
-        end
+        Gem::Version.new(version).to_s == version
       end
 
       def self.version_from(source)
