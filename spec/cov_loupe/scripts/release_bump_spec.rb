@@ -42,6 +42,18 @@ RSpec.describe CovLoupe::Scripts::ReleaseBump do
     expect(out).to include('docs/user/migrations/MIGRATING_TO_V8.md', '### Breaking')
   end
 
+  it 'points to major-release documentation work when finalizing a major prerelease' do
+    _result, out, _err = capture_io { described_class.new('7.0.0').call }
+
+    expect(out).to include('docs/user/migrations/MIGRATING_TO_V7.md', '### Breaking')
+  end
+
+  it 'omits major-release guidance when bumping between prereleases of the same major' do
+    _result, out, _err = capture_io { described_class.new('7.0.0.pre.2').call }
+
+    expect(out).not_to include('MIGRATING_TO_V')
+  end
+
   it 'accepts the project prerelease version format' do
     prerelease_bump = described_class.new('7.1.0.pre.1')
 

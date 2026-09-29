@@ -59,8 +59,15 @@ module CovLoupe
 
       private def major(version) = version.to_s[/\A\d+/].to_i
 
+      # A stable X.0.0 always counts, so finalizing X.0.0.pre.N (same major) still gets the reminder.
       private def major_bump?(previous_version)
+        return true if stable_major_release?
+
         previous_version && major(@version) > major(previous_version)
+      end
+
+      private def stable_major_release?
+        !Gem::Version.new(@version).prerelease? && @version.match?(/\A\d+\.0\.0\z/)
       end
 
       private def abort_with(message)

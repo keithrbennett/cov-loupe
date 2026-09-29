@@ -39,6 +39,12 @@
     - The CLI not-found tip now reads `Specify a coverage file: cov-loupe -c PATH`.
 - **Only `coverage/coverage.json` is searched by default.** With no `--coverage-file`, cov-loupe looks only at `coverage/coverage.json` under the project root, where SimpleCov writes it. 6.x tried `.resultset.json`, `coverage/.resultset.json`, and `tmp/.resultset.json` in turn; use `--coverage-file` (`-c`) for any location other than the default.
 
+### Other Changes
+
+- **Structured payloads now include `schema_version`.** Every library coverage hash (`list`, `summary_for`, `uncovered_for`, `detailed_for`, `raw_for`, `project_totals`), structured CLI output (all formats except `table`), and MCP tool payload now begins with an integer `schema_version` (currently `1`), separate from `CovLoupe::VERSION` and from SimpleCov's own `schema_version` in `coverage.json`. Draft 2020-12 JSON Schema files for each v1 payload shape ship under `lib/cov_loupe/schemas/v1/` and are resolvable via `CovLoupe::PayloadSchema.schema_path`. Adding a key is a compatible change and does not bump the version; see [Schema Version](docs/user/LIBRARY_API.md#schema-version) for the full compatibility rules.
+- **Improved guidance for misplaced short global options.** `-e`/`--error-mode` and `-C`/`--color` used after a subcommand (for example `list -e debug`) now get the "must come BEFORE the subcommand" message instead of a generic "Unexpected argument(s)" error; previously only their long forms were recognized.
+- **Fixed `NoMethodError` message rewriting on Ruby 3.4+.** Ruby 3.4 quotes the method name in `NoMethodError#message` as `'name'` instead of the pre-3.4 `` `name' ``, so the friendly "missing method '...' on ..." rewrite silently failed to apply on 3.4+. Both quote styles are now recognized.
+
 ## v6.1.0
 
 - In gemspec, change mcp gem's constraints from `'>= 0.15', '< 1.0'` to `'>= 0.15', '< 2.0'`

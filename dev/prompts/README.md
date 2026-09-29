@@ -31,6 +31,12 @@ project root.
 - **Question answered:** "Did I do this right?"
 - **Time:** 10-30 minutes
 
+**[Release Review](review/release-review.md)**
+- **When:** Any time before a release, with or without having run `rake release:bump` first
+- **Output:** Checklist of what is needed to release (target version, release notes gaps, schema version, major-release docs, cleanup, remaining steps)
+- **Question answered:** "What would I need to do to release?" / "What is left before I can release?"
+- **Time:** 10-20 minutes
+
 ### Improve Code/Docs
 
 **[Refactor Test Suite](improve/refactor-test-suite.md)**
