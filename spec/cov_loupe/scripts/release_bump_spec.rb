@@ -78,4 +78,71 @@ RSpec.describe CovLoupe::Scripts::ReleaseBump do
     expect(version_file.read).to eq(original_version)
     expect(notes_file.read).to eq(original_notes)
   end
+
+  it 'refuses an empty version without changing either file' do
+    empty_bump = described_class.new('')
+    original_version = version_file.read
+    original_notes = notes_file.read
+
+    _result, _out, err = capture_io do
+      expect { empty_bump.call }.to raise_error(SystemExit)
+    end
+
+    expect(err).to include('Provide a version')
+    expect(version_file.read).to eq(original_version)
+    expect(notes_file.read).to eq(original_notes)
+  end
+
+  it 'refuses a nil version without changing either file' do
+    nil_bump = described_class.new(nil)
+    original_version = version_file.read
+    original_notes = notes_file.read
+
+    _result, _out, err = capture_io do
+      expect { nil_bump.call }.to raise_error(SystemExit)
+    end
+
+    expect(err).to include('Provide a version')
+    expect(version_file.read).to eq(original_version)
+    expect(notes_file.read).to eq(original_notes)
+  end
+
+  it 'refuses a missing VERSION assignment without changing either file' do
+    version_file.write("module CovLoupe\nend\n")
+    original_version = version_file.read
+    original_notes = notes_file.read
+
+    _result, _out, err = capture_io do
+      expect { bump.call }.to raise_error(SystemExit)
+    end
+
+    expect(err).to include('Could not find exactly one VERSION assignment')
+    expect(version_file.read).to eq(original_version)
+    expect(notes_file.read).to eq(original_notes)
+  end
+
+  it 'refuses a duplicate VERSION assignment without changing either file' do
+    version_file.write("VERSION = '7.0.0'\nVERSION = '7.0.1'\n")
+    original_version = version_file.read
+    original_notes = notes_file.read
+
+    _result, _out, err = capture_io do
+      expect { bump.call }.to raise_error(SystemExit)
+    end
+
+    expect(err).to include('Could not find exactly one VERSION assignment')
+    expect(version_file.read).to eq(original_version)
+    expect(notes_file.read).to eq(original_notes)
+  end
+
+  it 'preserves CRLF line endings in both files' do
+    version_file.write("module CovLoupe\r\n  VERSION = '7.0.0.pre.1' unless defined?(CovLoupe::VERSION)\r\nend\r\n")
+    notes_file.write("# Release Notes\r\n\r\n## Unreleased\r\n\r\n- Changes for the next release\r\n")
+
+    _out, _err = capture_io { bump.call }
+
+    expect(version_file.read).to include("VERSION = '7.1.0' unless defined?(CovLoupe::VERSION)\r\n")
+    expect(notes_file.read)
+      .to include("## Unreleased\r\n\r\n## v7.1.0\r\n\r\n- Changes for the next release\r\n")
+  end
 end

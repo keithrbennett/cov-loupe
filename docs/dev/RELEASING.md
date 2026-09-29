@@ -35,10 +35,12 @@ run, including with `--rerun-ci`, also needs Actions write access. The installed
 
 Before preparing a release, run `bundle exec rake "release:bump[VERSION]"`, replacing
 `VERSION` with the release version (for example, `7.1.0` or `7.1.0.pre.1`). The task
-validates the version and updates both `lib/cov_loupe/version.rb` and the first-level
-`RELEASE_NOTES.md` heading together. Review the resulting diff and stage the two files
-when ready. The task stops if the version is invalid, the `Unreleased` heading is
-missing or duplicated, or the release heading already exists.
+validates the version, updates `lib/cov_loupe/version.rb`, and inserts a new
+`## vVERSION` heading directly below the `## Unreleased` heading in `RELEASE_NOTES.md`,
+moving all existing content under it. The `## Unreleased` heading itself is left in
+place as an empty placeholder for the next round of changes. Review the resulting diff
+and stage the two files when ready. The task stops if the version is invalid, the
+`Unreleased` heading is missing or duplicated, or the release heading already exists.
 
 ### 1. Documentation Review
 

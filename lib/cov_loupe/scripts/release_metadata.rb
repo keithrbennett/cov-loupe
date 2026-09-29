@@ -37,6 +37,11 @@ module CovLoupe
         end
       end
 
+      # Matches "## v<version>" at end of line, or followed by whitespace and any
+      # annotation (e.g. "## v5.0.0 (Breaking)"). The version must be a whole token:
+      # "## v5.0.0.pre.1" does not match version "5.0.0", since the character right
+      # after it is neither whitespace nor end-of-line. This is intentional: a heading
+      # counts as "already released" for a version regardless of trailing prose.
       def self.release_heading?(source, version)
         heading = /^## v#{Regexp.escape(version)}(?:[ \t]+.*)?\r?$/
         source.match?(heading)
