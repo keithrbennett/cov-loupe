@@ -79,9 +79,9 @@ namespace :release do
     CovLoupe::Scripts::ReleaseBump.new(args[:version]).call
   end
 
-  desc 'Run pre-release checks (working tree, notes, CI, and gem build)'
-  task :check do
-    CovLoupe::Scripts::PreReleaseCheck.new.call
+  desc 'Run pre-release checks (same as bin/pre-release-check); pass rerun_ci to force a fresh CI run'
+  task :check, [:rerun_ci] do |_task, args|
+    CovLoupe::Scripts::PreReleaseCheck.new(rerun_ci: args[:rerun_ci] == 'rerun_ci').call
   end
 end
 

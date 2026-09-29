@@ -6,8 +6,10 @@ This document provides a checklist for releasing new versions of cov-loupe.
 
 ## Automated pre-release check
 
-Run `bin/pre-release-check` from a clean, synced `main` branch after committing the
-version and release notes. The script looks for a successful `test.yml` run for the
+`bin/pre-release-check` is the canonical preflight interface (`rake release:check`
+runs the same code; pass `rake "release:check[rerun_ci]"` for `--rerun-ci`). Run it
+from a clean `main` branch after committing **and pushing** the version and release
+notes; it requires a clean tree and `HEAD == origin/main`. The script looks for a successful `test.yml` run for the
 exact HEAD commit and reuses it. If that commit has a run still in progress, the
 script watches it. Otherwise, it starts a new run and waits for the result.
 Both push and manually dispatched runs count: the current `test.yml` workflow runs
@@ -38,14 +40,16 @@ Before preparing a release, run `bundle exec rake "release:bump[VERSION]"`, repl
 validates the version, updates `lib/cov_loupe/version.rb`, and inserts a new
 `## vVERSION` heading directly below the `## Unreleased` heading in `RELEASE_NOTES.md`,
 moving all existing content under it. The `## Unreleased` heading itself is left in
-place as an empty placeholder for the next round of changes. Review the resulting diff
-and stage the two files when ready. The task stops if the version is invalid, the
+place as an empty placeholder for the next round of changes. It then prints the diff
+command and the commit/push/check commands to run next, and reminds you of the extra
+documentation work if the major version increased. Review the resulting diff
+and stage the files when ready. The task stops if the version is invalid, the
 `Unreleased` heading is missing or duplicated, or the release heading already exists.
 
 ### 1. Documentation Review
 
 - [ ] **RELEASE_NOTES.md**: Review release notes after running `release:bump`
-    - For major releases: Ensure all breaking changes are documented with migration examples
+    - For major releases: Ensure a `### Breaking` section lists every breaking change (see [Major releases](#major-releases))
     - Verify new features and bug fixes are listed
 
 - [ ] **README.md**: Verify examples and feature list are current
@@ -61,11 +65,22 @@ and stage the two files when ready. The task stops if the version is invalid, th
 - [ ] **Linting**: No Rubocop violations (`bundle exec rubocop`)
     - Verify via git hooks or run manually
 
-- [ ] **Version**: Update `lib/cov_loupe/version.rb` to release version
-    - Remove `.pre.X` suffix for stable releases
+- [ ] **Version**: Confirm `lib/cov_loupe/version.rb` has the release version (set by `release:bump`)
+    - Stable releases must not have a `.pre.X` suffix
 
 - [ ] **Payload schema**: If a structured payload shape changed incompatibly since the last release, increment `CovLoupe::SCHEMA_VERSION`, copy the current `lib/cov_loupe/schemas/vN/` directory to the new version and edit the new copy, update the pinned value in `spec/cov_loupe/version_spec.rb`, and document the change in `RELEASE_NOTES.md` and the migration guide
     - Confirm earlier schema directories are unchanged since the last release (for example, `git --no-pager diff <last-tag> -- lib/cov_loupe/schemas/v1/`)
+
+### Major releases
+
+For a new major version N (for example, 8.0.0), also complete these before committing:
+
+- [ ] Create `docs/user/migrations/MIGRATING_TO_V<N>.md` with migration examples for every
+  breaking change in `RELEASE_NOTES.md`
+- [ ] Add the guide to the lists in `docs/user/migrations/README.md`, `README.md`,
+  `docs/user/README.md` (the "v2 through vN" text), and `docs/user/INSTALLATION.md`
+- [ ] Add the guide to the navigation in `mkdocs.yml`
+- [ ] Search the docs for stale version references (for example, `rg 'v<N-1>' docs README.md`)
 
 ### 3. Cleanup
 
@@ -82,16 +97,31 @@ and stage the two files when ready. The task stops if the version is invalid, th
 
 ### 4. Build Verification
 
+Set the release version once; later commands in this document use it:
+
+```bash
+VERSION=7.1.0   # the version you passed to release:bump
+```
+
+- [ ] **Commit and push changes**: Commit the version bump, release notes, and any docs
+```bash
+git add lib/cov_loupe/version.rb RELEASE_NOTES.md   # plus any docs you changed
+git commit -m "Release version $VERSION"
+git push origin main
+```
+    - This must happen before `bin/pre-release-check`, which requires a clean tree
+      and `HEAD == origin/main`
+
 - [ ] **Run pre-release check**: Build the release gem with the script
 ```bash
 bin/pre-release-check
 ```
     - Note the build commit SHA and SHA256 it prints
-    - The `cov-loupe-<version>.gem` file it produces is the authoritative release artifact
+    - The `cov-loupe-$VERSION.gem` file it produces is the authoritative release artifact
 
 - [ ] **Test installation**: Install and test the exact file the script produced
 ```bash
-gem install ./cov-loupe-<version>.gem
+gem install ./cov-loupe-$VERSION.gem
 cov-loupe --version
 cov-loupe --help
 # Test on actual project
@@ -102,17 +132,9 @@ cov-loupe list
 
 ### 5. Git Release
 
-- [ ] **Commit changes**: Commit version bump and RELEASE_NOTES.md updates
-```bash
-git add lib/cov_loupe/version.rb RELEASE_NOTES.md
-git commit -m "Release version #{version}"
-```
-    - This commit must come before `bin/pre-release-check` (step 4), which
-      requires a clean, synced tree
-
 - [ ] **Create tag**: Tag the release at the commit the gem was built from
 ```bash
-git tag -a v#{version} -m "Version #{version}" <build-commit-sha>
+git tag -a "v$VERSION" -m "Version $VERSION" <build-commit-sha>
 ```
     - Use the exact SHA printed by `bin/pre-release-check` so the tag cannot
       drift to a different commit if HEAD moves
@@ -130,13 +152,13 @@ git push origin main --follow-tags
       `gem build` again after tagging
     - Optionally confirm the file hash before pushing:
 ```bash
-sha256sum cov-loupe-#{version}.gem
+sha256sum "cov-loupe-$VERSION.gem"
 ```
     - Compare against the SHA256 printed by the script
 
 - [ ] **Push to RubyGems**: Publish the exact file the script built
 ```bash
-gem push cov-loupe-#{version}.gem
+gem push "cov-loupe-$VERSION.gem"
 ```
 
 - [ ] **Verify publication**: Check gem appears on RubyGems.org
@@ -148,7 +170,7 @@ gem push cov-loupe-#{version}.gem
 
 - [ ] **Create GitHub release**: Go to https://github.com/keithrbennett/cov-loupe/releases/new
     - Select the tag you just pushed
-    - Title: `Version #{version}`
+    - Title: `Version <VERSION>`
     - Description: Copy relevant sections from RELEASE_NOTES.md
     - Attach the `.gem` file (optional)
 
@@ -183,7 +205,7 @@ If a critical issue is discovered after release:
 
 1. **Yank the gem** (removes from RubyGems but preserves install history):
 ```bash
-gem yank cov-loupe -v #{version}
+gem yank cov-loupe -v "$VERSION"
 ```
 
 2. **Fix the issue** in a new patch version

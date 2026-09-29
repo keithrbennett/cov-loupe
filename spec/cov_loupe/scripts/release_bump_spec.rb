@@ -29,6 +29,19 @@ RSpec.describe CovLoupe::Scripts::ReleaseBump do
     expect(notes_file.read).to include("## Unreleased\n\n## v7.1.0\n\n- Changes for the next release\n")
   end
 
+  it 'prints next-step commands without major-release guidance for a minor bump' do
+    _result, out, _err = capture_io { bump.call }
+
+    expect(out).to include('git --no-pager diff', "Release version 7.1.0'", 'bin/pre-release-check')
+    expect(out).not_to include('MIGRATING_TO_V')
+  end
+
+  it 'points to major-release documentation work when the major version increases' do
+    _result, out, _err = capture_io { described_class.new('8.0.0').call }
+
+    expect(out).to include('docs/user/migrations/MIGRATING_TO_V8.md', '### Breaking')
+  end
+
   it 'accepts the project prerelease version format' do
     prerelease_bump = described_class.new('7.1.0.pre.1')
 

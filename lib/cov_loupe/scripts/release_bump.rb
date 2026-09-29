@@ -35,9 +35,32 @@ module CovLoupe
           "## Unreleased#{newline}#{newline}## v#{@version}#{carriage_return}"
         end
 
+        previous_version = ReleaseMetadata.version_from(version_source)
         version_file.write(updated_version)
         notes_file.write(updated_notes)
         puts "Updated lib/cov_loupe/version.rb and RELEASE_NOTES.md for v#{@version}."
+        print_next_steps(previous_version)
+      end
+
+      private def print_next_steps(previous_version)
+        puts
+        puts 'Next steps:'
+        puts '  git --no-pager diff lib/cov_loupe/version.rb RELEASE_NOTES.md'
+        if major_bump?(previous_version)
+          puts "  Major release: add docs/user/migrations/MIGRATING_TO_V#{major(@version)}.md, link it from"
+          puts '    the migration indexes, and make sure RELEASE_NOTES.md has a ### Breaking section'
+          puts '    (see docs/dev/RELEASING.md, "Major releases")'
+        end
+        puts '  git add lib/cov_loupe/version.rb RELEASE_NOTES.md  # plus any docs you changed'
+        puts "  git commit -m 'Release version #{@version}'"
+        puts '  git push origin main'
+        puts '  bin/pre-release-check'
+      end
+
+      private def major(version) = version.to_s[/\A\d+/].to_i
+
+      private def major_bump?(previous_version)
+        previous_version && major(@version) > major(previous_version)
       end
 
       private def abort_with(message)
