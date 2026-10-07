@@ -187,7 +187,7 @@ gem push "cov-loupe-$VERSION.gem"
     - Test integration
 
 - [ ] **Prepare for next release**:
-    - Optionally create a new section in RELEASE_NOTES.md for next version
+    - `release:bump` already leaves an empty `## Unreleased` section in RELEASE_NOTES.md
     - Consider bumping to next pre-release version if starting new development cycle
 
 ## Version Numbering
@@ -216,5 +216,5 @@ gem yank cov-loupe -v "$VERSION"
 
 ## Notes
 
-- GitHub Actions runs tests and Rubocop on every commit (via hooks)
-- Pre-commit hooks ensure code quality before commits
+- GitHub Actions CI runs tests and Rubocop on every push and pull request
+- Local pre-commit hooks run checks before commits
