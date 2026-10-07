@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# Pre-merge-commit hook: run the same checks as pre-commit.
+
+exec "$(dirname "${BASH_SOURCE[0]}")/pre-commit" "$@"

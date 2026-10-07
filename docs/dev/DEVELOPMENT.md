@@ -10,9 +10,19 @@
 git clone https://github.com/keithrbennett/cov-loupe.git
 cd cov-loupe
 bundle install
+bin/setup-hooks  # optional: enable the tracked git hooks
 gem build cov-loupe.gemspec && gem install cov-loupe-*.gem  # optional
 cov-loupe --version  # verify it works
 ```
+
+## Git Hooks
+
+Hooks are optional and live in the tracked `hooks/` directory. `bin/setup-hooks` sets
+`core.hooksPath` to that directory (nothing is copied into `.git/hooks`), so edits to a hook
+take effect immediately. `pre-commit` and `pre-merge-commit` both run RuboCop and RSpec.
+
+`core.hooksPath` replaces any global hooks path for this repository, and hooks previously copied
+into `.git/hooks` are no longer used. CI runs the same checks regardless.
 
 ## Running Tests
 

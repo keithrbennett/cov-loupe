@@ -217,4 +217,4 @@ gem yank cov-loupe -v "$VERSION"
 ## Notes
 
 - GitHub Actions CI runs tests and Rubocop on every push and pull request
-- Local pre-commit hooks run checks before commits
+- Local pre-commit hooks run checks before commits (enable with `bin/setup-hooks`)
