@@ -287,7 +287,8 @@ RSpec.describe CovLoupe::Scripts::PreReleaseCheck do
         mock_command(%w[gh workflow run test.yml --ref main], '')
         mock_command(%w[gh run watch 222 --exit-status], '')
 
-        expect { suppress_io { script.call } }.not_to raise_error
+        _result, out, _err = capture_io { script.call }
+        expect(out).to include('CI run 111 failed', 'gh run view 111 --log-failed')
         expect(Open3).to have_received(:popen2e).with(*%w[gh workflow run test.yml --ref main])
         expect(Open3).to have_received(:popen2e).with(*%w[gh run watch 222 --exit-status])
       end

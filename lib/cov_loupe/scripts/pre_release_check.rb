@@ -111,6 +111,13 @@ module CovLoupe
             watch_ci_run(running_run['databaseId'])
             return
           end
+
+          failed_run = runs.find { |run| run['conclusion'] == 'failure' }
+          if failed_run
+            puts "CI run #{failed_run['databaseId']} failed for HEAD SHA #{head_sha}; " \
+                 'starting a fresh run (check `gh run view ' \
+                 "#{failed_run['databaseId']} --log-failed` if it fails again)."
+          end
         end
 
         existing_run_ids = runs.map { |run| run['databaseId'] }

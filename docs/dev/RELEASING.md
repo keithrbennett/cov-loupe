@@ -48,6 +48,8 @@ and stage the files when ready. The task stops if the version is invalid, the
 
 ### 1. Documentation Review
 
+- [ ] **Release review prompt** (optional): [`dev/prompts/review/release-review.md`](../../dev/prompts/review/release-review.md) is a pre-release review prompt for AI agents
+
 - [ ] **RELEASE_NOTES.md**: Review release notes after running `release:bump`
     - For major releases: Ensure a `### Breaking` section lists every breaking change (see [Major releases](#major-releases))
     - Verify new features and bug fixes are listed
@@ -73,7 +75,8 @@ and stage the files when ready. The task stops if the version is invalid, the
 
 ### Major releases
 
-For a new major version N (for example, 8.0.0), also complete these before committing:
+For a new major version N (for example, 8.0.0), also complete these **before** the
+commit and push in step 4; neither `release:bump` nor `bin/pre-release-check` verifies them:
 
 - [ ] Create `docs/user/migrations/MIGRATING_TO_V<N>.md` with migration examples for every
   breaking change in `RELEASE_NOTES.md`
