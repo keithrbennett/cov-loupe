@@ -773,8 +773,8 @@ The predicate must be a callable (lambda, proc, or object with `#call` method) t
 
 **Predicate return values:**
 - `true` - Coverage meets your criteria (CLI exits with code 0)
-- `false` - Coverage fails your criteria (CLI exits with code 1)
-- Exception raised - Predicate error (CLI exits with code 2)
+- `false` - Coverage fails your criteria (CLI exits with code 3)
+- Error in the predicate itself (syntax error, not callable, or an exception raised by its own code) - Predicate error (CLI exits with code 4). Coverage-data errors triggered while the predicate queries the model, such as a missing file or stale data with `--raise-on-stale`, exit with code 1 like any other command.
 
 **File mode (most common):**
 ```sh
@@ -1030,7 +1030,9 @@ clp --error-mode debug 2>&1 | grep coverage
 
 - `0` - Success
 - `1` - Error (file not found, coverage data missing, stale coverage with `-S` / `--raise-on-stale`, etc.)
-- `2` - Predicate error from the `validate` subcommand (invalid predicate or runtime error)
+- `2` - Usage error (invalid option, option value, or subcommand arguments; invalid configuration such as `--log-file stdout`)
+- `3` - Validation failed: the `validate` predicate ran and returned a falsy value
+- `4` - Predicate error: the `validate` predicate itself could not be loaded or raised an error (coverage-data errors it triggers exit `1`)
 
 ## Next Steps
 

@@ -238,7 +238,7 @@ RSpec.describe CovLoupe::CoverageCLI do
       _stdout, stderr, status = run_cli_with_status(
         '--format', 'json', '--log-file', 'stdout', 'summary', 'lib/foo.rb'
       )
-      expect(status).to eq(1)
+      expect(status).to eq(2)
       expect(stderr).to include('stdout', 'not permitted')
       expect(CovLoupe.active_log_file).to eq(original_target)
     end
@@ -293,7 +293,7 @@ RSpec.describe CovLoupe::CoverageCLI do
     # The version subcommand was removed in v5.0.0
     it 'version subcommand is no longer recognized' do
       _stdout, stderr, status = run_fixture_cli_with_status('version')
-      expect(status).to eq(1)
+      expect(status).to eq(2)
       expect(stderr).to include("Unknown subcommand: 'version'")
     end
   end
@@ -317,7 +317,7 @@ RSpec.describe CovLoupe::CoverageCLI do
 
       it "exits with error for unknown resource with #{flag}" do
         _out, err, status = run_cli_with_status(flag, 'unknown')
-        expect(status).to eq(1)
+        expect(status).to eq(2)
         expect(err).to include("Unknown resource: 'unknown'")
       end
 

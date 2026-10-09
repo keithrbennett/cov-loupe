@@ -7,6 +7,35 @@
 
 ### Breaking
 
+- **CLI exit codes were remapped.** `validate` now exits `3` when the predicate
+  returns a falsy value (was `1`) and `4` when the predicate cannot be loaded or
+  raises an error of its own (was `2`); coverage-data errors it triggers exit
+  `1`. `validate` also no longer labels missing or stale coverage data as a
+  "Predicate error" (previously exit `2`); it now exits `1` with the normal error
+  message. Predicate errors now go through the central error handler, so they are
+  logged like other CLI errors: with the default `stderr` log target, an `ERROR`
+  log line now precedes the "Predicate error:" message. Usage errors (invalid
+  options or arguments, invalid configuration, misplaced global options) now
+  consistently exit `2`; some were `1`. Exit `1` is reserved for runtime errors
+  such as missing or stale coverage data. Invalid global options now also get
+  the enum-value and subcommand suggestions previously unreachable from the real
+  executable. Scripts that test `validate` for `$? -eq 1` must be updated. Codes are defined in
+  `CovLoupe::ExitCodes`. See [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#cli-exit-codes-remapped).
+- **Predicate evaluation wraps more errors in `PredicateError`.** `PredicateEvaluator` now
+  re-raises only `PredicateError`, `CoverageDataError` and `FileError` unchanged; any other
+  error raised while a predicate runs, including a `UsageError` or `ConfigurationError`
+  the predicate raises itself, becomes a `PredicateError` with the original attached. This
+  also applies to library callers and to the MCP `project_validate` tool, which reports
+  such errors as `Predicate error: ...`.
+- **Unexpected `ArgumentError`s are reported as unexpected errors.** An `ArgumentError`
+  that reaches the error handler outside coverage loading is now an `UnknownError`
+  ("An unexpected error occurred: ...", exit `1` in the CLI) instead of a
+  `ConfigurationError` or `UsageError` ("Invalid configuration: ..."). User-input
+  validation raises `UsageError`/`ConfigurationError` directly and is unaffected.
+- **`CoverageCLI::SUBCOMMANDS` moved to `CovLoupe::SUBCOMMANDS`.** The list of valid
+  subcommands now lives in its own file so startup option-error handling does not
+  need to load the whole CLI. Code that referenced the old constant must use the new
+  path.
 - **Logging defaults and fallback behavior changed.** CLI and MCP sessions now
   log to `stderr` by default, while library usage is quiet by default. The
   previous implicit `./cov_loupe.log` target and `COV-LOUPE-LOG-ERROR.log`

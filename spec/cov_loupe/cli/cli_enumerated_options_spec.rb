@@ -100,9 +100,9 @@ RSpec.describe 'CLI enumerated option parsing' do
 
   shared_examples 'rejects invalid option' do |cases|
     cases.each do |c|
-      it "exits 1 for #{c[:argv].join(' ')}" do
+      it "exits 2 for #{c[:argv].join(' ')}" do
         _out, err, status = run_cli_with_status(*c[:argv])
-        expect(status).to eq(1)
+        expect(status).to eq(2)
         expect(err).to include('Error:') if c.fetch(:check_error_prefix, true)
         expect(err).to include('invalid argument')
       end

@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'tmpdir'
 require 'spec_helper'
 
 RSpec.describe CovLoupe do
@@ -40,6 +41,34 @@ RSpec.describe CovLoupe do
           expect(error.status).to eq(2)
         end
       end
+    end
+
+    it 'exits with code 2 and shows the message for configuration errors' do
+      allow(CovLoupe::ConfigParser).to receive(:parse)
+        .and_raise(CovLoupe::ConfigurationError, 'bad config')
+
+      stderr = capture_stderr do
+        expect { described_class.run([]) }.to raise_error(SystemExit) do |error|
+          expect(error.status).to eq(CovLoupe::ExitCodes::USAGE)
+        end
+      end
+      expect(stderr).to include('Error: bad config')
+    end
+
+    it 'exits with code 2 and no backtrace for a usage error raised while parsing options' do
+      stderr = capture_stderr do
+        expect { described_class.run(%w[--context-lines -1 list]) }.to raise_error(SystemExit) do |error|
+          expect(error.status).to eq(CovLoupe::ExitCodes::USAGE)
+        end
+      end
+      expect(stderr).to include('Error: Context lines cannot be negative')
+    end
+
+    it 'suggests the matching subcommand when a subcommand is given as an option' do
+      stderr = capture_stderr do
+        expect { described_class.run(%w[--list]) }.to raise_error(SystemExit)
+      end
+      expect(stderr).to include("Did you mean the 'list' subcommand?")
     end
   end
 

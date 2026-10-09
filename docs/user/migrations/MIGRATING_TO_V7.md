@@ -12,6 +12,7 @@ This document describes the breaking changes introduced in version 7.0.0.
 - [Short Options `-c` and `-n` Reassigned](#short-options--c-and--n-reassigned)
 - [Only `coverage/coverage.json` Is Searched by Default](#only-coveragecoveragejson-is-searched-by-default)
 - [Logging Defaults, Target Probing, and Lazy File Creation](#logging-defaults-target-probing-and-lazy-file-creation)
+- [CLI Exit Codes Remapped](#cli-exit-codes-remapped)
 
 ---
 
@@ -19,7 +20,7 @@ This document describes the breaking changes introduced in version 7.0.0.
 
 Every hash returned by a public `CoverageModel` coverage method, successful structured CLI payload (`-f json`, `pretty_json`, `yaml`, and the other non-table formats), and structured MCP tool payload now starts with top-level integer `"schema_version": 1`. The existing payload keys remain at the top level; there is no wrapper. For example, a file summary begins `{"schema_version":1,"file":"lib/foo.rb",...}`. MCP clients should check `result.isError` before parsing the tool content.
 
-Library methods such as `CoverageModel#summary_for`, `#list`, and `#project_totals` now include this field, so saved JSON, YAML, or Marshal output carries the marker automatically. `relativize` preserves it. Table and text output, CLI `validate` exit codes, MCP `version` text, and error responses are unchanged. This version is separate from the gem version and from SimpleCov's `schema_version` in the input `coverage.json` file. See [Schema Version](../LIBRARY_API.md#schema-version) for the compatibility rules.
+Library methods such as `CoverageModel#summary_for`, `#list`, and `#project_totals` now include this field, so saved JSON, YAML, or Marshal output carries the marker automatically. `relativize` preserves it. Table and text output, MCP `version` text, and error responses are unchanged. This version is separate from the gem version and from SimpleCov's `schema_version` in the input `coverage.json` file. See [Schema Version](../LIBRARY_API.md#schema-version) for the compatibility rules.
 
 **Migration:** If a consumer compares exact top-level key sets or iterates every top-level key, account for `schema_version` before processing the coverage fields. Check that its value is `1` when reading saved payloads, and ignore other unknown keys.
 
@@ -215,3 +216,23 @@ cov-loupe -c ./coverage.json list
 **Migration:** if your `coverage.json` lives anywhere other than `coverage/`, pass `--coverage-file` (`-c`) on the command line, set it in `COV_LOUPE_OPTS`, add it to your MCP server `args`, or pass `coverage_file:` to `CoverageModel.new`.
 
 **Further reading:** [Configuring the Coverage File](../../index.md#configuring-the-coverage-file), [SimpleCov Integration](../../dev/arch-decisions/simplecov-integration.md), [Release Notes](../../release_notes.md).
+
+## CLI Exit Codes Remapped {#cli-exit-codes-remapped}
+
+Each failure kind now has its own exit code, defined in `CovLoupe::ExitCodes`.
+
+| Code | 6.x | 7.0 |
+|---|---|---|
+| 0 | Success | Success, including a `validate` pass |
+| 1 | Any error, including `validate` predicate returned falsy | Runtime error (missing, stale or corrupt coverage data, bad path) |
+| 2 | `validate` predicate error, including missing or stale coverage data reported as "Predicate error"; invalid global options | Usage error: invalid options or arguments, invalid configuration |
+| 3 | Not used | `validate`: predicate returned falsy (validation failed) |
+| 4 | Not used | `validate`: error in the predicate itself (could not be loaded, not callable, or raised an exception); coverage-data errors it triggers exit 1 |
+
+`validate` no longer reports coverage-data errors (missing, stale or corrupt coverage data) as "Predicate error". In 6.x they exited 2; they now print the normal error message and exit 1, like every other command.
+
+Usage errors raised inside a subcommand (for example a global option placed after the subcommand, or missing `validate` arguments) previously exited 1 and now exit 2. Invalid global options also now show the subcommand and enum-value hints.
+
+**Migration:** update CI scripts that test `validate` for exit 1 to test 3 (policy failed) and, if you distinguish them, 4 (predicate error). Scripts that treated exit 2 from `validate` as "stale or missing coverage" should test for 1 instead. A script that only checks for non-zero needs no change.
+
+**Further reading:** [Exit Codes](../CLI_USAGE.md#exit-codes), [Release Notes](../../release_notes.md).

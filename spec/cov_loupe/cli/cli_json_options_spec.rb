@@ -35,7 +35,7 @@ RSpec.describe CovLoupe::CoverageCLI, 'json format options' do
           expect(status).to eq(0)
         else
           # 'pretty-json' is no longer a recognized alias.
-          expect(status).to eq(1)
+          expect(status).to eq(2)
           expect(err).to include('invalid argument')
         end
       end

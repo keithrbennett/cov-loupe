@@ -149,14 +149,14 @@ RSpec.describe CovLoupe::OptionParsers::ErrorHelper do
     end
 
     context 'when exiting after invalid option' do
-      it 'exits with status 1' do
+      it 'exits with status 2' do
         error = OptionParser::InvalidArgument.new('invalid argument: xyz')
 
         stderr_output = capture_stderr do
           expect do
             helper.handle_option_parser_error(error, argv: %w[--source xyz])
           end.to raise_error(SystemExit) do |e|
-            expect(e.status).to eq(1)
+            expect(e.status).to eq(2)
           end
         end
 

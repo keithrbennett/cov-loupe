@@ -398,10 +398,7 @@ end
 CoveragePolicy.new
 ```
 
-**Exit codes:**
-- `0` - Predicate returned truthy (pass)
-- `1` - Predicate returned falsy (fail)
-- `2` - Predicate raised an error
+**Exit codes:** `0` pass, `3` predicate returned falsy (validation failed), `4` error in the predicate itself. See the full list under [Exit Codes](CLI_USAGE.md#exit-codes).
 
 See [examples/success_predicates/README.md](../examples/success_predicates.md) for more examples.
 
@@ -460,14 +457,16 @@ Enforce custom coverage policies with the `validate` subcommand:
 # Run tests
 bundle exec rspec
 
-# Apply coverage policy (fails with exit code 1 if predicate returns false)
+# Apply coverage policy (fails with exit code 3 if predicate returns false)
 clp validate coverage_policy.rb
 ```
 
 Exit codes:
 - `0` - Success (coverage meets requirements)
-- `1` - Failure (coverage policy not met or stale data detected)
-- `2` - Error (invalid predicate or system error)
+- `1` - Runtime error (e.g., missing or stale coverage data with `--raise-on-stale`)
+- `2` - Usage error (invalid options or arguments)
+- `3` - Validation failed (coverage policy not met)
+- `4` - Predicate error (invalid predicate or an error raised by its own code; coverage-data errors it triggers exit 1)
 
 ### Platform-Specific Examples
 

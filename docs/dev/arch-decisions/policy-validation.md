@@ -31,7 +31,7 @@ We considered several approaches:
 - Flexibility: Support arbitrarily complex coverage policies
 - Simplicity: Easy for users to write and understand
 - Debuggability: Users can use standard Ruby debugging tools
-- CI/CD integration: Clear exit codes (0 = pass, 1 = fail, 2 = error)
+- CI/CD integration: Clear exit codes (0 = pass, 1 = runtime error, 2 = usage error, 3 = validation failed, 4 = predicate error)
 - Access to coverage data: Predicates need access to the full `CoverageModel` API
 
 #### Why Not a Custom DSL?
@@ -91,17 +91,10 @@ else
   PredicateEvaluator.evaluate_file(code, model)
 end
 
-exit(result ? 0 : 1)
+exit(result ? ExitCodes::SUCCESS : ExitCodes::VALIDATION_FAILED)
 ```
 
-Predicate errors are converted to exit code 2:
-
-```ruby
-private def handle_predicate_error(error)
-  warn "Predicate error: #{error.message}"
-  exit 2
-end
-```
+The command does not rescue errors. `PredicateEvaluator` wraps failures in the predicate itself (syntax errors, a missing or non-callable predicate, exceptions from its own code) in `PredicateError`. That includes a `UsageError` or `ConfigurationError` the predicate raises itself, since it is a predicate problem and not a command-line problem. Only `CoverageDataError` and `FileError` (raised by the model's own queries, such as a missing file or stale data) keep their type. `CoverageCLI#handle_user_facing_error` logs every such error through the error handler, prints its message, and exits with `exit_code_for(error)`: 4 for `PredicateError` (validation failure is 3) and 1 for coverage-data and file errors. Usage errors in `validate`'s own arguments exit 2.
 
 #### Security Model: Treat as Executable Code
 

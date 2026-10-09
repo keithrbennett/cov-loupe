@@ -7,6 +7,7 @@ require 'set' # rubocop:disable Lint/RedundantRequireStatement -- Ruby >= 3.4 re
 require 'optparse'
 
 require_relative 'cov_loupe/version'
+require_relative 'cov_loupe/exit_codes'
 require_relative 'cov_loupe/config/app_config'
 require_relative 'cov_loupe/config/app_context'
 require_relative 'cov_loupe/errors/errors'
@@ -70,10 +71,16 @@ module CovLoupe
         # Prepend environment options once at entry point
         full_argv = extract_env_opts + argv
         config = ConfigParser.parse(full_argv.dup)
-      rescue OptionParser::ParseError, ConfigurationError => e
+      rescue OptionParser::ParseError => e
+        # Loaded only on this error path to keep normal startup light.
+        require_relative 'cov_loupe/subcommands'
+        require_relative 'cov_loupe/option_parsers/error_helper'
+        OptionParsers::ErrorHelper.new(SUBCOMMANDS)
+          .handle_option_parser_error(e, argv: full_argv)
+      rescue ConfigurationError, UsageError => e
         warn "Error: #{e.message}"
         warn "Run 'cov-loupe --help' for usage information."
-        exit 2
+        exit ExitCodes::USAGE
       end
 
       if config.mode == :cli

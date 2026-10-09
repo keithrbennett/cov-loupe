@@ -32,8 +32,8 @@ cov-loupe validate -i '->(model) { model.list["files"].all? { |f| f["percentage"
 
 The predicate receives a `CoverageModel` instance and returns:
 - **Truthy value** → Exit code 0 (success)
-- **Falsy value** → Exit code 1 (failure)
-- **Exception** → Exit code 2 (error)
+- **Falsy value** → Exit code 3 (validation failed)
+- **Error in the predicate itself** (syntax error, not callable, or an exception from its own code) → Exit code 4 (predicate error)
 
 ## Available Examples
 
@@ -194,7 +194,11 @@ stage('Coverage Policy') {
 ## Exit Codes
 
 - **0** - Predicate returned truthy (success)
-- **1** - Predicate returned falsy (failure)
-- **2** - Predicate raised an error
+- **1** - Runtime error (e.g., missing or stale coverage data)
+- **2** - Usage error (invalid options or arguments)
+- **3** - Predicate returned falsy (validation failed)
+- **4** - Error in the predicate itself (could not be loaded, not callable, or raised an exception)
 
-Use exit code 1 to fail CI/CD builds when coverage doesn't meet policy.
+Coverage-data errors triggered while the predicate queries the model (for example a missing file, or stale data with `--raise-on-stale`) exit 1, as they do for other commands.
+
+Any non-zero code fails a CI/CD build. Use exit code 3 to tell a coverage-policy failure apart from a tooling or predicate problem.

@@ -258,7 +258,7 @@ end
 1. Catches all exceptions in the main run loop
 2. Uses `for_cli` handler to log errors if debug mode is enabled
 3. Displays `user_friendly_message` to the user
-4. Exits with appropriate code (1 for errors, 2 for usage errors)
+4. Exits with the code from `CoverageCLI#exit_code_for` (see `CovLoupe::ExitCodes`): 1 runtime error, 2 usage or configuration error, 4 predicate error. The one exception is `validate`, which exits directly with 0 (pass) or 3 (validation failed) when the predicate runs to completion, since that outcome is not an error
 
 **MCP Server Mode** (`lib/cov_loupe/base_tool.rb`):
 1. Each tool wraps execution in a rescue block

@@ -99,10 +99,10 @@ module CovLoupe
     private def convert_argument_error(error, context)
       if context == :coverage_loading
         CoverageDataError.new("Invalid path in coverage data: #{error.message}", error)
-      elsif error.message.include?('wrong number of arguments')
-        UsageError.new("Invalid number of arguments: #{error.message}", error)
       else
-        ConfigurationError.new("Invalid configuration: #{error.message}", error)
+        # Deliberately raised user-input errors are UsageError/ConfigurationError already, so an
+        # ArgumentError that reaches here is an unexpected (internal) failure.
+        UnknownError.new(error.message, error)
       end
     end
 
@@ -136,8 +136,9 @@ module CovLoupe
       context_suffix = context ? " in #{context}" : ''
       parts = ["Error#{context_suffix}: #{error.class}: #{error.message}"]
 
-      if show_stack_traces? && error.backtrace
-        parts << error.backtrace.join("\n")
+      if show_stack_traces?
+        trace = error.is_a?(CovLoupe::Error) ? error.diagnostic_backtrace : error.backtrace
+        parts << trace.join("\n") if trace
       end
 
       parts.join("\n")

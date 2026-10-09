@@ -37,6 +37,12 @@ module CovLoupe
     def user_friendly_message
       message
     end
+
+    # The backtrace most useful for diagnosis: the wrapped exception's, which points at the
+    # actual failure site (e.g., inside a predicate), rather than where it was re-raised.
+    def diagnostic_backtrace
+      original_error&.backtrace || backtrace
+    end
   end
 
   # Configuration or setup related errors

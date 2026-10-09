@@ -7,6 +7,8 @@ require_relative 'commands/command_factory'
 require_relative 'option_parsers/error_helper'
 require_relative 'option_parsers/env_options_parser'
 require_relative 'presenters/project_coverage_presenter'
+require_relative 'exit_codes'
+require_relative 'subcommands'
 require_relative 'output_chars'
 require_relative 'formatters/coverage_warnings'
 require_relative 'payload_schema'
@@ -24,9 +26,6 @@ module CovLoupe
   # the subcommand trigger a helpful error message.
   class CoverageCLI
     HORIZONTAL_RULE = '-' * 79
-
-    # Valid CLI subcommands.
-    SUBCOMMANDS = %w[list summary raw uncovered detailed totals validate].freeze
 
     # Optional single-character abbreviations for subcommands.
     SUBCOMMAND_ABBREVIATIONS = {
@@ -217,8 +216,24 @@ module CovLoupe
       # Convert error message to ASCII if in ascii mode
       message = OutputChars.convert(error.user_friendly_message, config.output_chars)
       warn message
-      warn error.backtrace.first(5).join("\n") if config.error_mode == :debug && error.backtrace
-      exit 1
+      if config.error_mode == :debug
+        backtrace = error.diagnostic_backtrace
+        warn OutputChars.convert(backtrace.first(5).join("\n"), config.output_chars) if backtrace
+      end
+      exit(exit_code_for(error))
+    end
+
+    # Usage and configuration mistakes are the user's to fix (2); everything else is a runtime
+    # error (1), except predicate errors (4).
+    private def exit_code_for(error)
+      case error
+      when PredicateError
+        ExitCodes::PREDICATE_ERROR
+      when UsageError, ConfigurationError
+        ExitCodes::USAGE
+      else
+        ExitCodes::ERROR
+      end
     end
   end
 end

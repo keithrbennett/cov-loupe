@@ -8,13 +8,13 @@ RSpec.describe CovLoupe::CoverageCLI do
 
   it 'errors with usage when summary path is missing' do
     _out, err, status = run_fixture_cli_with_status('summary')
-    expect(status).to eq(1)
+    expect(status).to eq(2)
     expect(err).to include('Usage: cov-loupe summary <path>')
   end
 
   it 'errors with meaningful message for unknown subcommand' do
     _out, err, status = run_fixture_cli_with_status('bogus')
-    expect(status).to eq(1)
+    expect(status).to eq(2)
     expect(err).to include("Unknown subcommand: 'bogus'", 'Valid subcommands:')
   end
 
@@ -48,7 +48,7 @@ RSpec.describe CovLoupe::CoverageCLI do
     ].each do |test_case|
       it "detects misplaced #{test_case[:expected]} option after subcommand" do
         _out, err, status = run_fixture_cli_with_status(*test_case[:args])
-        expect(status).to eq(1)
+        expect(status).to eq(2)
         expect(err).to include('Global option(s) must come BEFORE the subcommand')
         expect(err).to include(test_case[:expected])
       end
@@ -58,14 +58,14 @@ RSpec.describe CovLoupe::CoverageCLI do
   describe 'extra arguments detection' do
     it 'rejects extra arguments to list command' do
       _out, err, status = run_fixture_cli_with_status('list', 'extra')
-      expect(status).to eq(1)
+      expect(status).to eq(2)
       expect(err).to include('Unexpected argument')
       expect(err).to include('extra')
     end
 
     it 'rejects extra arguments after path in summary command' do
       _out, err, status = run_fixture_cli_with_status('summary', 'lib/foo.rb', 'extra')
-      expect(status).to eq(1)
+      expect(status).to eq(2)
       expect(err).to include('Unexpected argument')
       expect(err).to include('extra')
     end

@@ -2,11 +2,13 @@
 
 require_relative 'base_command'
 require_relative '../config/predicate_evaluator'
+require_relative '../exit_codes'
 
 module CovLoupe
   module Commands
     # Validates coverage data against a predicate.
-    # Exits with code 0 (pass), 1 (fail), or 2 (error).
+    # Exits with code 0 (pass) or 3 (validation failed). Errors, including PredicateError (4),
+    # propagate to the CLI, which logs them and maps them to an exit code.
     #
     # Usage:
     #   cov-loupe validate policy.rb                # File mode
@@ -45,23 +47,7 @@ module CovLoupe
           PredicateEvaluator.evaluate_file(code, model)
         end
 
-        exit(result ? 0 : 1)
-      rescue UsageError
-        # Usage errors should exit with code 1, not 2
-        raise
-      rescue => e
-        handle_predicate_error(e)
-      end
-
-      private def handle_predicate_error(error)
-        # Convert error message to ASCII if in ascii mode
-        message = convert_text(error.message)
-        warn "Predicate error: #{message}"
-        if config.error_mode == :debug
-          backtrace = error.backtrace.first(5).map { |line| convert_text(line) }
-          warn backtrace.join("\n")
-        end
-        exit 2
+        exit(result ? ExitCodes::SUCCESS : ExitCodes::VALIDATION_FAILED)
       end
     end
   end

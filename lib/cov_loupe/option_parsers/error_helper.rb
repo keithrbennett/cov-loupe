@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative '../output_chars'
+require_relative '../exit_codes'
 
 module CovLoupe
   module OptionParsers
@@ -26,7 +27,7 @@ module CovLoupe
           end
         end
         warn usage_hint
-        exit 1
+        exit ExitCodes::USAGE
       end
 
       private def extract_invalid_option(message)

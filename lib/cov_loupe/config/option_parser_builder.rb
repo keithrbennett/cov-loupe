@@ -5,6 +5,7 @@ require_relative '../version'
 require_relative '../resources'
 require_relative 'boolean_type'
 require_relative '../errors/errors'
+require_relative '../exit_codes'
 
 module CovLoupe
   class OptionParserBuilder
@@ -50,7 +51,7 @@ module CovLoupe
           summary, s <path>        Show covered/total/% for a file
           totals, t                Show aggregated line totals and average %
           uncovered, u <path>      Show uncovered lines and a summary
-          validate, v <file>       Evaluate coverage policy from file (exit 0=pass, 1=fail, 2=error)
+          validate, v <file>       Evaluate coverage policy from file (exit 0=pass, 3=fail, 4=bad predicate)
           validate, v -i <code>    Evaluate coverage policy from code string
 
         SUBCOMMANDS
@@ -105,7 +106,7 @@ module CovLoupe
       end
       parser.on('-h', '--help', 'Show help') do
         puts parser
-        exit 0
+        exit ExitCodes::SUCCESS
       end
       parser.on('-l', '--log-file PATH', String,
         'Log target (default stderr, use a file path for persistent logging, :off to disable)') do |value|
@@ -131,15 +132,15 @@ module CovLoupe
       end
       parser.on('-v', '--version', 'Print version and exit.') do
         puts CovLoupe::VERSION
-        exit 0
+        exit ExitCodes::SUCCESS
       end
       parser.on('-p', '--path-for NAME', String,
         'Print resource path/URL and exit. NAME: repo, docs, docs-local.') do |value|
         puts Resources.cli_url_for(value)
-        exit 0
+        exit ExitCodes::SUCCESS
       rescue UsageError => e
         warn e.user_friendly_message
-        exit 1
+        exit ExitCodes::USAGE
       end
     end
 

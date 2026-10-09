@@ -72,14 +72,16 @@ RSpec.describe CovLoupe::ErrorHandler do
     expect(e.user_friendly_message).to include('Invalid coverage data format')
   end
 
-  it 'maps ArgumentError by message' do
-    e = handler.convert_standard_error(
-      ArgumentError.new('wrong number of arguments (given 1, expected 2)')
-    )
-    expect(e).to be_a(CovLoupe::UsageError)
-
-    e = handler.convert_standard_error(ArgumentError.new('invalid option'))
-    expect(e).to be_a(CovLoupe::ConfigurationError)
+  it 'maps an unexpected ArgumentError to UnknownError, keeping the original' do
+    [
+      'wrong number of arguments (given 1, expected 2)',
+      'invalid option',
+    ].each do |message|
+      original = ArgumentError.new(message)
+      e = handler.convert_standard_error(original)
+      expect(e).to be_a(CovLoupe::UnknownError)
+      expect(e.original_error).to equal(original)
+    end
   end
 
   it 'maps NoMethodError to CoverageDataError with helpful info' do

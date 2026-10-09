@@ -205,7 +205,7 @@ RSpec.describe CovLoupe::CoverageCLI do
     invalid_option_cases.each do |description, test_case|
       it description do
         _out, err, status = run_cli_with_status(*test_case[:args])
-        expect(status).to eq(1)
+        expect(status).to eq(2)
         test_case[:expected_messages].each { |msg| expect(err).to include(msg) }
       end
     end
@@ -225,6 +225,45 @@ RSpec.describe CovLoupe::CoverageCLI do
       _out, err, status = run_fixture_cli_with_status('summary', 'lib/foo.rb')
       expect(status).to eq(1)
       expect(err).to include('Unexpected error in subcommand')
+    end
+
+    {
+      CovLoupe::UsageError         => 2,
+      CovLoupe::ConfigurationError => 2,
+      CovLoupe::PredicateError     => 4,
+      CovLoupe::FileNotFoundError  => 1,
+    }.each do |error_class, expected_status|
+      it "exits #{expected_status} for #{error_class.name.split('::').last}" do
+        error = error_class.new('boom')
+        fake_command = Class.new do
+          define_method(:initialize) { |_cli| nil }
+          define_method(:execute) { |_args| raise error }
+        end
+        allow(CovLoupe::Commands::CommandFactory).to receive(:create)
+          .and_return(fake_command.new(nil))
+
+        _out, _err, status = run_fixture_cli_with_status('summary', 'lib/foo.rb')
+        expect(status).to eq(expected_status)
+      end
+    end
+
+    # Plain Ruby exceptions from internal bugs are converted to CovLoupe errors by the error
+    # handler; they must not be reported as usage errors.
+    {
+      'ArgumentError'         => ArgumentError.new('internal bug'),
+      'ArgumentError (arity)' => ArgumentError.new('wrong number of arguments (given 1)'),
+    }.each do |description, exception|
+      it "exits 1 for an internal #{description}" do
+        fake_command = Class.new do
+          define_method(:initialize) { |_cli| nil }
+          define_method(:execute) { |_args| raise exception }
+        end
+        allow(CovLoupe::Commands::CommandFactory).to receive(:create)
+          .and_return(fake_command.new(nil))
+
+        _out, _err, status = run_fixture_cli_with_status('summary', 'lib/foo.rb')
+        expect(status).to eq(1)
+      end
     end
   end
 end
