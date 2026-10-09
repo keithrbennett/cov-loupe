@@ -417,5 +417,18 @@ RSpec.describe CovLoupe::BaseTool do
         expect(described_class.send(:ascii_only?, :invalid_symbol)).to be(false)
       end
     end
+
+    describe '.underscore' do
+      it 'converts CamelCase, including after digits, and does not split on a letter d' do
+        {
+          'FileCoverageSummary' => 'file_coverage_summary',
+          'HTMLParser'          => 'html_parser',
+          'Utf8Tool'            => 'utf8_tool',
+          'Add'                 => 'add',
+        }.each do |input, expected|
+          expect(described_class.send(:underscore, input)).to eq(expected)
+        end
+      end
+    end
   end
 end

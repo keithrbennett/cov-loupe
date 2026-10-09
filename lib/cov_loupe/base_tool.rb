@@ -343,7 +343,7 @@ module CovLoupe
     def self.underscore(value)
       value
         .gsub(/([A-Z]+)([A-Z][a-z])/, '\\1_\\2')
-        .gsub(/([a-z\\d])([A-Z])/, '\\1_\\2')
+        .gsub(/([a-z\d])([A-Z])/, '\\1_\\2')
         .downcase
     end
     private_class_method :payload_method_for, :json_name_for, :underscore
