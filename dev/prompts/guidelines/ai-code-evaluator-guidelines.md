@@ -189,11 +189,11 @@ All RuboCop Metrics cops (AbcSize, BlockLength, ClassLength, CyclomaticComplexit
    - Clean RuboCop run (all non-Metrics cops) — check with `bundle exec rubocop` rather than trusting a hardcoded count here, since it shifts with every commit
    - Comprehensive code review
    - Clear inline documentation for complex logic
-   - Voluntary file size restraint (most files < 200 lines)
+   - Voluntary file size restraint (files are generally kept short)
 
 4. **Readability over arbitrary limits** – The project values clear, cohesive methods over arbitrary line limits. When a method's length accurately reflects its necessary complexity, splitting it just to meet a metric harms rather than helps. Key examples:
-   - `StalenessChecker#compute_file_staleness_details` (30 lines) handles complex edge cases with clear documentation
-   - `CoverageDataProjectStaleError#build_details` (22 lines) builds error messages through simple sequential operations
+   - `StalenessChecker#compute_file_staleness_details` handles complex edge cases with clear documentation
+   - `StalenessMessageFormatter#format_project_details` builds error messages through simple sequential operations
 
 **Evidence:** Manual review shows appropriate complexity for domain logic, with no god objects or unclear methods.
 
@@ -206,11 +206,11 @@ AI code analysis tools may flag methods as "too long" based on line count alone.
 **When long methods are acceptable:**
 
 1. **Sequential data structure building** – Methods that build arrays or hashes through sequential operations are highly readable despite line count:
-   - `CoverageDataProjectStaleError#build_details` (in `lib/cov_loupe/errors/errors.rb`) – builds error message parts in an array through simple, similar operations
+   - `StalenessMessageFormatter#format_project_details` (in `lib/cov_loupe/staleness/staleness_message_formatter.rb`) – builds error message parts in an array through simple, similar operations
    - This pattern is far clearer than extracting fragmented helper methods
 
 2. **Comprehensive conditional handling** – Methods with extensive if-elsif-else chains that handle different cases clearly:
-   - `ErrorHandler#convert_runtime_error` (22 lines, lib/cov_loupe/error_handler.rb:103-124) – converts different error types with appropriate context
+   - `ErrorHandler#convert_standard_error` (in `lib/cov_loupe/errors/error_handler.rb`) – converts different error types with appropriate context
    - Each branch is simple; complexity lies in coverage, not algorithmic difficulty
 
 3. **Well-documented edge case handling** – Methods handling multiple edge cases with clear inline documentation:
@@ -218,7 +218,7 @@ AI code analysis tools may flag methods as "too long" based on line count alone.
    - Comments clarify intent; the logic itself remains straightforward
 
 4. **Coordinated multi-step operations** – Methods that orchestrate several well-defined steps in a logical flow:
-   - While `CoverageModel#list` was previously 48 lines, it has been refactored to 16 lines (`lib/cov_loupe/model/model.rb`) by extracting helper methods
+   - `CoverageModel#list` (`lib/cov_loupe/model/model.rb`) was shortened substantially by extracting helper methods
    - This demonstrates that extraction makes sense when it improves clarity, not to meet arbitrary line limits
 
 **When to refactor:**
@@ -259,7 +259,7 @@ RuboCop runs in parallel mode by default, forking worker processes via the `para
 
 Running RuboCop with `--cache false` completes successfully with **0 violations**:
 ```
-164 files inspected, no offenses detected
+N files inspected, no offenses detected
 ```
 
 The codebase has perfect RuboCop compliance. The crash is purely environmental.
@@ -352,8 +352,8 @@ These files use MkDocs' `include-markdown` plugin to pull in comprehensive docum
 - `docs/code_of_conduct.md` → `{% include-markdown "../CODE_OF_CONDUCT.md" %}`
 
 The actual comprehensive documentation exists at:
-- `CONTRIBUTING.md` (103 lines) - Full contributing guide with PR workflow, development setup, testing requirements, and release process
-- `CODE_OF_CONDUCT.md` (61 lines) - Complete Contributor Covenant v2.1
+- `CONTRIBUTING.md` - Full contributing guide with PR workflow, development setup, testing requirements, and release process
+- `CODE_OF_CONDUCT.md` - Complete Contributor Covenant v2.1
 
 **Why this pattern is used:**
 
