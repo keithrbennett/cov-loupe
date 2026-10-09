@@ -47,9 +47,9 @@ module CovLoupe
       )
     end
 
-    # The JSON formatter marks lines excluded via :nocov: or
-    # simplecov:disable directives with the string "ignored". Map them to
-    # nil, SimpleCov's "not relevant" value, so excluded lines stay out of
+    # The JSON formatter marks lines that SimpleCov excluded (via nocov blocks
+    # or disable/enable directive comments) with the string "ignored". Map
+    # them to nil, SimpleCov's "not relevant" value, so excluded lines stay out of
     # the covered and uncovered counts.
     #
     # Only the exact sentinel is translated: any other string is left in
