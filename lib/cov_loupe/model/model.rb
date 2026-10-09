@@ -483,7 +483,7 @@ module CovLoupe
 
       missing_from_coverage = Array(list_result['missing_tracked_files']).length
       skipped = Array(list_result['skipped_files']).length
-      unreadable = Array(list_result['unreadable_files']).length
+      unreadable = unreadable_without_row(list_result)
       by_type = {
         StaleStatus::MISSING_FROM_COVERAGE => missing_from_coverage,
         StaleStatus::UNREADABLE            => unreadable,
@@ -493,6 +493,15 @@ module CovLoupe
         'total'   => by_type.values.sum,
         'by_type' => by_type,
       }
+    end
+
+    # Unreadable files that already appear as a coverage row (counted under with_coverage)
+    # or as a skipped file must not be counted again in the without-coverage bucket.
+    private def unreadable_without_row(list_result)
+      accounted = (list_result['files'] + Array(list_result['skipped_files'])).to_set { |r| r['file'] }
+      Array(list_result['unreadable_files']).count do |path|
+        !accounted.include?(File.expand_path(path, @root))
+      end
     end
 
     private def files_payload(with_coverage, without_coverage)
