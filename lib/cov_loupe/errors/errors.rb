@@ -13,6 +13,7 @@ module CovLoupe
   #     ├── ConfigurationError     — setup/config problems
   #     │   └── LoggingError       — logging target setup/write problems
   #     ├── UnknownError           — unclassified exceptions
+  #     ├── PredicateError         — user predicate failed to load or run
   #     ├── FileError              — file/path problems
   #     │     ├── FileNotFoundError
   #     │     ├── FilePermissionError
@@ -58,6 +59,14 @@ module CovLoupe
   class UnknownError < Error
     def user_friendly_message
       "An unexpected error occurred: #{message}"
+    end
+  end
+
+  # A user-supplied predicate failed to load or raised while running. Distinct from
+  # CoverageDataError so callers (and AI agents) fix the predicate, not the coverage data.
+  class PredicateError < Error
+    def user_friendly_message
+      "Predicate error: #{message}"
     end
   end
 

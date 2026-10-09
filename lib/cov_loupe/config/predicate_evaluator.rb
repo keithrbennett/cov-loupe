@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative '../errors/errors'
+
 module CovLoupe
   # Evaluates coverage predicates from either Ruby code strings or files.
   # Used by the validate subcommand, validate MCP tool, and library API.
@@ -13,7 +15,7 @@ module CovLoupe
     # @param code [String] Ruby code that returns a callable (lambda, proc, or object with #call)
     # @param model [CoverageModel] The coverage model to pass to the predicate
     # @return [Boolean] The result of calling the predicate with the model
-    # @raise [RuntimeError] If the code doesn't return a callable or has syntax errors
+    # @raise [PredicateError] If the code doesn't return a callable or has syntax errors
     def self.evaluate_code(code, model)
       # WARNING: The predicate code executes with full Ruby privileges.
       # It has unrestricted access to the file system, network, and system commands.
@@ -27,7 +29,11 @@ module CovLoupe
       validate_callable(predicate)
       predicate.call(model)
     rescue SyntaxError => e
-      raise "Syntax error in predicate code: #{e.message}"
+      raise PredicateError.new("Syntax error in predicate code: #{e.message}", e)
+    rescue CovLoupe::Error
+      raise
+    rescue => e
+      raise PredicateError.new(e.message, e)
     end
 
     # Evaluate a predicate from a file
@@ -35,10 +41,10 @@ module CovLoupe
     # @param path [String] Path to Ruby file containing predicate code
     # @param model [CoverageModel] The coverage model to pass to the predicate
     # @return [Boolean] The result of calling the predicate with the model
-    # @raise [RuntimeError] If the file doesn't exist, doesn't return a callable, or has syntax errors
+    # @raise [PredicateError] If the file doesn't exist, doesn't return a callable, or has syntax errors
     def self.evaluate_file(path, model)
       unless File.exist?(path)
-        raise "Predicate file not found: #{path}"
+        raise PredicateError, "Predicate file not found: #{path}"
       end
 
       content = File.read(path)
@@ -55,16 +61,20 @@ module CovLoupe
       validate_callable(predicate)
       predicate.call(model)
     rescue SyntaxError => e
-      raise "Syntax error in predicate file: #{e.message}"
+      raise PredicateError.new("Syntax error in predicate file: #{e.message}", e)
+    rescue CovLoupe::Error
+      raise
+    rescue => e
+      raise PredicateError.new(e.message, e)
     end
 
     # Validate that an object is callable
     #
     # @param predicate [Object] The object to check
-    # @raise [RuntimeError] If the object doesn't respond to #call
+    # @raise [PredicateError] If the object doesn't respond to #call
     def self.validate_callable(predicate)
       unless predicate.respond_to?(:call)
-        raise 'Predicate must be callable (lambda, proc, or object with #call method)'
+        raise PredicateError, 'Predicate must be callable (lambda, proc, or object with #call method)'
       end
     end
     private_class_method :validate_callable

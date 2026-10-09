@@ -98,6 +98,20 @@ RSpec.describe CovLoupe::Tools::ProjectValidateTool do
         # Verify it's an error response, not a JSON result
         expect(text).not_to include('{"result"')
       end
+
+      {
+        'an undefined method'   => '->(m) { m.no_such_method }',
+        'a bad Integer() value' => '->(_m) { Integer("x") }',
+      }.each do |desc, code|
+        it "reports #{desc} as a predicate error, not a coverage/config error" do
+          response = call_with_predicate(code)
+
+          expect_mcp_tool_error(response)
+          text = response_text(response)
+          expect(text).to include('Predicate error:')
+          expect(text).not_to include('Coverage data error', 'Configuration error')
+        end
+      end
     end
 
     context 'with a predicate file' do
