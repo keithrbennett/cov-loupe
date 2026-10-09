@@ -77,12 +77,12 @@ RSpec.describe 'MCP structured payload schema version' do
     expect_schema_valid('list', data)
   end
 
-  it 'accepts the predicate value that project_validate actually returns' do
+  it 'returns a Boolean result for a non-Boolean predicate' do
     response = CovLoupe::Tools::ProjectValidateTool.call(root: root,
       code: '->(_model) { 42 }', server_context: server_context)
     data = JSON.parse(response.content.first['text'])
 
-    expect(data['result']).to eq(42)
+    expect(data['result']).to be(true)
     expect_schema_valid('validate_result', data)
   end
 end

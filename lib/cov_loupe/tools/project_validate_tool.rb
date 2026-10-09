@@ -12,7 +12,7 @@ module CovLoupe
         Validates coverage data against a predicate (Ruby code that evaluates to true/false).
         Use this to enforce coverage policies programmatically.
         Inputs: Either 'code' (Ruby string) OR 'file' (path to Ruby file), plus optional root/coverage_file/raise_on_stale/error_mode.
-        Output: JSON object {"result": Boolean} where true means policy passed. A false result means the policy failed but the tool itself succeeded (the response carries `isError: false`); execution errors (syntax error, file not found, etc.) return a `tools/call` result with `isError: true` and the friendly error message in the content.
+        Output: JSON object {"result": Boolean} where true means policy passed (the predicate's return value is coerced by truthiness, as in the CLI). A false result means the policy failed but the tool itself succeeded (the response carries `isError: false`); execution errors (syntax error, file not found, etc.) return a `tools/call` result with `isError: true` and the friendly error message in the content.
         Security Warning: Predicates execute as arbitrary Ruby code with full system privileges.
         Examples:
         - "Check if all files have at least 80% coverage" → {"code": "->(m) { m.list["files"].all? { |f| f['percentage'] >= 80 } }"}
@@ -59,8 +59,8 @@ module CovLoupe
               raise UsageError, "Either 'code' or 'file' must be provided"
             end
 
-            respond_json({ result: result }, name: 'validate_result.json', pretty: true,
-              output_chars: output_chars_sym)
+            respond_json({ result: result ? true : false }, name: 'validate_result.json',
+              pretty: true, output_chars: output_chars_sym)
           end
         end
       end

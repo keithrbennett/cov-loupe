@@ -85,6 +85,14 @@ RSpec.describe CovLoupe::Tools::ProjectValidateTool do
         expect(data['result']).to be(true)
       end
 
+      it 'coerces non-Boolean predicate results to Boolean' do
+        { '42' => true, 'nil' => false }.each do |value, expected|
+          response = call_tool(code: "->(m) { #{value} }")
+          data, = expect_mcp_text_json(response, expected_keys: %w[result])
+          expect(data['result']).to be(expected)
+        end
+      end
+
       it_behaves_like 'false result'
       it_behaves_like 'syntax error handling', :code, 'Syntax error in predicate code'
       it_behaves_like 'non-callable handling', :code, '123'

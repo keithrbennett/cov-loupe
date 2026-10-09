@@ -550,7 +550,7 @@ These tools analyze individual files. All require `path` parameter.
 
 **`project_validate`** - Validate coverage against custom policies
 - Parameters: Either `code` (Ruby string) OR `file` (path to Ruby file), plus optional `root`, `coverage_file`, `raise_on_stale`, `error_mode`
-- Returns: `{"schema_version": 1, "result": Boolean}` for Boolean predicates. The tool does not coerce the predicate result, so `result` may be another JSON value; a false result still has `isError: false` because the tool call succeeded.
+- Returns: `{"schema_version": 1, "result": Boolean}`. The predicate's return value is coerced by truthiness (as in the CLI exit code), so `result` is always a Boolean; a false result still has `isError: false` because the tool call succeeded.
 - Execution errors (syntax error in the predicate, missing predicate file, etc.) return `isError: true` with the friendly error message in `content`
 - Security Warning: Predicates execute as arbitrary Ruby code with full system privileges. Only use predicate files from trusted sources.
 - Examples:
