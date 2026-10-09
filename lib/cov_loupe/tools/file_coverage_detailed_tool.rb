@@ -13,7 +13,7 @@ module CovLoupe
         Do not use this for high-level counts; coverage.summary is cheaper for aggregate numbers.
         Inputs: file path (required) plus optional root/coverage_file/raise_on_stale flag inherited from BaseTool.
         Output: JSON object with "file", "lines" => [{"line": 12, "hits": 0, "covered": false}], plus "summary" with totals and "stale": "ok" | "missing" | "newer" | "length_mismatch" | "error".
-        Example: "Show detailed coverage for lib/cov_loupe/model.rb".
+        Example: "Show detailed coverage for lib/cov_loupe/model/model.rb".
       DESC
       input_schema(**input_schema_def)
       class << self
