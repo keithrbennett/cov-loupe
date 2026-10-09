@@ -196,6 +196,12 @@ RSpec.describe CovLoupe::CoverageModel do
     end
   end
 
+  it 'returns a raw_for lines array that does not alias cached coverage data' do
+    original = model.raw_for('lib/foo.rb')['lines'].dup
+    model.raw_for('lib/foo.rb')['lines'].clear
+    expect(model.raw_for('lib/foo.rb')['lines']).to eq(original)
+  end
+
   it 'puts schema_version first in every public coverage hash' do
     {
       list:           [[], 'list'],

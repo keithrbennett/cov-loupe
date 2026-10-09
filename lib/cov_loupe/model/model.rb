@@ -96,7 +96,8 @@ module CovLoupe
     # Returns { 'file' => <absolute_path>, 'lines' => [hits|nil,...] }
     def raw_for(path, raise_on_stale: @default_raise_on_stale)
       file_abs, coverage_lines = coverage_data_for(path, raise_on_stale: raise_on_stale)
-      PayloadSchema.add('file' => file_abs, 'lines' => coverage_lines)
+      # Dup so callers can't mutate the array held in the shared coverage cache
+      PayloadSchema.add('file' => file_abs, 'lines' => coverage_lines.dup)
     end
 
     def relativize(payload)
