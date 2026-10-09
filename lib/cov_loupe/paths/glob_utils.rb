@@ -7,7 +7,8 @@ module CovLoupe
   #
   # Uses File.fnmatch? for pure string matching (no filesystem access for glob evaluation).
   # Case-insensitive matching is automatically applied on case-insensitive volumes,
-  # detected by testing the volume containing the path being matched.
+  # detected by testing the volume containing the project root (or the path being matched
+  # when no root is given).
   module GlobUtils
     GLOB_MATCH_FLAGS = File::FNM_PATHNAME | File::FNM_EXTGLOB
 
@@ -38,21 +39,13 @@ module CovLoupe
       File.expand_path(pattern, root)
     end
 
-    # Tests if a file path matches any of the given absolute glob patterns.
-    # Uses File.fnmatch? for pure string matching without filesystem access.
-    # Normalizes paths to forward slashes on Windows for cross-platform compatibility.
-    # Automatically handles case-insensitive filesystems by detecting volume case-sensitivity.
+    # Builds fnmatch flags, adding FNM_CASEFOLD on case-insensitive volumes.
+    # Walks up from +path+ to the first existing directory to probe volume properties.
     #
-    # @param abs_path [String] absolute file path to test
-    # @param patterns [Array<String>] absolute glob patterns
-    # @return [Boolean] true if the path matches at least one pattern
-    module_function def matches_any_pattern?(abs_path, patterns)
-      normalizer = fn_normalize_path_separators
-      normalized_path = normalizer.call(abs_path)
-
-      # Determine match flags based on volume case-sensitivity
-      # Find first existing parent directory to test volume properties
-      test_dir = abs_path
+    # @param path [String] absolute path (file or directory) on the volume of interest
+    # @return [Integer] flags for File.fnmatch?
+    module_function def match_flags(path)
+      test_dir = path
       until File.directory?(test_dir)
         parent = File.dirname(test_dir)
         break if parent == test_dir # Reached root (works on Windows and Unix)
@@ -60,14 +53,28 @@ module CovLoupe
         test_dir = parent
       end
 
-      flags = GLOB_MATCH_FLAGS
       begin
-        # Add case-insensitive matching for case-insensitive volumes
-        flags |= File::FNM_CASEFOLD unless PathUtils.volume_case_sensitive?(test_dir)
+        return GLOB_MATCH_FLAGS if PathUtils.volume_case_sensitive?(test_dir)
       rescue SystemCallError, IOError
         # If we can't detect case sensitivity, assume case-insensitive to be conservative
-        flags |= File::FNM_CASEFOLD
       end
+      GLOB_MATCH_FLAGS | File::FNM_CASEFOLD
+    end
+
+    # Tests if a file path matches any of the given absolute glob patterns.
+    # Uses File.fnmatch? for pure string matching without filesystem access.
+    # Normalizes paths to forward slashes on Windows for cross-platform compatibility.
+    # Automatically handles case-insensitive filesystems by detecting volume case-sensitivity.
+    #
+    # @param abs_path [String] absolute file path to test
+    # @param patterns [Array<String>] absolute glob patterns
+    # @param flags [Integer, nil] precomputed fnmatch flags; when nil, detected from abs_path's
+    #   volume. Callers matching many paths should compute once via {match_flags}.
+    # @return [Boolean] true if the path matches at least one pattern
+    module_function def matches_any_pattern?(abs_path, patterns, flags: nil)
+      normalizer = fn_normalize_path_separators
+      normalized_path = normalizer.call(abs_path)
+      flags ||= match_flags(abs_path)
 
       patterns.any? do |pattern|
         normalized_pattern = normalizer.call(pattern)
@@ -80,11 +87,14 @@ module CovLoupe
     # @param items [Array<Hash>] items to filter
     # @param patterns [Array<String>] absolute glob patterns
     # @param key [String] key in item hash containing the absolute file path
+    # @param root [String, nil] project root; when given, case sensitivity is detected once
+    #   from its volume rather than per item
     # @return [Array<Hash>] items whose file path matches at least one pattern
-    module_function def filter_by_pattern(items, patterns, key: 'file')
+    module_function def filter_by_pattern(items, patterns, key: 'file', root: nil)
       return items if patterns.nil? || patterns.empty?
 
-      items.select { |item| matches_any_pattern?(item[key], patterns) }
+      flags = root && match_flags(File.expand_path(root))
+      items.select { |item| matches_any_pattern?(item[key], patterns, flags: flags) }
     end
 
     # Filters an array of absolute file paths by glob patterns.
@@ -99,7 +109,8 @@ module CovLoupe
       return paths if patterns.empty?
 
       absolute_patterns = patterns.map { |p| absolutize_pattern(p, root) }
-      paths.select { |path| matches_any_pattern?(path, absolute_patterns) }
+      flags = match_flags(File.expand_path(root))
+      paths.select { |path| matches_any_pattern?(path, absolute_patterns, flags: flags) }
     end
   end
 end

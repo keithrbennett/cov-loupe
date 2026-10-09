@@ -414,7 +414,7 @@ module CovLoupe
       return rows if patterns.empty?
 
       absolute_patterns = patterns.map { |p| GlobUtils.absolutize_pattern(p, @root) }
-      GlobUtils.filter_by_pattern(rows, absolute_patterns)
+      GlobUtils.filter_by_pattern(rows, absolute_patterns, root: @root)
     end
 
     # Retrieves coverage data for a file path.

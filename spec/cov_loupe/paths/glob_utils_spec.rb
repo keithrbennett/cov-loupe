@@ -252,6 +252,22 @@ RSpec.describe CovLoupe::GlobUtils do
     end
   end
 
+  describe 'root-based case-sensitivity detection' do
+    it 'probes the volume once for filter_paths regardless of path count' do
+      allow(CovLoupe::PathUtils).to receive(:volume_case_sensitive?).and_return(true)
+      paths = %w[/root/lib/a.rb /root/lib/b.rb /root/spec/c.rb]
+      described_class.filter_paths(paths, 'lib/*.rb', root: '/root')
+      expect(CovLoupe::PathUtils).to have_received(:volume_case_sensitive?).once
+    end
+
+    it 'probes the volume once for filter_by_pattern when root is given' do
+      allow(CovLoupe::PathUtils).to receive(:volume_case_sensitive?).and_return(true)
+      items = [{ 'file' => '/root/lib/a.rb' }, { 'file' => '/root/lib/b.rb' }]
+      described_class.filter_by_pattern(items, ['/root/lib/*.rb'], root: '/root')
+      expect(CovLoupe::PathUtils).to have_received(:volume_case_sensitive?).once
+    end
+  end
+
   describe '.filter_paths' do
     let(:root) { File.expand_path('/project') }
     let(:paths) do
