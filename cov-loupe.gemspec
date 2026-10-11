@@ -41,6 +41,7 @@ Gem::Specification.new do |spec|
   # writes .resultset.json, which cov-loupe no longer reads.
   spec.add_dependency 'simplecov', '>= 1.0', '< 2.0'
   spec.metadata['rubygems_mfa_required'] = 'true'
+  spec.metadata['changelog_uri'] = 'https://github.com/keithrbennett/cov-loupe/blob/main/RELEASE_NOTES.md'
 
   spec.post_install_message = <<~MESSAGE
 
