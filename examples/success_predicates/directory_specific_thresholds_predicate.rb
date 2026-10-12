@@ -2,6 +2,7 @@
 
 # Validation predicate: Different thresholds for different directories, using a `call` class method
 # Usage: cov-loupe validate examples/success_predicates/directory_specific_thresholds_predicate.rb
+# Files with no coverable lines (nil percentage) have nothing to cover and are skipped.
 
 class DirectorySpecificThresholds
   def self.call(model)
@@ -14,7 +15,7 @@ class DirectorySpecificThresholds
 
   def files_ok?(filemask, threshold_percentage)
     files = @files.select { |f| File.fnmatch?(filemask, f['file']) }
-    files.all? { |f| f['percentage'] >= threshold_percentage }
+    files.all? { |f| f['percentage'].nil? || f['percentage'] >= threshold_percentage }
   end
 
   def call

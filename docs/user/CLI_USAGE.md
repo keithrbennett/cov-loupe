@@ -51,7 +51,7 @@ clp -fJ t
 # Evaluate coverage policy ('validate' or 'v')
 clp validate coverage_policy.rb
 clp v coverage_policy.rb
-clp v -i '->(m) { m.project_totals["lines"]["percentage"] >= 85 }'
+clp v -i '->(m) { m.project_totals["lines"]["percentage"].to_f >= 85 }'
 
 # Show version (no subcommand; use -v or --version)
 clp -v
@@ -790,8 +790,8 @@ cov-loupe v coverage_policy.rb
 **String mode (inline code):**
 ```sh
 # Simple inline validation
-clp validate -i '->(m) { m.list["files"].all? { |f| f["percentage"] >= 80 } }'
-clp v -i '->(m) { m.list["files"].all? { |f| f["percentage"] >= 80 } }'
+clp validate -i '->(m) { m.list["files"].all? { |f| f["percentage"].nil? || f["percentage"] >= 80 } }'
+clp v -i '->(m) { m.list["files"].all? { |f| f["percentage"].nil? || f["percentage"] >= 80 } }'
 
 # With global options
 clp -c coverage validate -i '->(m) { m.list["files"].size > 0 }'
@@ -802,7 +802,7 @@ clp -c coverage v -i '->(m) { m.list["files"].size > 0 }'
 ```ruby
 # coverage_policy.rb
 ->(model) do
-  model.list["files"].all? { |f| f['percentage'] >= 80 }
+  model.list["files"].all? { |f| f['percentage'].nil? || f['percentage'] >= 80 }
 end
 ```
 
@@ -932,28 +932,28 @@ clp detailed lib/payments/refund_service.rb
 clp -fJ list > coverage.json
 
 # Extract files below threshold
-clp -fJ list | jq '.files[] | select(.percentage < 80)'
+clp -fJ list | jq '.files[] | select(.percentage != null and .percentage < 80)'
 
 # Ruby alternative:
 clp -fJ list | ruby -r json -e '
-  JSON.parse($stdin.read)["files"].select { |f| f["percentage"] < 80 }.each do |f|
+  JSON.parse($stdin.read)["files"].select { |f| f["percentage"] && f["percentage"] < 80 }.each do |f|
     puts JSON.pretty_generate(f)
   end
 '
 
 # Rexe alternative:
-clp -fJ list | rexe -ij -mb -oJ 'self["files"].select { |f| f["percentage"] < 80 }'
+clp -fJ list | rexe -ij -mb -oJ 'self["files"].select { |f| f["percentage"] && f["percentage"] < 80 }'
 
 # Count files below 80% coverage
-clp -fJ list | jq '[.files[] | select(.percentage < 80)] | length'
+clp -fJ list | jq '[.files[] | select(.percentage != null and .percentage < 80)] | length'
 
 # Ruby alternative:
 clp -fJ list | ruby -r json -e '
-  puts JSON.parse($stdin.read)["files"].count { |f| f["percentage"] < 80 }
+  puts JSON.parse($stdin.read)["files"].count { |f| f["percentage"] && f["percentage"] < 80 }
 '
 
 # Rexe alternative:
-clp -fJ list | rexe -ij -mb -op 'self["files"].count { |f| f["percentage"] < 80 }'
+clp -fJ list | rexe -ij -mb -op 'self["files"].count { |f| f["percentage"] && f["percentage"] < 80 }'
 ```
 
 ### Filtering and Sorting

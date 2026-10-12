@@ -13,6 +13,7 @@ module CovLoupe
         It reports covered/total lines, uncovered line counts, and the overall average percentage.
         Inputs: optional project root, alternate coverage file path, raise_on_stale flag, tracked_globs, and error mode.
         Output: JSON {"lines":{"total","covered","uncovered","percentage","included_files","excluded_files"},"tracking":{"enabled","globs"},"files":{"total","with_coverage","without_coverage"},"timestamp_status":"ok"|"missing","warnings":[string,...]}.
+        "percentage" is a number, or null when no lines are measurable (no coverable lines, or every file stale).
         When raise_on_stale is enabled, the tool will raise an error immediately if any files have coverage data errors or staleness issues.
         "timestamp_status" indicates whether coverage timestamps are available for time-based staleness checks. "warnings" array is present when timestamp_status is "missing".
         Example: "Give me total/covered/uncovered line counts and the overall coverage percent."

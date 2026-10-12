@@ -258,14 +258,14 @@ The `-fJ` flag enables programmatic processing of coverage data using command-li
 **Using jq:**
 ```sh
 # Filter files below 80% coverage
-cov-loupe -fJ list | jq '.files[] | select(.percentage < 80)'
+cov-loupe -fJ list | jq '.files[] | select(.percentage != null and .percentage < 80)'
 ```
 
 **Using Ruby one-liners:**
 ```sh
 # Count files below threshold
 cov-loupe -fJ list | ruby -r json -e '
-  puts JSON.parse($stdin.read)["files"].count { |f| f["percentage"] < 80 }
+  puts JSON.parse($stdin.read)["files"].count { |f| f["percentage"] && f["percentage"] < 80 }
 '
 ```
 
@@ -277,10 +277,10 @@ Install: `gem install rexe`
 
 ```sh
 # Filter files below 80% coverage with pretty-printed JSON output
-cov-loupe -fJ list | rexe -ij -mb -oJ 'self["files"].select { |f| f["percentage"] < 80 }'
+cov-loupe -fJ list | rexe -ij -mb -oJ 'self["files"].select { |f| f["percentage"] && f["percentage"] < 80 }'
 
 # Count files below threshold
-cov-loupe -fJ list | rexe -ij -mb -op 'self["files"].count { |f| f["percentage"] < 80 }'
+cov-loupe -fJ list | rexe -ij -mb -op 'self["files"].count { |f| f["percentage"] && f["percentage"] < 80 }'
 
 # Human-readable output with AmazingPrint
 cov-loupe -fJ list | rexe -ij -mb -oa 'self["files"].first(3)'

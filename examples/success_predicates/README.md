@@ -27,7 +27,7 @@ cov-loupe validate examples/success_predicates/<filename>.rb
 
 **String mode:**
 ```sh
-cov-loupe validate -i '->(model) { model.list["files"].all? { |f| f["percentage"] >= 80 } }'
+cov-loupe validate -i '->(model) { model.list["files"].all? { |f| f["percentage"].nil? || f["percentage"] >= 80 } }'
 ```
 
 The predicate receives a `CoverageModel` instance and returns:
@@ -63,12 +63,20 @@ cov-loupe validate examples/success_predicates/directory_specific_thresholds_pre
 
 ## Creating Custom Predicates
 
-A predicate must be a callable object (lambda, proc, or class with `#call` method):
+A predicate must be a callable object (lambda, proc, or class with `#call` method).
+
+A file with no coverable lines (for example, one containing only comments) has a `nil`
+`percentage`. Comparing `nil` raises an error, so check for it first. These examples treat such
+files as passing; use `f['percentage'].to_f` instead if you want them to fail.
+
+`project_totals['lines']['percentage']` is also `nil` when no lines can be measured, either
+because nothing is coverable or because every file is stale. Project-level examples use `to_f`
+so that case fails instead of passing vacuously.
 
 **Lambda example:**
 ```ruby
 ->(model) do
-  model.list['files'].all? { |f| f['percentage'] >= 80 }
+  model.list['files'].all? { |f| f['percentage'].nil? || f['percentage'] >= 80 }
 end
 ```
 
@@ -78,7 +86,7 @@ class MyPolicy
   THRESHOLD = 80
 
   def self.call(model)
-    model.list['files'].all? { |f| f['percentage'] >= THRESHOLD }
+    model.list['files'].all? { |f| f['percentage'].nil? || f['percentage'] >= THRESHOLD }
   end
 end
 
@@ -93,7 +101,7 @@ class MyPolicy
   end
 
   def call(model)
-    model.list['files'].all? { |f| f['percentage'] >= @threshold }
+    model.list['files'].all? { |f| f['percentage'].nil? || f['percentage'] >= @threshold }
   end
 end
 
@@ -151,7 +159,7 @@ model = CovLoupe::CoverageModel.new(
 
 # Complex logic with external API
 files = model.list['files']
-low_coverage_files = files.select { |f| f['percentage'] < 80 }
+low_coverage_files = files.select { |f| f['percentage'] && f['percentage'] < 80 }
 
 # Post to Slack
 if low_coverage_files.any?

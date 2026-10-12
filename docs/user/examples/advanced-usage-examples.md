@@ -23,15 +23,16 @@ results = patterns.map do |pattern|
   {
     directory: pattern,
     files: totals['files']['total'],
-    coverage: totals['lines']['percentage'].round(2),
+    coverage: totals['lines']['percentage']&.round(2),
     covered: totals['lines']['covered'],
     total: totals['lines']['total']
   }
 end
 
-# Sort by coverage ascending
-results.sort_by { |r| r[:coverage] }.each do |r|
-  puts "#{r[:directory]}: #{r[:coverage]}% (#{r[:files]} files)"
+# Sort by coverage ascending (nil, meaning no measurable lines, sorts first)
+results.sort_by { |r| r[:coverage] || -1 }.each do |r|
+  coverage = r[:coverage] ? "#{r[:coverage]}%" : 'n/a'
+  puts "#{r[:directory]}: #{coverage} (#{r[:files]} files)"
 end
 ```
 
@@ -56,8 +57,8 @@ changed_files.each do |file|
   begin
     summary = model.summary_for(file)
     percentage = summary['summary']['percentage']
-    status = percentage >= 80 ? '✅' : '⚠️'
-    puts "| #{file} | #{percentage}% | #{status} |"
+    status = percentage.nil? || percentage >= 80 ? '✅' : '⚠️'
+    puts "| #{file} | #{percentage ? "#{percentage}%" : 'n/a'} | #{status} |"
   rescue
     puts "| #{file} | N/A | ❌ No coverage |"
   end

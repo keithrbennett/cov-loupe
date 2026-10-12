@@ -18,13 +18,15 @@ module CovLoupe
           summary = data['summary']
 
           puts "File: #{relative_path}"
-          puts "Coverage: #{format('%.2f%%', summary['percentage'])} " \
+          puts "Coverage: #{format_percentage(summary['percentage'])} " \
                "(#{summary['covered']}/#{summary['total']} lines)"
           puts
 
           # Table format for uncovered lines
           uncovered_lines = data['uncovered']
-          if uncovered_lines.empty?
+          if summary['total'].zero?
+            puts 'No coverable lines.'
+          elsif uncovered_lines.empty?
             puts 'All lines covered!'
           else
             headers = ['Line']

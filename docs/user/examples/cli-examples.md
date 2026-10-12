@@ -35,18 +35,18 @@ Here are some examples:
 **Parse and filter:**
 ```bash
 # Files below threshold
-clp -fJ list | jq '.files[] | select(.percentage < 80) | {file, coverage: .percentage}'
+clp -fJ list | jq '.files[] | select(.percentage != null and .percentage < 80) | {file, coverage: .percentage}'
 
 # Ruby alternative:
 clp -fJ list | ruby -r json -e '
-  JSON.parse($stdin.read)["files"].select { |f| f["percentage"] < 80 }.each do |f|
+  JSON.parse($stdin.read)["files"].select { |f| f["percentage"] && f["percentage"] < 80 }.each do |f|
     puts JSON.pretty_generate({file: f["file"], coverage: f["percentage"]})
   end
 '
 
 # Rexe alternative:
 clp -fJ list | rexe -ij -mb -oJ '
-  self["files"].select { |f| f["percentage"] < 80 }.map do |f|
+  self["files"].select { |f| f["percentage"] && f["percentage"] < 80 }.map do |f|
     {file: f["file"], coverage: f["percentage"]}
   end
 '
@@ -68,7 +68,9 @@ clp -fJ list |
       | map(. + {dir: (.file | split("/") | .[0:-1] | join("/"))})
       | sort_by(.dir)
       | group_by(.dir)
-      | map({dir: .[0].dir, avg: (map(.percentage) | add / length)})'
+      | map({dir: .[0].dir,
+            avg: (map(.percentage | select(. != null))
+                  | if length == 0 then null else add / length end)})'
 
 # Ruby alternative:
 clp -fJ list | ruby -r json -e '
@@ -76,7 +78,8 @@ clp -fJ list | ruby -r json -e '
     .map { |f| f.merge("dir" => File.dirname(f["file"])) }
     .group_by { |f| f["dir"] }
     .map { |dir, files|
-      avg = files.sum { |f| f["percentage"] } / files.size
+      percentages = files.filter_map { |f| f["percentage"] }
+      avg = percentages.empty? ? nil : percentages.sum / percentages.size
       {dir: dir, avg: avg}
     }
   puts JSON.pretty_generate(grouped)
@@ -88,7 +91,8 @@ clp -fJ list | rexe -ij -mb -oJ '
     .map { |f| f.merge("dir" => File.dirname(f["file"])) }
     .group_by { |f| f["dir"] }
     .map { |dir, files|
-      avg = files.sum { |f| f["percentage"] } / files.size
+      percentages = files.filter_map { |f| f["percentage"] }
+      avg = percentages.empty? ? nil : percentages.sum / percentages.size
       {dir: dir, avg: avg}
     }
 '
@@ -99,18 +103,18 @@ clp -fJ list | rexe -ij -mb -oJ '
 # Create markdown table
 echo "| Coverage | File |" > report.md
 echo "|----------|------|" >> report.md
-clp -fJ list | jq -r '.files[] | "| \(.percentage)% | \(.file) |"' >> report.md
+clp -fJ list | jq -r '.files[] | "| \(if .percentage == null then "n/a" else "\(.percentage)%" end) | \(.file) |"' >> report.md
 
 # Ruby alternative:
 clp -fJ list | ruby -r json -e '
   JSON.parse($stdin.read)["files"].each do |f|
-    puts "| #{f["percentage"]}% | #{f["file"]} |"
+    puts "| #{f["percentage"] ? "#{f["percentage"]}%" : "n/a"} | #{f["file"]} |"
   end
 ' >> report.md
 
 # Rexe alternative:
 clp -fJ list | rexe -ij -mb '
-  self["files"].each { |f| puts "| #{f["percentage"]}% | #{f["file"]} |" }
+  self["files"].each { |f| puts "| #{f["percentage"] ? "#{f["percentage"]}%" : "n/a"} | #{f["file"]} |" }
 ' >> report.md
 
 # Export for spreadsheet

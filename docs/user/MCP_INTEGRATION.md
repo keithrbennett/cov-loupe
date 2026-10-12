@@ -507,7 +507,9 @@ All file-specific tools accept these parameters in the JSON request:
 
 #### Per-File Tools
 
-These tools analyze individual files. All require `path` parameter.
+These tools analyze individual files. All require `path` parameter. In the `summary` returned by
+`file_coverage_summary`, `file_uncovered_lines` and `file_coverage_detailed`, `percentage` is `null`
+when a file has no coverable lines (for example, a file containing only comments).
 
 **`file_coverage_summary`** - Covered/total/percentage summary
 ```json
@@ -539,10 +541,11 @@ These tools analyze individual files. All require `path` parameter.
 - Returns: JSON object (format dependent):
   - JSON/pretty_json/yaml/amazing_print/inspect/puts/pretty_print: `{"schema_version": 1, "files": [...], "counts": {"total": N, "ok": N, "stale": N}, "skipped_files": [...], "missing_tracked_files": [...], "newer_files": [...], "deleted_files": [...], "length_mismatch_files": [...], "unreadable_files": [...], "timestamp_status": "ok|missing", "warnings": [...]}`
   - Table: Plain text table with box-drawing characters
+  - Each entry in `files` has a `percentage` that is `null` when the file has no coverable lines (shown as `n/a` in the table).
 
 **`project_coverage_totals`** - Aggregated line totals
 - Parameters: `tracked_globs` (array), `raise_on_stale`
-- Returns: `{"schema_version":1,"lines":{"total":N,"covered":N,"uncovered":N,"percentage":Float,"included_files":N,"excluded_files":N},"tracking":{"enabled":Boolean,"globs":[String]},"files":{"total":N,"with_coverage":{"total":N,"ok":N,"stale":{"total":N,"by_type":{"missing_from_disk":N,"newer":N,"length_mismatch":N,"unreadable":N}}},"without_coverage":{"total":N,"by_type":{"missing_from_coverage":N,"unreadable":N,"skipped":N}}},"timestamp_status":"ok|missing","warnings":[String]}`
+- Returns: `{"schema_version":1,"lines":{"total":N,"covered":N,"uncovered":N,"percentage":Float|null,"included_files":N,"excluded_files":N},"tracking":{"enabled":Boolean,"globs":[String]},"files":{"total":N,"with_coverage":{"total":N,"ok":N,"stale":{"total":N,"by_type":{"missing_from_disk":N,"newer":N,"length_mismatch":N,"unreadable":N}}},"without_coverage":{"total":N,"by_type":{"missing_from_coverage":N,"unreadable":N,"skipped":N}}},"timestamp_status":"ok|missing","warnings":[String]}`
 - `without_coverage` is only present when tracking is enabled (tracked globs provided).
 - `warnings` is present when `timestamp_status` is `"missing"`.
 
@@ -554,7 +557,7 @@ These tools analyze individual files. All require `path` parameter.
 - Execution errors (syntax error in the predicate, missing predicate file, etc.) return `isError: true` with the friendly error message in `content`
 - Security Warning: Predicates execute as arbitrary Ruby code with full system privileges. Only use predicate files from trusted sources.
 - Examples:
-    - Check if all files have at least 80% coverage: `{"code": "->(m) { m.list[\"files\"].all? { |f| f['percentage'] >= 80 } }"}`
+    - Check if all files have at least 80% coverage: `{"code": "->(m) { m.list[\"files\"].all? { |f| f['percentage'].nil? || f['percentage'] >= 80 } }"}`
     - Run coverage policy from file: `{"file": "coverage_policy.rb"}`
 
 #### Utility Tools

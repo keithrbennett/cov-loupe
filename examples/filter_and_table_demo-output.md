@@ -54,7 +54,7 @@ Files: total 1, ok 0, stale 1
 ## 4. Filter by Coverage Threshold (only high-coverage files)
 ```ruby
 # Filter by coverage percentage (e.g., only files >= 50% coverage)
-high_coverage_files = files_data.select { |file| file["percentage"] >= 50.0 }
+high_coverage_files = files_data.select { |file| file["percentage"] && file["percentage"] >= 50.0 }
 high_coverage_table = model.format_table(high_coverage_files)
 # => formatted table showing only well-covered files
 ```

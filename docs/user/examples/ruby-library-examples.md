@@ -13,11 +13,13 @@ model = CovLoupe::CoverageModel.new(root: root)
 # Project totals
 totals = model.project_totals
 puts "Total files: #{totals['files']['total']}"
-puts "Average coverage: #{totals['lines']['percentage']}%"
+average = totals['lines']['percentage']
+puts "Average coverage: #{average ? "#{average}%" : 'n/a'}"
 
 # Check specific file
 summary = model.summary_for("app/models/order.rb")
-puts "Coverage: #{summary['summary']['percentage']}%"
+percentage = summary['summary']['percentage']
+puts "Coverage: #{percentage ? "#{percentage}%" : 'n/a'}"
 
 # Find uncovered lines
 uncovered = model.uncovered_for("lib/payments/refund_service.rb")
@@ -35,7 +37,7 @@ list = model.list['files']
 
 # Find files below threshold
 THRESHOLD = 80.0
-low_coverage = list.select { |f| f['percentage'] < THRESHOLD }
+low_coverage = list.select { |f| f['percentage'] && f['percentage'] < THRESHOLD }
 
 if low_coverage.any?
   puts "Files below #{THRESHOLD}%:"
@@ -49,7 +51,8 @@ dirs = %w[app lib lib/payments lib/ops/jobs].uniq
 dirs.each do |dir|
   pattern = File.join(dir, '**/*.rb')
   totals = model.project_totals(tracked_globs: pattern)
-  puts "#{dir}: #{totals['lines']['percentage'].round(2)}% (#{totals['files']['total']} files)"
+  percentage = totals['lines']['percentage']
+  puts "#{dir}: #{percentage ? "#{percentage.round(2)}%" : 'n/a'} (#{totals['files']['total']} files)"
 end
 ```
 
@@ -73,8 +76,8 @@ puts table
 
 # Or create your own format
 lib_files.each do |file|
-  status = file['percentage'] >= 90 ? '✓' : '⚠'
+  status = file['percentage'].nil? || file['percentage'] >= 90 ? '✓' : '⚠'
   relative_path = Pathname.new(file['file']).relative_path_from(Pathname.pwd)
-  puts "#{status} #{relative_path}: #{file['percentage']}%"
+  puts "#{status} #{relative_path}: #{file['percentage'] ? "#{file['percentage']}%" : 'n/a'}"
 end
 ```

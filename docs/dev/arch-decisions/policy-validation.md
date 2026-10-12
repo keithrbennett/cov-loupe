@@ -122,7 +122,7 @@ Validation predicates must be callable (lambda, proc, or object with `#call` met
 **Lambda example:**
 ```ruby
 ->(model) do
-  model.list["files"].all? { |f| f['percentage'] >= 80 }
+  model.list["files"].all? { |f| f['percentage'].nil? || f['percentage'] >= 80 }
 end
 ```
 
@@ -133,7 +133,7 @@ end
 class CoveragePolicy
   def call(model)
     api_files = model.list['files'].select { |f| f['file'].start_with?('lib/api/') }
-    api_files.all? { |f| f['percentage'] >= 90 }
+    api_files.all? { |f| f['percentage'].nil? || f['percentage'] >= 90 }
   end
 end
 

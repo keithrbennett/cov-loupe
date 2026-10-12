@@ -363,7 +363,7 @@ clp validate examples/success_predicates/project_coverage_minimum_predicate.rb
 clp validate coverage_policy.rb
 
 # Inline string mode
-clp validate -i '->(m) { m.list["files"].all? { |f| f["percentage"] >= 80 } }'
+clp validate -i '->(m) { m.list["files"].all? { |f| f["percentage"].nil? || f["percentage"] >= 80 } }'
 ```
 
 **Creating a predicate:**
@@ -371,7 +371,7 @@ clp validate -i '->(m) { m.list["files"].all? { |f| f["percentage"] >= 80 } }'
 # coverage_policy.rb
 ->(model) do
   # All files must have >= 80% coverage
-  model.list['files'].all? { |f| f['percentage'] >= 80 }
+  model.list['files'].all? { |f| f['percentage'].nil? || f['percentage'] >= 80 }
 end
 ```
 
@@ -382,7 +382,7 @@ end
 class CoveragePolicy
   def call(model)
     threshold = 80
-    low_files = model.list['files'].select { |f| f['percentage'] < threshold }
+    low_files = model.list['files'].select { |f| f['percentage'] && f['percentage'] < threshold }
 
     if low_files.empty?
       puts "✓ All files have >= #{threshold}% coverage"
@@ -705,9 +705,9 @@ template = ERB.new(<<~HTML)
           <th>File</th><th>Coverage</th><th>Covered</th><th>Total</th>
         </tr>
         <% files.each do |f| %>
-          <tr class="<%= f['percentage'] < 80 ? 'low' : 'ok' %>">
+          <tr class="<%= f['percentage'] && f['percentage'] < 80 ? 'low' : 'ok' %>">
             <td><%= f['file'] %></td>
-            <td><%= f['percentage'].round(2) %>%</td>
+            <td><%= f['percentage'] ? format('%.2f%%', f['percentage']) : 'n/a' %></td>
             <td><%= f['covered'] %></td>
             <td><%= f['total'] %></td>
           </tr>

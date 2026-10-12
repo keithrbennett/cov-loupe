@@ -32,10 +32,9 @@ module CovLoupe
         end
         puts
 
-        percent_display = lines['percentage'].nil? ? 'n/a' : format('%.2f%%', lines['percentage'])
         puts "Lines (#{lines['included_files']} ok files): " \
           "#{lines['total']} total, #{lines['covered']} covered, " \
-          "#{lines['uncovered']} uncovered (#{percent_display})"
+          "#{lines['uncovered']} uncovered (#{format_percentage(lines['percentage'])})"
         with_coverage_line = format_with_coverage_line(with_coverage)
         stale_line = format_stale_breakdown(with_coverage['stale']['by_type'])
         without_coverage_line, without_breakdown_line =

@@ -30,6 +30,11 @@ module CovLoupe
         @model ||= CoverageModel.new(**config.model_options)
       end
 
+      # Formats a coverage percentage for text output; nil (no coverable lines) shows as 'n/a'.
+      protected def format_percentage(percentage)
+        percentage.nil? ? 'n/a' : format('%.2f%%', percentage)
+      end
+
       # Convert text to ASCII if output_chars is :ascii
       protected def convert_text(text)
         OutputChars.convert(text, config.output_chars)

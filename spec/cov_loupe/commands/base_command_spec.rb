@@ -17,10 +17,27 @@ RSpec.describe CovLoupe::Commands::BaseCommand do
       def public_handle_with_path(args, name, &)
         handle_with_path(args, name, &)
       end
+
+      def public_format_percentage(percentage)
+        format_percentage(percentage)
+      end
     end
   end
 
   let(:test_command) { test_command_class.new(cli_context) }
+
+  describe '#format_percentage' do
+    {
+      nil      => 'n/a',
+      0.0      => '0.00%',
+      66.66667 => '66.67%',
+      100.0    => '100.00%',
+    }.each do |percentage, expected|
+      it "formats #{percentage.inspect} as #{expected.inspect}" do
+        expect(test_command.public_format_percentage(percentage)).to eq(expected)
+      end
+    end
+  end
 
   describe '#handle_with_path' do
     context 'when Errno::ENOENT is raised' do

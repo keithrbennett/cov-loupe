@@ -45,7 +45,7 @@ jobs:
           ruby -r json -e '
             data = JSON.parse(File.read("coverage.json"))
             files = data["files"]
-            low_cov_files = files.select { |f| f["percentage"] < 80 }
+            low_cov_files = files.select { |f| f["percentage"] && f["percentage"] < 80 }
 
             if low_cov_files.any?
               puts "❌ #{low_cov_files.count} files below 80% coverage:"
@@ -98,18 +98,19 @@ test:
 ```ruby
 # coverage_policy.rb
 ->(model) do
+  # percentage is nil when nothing can be measured. Totals use `to_f` so that fails the check;
+  # a file with no coverable lines has nothing to cover, so the per-file check skips it.
   list = model.list['files']
 
   # Must have at least 80% average coverage
-  totals = model.project_totals
-  return false if totals['lines']['percentage'] < 80.0
+  return false if model.project_totals['lines']['percentage'].to_f < 80.0
 
   # No files below 60%
-  return false if list.any? { |f| f['percentage'] < 60.0 }
+  return false if list.any? { |f| f['percentage'] && f['percentage'] < 60.0 }
 
   # lib/ files must average 90%
   lib_totals = model.project_totals(tracked_globs: ['lib/**/*.rb'])
-  return false if lib_totals['lines']['percentage'] < 90.0
+  return false if lib_totals['lines']['percentage'].to_f < 90.0
 
   true
 end

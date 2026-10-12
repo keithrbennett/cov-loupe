@@ -50,18 +50,18 @@ clp list | tail -12
 clp l | tail -12
 
 # Only show files below 80%
-clp -fJ list | jq '.files[] | select(.percentage < 80)'
-clp -fJ l | jq '.files[] | select(.percentage < 80)'
+clp -fJ list | jq '.files[] | select(.percentage != null and .percentage < 80)'
+clp -fJ l | jq '.files[] | select(.percentage != null and .percentage < 80)'
 
 # Ruby alternative:
 clp -fJ l | ruby -r json -e '
-  JSON.parse($stdin.read)["files"].select { |f| f["percentage"] < 80 }.each do |f|
+  JSON.parse($stdin.read)["files"].select { |f| f["percentage"] && f["percentage"] < 80 }.each do |f|
     puts JSON.pretty_generate(f)
   end
 '
 
 # Rexe alternative:
-clp -fJ l | rexe -ij -mb -oJ 'self["files"].select { |f| f["percentage"] < 80 }'
+clp -fJ l | rexe -ij -mb -oJ 'self["files"].select { |f| f["percentage"] && f["percentage"] < 80 }'
 
 # Check specific directory
 clp -g "lib/payments/**/*.rb" list  # -g = --tracked-globs

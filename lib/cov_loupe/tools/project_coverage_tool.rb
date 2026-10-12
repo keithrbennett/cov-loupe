@@ -19,6 +19,7 @@ module CovLoupe
         tracked_globs, output_chars, and format (default: json).
         Output format depends on the format parameter:
         - json (default): JSON object with files, counts, skipped_files, etc.
+          Each file's "percentage" is null if the file has no coverable lines.
         - pretty_json: Multi-line, indented JSON
         - yaml: YAML format
         - amazing_print: Ruby object formatting via AmazingPrint
