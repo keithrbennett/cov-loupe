@@ -160,7 +160,7 @@ module CovLoupe
           cov-loupe --coverage-file coverage list
           cov-loupe --format json --coverage-file coverage summary lib/foo.rb
           cov-loupe --source uncovered --context-lines 2 uncovered lib/foo.rb
-          cov-loupe totals --format json
+          cov-loupe --format json totals
         EXAMPLES
     end
 
