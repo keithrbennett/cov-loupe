@@ -13,8 +13,8 @@ model = CovLoupe::CoverageModel.new(root: root)
 # Project totals
 totals = model.project_totals
 puts "Total files: #{totals['files']['total']}"
-average = totals['lines']['percentage']
-puts "Average coverage: #{average ? "#{average}%" : 'n/a'}"
+overall = totals['lines']['percentage']
+puts "Overall coverage: #{overall ? "#{overall}%" : 'n/a'}"
 
 # Check specific file
 summary = model.summary_for("app/models/order.rb")

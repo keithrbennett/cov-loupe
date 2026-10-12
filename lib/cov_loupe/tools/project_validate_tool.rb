@@ -59,8 +59,7 @@ module CovLoupe
               raise UsageError, "Either 'code' or 'file' must be provided"
             end
 
-            respond_json({ result: result ? true : false }, name: 'validate_result.json',
-              pretty: true, output_chars: output_chars_sym)
+            respond_json({ result: result ? true : false }, pretty: true, output_chars: output_chars_sym)
           end
         end
       end

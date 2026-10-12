@@ -62,7 +62,7 @@ module CovLoupe::Tools
           raise_on_stale: raise_on_stale
         )
         data = model.my_method_for(path)
-        respond_json(model.relativize(data), name: 'my_tool_output.json')
+        respond_json(model.relativize(data))
       end
     end
   end

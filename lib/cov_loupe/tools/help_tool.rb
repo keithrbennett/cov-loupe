@@ -60,7 +60,7 @@ module CovLoupe
         {
           tool:       ProjectCoverageTotalsTool,
           label:      'Project coverage totals',
-          use_when:   'User wants total/covered/uncovered line counts or the average percent.',
+          use_when:   'User wants total/covered/uncovered line counts or the overall coverage percent.',
           avoid_when: 'User needs per-file breakdowns.',
           inputs:     ['root/coverage_file (optional)', 'raise_on_stale', 'tracked_globs'],
         },
@@ -87,7 +87,7 @@ module CovLoupe
           with_error_handling('HelpTool', error_mode: error_mode, output_chars: output_chars_sym) do
             entries = TOOL_GUIDE.map { |guide| format_entry(guide) }
 
-            respond_json({ tools: entries, resources: Resources::RESOURCE_MAP }, name: 'tools_help.json',
+            respond_json({ tools: entries, resources: Resources::RESOURCE_MAP },
               output_chars: output_chars_sym)
           end
         end

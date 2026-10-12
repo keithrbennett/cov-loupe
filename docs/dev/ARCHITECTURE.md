@@ -83,7 +83,7 @@ cov-loupe provides a global output character mode that controls ASCII vs Unicode
 - CLI error messages and option parser errors
 - Staleness error messages and file paths
 - Command literal strings (via `convert_text` helper in BaseCommand)
-- MCP tool JSON responses (via `respond_json` with `ascii_only: true`)
+- MCP tool JSON responses (via `respond_json` with `output_chars: :ascii`)
 - All formatted output (tables, source, JSON, YAML)
 
 **Not converted in ASCII mode:**

@@ -46,7 +46,7 @@ RSpec.describe 'File-based MCP Tools' do
       end
     end
 
-    it 'all file-based tools return JSON resources with consistent structure' do
+    it 'all file-based tools return JSON text payloads with consistent structure' do
       FILE_BASED_TOOL_CONFIGS.each_value do |config|
         stub_coverage_model(
           model_method: config[:model_method],

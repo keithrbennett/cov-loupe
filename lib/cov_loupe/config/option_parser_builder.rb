@@ -49,7 +49,7 @@ module CovLoupe
           list, l                  Show files coverage (default: table, or use --format)
           raw, r <path>            Show the SimpleCov 'lines' array
           summary, s <path>        Show covered/total/% for a file
-          totals, t                Show aggregated line totals and average %
+          totals, t                Show aggregated line totals and overall %
           uncovered, u <path>      Show uncovered lines and a summary
           validate, v <file>       Evaluate coverage policy from file (exit 0=pass, 3=fail, 4=bad predicate)
           validate, v -i <code>    Evaluate coverage policy from code string
@@ -88,7 +88,7 @@ module CovLoupe
         config.source_context = value
       end
       parser.on('-C', '--color BOOLEAN', BooleanType::IS_BOOLEAN_STRING_VALUE,
-        'Enable/disable ANSI colors for source output (default: true). ' \
+        'Enable/disable ANSI colors for source output (default: on when stdout is a terminal). ' \
           "Accepts: #{BooleanType::BOOLEAN_VALUES_DISPLAY_STRING}") do |value|
         config.color = BooleanType.parse(value)
       end

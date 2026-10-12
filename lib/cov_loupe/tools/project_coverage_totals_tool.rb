@@ -10,7 +10,7 @@ module CovLoupe
       tool_name 'project_coverage_totals'
       description <<~DESC
         Use this when you want aggregated coverage counts for the entire project.
-        It reports covered/total lines, uncovered line counts, and the overall average percentage.
+        It reports covered/total lines, uncovered line counts, and the overall percentage (covered lines / coverable lines across included, non-stale files).
         Inputs: optional project root, alternate coverage file path, raise_on_stale flag, tracked_globs, and error mode.
         Output: JSON {"lines":{"total","covered","uncovered","percentage","included_files","excluded_files"},"tracking":{"enabled","globs"},"files":{"total","with_coverage","without_coverage"},"timestamp_status":"ok"|"missing","warnings":[string,...]}.
         "percentage" is a number, or null when no lines are measurable (no coverable lines, or every file stale).
@@ -55,8 +55,7 @@ module CovLoupe
               ]
             end
 
-            respond_json(payload, name: 'coverage_totals.json', pretty: true,
-              output_chars: output_chars_sym)
+            respond_json(payload, pretty: true, output_chars: output_chars_sym)
           end
         end
       end

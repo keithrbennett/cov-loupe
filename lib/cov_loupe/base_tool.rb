@@ -28,7 +28,7 @@ module CovLoupe
   #   5. respond_json formats the output
   #
   # File-scope tools (summary, raw, detailed, uncovered) use call_with_file_payload
-  # which infers the model method and JSON name from the tool class name.
+  # which infers the model method from the tool class name.
   class BaseTool < ::MCP::Tool
     COMMON_PROPERTIES = {
       root:           {
@@ -172,15 +172,13 @@ module CovLoupe
       )
     end
 
-    # Respond with JSON as a resource to avoid clients mutating content types.
-    # The resource embeds the JSON string with a clear MIME type.
+    # Respond with the JSON payload serialized as a single text content item.
     #
     # @param payload [Hash] The data to serialize as JSON
-    # @param name [String] Logical name for the JSON resource (informational)
     # @param pretty [Boolean] Use pretty formatting with indentation
     # @param output_chars [Symbol, String, nil] Output character mode (:default, :fancy, :ascii)
     # @return [MCP::Tool::Response] Response containing the JSON string
-    def self.respond_json(payload, name: 'data.json', pretty: false, output_chars: :default)
+    def self.respond_json(payload, pretty: false, output_chars: :default)
       ascii_only = ascii_only?(output_chars)
       payload = PayloadSchema.add(payload)
       json = if pretty
@@ -296,7 +294,7 @@ module CovLoupe
     end
     private_class_method :normalize_output_chars_strict
 
-    # Runs a file-based tool request by deriving payload method and JSON name from the tool class.
+    # Runs a file-based tool request by deriving the payload method from the tool class.
     # @param path [String] File path to analyze
     # @param error_mode [String] Error handling mode
     # @param output_chars [String, Symbol, nil] Output character mode
@@ -317,26 +315,19 @@ module CovLoupe
           payload_method: payload_method_for(tool_name),
           raise_on_stale: config[:raise_on_stale]
         )
-        respond_json(presenter.relativized_payload, name: json_name_for(tool_name), pretty: true,
-          output_chars: output_chars_sym)
+        respond_json(presenter.relativized_payload, pretty: true, output_chars: output_chars_sym)
       end
     end
 
     # Infer CoverageModel method name from a tool class name.
-    # CoverageSummaryTool -> :summary_for, CoverageRawTool -> :raw_for,
-    # CoverageDetailedTool -> :detailed_for, UncoveredLinesTool -> :uncovered_for.
+    # FileCoverageSummaryTool -> :summary_for, FileCoverageRawTool -> :raw_for,
+    # FileCoverageDetailedTool -> :detailed_for, FileUncoveredLinesTool -> :uncovered_for.
     def self.payload_method_for(tool_name)
       base = tool_name.sub(/Tool\z/, '')
       underscored = underscore(base)
         .sub(/\A(file_)?(coverage_)?/, '')
         .sub(/_lines\z/, '')
       :"#{underscored}_for"
-    end
-
-    # Infer the MCP JSON resource name from a tool class name.
-    # CoverageSummaryTool -> coverage_summary.json, UncoveredLinesTool -> uncovered_lines.json.
-    def self.json_name_for(tool_name)
-      "#{underscore(tool_name.sub(/Tool\z/, ''))}.json"
     end
 
     # Minimal underscore helper to avoid pulling in ActiveSupport.
@@ -346,6 +337,6 @@ module CovLoupe
         .gsub(/([a-z\d])([A-Z])/, '\\1_\\2')
         .downcase
     end
-    private_class_method :payload_method_for, :json_name_for, :underscore
+    private_class_method :payload_method_for, :underscore
   end
 end

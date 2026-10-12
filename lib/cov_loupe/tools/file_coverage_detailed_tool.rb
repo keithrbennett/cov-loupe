@@ -10,7 +10,7 @@ module CovLoupe
       tool_name 'file_coverage_detailed'
       description <<~DESC
         Use this when the user needs per-line coverage data for a single file.
-        Do not use this for high-level counts; coverage.summary is cheaper for aggregate numbers.
+        Do not use this for high-level counts; file_coverage_summary is cheaper for aggregate numbers.
         Inputs: file path (required) plus optional root/coverage_file/raise_on_stale flag inherited from BaseTool.
         Output: JSON object with "file", "lines" => [{"line": 12, "hits": 0, "covered": false}], plus "summary" with totals {"covered","total","percentage"} (percentage is null if the file has no coverable lines) and "stale": "ok" | "missing" | "newer" | "length_mismatch" | "error".
         Example: "Show detailed coverage for lib/cov_loupe/model/model.rb".

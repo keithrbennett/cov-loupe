@@ -102,13 +102,13 @@ test:
   # a file with no coverable lines has nothing to cover, so the per-file check skips it.
   list = model.list['files']
 
-  # Must have at least 80% average coverage
+  # Must have at least 80% overall line coverage
   return false if model.project_totals['lines']['percentage'].to_f < 80.0
 
   # No files below 60%
   return false if list.any? { |f| f['percentage'] && f['percentage'] < 60.0 }
 
-  # lib/ files must average 90%
+  # lib/ files must have at least 90% overall line coverage
   lib_totals = model.project_totals(tracked_globs: ['lib/**/*.rb'])
   return false if lib_totals['lines']['percentage'].to_f < 90.0
 

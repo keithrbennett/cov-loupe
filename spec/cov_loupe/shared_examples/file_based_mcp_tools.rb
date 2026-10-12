@@ -5,8 +5,7 @@ require 'spec_helper'
 # Shared examples for file-based MCP tools that follow the same pattern:
 # - Take a path parameter
 # - Call a specific method on CoverageModel
-# - Return JSON resource with consistent structure
-# - Have predictable output filename
+# - Return a JSON text payload with consistent structure
 
 RSpec.shared_examples 'a file-based MCP tool' do |config|
   subject { tool_class.call(path: 'lib/foo.rb', server_context: server_context) }
@@ -15,7 +14,6 @@ RSpec.shared_examples 'a file-based MCP tool' do |config|
   let(:tool_class) { config[:tool_class] }
   let(:model_method) { config[:model_method] }
   let(:expected_keys) { config[:expected_keys] }
-  let(:output_filename) { config[:output_filename] }
   let(:mock_data) { config[:mock_data] }
   let(:additional_validations) { config[:additional_validations] }
 
@@ -64,7 +62,6 @@ FILE_BASED_TOOL_CONFIGS = {
     tool_class:             CovLoupe::Tools::FileCoverageSummaryTool,
     model_method:           :summary_for,
     expected_keys:          %w[file summary stale],
-    output_filename:        'coverage_summary.json',
     description:            'coverage summary data',
     mock_data:              {
       'file'    => '/abs/path/lib/foo.rb',
@@ -95,7 +92,6 @@ FILE_BASED_TOOL_CONFIGS = {
     tool_class:             CovLoupe::Tools::FileCoverageRawTool,
     model_method:           :raw_for,
     expected_keys:          %w[file lines stale],
-    output_filename:        'coverage_raw.json',
     description:            'raw coverage data',
     mock_data:              {
       'file'  => '/abs/path/lib/foo.rb',
@@ -110,7 +106,6 @@ FILE_BASED_TOOL_CONFIGS = {
     tool_class:             CovLoupe::Tools::FileUncoveredLinesTool,
     model_method:           :uncovered_for,
     expected_keys:          %w[file uncovered summary stale],
-    output_filename:        'uncovered_lines.json',
     description:            'uncovered lines data',
     mock_data:              {
       'file'      => '/abs/path/lib/foo.rb',
@@ -143,7 +138,6 @@ FILE_BASED_TOOL_CONFIGS = {
     tool_class:             CovLoupe::Tools::FileCoverageDetailedTool,
     model_method:           :detailed_for,
     expected_keys:          %w[file lines summary stale],
-    output_filename:        'coverage_detailed.json',
     description:            'detailed coverage data',
     mock_data:              {
       'file'    => '/abs/path/lib/foo.rb',
