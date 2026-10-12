@@ -20,7 +20,7 @@ RSpec.describe CovLoupe::Commands::SummaryCommand do
       it 'prints a coverage summary line with a relative path' do
         output = capture_command_output(command, ['lib/foo.rb'])
 
-        expect(output).to include('│', '66.67%', 'lib/foo.rb')
+        expect(output).to include('│', '66.66%', 'lib/foo.rb')
       end
 
       it 'marks stale files with a Yes indicator' do

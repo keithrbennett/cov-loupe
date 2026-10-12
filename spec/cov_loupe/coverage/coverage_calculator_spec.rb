@@ -3,6 +3,16 @@
 require 'spec_helper'
 
 RSpec.describe CovLoupe::CoverageCalculator do
+  # Percentages are truncated, not rounded, so incomplete coverage never reports 100.0.
+  percentage_cases = [
+    { covered: 99_999, total: 100_000, expected: 99.99 },
+    { covered: 1,      total: 3,       expected: 33.33 },
+    { covered: 2,      total: 3,       expected: 66.66 },
+    { covered: 7,      total: 7,       expected: 100.0 },
+    { covered: 0,      total: 5,       expected: 0.0 },
+    { covered: 0,      total: 0,       expected: nil },
+  ]
+
   describe '.summary' do
     it 'handles empty arrays' do
       expect(described_class.summary([]))
@@ -22,6 +32,13 @@ RSpec.describe CovLoupe::CoverageCalculator do
     it 'calculates correct percentage for mixed coverage' do
       expect(described_class.summary([1, 0, 1, nil, 2]))
         .to include('percentage' => 75.0, 'total' => 4, 'covered' => 3)
+    end
+
+    percentage_cases.each do |c|
+      it "reports #{c[:expected].inspect} for #{c[:covered]}/#{c[:total]} covered lines" do
+        lines = Array.new(c[:covered], 1) + Array.new(c[:total] - c[:covered], 0)
+        expect(described_class.summary(lines)['percentage']).to eq(c[:expected])
+      end
     end
   end
 
@@ -121,7 +138,7 @@ RSpec.describe CovLoupe::CoverageCalculator do
         'covered'    => 40,
         'uncovered'  => 20,
         'total'      => 60,
-        'percentage' => 66.67
+        'percentage' => 66.66
       )
     end
 
@@ -138,6 +155,13 @@ RSpec.describe CovLoupe::CoverageCalculator do
       summaries = [{ 'covered' => 0, 'total' => 0 }]
       result = described_class.aggregate(summaries)
       expect(result['percentage']).to be_nil
+    end
+
+    percentage_cases.each do |c|
+      it "reports #{c[:expected].inspect} for #{c[:covered]}/#{c[:total]} covered lines" do
+        result = described_class.aggregate([{ 'covered' => c[:covered], 'total' => c[:total] }])
+        expect(result['percentage']).to eq(c[:expected])
+      end
     end
   end
 end

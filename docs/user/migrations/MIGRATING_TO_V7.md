@@ -13,6 +13,7 @@ This document describes the breaking changes introduced in version 7.0.0.
 - [Only `coverage/coverage.json` Is Searched by Default](#only-coveragecoveragejson-is-searched-by-default)
 - [Logging Defaults, Target Probing, and Lazy File Creation](#logging-defaults-target-probing-and-lazy-file-creation)
 - [CLI Exit Codes Remapped](#cli-exit-codes-remapped)
+- [Percentages Truncated, Not Rounded](#percentages-truncated-not-rounded)
 
 ---
 
@@ -236,3 +237,21 @@ Usage errors raised inside a subcommand (for example a global option placed afte
 **Migration:** update CI scripts that test `validate` for exit 1 to test 3 (policy failed) and, if you distinguish them, 4 (predicate error). Scripts that treated exit 2 from `validate` as "stale or missing coverage" should test for 1 instead. A script that only checks for non-zero needs no change.
 
 **Further reading:** [Exit Codes](../CLI_USAGE.md#exit-codes), [Release Notes](../../release_notes.md).
+
+---
+
+## Percentages Truncated, Not Rounded {#percentages-truncated-not-rounded}
+
+Coverage percentages are truncated to two decimals instead of rounded, so incomplete coverage can never report `100.0`. In 6.x, 99,999 of 100,000 covered lines reported `100.0`. It now reports `99.99`.
+
+This applies to every `percentage` value: library hashes, CLI output in all formats, and MCP tool payloads. A value can be up to `0.01` lower than in 6.x:
+
+| Covered / Total | 6.x | 7.0 |
+|---|---|---|
+| 2 / 3 | `66.67` | `66.66` |
+| 8 / 9 | `88.89` | `88.88` |
+| 99,999 / 100,000 | `100.0` | `99.99` |
+
+`CoverageReporter.report` now prints two decimals instead of one (`  99.95%` rather than `100.0%`).
+
+**Migration:** check `validate` predicates and other scripts that compare a percentage to an exact or near-boundary value. For example, `percentage >= 66.67` no longer passes for 2 of 3 lines. Thresholds like `>= 100` or `>= 80` now hold only when coverage actually reaches that value.

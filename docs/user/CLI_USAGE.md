@@ -102,7 +102,7 @@ Default sort order is descending (highest coverage first) so the lowest-coverage
 │ File                                   │        % │   Covered │   Total │ Stale │
 ├────────────────────────────────────────┼──────────┼───────────┼─────────┼───────┤
 │ app/models/user.rb                     │  100.00% │         6 │       6 │       │
-│ lib/api/client.rb                      │   88.89% │         8 │       9 │       │
+│ lib/api/client.rb                      │   88.88% │         8 │       9 │       │
 │ app/models/order.rb                    │   85.71% │         6 │       7 │       │
 │ lib/ops/jobs/report_job.rb             │   80.00% │         4 │       5 │       │
 │ lib/payments/processor.rb              │   80.00% │         4 │       5 │       │
@@ -384,7 +384,7 @@ Tracked globs:
   - lib/**/*.rb
   - app/**/*.rb
 
-Lines (4 ok files): 24 total, 19 covered, 5 uncovered (79.17%)
+Lines (4 ok files): 24 total, 19 covered, 5 uncovered (79.16%)
 
 File breakdown:
   With coverage: 4 total, 4 ok, 0 stale

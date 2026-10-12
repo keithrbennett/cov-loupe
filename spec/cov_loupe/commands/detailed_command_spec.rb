@@ -20,7 +20,7 @@ RSpec.describe CovLoupe::Commands::DetailedCommand do
       it 'prints the detailed coverage table' do
         output = capture_command_output(command, ['lib/foo.rb'])
 
-        expect(output).to include('File: lib/foo.rb', 'Coverage: 2/3 lines (66.67%)', 'Line', 'Covered')
+        expect(output).to include('File: lib/foo.rb', 'Coverage: 2/3 lines (66.66%)', 'Line', 'Covered')
       end
 
       it 'prints annotated source when source_mode is enabled' do

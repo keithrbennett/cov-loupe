@@ -23,7 +23,7 @@ RSpec.describe CovLoupe::CoverageCLI do
     expect(status).to eq(0)
     expect(err).to eq('')
     expect(out).to include('│')  # Table format
-    expect(out).to include('66.67%')
+    expect(out).to include('66.66%')
     expect(out).to show_source_table_or_fallback
   end
 
@@ -34,7 +34,7 @@ RSpec.describe CovLoupe::CoverageCLI do
     expect(status).to eq(0)
     expect(err).to eq('')
     expect(out).to include('lib/foo.rb')
-    expect(out).to include('66.67%')
+    expect(out).to include('66.66%')
     expect(out).to include('│')  # Table format
     expect(out).to show_source_table_or_fallback
   end

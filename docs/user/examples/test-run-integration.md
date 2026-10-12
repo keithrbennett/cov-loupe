@@ -26,11 +26,11 @@ This produces output like:
 
 ```
 Lowest coverage files (< 80%):
-    0.0%  lib/myapp/config_parser.rb
-   19.3%  lib/myapp/formatters/source_formatter.rb
-   24.0%  lib/myapp/model.rb
-   26.0%  lib/myapp/cli.rb
-   45.2%  lib/myapp/commands/base.rb
+    0.00%  lib/myapp/config_parser.rb
+   19.30%  lib/myapp/formatters/source_formatter.rb
+   24.00%  lib/myapp/model.rb
+   26.00%  lib/myapp/cli.rb
+   45.20%  lib/myapp/commands/base.rb
 ```
 
 **Parameters:**

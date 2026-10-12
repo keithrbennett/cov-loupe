@@ -22,7 +22,7 @@ module CovLoupe
         total += 1
         covered += 1 if hits.to_i > 0
       end
-      percentage = total <= 0 ? nil : (covered.to_f / total * 100.0).round(2)
+      percentage = truncated_percentage(covered, total)
       { 'covered' => covered, 'total' => total, 'percentage' => percentage }
     end
 
@@ -64,7 +64,7 @@ module CovLoupe
       covered = file_summaries.sum { |row| row['covered'].to_i }
       total = file_summaries.sum { |row| row['total'].to_i }
       uncovered = total - covered
-      percentage = total.zero? ? nil : (covered.to_f / total * 100.0).round(2)
+      percentage = truncated_percentage(covered, total)
 
       {
         'covered'    => covered,
@@ -73,5 +73,16 @@ module CovLoupe
         'percentage' => percentage,
       }
     end
+
+    # Truncates (rather than rounds) to two decimals so incomplete coverage never reports 100.0.
+    # Integer arithmetic avoids float error before the final division.
+    #
+    # @return [Float, nil] percentage, or nil when there are no coverable lines
+    def self.truncated_percentage(covered, total)
+      return nil if total <= 0
+
+      (covered * 10_000 / total) / 100.0
+    end
+    private_class_method :truncated_percentage
   end
 end

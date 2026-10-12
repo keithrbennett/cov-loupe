@@ -298,7 +298,7 @@ $ cov-loupe list
 ┌─────────────────────────────┬──────────┬─────────┬───────┬───────┐
 │ File                        │        % │ Covered │ Total │ Stale │
 ├─────────────────────────────┼──────────┼─────────┼───────┼───────┤
-│ lib/foo.rb                  │   66.67% │       2 │     3 │       │
+│ lib/foo.rb                  │   66.66% │       2 │     3 │       │
 │ lib/bar.rb                  │   33.33% │       1 │     3 │       │
 └─────────────────────────────┴──────────┴─────────┴───────┴───────┘
 Files: total 2, ok 2, stale 0
@@ -315,7 +315,7 @@ $ cov-loupe -fJ list
 {
   "schema_version": 1,
   "files": [
-    { "file": "lib/foo.rb", "covered": 2, "total": 3, "percentage": 66.67, "stale": "ok" },
+    { "file": "lib/foo.rb", "covered": 2, "total": 3, "percentage": 66.66, "stale": "ok" },
     { "file": "lib/bar.rb", "covered": 1, "total": 3, "percentage": 33.33, "stale": "ok" }
   ],
   "skipped_files": [

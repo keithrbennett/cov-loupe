@@ -97,8 +97,16 @@ RSpec.describe CovLoupe::CoverageReporter do
       lines = result.split("\n")
 
       # lines[0] is empty (leading newline), lines[1] is header, lines[2..] are data
-      expect(lines[2]).to match(/^\s+0\.0%/)
-      expect(lines[3]).to match(/^\s+25\.0%/)
+      expect(lines[2]).to match(/^\s+0\.00%/)
+      expect(lines[3]).to match(/^\s+25\.00%/)
+    end
+
+    it 'does not display incomplete coverage as 100%' do
+      files_data.replace([{ 'file' => '/project/lib/almost.rb', 'percentage' => 99.95, 'stale' => 'ok' }])
+      result = described_class.report(threshold: 100, count: 5, model: model)
+
+      expect(result).to include(' 99.95%  lib/almost.rb')
+      expect(result).not_to include('100.0')
     end
 
     it 'marks stale files in the output' do

@@ -101,7 +101,7 @@ RSpec.describe CovLoupe::CoverageModel do
       aggregate_failures 'Descending sort' do
         expect(files.first).to include(
           'file'       => File.expand_path('lib/foo.rb', root),
-          'percentage' => a_value_within(0.01).of(66.67)
+          'percentage' => a_value_within(0.01).of(66.66)
         )
         expect(files.last).to include('file' => File.expand_path('lib/bar.rb', root))
       end
@@ -280,7 +280,7 @@ RSpec.describe CovLoupe::CoverageModel do
           'total'          => 3,
           'covered'        => 2,
           'uncovered'      => 1,
-          'percentage'     => be_within(0.01).of(66.67),
+          'percentage'     => be_within(0.01).of(66.66),
           'included_files' => 1,
           'excluded_files' => 1
         )
@@ -331,7 +331,7 @@ RSpec.describe CovLoupe::CoverageModel do
         'total'      => 3,
         'covered'    => 2,
         'uncovered'  => 1,
-        'percentage' => be_within(0.01).of(66.67)
+        'percentage' => be_within(0.01).of(66.66)
       )
       expect(totals['tracking']).to include('enabled' => true, 'globs' => ['lib/foo.rb'])
       expect(totals['files']).to include('total' => 1)

@@ -59,7 +59,7 @@ module CovLoupe
         if StaleStatus.stale?(f['stale'])
           label = "#{label} (stale: #{f['stale']})"
         end
-        lines << format('  %5.1f%%  %s', f['percentage'], label)
+        lines << format('  %6.2f%%  %s', f['percentage'], label)
       end
       lines.join("\n")
     end

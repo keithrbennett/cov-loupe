@@ -66,6 +66,13 @@
 - **Short options `-c` and `-n` reassigned.** The coverage file option is `-c`/`--coverage-file` (6.x: `-r`/`--resultset`), and `--context-lines` is now `-n` (was `-c`).
     - `-r` now fails with `ambiguous option: -r`. An old `-c N` for context lines is parsed as `--coverage-file N` and fails with a not-found error, so update shell aliases, `COV_LOUPE_OPTS`, and MCP server `args`.
     - The CLI not-found tip now reads `Specify a coverage file: cov-loupe -c PATH`.
+- **Coverage percentages are truncated, not rounded, to two decimals.** Rounding could
+  report incomplete coverage as `100.0` (for example, 99,999 of 100,000 lines), so a
+  `percentage >= 100` policy passed with uncovered lines. Every `percentage` in library
+  hashes, CLI output, and MCP payloads can now be up to `0.01` lower (2 of 3 lines is
+  `66.66`, was `66.67`), so `validate` predicates with thresholds close to the value can change
+  result. `CoverageReporter.report` now shows two decimals (was one) so it cannot round
+  up to `100.0%` either. See [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#percentages-truncated-not-rounded).
 - **Only `coverage/coverage.json` is searched by default.** With no `--coverage-file`, cov-loupe looks only at `coverage/coverage.json` under the project root, where SimpleCov writes it. 6.x tried `.resultset.json`, `coverage/.resultset.json`, and `tmp/.resultset.json` in turn; use `--coverage-file` (`-c`) for any location other than the default.
 
 ### Other Changes

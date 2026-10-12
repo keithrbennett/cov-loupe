@@ -26,7 +26,7 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
 
         foo = files_by_name.fetch('foo.rb')
         bar = files_by_name.fetch('bar.rb')
-        expect(foo['percentage']).to be_within(0.01).of(66.67)
+        expect(foo['percentage']).to be_within(0.01).of(66.66)
         expect(bar['percentage']).to be_within(0.01).of(33.33)
 
         raw = model.raw_for('lib/foo.rb')
@@ -42,7 +42,7 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
         expect(detailed['lines']).to include({ 'line' => 4, 'hits' => 0, 'covered' => false })
 
         table = model.format_table
-        expect(table).to include('lib/foo.rb', 'lib/bar.rb', '66.67', '33.33')
+        expect(table).to include('lib/foo.rb', 'lib/bar.rb', '66.66', '33.33')
         data_lines = table.split("\n").select { |line| line.include?('lib/') }
         expect(data_lines.first).to include('lib/foo.rb') # Highest coverage first (descending default)
         expect(data_lines.last).to include('lib/bar.rb')
@@ -64,7 +64,7 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
             desc:         'list command',
             args:         ['list'],
             expectations: ->(output) {
-              expect(output).to include('lib/foo.rb', 'lib/bar.rb', '66.67', '33.33')
+              expect(output).to include('lib/foo.rb', 'lib/bar.rb', '66.66', '33.33')
               data_lines = output.lines.select { |l| l.start_with?('│') && l.include?('lib/') }
               expect(data_lines.first).to include('lib/foo.rb')
               expect(data_lines.last).to include('lib/bar.rb')
@@ -74,7 +74,7 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
             desc:         'summary command',
             args:         ['summary', 'lib/foo.rb'],
             expectations: ->(output) {
-              expect(output).to include('│', '66.67%', '2', '3')
+              expect(output).to include('│', '66.66%', '2', '3')
             },
           },
           {
@@ -219,12 +219,12 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
         expect(coverages.min).to be < 50
         expect(coverages.max).to be > 50
         expect(coverages).to include(a_value_within(0.1).of(33.33))
-        expect(coverages).to include(a_value_within(0.1).of(66.67))
+        expect(coverages).to include(a_value_within(0.01).of(66.66))
 
         # Check table format
         table = model.format_table
         expect(table).to match(%r{lib/bar\.rb.*33\.33})
-        expect(table).to match(%r{lib/foo\.rb.*66\.67})
+        expect(table).to match(%r{lib/foo\.rb.*66\.66})
         expect(table).to include('Files: total 2')
       end
     end
