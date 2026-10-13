@@ -68,9 +68,8 @@ RSpec.describe CovLoupe::CoverageCLI, 'format option' do
       expect(status).to eq(2)
       expect(err).to include(
         'Global option(s) must come BEFORE the subcommand',
-        'You used: list --format',
-        'Correct: --format list',
-        'Example:'
+        'You used: cov-loupe list --format json',
+        'Correct: cov-loupe --format json list'
       )
     end
   end

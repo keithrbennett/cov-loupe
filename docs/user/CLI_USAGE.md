@@ -675,6 +675,10 @@ Use 'stderr' to log to a standard stream.
 Use ':off' to disable logging entirely (cross-platform alternative to /dev/null).
 Logging to 'stdout' is not permitted because it would corrupt command output.
 
+With the default `stderr` target, a successful run writes nothing to stderr, and an error
+appears there once, as the user-facing message. A file target also receives a
+`CLI parameters` line for each run and a log entry for each error.
+
 ```sh
 clp -l /var/log/simplecov.log  # -l = --log-file
 clp -l stderr                   # Log to standard error

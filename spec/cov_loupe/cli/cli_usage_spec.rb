@@ -55,6 +55,55 @@ RSpec.describe CovLoupe::CoverageCLI do
     end
   end
 
+  describe 'misplaced global option hint' do
+    [
+      [%w[totals --format json],                'Correct: cov-loupe --format json totals'],
+      [%w[totals --format=json],                'Correct: cov-loupe --format=json totals'],
+      [%w[totals -f json -S],                   'Correct: cov-loupe -f json -S totals'],
+      [%w[summary lib/foo.rb --format json],    'Correct: cov-loupe --format json summary lib/foo.rb'],
+    ].each do |args, expected|
+      it "suggests `#{expected}` for `#{args.join(' ')}`" do
+        _out, err, status = run_fixture_cli_with_status(*args)
+        expect(status).to eq(2)
+        expect(err).to include("You used: cov-loupe #{args.join(' ')}", expected)
+      end
+    end
+  end
+
+  describe 'stderr output' do
+    let(:missing_message) { 'Could not find coverage.json' }
+
+    it 'writes nothing to stderr on a successful run logging to stderr' do
+      out, err, status = run_fixture_cli_with_status('--log-file', 'stderr', '--format', 'json', 'totals')
+      expect(status).to eq(0)
+      expect(out).not_to be_empty
+      expect(err).to eq('')
+    end
+
+    it 'prints a missing coverage file error to stderr exactly once' do
+      Dir.mktmpdir do |dir|
+        _out, err, status = run_cli_with_status('--log-file', 'stderr', '--root', dir, 'totals')
+        expect(status).to eq(1)
+        expect(err.scan(missing_message).size).to eq(1)
+        expect(err).not_to include('CLI parameters', 'Error in CLI')
+      end
+    end
+
+    it 'writes the parameters line and the error to a log file' do
+      Dir.mktmpdir do |dir|
+        log_path = File.join(dir, 'cov-loupe.log')
+        _out, err, status = run_cli_with_status('--log-file', log_path, '--root', dir, 'totals')
+        expect(status).to eq(1)
+        expect(err.scan(missing_message).size).to eq(1)
+
+        log = File.read(log_path)
+        expect(log).to include('INFO: CLI parameters:', 'subcommand: "totals"')
+        expect(log).to include("ERROR: Error in CLI: CovLoupe::CoverageFileNotFoundError: #{missing_message}")
+        expect(log.scan(missing_message).size).to eq(1)
+      end
+    end
+  end
+
   describe 'extra arguments detection' do
     it 'rejects extra arguments to list command' do
       _out, err, status = run_fixture_cli_with_status('list', 'extra')

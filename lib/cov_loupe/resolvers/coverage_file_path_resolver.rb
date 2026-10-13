@@ -98,19 +98,11 @@ module CovLoupe
           'Use `./` or an absolute filespec to disambiguate.'
       end
 
+      # Not logged here: the CLI and MCP error handlers log and report this error.
       private def raise_not_found_error
-        message = "Could not find #{COVERAGE_FILE_NAME} under #{@root.inspect}; " \
-                  'run tests or set --coverage-file option'
-        begin
-          logger = CovLoupe.logger
-          # Preserve ERROR severity while preventing logger failures from replacing
-          # the actionable coverage-file error.
-          logger.error(message)
-        rescue CovLoupe::LoggingError
-          # Logger construction or the write itself can fail before the
-          # actionable coverage-file error is raised.
-        end
-        raise CoverageFileNotFoundError, message
+        raise CoverageFileNotFoundError,
+          "Could not find #{COVERAGE_FILE_NAME} under #{@root.inspect}; " \
+          'run tests or set --coverage-file option'
       end
     end
   end

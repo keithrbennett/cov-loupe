@@ -79,19 +79,19 @@ module CovLoupe
       with_context_if_available(context) { handle_user_facing_error(e) }
     end
 
+    # Records CLI parameters in a log file. Skipped for stderr so routine runs stay quiet.
     private def log_cli_params
-      # Log CLI parameters for transparency
-      if CovLoupe.logger
-        params = { mode: :cli, subcommand: @cmd || 'default' }
-        params[:root] = config.root if config.root
-        params[:coverage_file] = config.coverage_file if config.coverage_file
-        params[:format] = config.format if config.format
-        params[:sort_order] = config.sort_order if config.sort_order
-        params[:raise_on_stale] = config.raise_on_stale if config.raise_on_stale
-        params[:tracked_globs] = config.tracked_globs if config.tracked_globs&.any?
-        params[:error_mode] = config.error_mode if config.error_mode
-        CovLoupe.logger.info("CLI parameters: #{params.inspect}")
-      end
+      return unless CovLoupe.logger.file_target?
+
+      params = { mode: :cli, subcommand: @cmd || 'default' }
+      params[:root] = config.root if config.root
+      params[:coverage_file] = config.coverage_file if config.coverage_file
+      params[:format] = config.format if config.format
+      params[:sort_order] = config.sort_order if config.sort_order
+      params[:raise_on_stale] = config.raise_on_stale if config.raise_on_stale
+      params[:tracked_globs] = config.tracked_globs if config.tracked_globs&.any?
+      params[:error_mode] = config.error_mode if config.error_mode
+      CovLoupe.logger.info("CLI parameters: #{params.inspect}")
     end
 
     def show_default_report(sort_order: :descending, output: $stdout)
@@ -197,22 +197,38 @@ module CovLoupe
         -p --path-for
         -O --output-chars]
 
-      misplaced = args.select do |arg|
+      value_options = options_requiring_value
+      misplaced = []
+      remaining = []
+      tokens = args.dup
+      while (arg = tokens.shift)
         # Extract base option (e.g., --format from --format=json)
         base = arg.split('=', 2).first
-        global_options.include?(base)
+        if !global_options.include?(base)
+          remaining << arg
+        elsif base == arg && value_options.include?(arg) && !tokens.empty?
+          misplaced << "#{arg} #{tokens.shift}"
+        else
+          misplaced << arg
+        end
       end
       return if misplaced.empty?
 
-      option_list = misplaced.join(', ')
       raise UsageError, "Global option(s) must come BEFORE the subcommand.\n" \
-        "You used: #{cmd} #{option_list}\n" \
-        "Correct: #{option_list} #{cmd}\n\n" \
-        "Example: cov-loupe --format json #{cmd}"
+        "You used: cov-loupe #{[cmd, *args].join(' ')}\n" \
+        "Correct: cov-loupe #{[*misplaced, cmd, *remaining].join(' ')}"
+    end
+
+    # Option switches (short and long) that consume the following argument as their value.
+    private def options_requiring_value
+      OptionParserBuilder.new(config).build_option_parser.top.list
+        .grep(OptionParser::Switch::RequiredArgument)
+        .flat_map { |switch| switch.short + switch.long }
     end
 
     private def handle_user_facing_error(error)
-      error_handler.handle_error(error, context: 'CLI', reraise: false)
+      # The message is printed to stderr below, so logging it there too would duplicate it.
+      error_handler.handle_error(error, context: 'CLI', reraise: false) unless CovLoupe.logger.stderr?
       # Convert error message to ASCII if in ascii mode
       message = OutputChars.convert(error.user_friendly_message, config.output_chars)
       warn message

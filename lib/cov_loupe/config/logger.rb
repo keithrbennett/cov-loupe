@@ -79,6 +79,15 @@ module CovLoupe
       raise @init_error if @init_error
     end
 
+    def stderr?
+      stderr_target?(@target)
+    end
+
+    # True when messages go to a file rather than stderr or nowhere.
+    def file_target?
+      !@disabled && !stderr?
+    end
+
     private def normalized_target(target)
       target.to_s.strip.downcase
     end
