@@ -94,7 +94,7 @@ end
 exit(result ? ExitCodes::SUCCESS : ExitCodes::VALIDATION_FAILED)
 ```
 
-The command does not rescue errors. `PredicateEvaluator` wraps failures in the predicate itself (syntax errors, a missing or non-callable predicate, exceptions from its own code) in `PredicateError`. That includes a `UsageError` or `ConfigurationError` the predicate raises itself, since it is a predicate problem and not a command-line problem. Only `CoverageDataError` and `FileError` (raised by the model's own queries, such as a missing file or stale data) keep their type. `CoverageCLI#handle_user_facing_error` logs every such error through the error handler, prints its message, and exits with `exit_code_for(error)`: 4 for `PredicateError` (validation failure is 3) and 1 for coverage-data and file errors. Usage errors in `validate`'s own arguments exit 2.
+The command does not rescue errors. `PredicateEvaluator` wraps failures in the predicate itself (syntax errors, a missing or non-callable predicate, exceptions from its own code) in `PredicateError`. That includes a `UsageError` or `ConfigurationError` the predicate raises itself, since it is a predicate problem and not a command-line problem. Only `CoverageDataError` and `FileError` (raised by the model's own queries, such as a missing file or stale data) keep their type. `CoverageCLI#handle_user_facing_error` passes every such error to the error handler for logging (the built-in handler skips this for the default `stderr` log target), prints its message, and exits with `exit_code_for(error)`: 4 for `PredicateError` (validation failure is 3) and 1 for coverage-data and file errors. Usage errors in `validate`'s own arguments exit 2.
 
 #### Security Model: Treat as Executable Code
 

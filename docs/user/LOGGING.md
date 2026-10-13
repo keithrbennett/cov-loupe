@@ -7,11 +7,17 @@ choose another target. A file path enables persistent logging, `stderr` is
 supported explicitly, `:off` disables logging, and `stdout` is not permitted
 because it would corrupt CLI output or the MCP JSON-RPC stream.
 
-In the CLI, the default `stderr` target stays quiet on successful runs. The
-`CLI parameters` line is written only to a log file, and an error is printed
-to stderr once as the user-facing message rather than also being logged there.
-With a file target, the file receives both the parameters line and the logged
-error, and the user-facing message still appears on stderr.
+In the CLI, the `CLI parameters` line is written only to a log file, never to
+`stderr`. An error is printed to stderr once as the user-facing message rather
+than also being logged there; with `--error-mode debug`, the CLI follows it with
+the full stack trace. Warnings and diagnostics about the coverage data can still
+appear on stderr. With a file target, the file receives the
+parameters line (for each run that gets past option parsing, including the
+default report) and the logged error (unless `--error-mode off` is used), and
+the user-facing message still appears on stderr. Invalid options and option
+values are rejected before logging is set up, so they appear only on stderr;
+other usage errors, such as an unknown subcommand or misplaced global options,
+are logged to the file.
 
 File logging is intentionally explicit and has no built-in rotation. Users who
 choose a file target are responsible for cleanup or external log rotation.

@@ -675,9 +675,14 @@ Use 'stderr' to log to a standard stream.
 Use ':off' to disable logging entirely (cross-platform alternative to /dev/null).
 Logging to 'stdout' is not permitted because it would corrupt command output.
 
-With the default `stderr` target, a successful run writes nothing to stderr, and an error
-appears there once, as the user-facing message. A file target also receives a
-`CLI parameters` line for each run and a log entry for each error.
+With the default `stderr` target, the CLI does not log its parameters or errors there;
+an error appears there once, as the user-facing message (followed by its stack trace
+with `--error-mode debug`). Warnings and diagnostics about the coverage data can still
+appear on stderr. A file target also receives a `CLI parameters` line for each run that
+gets past option parsing (including the default report) and, unless `--error-mode off`
+is used, a log entry for each error. Invalid options and option values are rejected
+before logging is set up, so they appear only on stderr; other usage errors, such as an
+unknown subcommand or misplaced global options, are logged to the file.
 
 ```sh
 clp -l /var/log/simplecov.log  # -l = --log-file
@@ -697,9 +702,15 @@ Error handling verbosity.
 
 | Value abbreviation | Long    | Description                               |
 |--------------------|---------|-------------------------------------------|
-| `o`                | `off`   | Silent (no error logging)                 |
+| `o`                | `off`   | No error logging                          |
 | `l`                | `log`   | Log errors without stack traces (default) |
 | `d`                | `debug` | Log errors with full stack traces         |
+
+Error messages are always printed to stderr, and `debug` also prints a stack trace
+after the message: the full trace with the default `stderr` log target, or the first 5
+lines with a log file, which gets the full trace. With the `stderr` target, errors are
+not logged there a second time, so `off` and `log` look the same. With a log file,
+`log` and `debug` write each error to the file.
 
 ```sh
 clp --error-mode debug summary lib/api/client.rb

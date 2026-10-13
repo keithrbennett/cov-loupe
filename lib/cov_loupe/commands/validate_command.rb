@@ -8,7 +8,7 @@ module CovLoupe
   module Commands
     # Validates coverage data against a predicate.
     # Exits with code 0 (pass) or 3 (validation failed). Errors, including PredicateError (4),
-    # propagate to the CLI, which logs them and maps them to an exit code.
+    # propagate to the CLI, which reports them and maps them to an exit code.
     #
     # Usage:
     #   cov-loupe validate policy.rb                # File mode

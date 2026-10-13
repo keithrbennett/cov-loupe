@@ -69,7 +69,8 @@ module CovLoupe
 
       begin
         # Prepend environment options once at entry point
-        full_argv = extract_env_opts + argv
+        env_argv = extract_env_opts
+        full_argv = env_argv + argv
         config = ConfigParser.parse(full_argv.dup)
       rescue OptionParser::ParseError => e
         # Loaded only on this error path to keep normal startup light.
@@ -86,7 +87,7 @@ module CovLoupe
       if config.mode == :cli
         # CLI mode: load CLI components only
         require_relative 'cov_loupe/loaders/all_cli'
-        CoverageCLI.new.run(full_argv)
+        CoverageCLI.new.run(full_argv, env_arg_count: env_argv.size)
       else
         # MCP server mode: load MCP server components only
         require_relative 'cov_loupe/loaders/all_mcp'

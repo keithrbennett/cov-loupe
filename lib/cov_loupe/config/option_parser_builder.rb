@@ -118,9 +118,10 @@ module CovLoupe
       end
       parser.on('-e', '--error-mode MODE', String,
         'Error handling mode: o[ff]|l[og]|d[ebug] (default: log)',
-        '  off:   silent',
-        '  log:   log errors to the configured target',
-        '  debug: verbose with backtraces') do |value|
+        '  off:   no error logging',
+        '  log:   log errors to the log target (the CLI does not log them',
+        '         to stderr, where it already prints them)',
+        '  debug: as log, with full backtraces; the CLI also prints a backtrace') do |value|
         config.error_mode = normalize_error_mode(value)
       end
       parser.on('-O', '--output-chars MODE', String,

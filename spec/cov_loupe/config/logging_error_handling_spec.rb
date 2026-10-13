@@ -22,6 +22,22 @@ RSpec.describe CovLoupe::Logger do
   end
 
   describe 'targets' do
+    [
+      # target,      mode,      stderr?, file_target?
+      ['stderr',     :library,  true,    false],
+      ['  STDERR  ', :library,  true,    false],
+      [':off',       :cli,      false,   false],
+      [nil,          :library,  false,   false],
+      [nil,          :cli,      true,    false],
+      ['app.log',    :library,  false,   true],
+    ].each do |target, mode, stderr, file_target|
+      it "reports stderr?=#{stderr} and file_target?=#{file_target} for #{target.inspect} in #{mode} mode" do
+        logger = described_class.new(target: target, mode: mode)
+        expect(logger.stderr?).to be stderr
+        expect(logger.file_target?).to be file_target
+      end
+    end
+
     it 'rejects stdout at initialization' do
       expect { described_class.new(target: 'stdout', mode: :library) }
         .to raise_error(CovLoupe::ConfigurationError, /stdout.*not permitted/)

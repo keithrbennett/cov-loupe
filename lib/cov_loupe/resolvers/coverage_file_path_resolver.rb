@@ -98,7 +98,8 @@ module CovLoupe
           'Use `./` or an absolute filespec to disambiguate.'
       end
 
-      # Not logged here: the CLI and MCP error handlers log and report this error.
+      # Not logged here: callers report this error. The CLI prints it (and logs it when the log
+      # target is a file or in debug mode), and MCP returns it as an error result and logs it.
       private def raise_not_found_error
         raise CoverageFileNotFoundError,
           "Could not find #{COVERAGE_FILE_NAME} under #{@root.inspect}; " \

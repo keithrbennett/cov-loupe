@@ -64,7 +64,7 @@ RSpec.describe CovLoupe::CoverageCLI, 'format option' do
     end
 
     it 'shows helpful error when global option comes after subcommand' do
-      _out, err, status = run_fixture_cli_with_status('list', '--format', 'json')
+      _out, err, status = run_cli_with_status('list', '--format', 'json')
       expect(status).to eq(2)
       expect(err).to include(
         'Global option(s) must come BEFORE the subcommand',

@@ -25,7 +25,7 @@ RSpec.describe CovLoupe do
 
         described_class.run(['version'])
 
-        expect(cli).to have_received(:run).with(['--mode', 'cli', 'version'])
+        expect(cli).to have_received(:run).with(['--mode', 'cli', 'version'], env_arg_count: 2)
       end
     end
   end

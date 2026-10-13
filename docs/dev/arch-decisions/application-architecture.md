@@ -256,7 +256,7 @@ end
 
 **CLI Mode** (lib/cov_loupe/cli.rb):
 1. Catches all exceptions in the main run loop
-2. Uses `for_cli` handler to log errors if debug mode is enabled
+2. Uses the `for_cli` handler to log errors to a log file target (not to the default `stderr` target, where the message is already printed); a custom handler is called for every error except invalid options, which are reported during option parsing
 3. Displays `user_friendly_message` to the user
 4. Exits with the code from `CoverageCLI#exit_code_for` (see `CovLoupe::ExitCodes`): 1 runtime error, 2 usage or configuration error, 4 predicate error. The one exception is `validate`, which exits directly with 0 (pass) or 3 (validation failed) when the predicate runs to completion, since that outcome is not an error
 

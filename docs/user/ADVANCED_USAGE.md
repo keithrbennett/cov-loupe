@@ -277,10 +277,10 @@ coverage_b = model_b.list
 
 **CLI Error Modes:**
 ```sh
-# Silent mode - minimal output
+# No error logging (the error message is still printed)
 clp --error-mode off summary app/models/order.rb
 
-# Standard mode - user-friendly errors (default)
+# Standard mode - user-friendly errors, logged when --log-file is a file (default)
 clp --error-mode log summary app/models/order.rb
 
 # Verbose mode - full stack traces
@@ -307,16 +307,21 @@ end
 
 ### Custom Error Handlers
 
-Provide custom error handlers when embedding the CLI:
+Provide custom error handlers when embedding the CLI. A handler must implement
+`handle_error(error, context:, reraise:)`. The CLI calls it with `reraise: false`
+for every error it reports, whatever the log target and `--error-mode`, and then
+prints the user-facing message itself. Invalid options and option values are the
+exception: they are reported during option parsing, without the handler. A handler may also provide
+`convert_standard_error`, like `CovLoupe::ErrorHandler`, to control how unexpected
+errors are converted; otherwise the built-in conversion is used.
 
 ```ruby
 class CustomErrorHandler
-  def handle_error(error, context: nil)
+  def handle_error(error, context: nil, reraise: true)
     # Log to custom service
     ErrorTracker.notify(error, context: context)
 
-    # Re-raise or handle gracefully
-    raise error
+    raise error if reraise
   end
 end
 

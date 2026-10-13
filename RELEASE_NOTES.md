@@ -13,8 +13,8 @@
   `1`. `validate` also no longer labels missing or stale coverage data as a
   "Predicate error" (previously exit `2`); it now exits `1` with the normal error
   message. Predicate errors now go through the central error handler, so they are
-  logged like other CLI errors: with the default `stderr` log target, an `ERROR`
-  log line now precedes the "Predicate error:" message. Usage errors (invalid
+  logged like other CLI errors: to the log file when `--log-file` is a file (not to
+  the default `stderr` target, where the message is already printed). Usage errors (invalid
   options or arguments, invalid configuration, misplaced global options) now
   consistently exit `2`; some were `1`. Exit `1` is reserved for runtime errors
   such as missing or stale coverage data. Invalid global options now also get
@@ -78,6 +78,20 @@
 ### Other Changes
 
 - **Structured payloads now include `schema_version`.** Every library coverage hash (`list`, `summary_for`, `uncovered_for`, `detailed_for`, `raw_for`, `project_totals`), structured CLI output (all formats except `table`), and MCP tool payload now begins with an integer `schema_version` (currently `1`), separate from `CovLoupe::VERSION` and from SimpleCov's own `schema_version` in `coverage.json`. Draft 2020-12 JSON Schema files for each v1 payload shape ship under `lib/cov_loupe/schemas/v1/` and are resolvable via `CovLoupe::PayloadSchema.schema_path`. Adding a key is a compatible change and does not bump the version; see [Schema Version](docs/user/LIBRARY_API.md#schema-version) for the full compatibility rules.
+- **Quieter CLI stderr.** The `CLI parameters` line is now logged only when `--log-file` is a
+  file. With the default `stderr` target, a CLI error is printed once, as its user-facing
+  message, instead of also appearing as `ERROR` log lines; `--error-mode debug` follows it with
+  the full stack trace. Unknown-subcommand errors now also reach a `--log-file`.
+- **Custom CLI error handlers see an unexpected error once.** A handler passed to
+  `CoverageCLI.new(error_handler:)` now receives an unexpected (non-`CovLoupe::Error`) error
+  from a subcommand once, as the original exception with `reraise: false`. Previously it was
+  called twice: first with `reraise: true`, expected to raise the converted error, then with
+  that converted error. A handler may provide `convert_standard_error` to control the
+  conversion. As before, the handler is called for every error the CLI reports except invalid
+  options, whatever the log target. See [Custom Error Handlers](docs/user/ADVANCED_USAGE.md#custom-error-handlers).
+- **Misplaced global option hints keep option values.** `cov-loupe totals --format json` now
+  suggests `cov-loupe --format json totals` (previously `--format totals`). The suggested
+  command keeps options given before the subcommand and quotes arguments that need it.
 - **Improved guidance for misplaced short global options.** `-e`/`--error-mode` and `-C`/`--color` used after a subcommand (for example `list -e debug`) now get the "must come BEFORE the subcommand" message instead of a generic "Unexpected argument(s)" error; previously only their long forms were recognized.
 - **Fixed `uncovered` and `detailed` crashing on files with no coverable lines.** Their text output raised `TypeError` when a file's coverage percentage was `nil` (for example, a file containing only comments); it now shows `n/a`, as `summary` and `totals` already did. `detailed` and `uncovered` print `No coverable lines.` for such files. The `project_validate` tool description and the code examples in the README, docs and `examples/` now handle `nil` percentages, and the Library API docs, the MCP integration docs and the descriptions of every MCP tool that returns a `percentage` show it as nullable. In the `validate` predicate examples, per-file checks skip files with no coverable lines, and project-total checks treat a `nil` total (nothing measurable, including when every file is stale) as failing.
 - **Fixed `NoMethodError` message rewriting on Ruby 3.4+.** Ruby 3.4 quotes the method name in `NoMethodError#message` as `'name'` instead of the pre-3.4 `` `name' ``, so the friendly "missing method '...' on ..." rewrite silently failed to apply on 3.4+. Both quote styles are now recognized.

@@ -16,7 +16,7 @@ $ cov-loupe s nonexistent.rb
 File error: No coverage data found for the specified file
 ```
 
-For debugging, use the `--error-mode debug` flag to include stack traces in log output and display the first 5 lines of the backtrace in CLI output:
+For debugging, use the `--error-mode debug` flag to show stack traces. With the default `stderr` log target, the full backtrace is printed after the error message; with a `--log-file` file, the file gets the full backtrace and the CLI output shows its first 5 lines:
 
 ```bash
 $ cov-loupe --error-mode debug summary nonexistent.rb
