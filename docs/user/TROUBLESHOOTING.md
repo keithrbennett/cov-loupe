@@ -33,9 +33,9 @@ Codex's macOS sandbox forbids `/bin/ps`; RVM shells need it. When you run `bundl
 ### Missing coverage file
 
 `cov-loupe` only reads coverage data; it never generates it. It reads `coverage.json`,
-which SimpleCov 1.0.0 and later write alongside the HTML report. SimpleCov 0.x only
-writes `.resultset.json`, which cov-loupe no longer reads; upgrade SimpleCov to 1.0 or
-later. If you see "Could not find coverage.json":
+which SimpleCov 1.0.0 and later write alongside the HTML report. SimpleCov 0.x writes
+only `.resultset.json` by default, which cov-loupe no longer reads; upgrade SimpleCov to
+1.0 or later. If you see "Could not find coverage.json":
 
 1. Run the test suite with SimpleCov enabled (default project setup already enables it).
    ```bash
@@ -48,6 +48,26 @@ later. If you see "Could not find coverage.json":
    # or
    export COV_LOUPE_OPTS="-c build/coverage"
    ```
+
+### Unsupported coverage.json format
+
+cov-loupe checks `meta.schema_version` in `coverage.json` (the file format version, not the
+SimpleCov gem version) and accepts any 1.x. If the value is missing or has another major
+version, loading fails with:
+
+```
+Unsupported coverage.json format (meta.schema_version: nil; meta.simplecov_version: "0.22.0") in <path>; cov-loupe requires format 1.x (written by SimpleCov 1.0 and later)
+```
+
+The `meta.simplecov_version` part appears only when the file records it.
+
+- **Missing value (`nil`):** the file was usually written for SimpleCov 0.x by the separate
+  `simplecov_json_formatter` gem, or rewritten by another tool that dropped the field.
+  Upgrade SimpleCov to 1.0 or later and re-run the test suite, or make sure the rewriting
+  tool preserves `meta.schema_version`.
+- **Newer major version (e.g. `"2.0"`):** the file uses a format this cov-loupe release does
+  not read. Upgrade cov-loupe if a newer release supports it, or pin SimpleCov to a version
+  that writes format 1.x.
 
 ### Stale Coverage Errors
 

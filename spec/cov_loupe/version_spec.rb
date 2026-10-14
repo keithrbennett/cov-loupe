@@ -93,6 +93,13 @@ RSpec.describe 'CovLoupe::VERSION' do
       expect(requirement).to be_satisfied_by(Gem::Version.new('1.0.0'))
       expect(requirement).not_to be_satisfied_by(Gem::Version.new('2.0.0'))
     end
+
+    # cov-loupe never loads SimpleCov; CoverageJsonLoader checks the coverage.json
+    # format version instead of constraining the host project's SimpleCov.
+    it 'does not depend on simplecov' do
+      gemspec = Gem::Specification.load(gemspec_file)
+      expect(gemspec.runtime_dependencies.map(&:name)).not_to include('simplecov')
+    end
   end
 
   describe 'standalone version file load' do

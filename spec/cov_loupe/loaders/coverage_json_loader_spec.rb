@@ -91,6 +91,50 @@ RSpec.describe CovLoupe::CoverageJsonLoader do
       end
     end
 
+    %w[1.0 1.3].each do |version|
+      it "loads a document whose meta.schema_version is #{version}" do
+        Dir.mktmpdir do |dir|
+          document = coverage_json_document(coverage: {})
+          document['meta']['schema_version'] = version
+
+          expect(write_and_load(dir, document).coverage_map).to eq({})
+        end
+      end
+    end
+
+    [
+      { desc: 'missing', mutate: ->(meta) { meta.delete('schema_version') }, shown: 'nil' },
+      { desc: 'nil', mutate: ->(meta) { meta['schema_version'] = nil }, shown: 'nil' },
+      { desc: '"0.9"', mutate: ->(meta) { meta['schema_version'] = '0.9' }, shown: '"0.9"' },
+      { desc: '"2.0"', mutate: ->(meta) { meta['schema_version'] = '2.0' }, shown: '"2.0"' },
+      { desc: '"10.0"', mutate: ->(meta) { meta['schema_version'] = '10.0' }, shown: '"10.0"' },
+      { desc: 'a number', mutate: ->(meta) { meta['schema_version'] = 1 }, shown: '1' },
+    ].each do |tc|
+      it "raises CoverageDataError naming the value when meta.schema_version is #{tc[:desc]}" do
+        Dir.mktmpdir do |dir|
+          document = coverage_json_document(coverage: {})
+          tc[:mutate].call(document['meta'])
+          path = File.join(dir, 'coverage.json')
+
+          expect { write_and_load(dir, document) }.to raise_error(CovLoupe::CoverageDataError) { |error|
+            expect(error.message).to include("meta.schema_version: #{tc[:shown]}")
+            expect(error.message).to include('meta.simplecov_version: "1.0.0"', path, 'requires format 1.x')
+          }
+        end
+      end
+    end
+
+    it 'omits the SimpleCov version from the format error when meta has none' do
+      Dir.mktmpdir do |dir|
+        document = coverage_json_document(coverage: {})
+        document['meta'].delete('simplecov_version')
+        document['meta']['schema_version'] = '2.0'
+
+        expect { write_and_load(dir, document) }
+          .to raise_error(CovLoupe::CoverageDataError) { |error| expect(error.message).not_to include('simplecov_version') }
+      end
+    end
+
     it 'raises Errno::ENOENT when the file does not exist' do
       expect do
         described_class.load(resolved_coverage_file: '/nonexistent/path/coverage.json', logger: logger)

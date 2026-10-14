@@ -23,6 +23,9 @@ module CovLoupe
     # Sentinel the JSON formatter writes for lines excluded from coverage.
     IGNORED_LINE = 'ignored'
 
+    # Major version of meta.schema_version (the coverage.json format) that this loader reads.
+    SUPPORTED_FORMAT_MAJOR = '1'
+
     def self.load(resolved_coverage_file:, logger: nil)
       logger ||= CovLoupe.logger
       new(resolved_coverage_file: resolved_coverage_file, logger: logger).load
@@ -40,11 +43,30 @@ module CovLoupe
           'Not a SimpleCov coverage.json document (expected top-level "coverage" and "meta"): ' \
           "#{@resolved_coverage_file}"
       end
+      validate_format_version(raw['meta'])
 
       Result.new(
         coverage_map: normalize_coverage_map(raw['coverage']),
         timestamp:    normalize_timestamp(raw['meta']['timestamp'])
       )
+    end
+
+    # meta.schema_version is the version of SimpleCov's coverage.json format
+    # (e.g. "1.0"), not the SimpleCov gem version. Any 1.x is accepted; a
+    # missing value or another major version means a layout cov-loupe may not
+    # understand, so fail with a clear message instead of misreading the data.
+    private def validate_format_version(meta)
+      version = meta['schema_version']
+      return if version.is_a?(String) && version.split('.').first == SUPPORTED_FORMAT_MAJOR
+
+      # Shown as a separate field: a gem version is not a format version, and
+      # pre-1.0 JSON formatter output carries simplecov_version but no schema_version.
+      simplecov_version = meta['simplecov_version']
+      found = "meta.schema_version: #{version.inspect}"
+      found += "; meta.simplecov_version: #{simplecov_version.inspect}" if simplecov_version
+      raise CoverageDataError,
+        "Unsupported coverage.json format (#{found}) in #{@resolved_coverage_file}; " \
+        'cov-loupe requires format 1.x (written by SimpleCov 1.0 and later)'
     end
 
     # The JSON formatter marks lines that SimpleCov excluded (via nocov blocks

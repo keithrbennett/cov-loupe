@@ -55,7 +55,7 @@ jobs:
         files: ./coverage/coverage.xml
         fail_ci_if_error: false
 
-  # The gemspec promises simplecov >= 1.0, < 2.0. A normal `bundle install`
+  # The Gemfile allows simplecov >= 1.0, < 2.0. A normal `bundle install`
   # only exercises whatever Bundler resolves today (usually the newest), so this
   # job pins simplecov to each end of that range and runs the suite there. It
   # exists because a simplecov point release once broke main with no change on
@@ -70,7 +70,7 @@ jobs:
           # Oldest supported simplecov: the first release that writes coverage.json.
           - simplecov: '1.0.0'
             version: '1.0.0'
-          # Newest release. An empty pin leaves simplecov to the gemspec, so
+          # Newest release. An empty pin leaves simplecov to the Gemfile range, so
           # Bundler takes the current version.
           - simplecov: latest
             version: ''

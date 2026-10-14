@@ -53,9 +53,10 @@
 - **Stderr log targets are normalized consistently.** Values such as `stderr`,
   `STDERR`, `:stderr`, and values with surrounding whitespace now all select the
   standard-error stream instead of being interpreted as file paths.
-- **Only `coverage.json` is read, and SimpleCov >= 1.0 is required.** cov-loupe now reads SimpleCov's documented JSON formatter output, which SimpleCov 1.0.0 and later write alongside the HTML report. `.resultset.json`, SimpleCov's internal merge cache, is no longer read, and the `simplecov` dependency is now `>= 1.0, < 2.0`.
+- **Only `coverage.json` is read, and it must be in the format written by SimpleCov 1.x.** cov-loupe now reads SimpleCov's documented JSON formatter output, which SimpleCov 1.0.0 and later write alongside the HTML report. `.resultset.json`, SimpleCov's internal merge cache, is no longer read.
     - **Old:** `.resultset.json` was the input; SimpleCov was loaded at runtime to merge multi-suite resultsets.
     - **New:** `coverage.json` is the input. It is already merged across suites, so SimpleCov is never loaded. It is discovered at `coverage/coverage.json` under the project root (see below).
+    - `simplecov` is no longer a gem dependency (6.x required `>= 0.21`). Instead, `meta.schema_version` in `coverage.json` is checked on load: any 1.x is accepted, and a missing value or another major version raises `Unsupported coverage.json format (meta.schema_version: ...)`, naming the file, the value found, and `meta.simplecov_version` when present. This rejects `coverage.json` files written for SimpleCov 0.x by the separate `simplecov_json_formatter` gem, which have no `schema_version`.
     - Lines marked `"ignored"` by SimpleCov (`:nocov:` regions and `# simplecov:disable` directives) are treated as non-executable, so cov-loupe's percentages match SimpleCov's own report.
     - The not-found message is now `Could not find coverage.json under "<root>"`, and stale-coverage errors label the file `Coverage file - <path>`.
     - Projects that cannot upgrade SimpleCov should stay on cov-loupe 6.x. See [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md).

@@ -191,9 +191,9 @@ Full documentation is available at **[https://keithrbennett.github.io/cov-loupe/
 
 - **Ruby >= 3.2** (required by `mcp` gem dependency)
 - `mcp` gem >= 0.15 and < 2.0
-- `simplecov` gem >= 1.0 and < 2.0, and the `coverage.json` it generates
+- A `coverage.json` written by SimpleCov 1.x (SimpleCov itself is not a cov-loupe dependency)
 
-Applications pinned to an older `mcp` version must upgrade it before installing cov-loupe v6, and applications pinned to SimpleCov 0.x must upgrade SimpleCov before installing cov-loupe v7. See [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md).
+Applications pinned to an older `mcp` version must upgrade it before installing cov-loupe v6, and projects on SimpleCov 0.x must upgrade SimpleCov to produce the `coverage.json` cov-loupe v7 reads. See [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md).
 
 ### JRuby Compatibility
 
@@ -438,9 +438,9 @@ gem install cov-loupe-*.gem
 
 See [dev/DEVELOPMENT.md](docs/dev/DEVELOPMENT.md) for more.
 
-## SimpleCov Dependency
+## SimpleCov Compatibility
 
-`cov-loupe` declares a runtime dependency on `simplecov` (`>= 1.0, < 2.0`) so that the project being inspected has a SimpleCov version that writes `coverage.json`. SimpleCov is never loaded at runtime: `coverage.json` is already merged across suites, so cov-loupe only reads the file.
+`cov-loupe` does not depend on the `simplecov` gem and never loads it. It reads `coverage.json` written by SimpleCov 1.x, which is already merged across suites. On load it checks the file's `meta.schema_version` (SimpleCov's output format version, e.g. `"1.0"`) and rejects a missing value or a major version other than 1 with an error naming the file and the value found. That includes `coverage.json` files written for SimpleCov 0.x by the separate `simplecov_json_formatter` gem, which carry no `schema_version`.
 
 ## Contributing
 

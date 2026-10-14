@@ -7,7 +7,7 @@ This document describes the breaking changes introduced in version 7.0.0.
 ## Table of Contents
 
 - [Structured Output Has a Schema Version](#structured-output-has-a-schema-version)
-- [Only `coverage.json` Is Read; SimpleCov 1.0 Is Required](#only-coveragejson-is-read-simplecov-10-is-required)
+- [Only `coverage.json` Is Read; SimpleCov 1.x Output Is Required](#only-coveragejson-is-read-simplecov-10-is-required)
 - [`resultset` Names Removed from the CLI, MCP Tools, and Library API](#resultset-names-removed-from-the-cli-mcp-tools-and-library-api)
 - [Short Options `-c` and `-n` Reassigned](#short-options--c-and--n-reassigned)
 - [Only `coverage/coverage.json` Is Searched by Default](#only-coveragecoveragejson-is-searched-by-default)
@@ -69,14 +69,25 @@ select the standard-error stream rather than a file path.
 - If you relied on `COV-LOUPE-LOG-ERROR.log` as an implicit emergency log,
   configure an explicit file target and arrange any desired external rotation.
 
-## Only `coverage.json` Is Read; SimpleCov 1.0 Is Required {#only-coveragejson-is-read-simplecov-10-is-required}
+## Only `coverage.json` Is Read; SimpleCov 1.x Output Is Required {#only-coveragejson-is-read-simplecov-10-is-required}
 
 cov-loupe now reads a single input: `coverage.json`, the output of SimpleCov's JSON formatter. SimpleCov 1.0.0 and later write it alongside the HTML report by default, and its shape is fixed by a versioned JSON schema in the SimpleCov repository.
 
-`.resultset.json`, SimpleCov's internal merge cache, is no longer read. cov-loupe's `simplecov` dependency is now `>= 1.0, < 2.0` (previously `>= 0.21`), so `bundle install` fails for projects pinned to SimpleCov 0.x.
+`.resultset.json`, SimpleCov's internal merge cache, is no longer read.
+
+cov-loupe no longer depends on the `simplecov` gem (6.x declared `simplecov >= 0.21`), so installing cov-loupe neither installs SimpleCov nor constrains your project's SimpleCov version. Instead, each load checks `meta.schema_version` in `coverage.json` (SimpleCov's output format version, e.g. `"1.0"`). Any 1.x is accepted; a missing value or another major version fails with a message naming the file and the value found, for example:
+
+```
+Unsupported coverage.json format (meta.schema_version: nil) in /app/coverage/coverage.json; cov-loupe requires format 1.x (written by SimpleCov 1.0 and later)
+```
+
+When `meta.simplecov_version` is present, the message also includes it.
+
+This also rejects `coverage.json` files written for SimpleCov 0.x by the separate `simplecov_json_formatter` gem, which have no `schema_version`. Upgrade SimpleCov to 1.x to produce a supported file.
 
 **Rationale:**
 
+- A load-time check of the file validates what cov-loupe actually reads; a gem dependency only constrained the SimpleCov installed alongside cov-loupe, which need not be the one that wrote the file, and forced SimpleCov into bundles that only inspect coverage.
 - `.resultset.json` is an undocumented internal file with no compatibility promises; `coverage.json` is the interface SimpleCov documents for downstream tools.
 - Reading `coverage.json` instead of `.resultset.json` removes the runtime SimpleCov load (needed to merge multi-suite resultsets) and the code that adapted to `.resultset.json`'s historical shape variations. Supporting *both* would have added a second loader and a format-precedence rule to document, so v7 switches outright.
 

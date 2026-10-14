@@ -18,7 +18,7 @@ Run your test suite with SimpleCov enabled:
 bundle exec rspec  # or your test command
 ```
 
-This creates `coverage/coverage.json` (SimpleCov 1.0 or later is required).
+This creates `coverage/coverage.json`. cov-loupe reads the format written by SimpleCov 1.0 and later; SimpleCov is not installed with cov-loupe, so add it to your own project.
 
 ## 3. View Coverage
 

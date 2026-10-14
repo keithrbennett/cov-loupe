@@ -211,6 +211,7 @@ SimpleCov always writes `meta.timestamp` in `coverage.json`. If you see this war
 ```json
 {
   "meta": {
+    "schema_version": "1.0",
     "command_name": "RSpec",
     "timestamp": "2024-01-01T00:00:00.000+00:00"
   },

@@ -56,7 +56,7 @@ Prefer project‑local tools and scripts (for example, bin/ scripts, package.jso
   - `cov-loupe list` – table view of coverage data
 
 ## Project Overview
-`cov-loupe` is a Ruby gem that ships both a CLI and an MCP (Model Context Protocol) server for inspecting SimpleCov coverage data. It reads SimpleCov's `coverage.json` directly (SimpleCov >= 1.0 is declared as a dependency so the file exists, but is never loaded) and exposes multiple data formats: file summaries, raw line arrays, uncovered lines, per-line detail, and repo-level tables.
+`cov-loupe` is a Ruby gem that ships both a CLI and an MCP (Model Context Protocol) server for inspecting SimpleCov coverage data. It reads SimpleCov's `coverage.json` directly (the format written by SimpleCov 1.x; SimpleCov is not a dependency and is never loaded, and the file's `meta.schema_version` is checked on load) and exposes multiple data formats: file summaries, raw line arrays, uncovered lines, per-line detail, and repo-level tables.
 
 ### Key Technologies
 - **Ruby** – implementation language and packaging format (gem).

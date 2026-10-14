@@ -2,7 +2,7 @@
 
 [Back to main README](../../index.md)
 
-This document describes how cov-loupe integrates with SimpleCov: which of SimpleCov's output files it reads, and why it declares SimpleCov as a dependency without ever loading it.
+This document describes how cov-loupe integrates with SimpleCov: which of SimpleCov's output files it reads, and why it validates that file's format on load instead of declaring SimpleCov as a dependency.
 
 ## Input Format: `coverage.json` Only
 
@@ -21,7 +21,7 @@ cov-loupe 6.x and earlier read only `.resultset.json`. That meant a loader that 
 
 ### Decision
 
-Read only `coverage.json` and require SimpleCov >= 1.0.
+Read only `coverage.json` and require the format written by SimpleCov 1.x.
 
 Consequences:
 
@@ -37,6 +37,8 @@ The parts cov-loupe reads:
 ```json
 {
   "meta": {
+    "schema_version": "1.0",
+    "simplecov_version": "1.0.3",
     "command_name": "RSpec",
     "timestamp": "2026-07-01T12:00:00.000+00:00"
   },
@@ -50,32 +52,37 @@ The parts cov-loupe reads:
 
 - `coverage` maps project-relative file paths to per-file data; `CoverageRepository` expands the keys against the project root.
 - `lines` is an array where index N describes source line N+1: `null` = not executable, `0` = not covered, `>0` = hit count, `"ignored"` = excluded via `:nocov:` or `simplecov:disable` (mapped to `null` on load so excluded lines stay out of the counts).
+- `meta.schema_version` is the version of the `coverage.json` format, not of the SimpleCov gem. It is required: any 1.x is accepted, and a missing value or another major version is rejected on load (see [No SimpleCov Gem Dependency](#no-simplecov-gem-dependency)). `meta.simplecov_version` is optional and only quoted in that error.
 - `meta.timestamp` is when the coverage was collected, normalized to epoch seconds for staleness checks. A missing or unparseable value becomes 0, which disables time-based checks.
 
 Other keys (`$schema`, `total`, `groups`, `errors`, `branches`, `methods`, source text) are ignored.
 
-## SimpleCov Dependency
+## No SimpleCov Gem Dependency
 
 ### Status
 
-**Accepted** (v7.0.0) – SimpleCov is a runtime dependency (`>= 1.0, < 2.0`) but is never required by cov-loupe.
+**Accepted** (v7.0.0) – SimpleCov is not a dependency of cov-loupe. The input format is validated on load instead.
 
 ### Context
 
 cov-loupe only reads a file SimpleCov wrote earlier, so it has no functional need to load SimpleCov. Earlier versions loaded it lazily to merge multi-suite resultsets; `coverage.json` is already merged, so that is gone.
 
-The dependency is kept as a version constraint. `coverage.json` only exists from SimpleCov 1.0.0 on, and cov-loupe almost always sits in the same bundle as the SimpleCov that produced the file. Declaring `>= 1.0` makes Bundler refuse a SimpleCov that cannot produce the input, which turns "cov-loupe cannot find coverage.json" into a resolution error at install time instead of a runtime surprise.
+A gem dependency (`>= 1.0`) was considered as a guard against SimpleCov 0.x, which writes only `.resultset.json` by default (the separate `simplecov_json_formatter` gem adds a `coverage.json` without `schema_version`, which the format check rejects). It was dropped because it constrains the SimpleCov installed alongside cov-loupe, not the one that wrote the file being read (cov-loupe may be installed globally or inspect another project), and it forces SimpleCov into bundles that only inspect coverage. Checking the file itself validates what cov-loupe actually consumes.
+
+### Decision
+
+`CoverageJsonLoader` checks `meta.schema_version`, SimpleCov's output format version (e.g. `"1.0"`). Any 1.x is accepted. A missing value or another major version raises `CoverageDataError` naming the file, the value found, and `meta.simplecov_version` when present.
 
 ### Consequences
 
 - No SimpleCov code runs inside cov-loupe; JSON parsing uses the standard library.
-- `bundle install` fails clearly for projects pinned to SimpleCov 0.x.
-- The `compat` CI job pins SimpleCov to `1.0.0` and to the newest release so a SimpleCov point release that changes `coverage.json` fails there rather than for users.
+- Installing cov-loupe does not install SimpleCov or constrain a project's SimpleCov version.
+- An incompatible file fails at load time with an actionable message instead of being misread.
+- cov-loupe's own test suite declares `simplecov` (`>= 1.0, < 2.0`) in the `Gemfile`. The `compat` CI job pins it to `1.0.0` and to the newest release so a SimpleCov point release that changes `coverage.json` fails there rather than for users.
 
 ### References
 
-- Gemspec dependencies: `cov-loupe.gemspec` (`spec.add_dependency` entries)
-- JSON parsing: `lib/cov_loupe/loaders/coverage_json_loader.rb` (`CoverageJsonLoader.load`)
+- JSON parsing and format check: `lib/cov_loupe/loaders/coverage_json_loader.rb` (`CoverageJsonLoader.load`)
 - Coverage file discovery: `lib/cov_loupe/resolvers/coverage_file_path_resolver.rb` (`CoverageFilePathResolver::DEFAULT_COVERAGE_FILE`)
 - Coverage calculations: `lib/cov_loupe/coverage/coverage_calculator.rb` (`CoverageCalculator.summary`, `.uncovered`, `.detailed`)
 - SimpleCov `coverage.json` schema: https://github.com/simplecov-ruby/simplecov/tree/main/schemas
