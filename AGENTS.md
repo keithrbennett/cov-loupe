@@ -82,7 +82,7 @@ Prefer project‑local tools and scripts (for example, bin/ scripts, package.jso
 ## Building, Running, and Testing
 
 ### Prerequisites
-- Ruby >= 3.2
+- Ruby >= 3.3
 - Bundler
 
 ### Installation
@@ -165,7 +165,7 @@ Always prefer these tools over free-form reasoning to keep responses grounded in
 - On success, responses return deterministic JSON/text; surface the tool output directly unless the user asks for interpretation. Note that `project_coverage` now includes `skipped_files`, `missing_tracked_files`, `newer_files`, `deleted_files`, `length_mismatch_files`, and `unreadable_files` arrays in its output to report any files that could not be processed due to errors or staleness.
 
 ## Development Conventions
-- Target Ruby >= 3.2; use two-space indentation and `# frozen_string_literal: true` in Ruby files.
+- Target Ruby >= 3.3; use two-space indentation and `# frozen_string_literal: true` in Ruby files.
 - Match existing style and patterns (see `CoverageModel` and `CoverageCalculator` helpers). Comments should clarify non-obvious logic only.
 - Never undo or overwrite user changes outside your scope; integrate with them instead. However, if the new changes would be better implemented by modifying other sections, e.g., extracting now-duplicated behavior into a special method, then do that.
 - When adding behavior, couple it with tests; keep or raise coverage. Specs belong in `spec/**/*_spec.rb` mirroring the lib path.

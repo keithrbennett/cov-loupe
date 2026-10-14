@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-- **Ruby >= 3.2** (required by the `mcp` dependency)
+- **Ruby >= 3.3** (the oldest Ruby that has not reached end of life)
 - A `coverage/coverage.json` written by SimpleCov 1.x in the project you inspect (SimpleCov is not installed with cov-loupe)
 
 ## Quick Install

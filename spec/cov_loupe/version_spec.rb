@@ -102,6 +102,24 @@ RSpec.describe 'CovLoupe::VERSION' do
     end
   end
 
+  describe 'minimum Ruby version' do
+    # The gemspec, exe/cov-loupe, and RuboCop's TargetRubyVersion each state the
+    # minimum Ruby; keep them in step.
+    it 'is 3.3 in the gemspec, the executable, and the RuboCop target' do
+      exe = File.read(File.expand_path('../../exe/cov-loupe', __dir__))
+      exe_minimum = exe[/MINIMUM_RUBY_VERSION = '([^']+)'/, 1]
+      expect(exe_minimum).not_to be_nil, 'expected exe/cov-loupe to define MINIMUM_RUBY_VERSION'
+
+      requirement = Gem::Specification.load(gemspec_file).required_ruby_version
+      expect(requirement).to eq(Gem::Requirement.new(">= #{exe_minimum}"))
+      expect(requirement).to be_satisfied_by(Gem::Version.new('3.3.0'))
+      expect(requirement).not_to be_satisfied_by(Gem::Version.new('3.2.99'))
+
+      rubocop_config = YAML.load_file(File.expand_path('../../.rubocop-shared.yml', __dir__))
+      expect(rubocop_config.dig('AllCops', 'TargetRubyVersion').to_s).to eq(exe_minimum)
+    end
+  end
+
   describe 'standalone version file load' do
     it 'defines the module and VERSION when only version.rb is loaded' do
       original_version = CovLoupe::VERSION

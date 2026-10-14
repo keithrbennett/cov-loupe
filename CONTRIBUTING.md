@@ -90,7 +90,7 @@ Pull requests should:
 
 ## Development Setup
 
-This project requires Ruby 3.2 or later because of the `mcp` gem dependency.
+This project requires Ruby 3.3 or later.
 
 A typical setup is:
 

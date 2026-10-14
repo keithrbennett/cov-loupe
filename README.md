@@ -189,7 +189,7 @@ Full documentation is available at **[https://keithrbennett.github.io/cov-loupe/
 
 ## Requirements
 
-- **Ruby >= 3.2** (required by `mcp` gem dependency)
+- **Ruby >= 3.3** (the oldest Ruby that has not reached end of life)
 - `mcp` gem >= 0.15 and < 2.0
 - A `coverage.json` written by SimpleCov 1.x (SimpleCov itself is not a cov-loupe dependency)
 
@@ -410,7 +410,7 @@ cov-loupe --raise-on-stale yes # enforce stale coverage failures
 ## Troubleshooting
 
 - **"command not found"** - See [Installation Guide](docs/user/INSTALLATION.md#require-path)
-- **"cannot load such file -- mcp"** - Requires Ruby >= 3.2. Verify: `ruby -v`
+- **"cannot load such file -- mcp"** - The `mcp` gem is not installed for the Ruby you are running. Reinstall cov-loupe (`gem install cov-loupe`) or run `bundle install`.
 - **"Could not find coverage.json"** - Ensure SimpleCov is configured in your test suite, then run tests to generate coverage. See the [Configuring the Coverage File](#configuring-the-coverage-file) section for more details.
 - **MCP server won't connect** - Check PATH and Ruby version in [MCP Troubleshooting](docs/user/MCP_INTEGRATION.md#troubleshooting)
 - **RVM in sandboxed environments (macOS)** - RVM requires `/bin/ps` which may be blocked by sandbox restrictions. Use rbenv or chruby instead.

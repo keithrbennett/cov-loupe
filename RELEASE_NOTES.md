@@ -7,6 +7,8 @@
 
 ### Breaking
 
+- **Ruby 3.3 or later is required.** The minimum supported Ruby is now 3.3 (was 3.2).
+  Ruby 3.2 has reached end of life, and 3.3 is the oldest Ruby still maintained. See [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#ruby-33-or-later-required).
 - **CLI exit codes were remapped.** `validate` now exits `3` when the predicate
   returns a falsy value (was `1`) and `4` when the predicate cannot be loaded or
   raises an error of its own (was `2`); coverage-data errors it triggers exit

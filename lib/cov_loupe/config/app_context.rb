@@ -8,7 +8,7 @@ module CovLoupe
   # Bundles error handling, logging, and mode into a single object that can be
   # scoped to a thread (via CovLoupe.with_context) or used globally.
   #
-  # Implemented as a Data class (Ruby 3.2+) for immutability and structural equality.
+  # Implemented as a Data class (introduced in Ruby 3.2) for immutability and structural equality.
   # The custom #with method ensures the derived `logger` field is regenerated when
   # log_target or mode changes, since the logger depends on both.
   AppContext = Data.define(:error_handler, :log_target, :mode, :app_config, :logger) do

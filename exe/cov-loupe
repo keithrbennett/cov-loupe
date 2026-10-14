@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 module CovLoupeExecutable
-  MINIMUM_RUBY_VERSION = '3.2'
+  MINIMUM_RUBY_VERSION = '3.3'
   SIGNAL_EXIT_BASE = 128
 
   def self.run

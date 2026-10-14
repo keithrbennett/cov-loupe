@@ -12,7 +12,7 @@ This document covers whether `Gemfile.lock` is committed, and how that choice in
 
 ### Context
 
-`b7cdc68834c8` committed `Gemfile.lock`, resolved on Ruby 4.0, to pin dependency versions and add the simplecov range-compat CI job. It backfired: the CI matrix (`.github/workflows/test.yml`) runs Ruby 3.2 through 4.0 plus JRuby, and a single lock resolved on one Ruby couldn't serve all of them —
+`b7cdc68834c8` committed `Gemfile.lock`, resolved on Ruby 4.0, to pin dependency versions and add the simplecov range-compat CI job. It backfired: the CI matrix (`.github/workflows/test.yml`) then ran Ruby 3.2 through 4.0 plus JRuby, and a single lock resolved on one Ruby couldn't serve all of them —
 
 - `parallel 2.2.0` (a transitive dep) requires Ruby >= 3.3, breaking the Ruby 3.2 job.
 - JRuby needs C-extension gems replaced with `java`-platform variants, which a CRuby-resolved lock doesn't carry without ongoing hand-maintenance (`bundle lock --add-platform ...`, re-run every time a locked gem changes).
@@ -31,7 +31,7 @@ The gap is narrower than "no transitive-dependency vulnerability detection": `.g
 
 - Dependabot alerts cover only the 12 gems named directly in `Gemfile`/`cov-loupe.gemspec`, matched against declared version ranges rather than exact resolved versions. Transitive dependencies of those gems (mostly dev tooling — rubocop, rspec, etc.) generate no Dependabot alert.
 - `bundle-audit` (`security` CI job) catches transitive-dependency vulnerabilities today, but only at push/PR time, not continuously between pushes.
-- The CI matrix (Ruby 3.2–4.0 + JRuby, Linux/macOS/Windows) keeps resolving independently per job, avoiding the version/platform conflicts `28e2cff` fixed.
+- The CI matrix (Ruby 3.3–4.0 + JRuby, Linux/macOS/Windows) keeps resolving independently per job, avoiding the version/platform conflicts `28e2cff` fixed.
 - `.github/dependabot.yml`'s `bundler` entry drives scheduled version-update PRs; confirmed (via a second SBOM pull after it was already in place) that this does *not* feed transitive dependencies into the alert graph — version updates and the dependency graph are separate GitHub features.
 - If continuous transitive-dependency coverage is wanted later, the correct mechanism is the [Dependency Submission API](https://docs.github.com/en/rest/dependency-graph/dependency-submission) — a CI step that resolves a snapshot and submits it directly, without committing the lock. No ready-made Ruby/Bundler action exists for this today (unlike Maven/Gradle/sbt), so it would be a custom implementation, scoped separately rather than folded into this decision.
 

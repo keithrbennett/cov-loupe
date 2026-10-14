@@ -6,6 +6,7 @@ This document describes the breaking changes introduced in version 7.0.0.
 
 ## Table of Contents
 
+- [Ruby 3.3 or Later Required](#ruby-33-or-later-required)
 - [Structured Output Has a Schema Version](#structured-output-has-a-schema-version)
 - [Only `coverage.json` Is Read; SimpleCov 1.x Output Is Required](#only-coveragejson-is-read-simplecov-10-is-required)
 - [`resultset` Names Removed from the CLI, MCP Tools, and Library API](#resultset-names-removed-from-the-cli-mcp-tools-and-library-api)
@@ -16,6 +17,12 @@ This document describes the breaking changes introduced in version 7.0.0.
 - [Percentages Truncated, Not Rounded](#percentages-truncated-not-rounded)
 
 ---
+
+## Ruby 3.3 or Later Required {#ruby-33-or-later-required}
+
+cov-loupe 7.0 requires Ruby 3.3 or later; 6.x supported Ruby 3.2, which has reached end of life. The gemspec's `required_ruby_version` is now `>= 3.3`, so Bundler and RubyGems will not install 7.0 on Ruby 3.2, and the `cov-loupe` executable exits with an error if run under an older Ruby (only `-v`/`--version` still works).
+
+**Migration:** upgrade to Ruby 3.3 or later before upgrading cov-loupe, or stay on 6.x while you remain on Ruby 3.2.
 
 ## Structured Output Has a Schema Version {#structured-output-has-a-schema-version}
 

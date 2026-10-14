@@ -297,7 +297,7 @@ Neither `spec/spec_helper.rb` nor `.github/workflows/test.yml` enforces a hard m
 
 2. **100% line coverage is the real standard, and it's visible** – the project currently sits at 100% line coverage on every tracked file (verify with `cov-loupe totals`), so any regression is a visible drop from 100%, not a slide within a tolerated band. A hard gate would mostly duplicate what reviewers already see in the PR diff and Codecov's PR comment.
 
-3. **`fail_ci_if_error: false` guards the upload step, not coverage regressions** – it prevents a transient Codecov outage, network hiccup, or token issue from failing the entire test matrix (5 Ruby versions × 3 OSes). That would be a false-positive CI failure, not a caught coverage regression.
+3. **`fail_ci_if_error: false` guards the upload step, not coverage regressions** – it prevents a transient Codecov outage, network hiccup, or token issue from failing the entire test matrix (4 Ruby versions on Linux, plus one each on Windows and macOS). That would be a false-positive CI failure, not a caught coverage regression.
 
 4. **A hard threshold is brittle at a 100% baseline** – with 100% as the current standard, `SimpleCov.minimum_coverage` would have to be set to 100, failing the build on any single untested line, including lines temporarily added mid-refactor within a PR. Reviewer judgment tolerates in-progress states that a hard gate would block outright.
 

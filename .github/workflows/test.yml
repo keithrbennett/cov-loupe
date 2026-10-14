@@ -18,7 +18,7 @@ jobs:
         # Full Ruby matrix on Linux; one representative Ruby on Windows and
         # macOS to exercise the OS-specific path handling in lib/cov_loupe/paths/.
         os: [ubuntu-latest]
-        ruby-version: ['3.2', '3.3', '3.4', '4.0', jruby]
+        ruby-version: ['3.3', '3.4', '4.0', jruby]
         include:
           - os: windows-latest
             ruby-version: '4.0'

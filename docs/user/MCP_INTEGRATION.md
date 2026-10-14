@@ -694,7 +694,7 @@ See the **[CLI Fallback for LLMs Guide](CLI_FALLBACK_FOR_LLMS.md)** for:
 **Server Won't Start**
 ```sh
 which cov-loupe     # Verify executable exists
-ruby -v             # Check Ruby >= 3.2
+ruby -v             # Check Ruby >= 3.3
 cov-loupe --version   # Test basic functionality
 ```
 
