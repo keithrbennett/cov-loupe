@@ -8,7 +8,7 @@ require 'cov_loupe/tools/project_validate_tool'
 RSpec.describe CovLoupe::Tools::ProjectValidateTool do
   let(:root) { (FIXTURES_DIR / 'project1').to_s }
   let(:coverage_file) { FIXTURE_PROJECT1_COVERAGE_PATH }
-  let(:server_context) { null_server_context }
+  let(:server_context) { code_predicates_server_context }
 
   before do
     setup_mcp_response_stub
@@ -61,6 +61,19 @@ RSpec.describe CovLoupe::Tools::ProjectValidateTool do
   end
 
   describe '.call' do
+    context 'without --allow-code-predicates' do
+      let(:server_context) { null_server_context }
+
+      it 'refuses to evaluate the predicate' do
+        expect(CovLoupe::PredicateEvaluator).not_to receive(:evaluate_code)
+
+        response = call_tool(code: '->(_m) { true }')
+
+        expect_mcp_tool_error(response)
+        expect(response_text(response)).to include('--allow-code-predicates')
+      end
+    end
+
     context 'with inline code' do
       def call_with_predicate(code)
         call_tool(code: code)

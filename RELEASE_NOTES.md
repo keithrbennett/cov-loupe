@@ -7,6 +7,12 @@
 
 ### Breaking
 
+- **`project_validate` is opt-in in the MCP server.** The server now registers
+  `project_validate` only when started with `--allow-code-predicates`. Without it, the tool is
+  absent from `tools/list` and `help`, and calls return a JSON-RPC `-32602` error whose `data`
+  is `"Tool not found: project_validate"`. The tool runs client-supplied Ruby with full
+  privileges, outside any sandbox the MCP client applies to shell commands. The CLI `validate` subcommand is unchanged. See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#project_validate-requires---allow-code-predicates).
 - **Staleness values renamed.** Per-file `stale` values `"missing"` and `"error"` are now
   `"deleted"` and `"unreadable"`, and the totals `stale.by_type` key `missing_from_disk` is now
   `deleted`, matching the `deleted_files`/`unreadable_files` list arrays. Text output follows:

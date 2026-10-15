@@ -116,6 +116,11 @@ module CovLoupe
         'Execution mode: cli|mcp (default: cli)') do |value|
         config.mode = normalize_mode(value)
       end
+      parser.on('--[no-]allow-code-predicates',
+        'MCP mode: register the project_validate tool, which runs client-supplied',
+        'Ruby with full process privileges (default: off; ignored in CLI mode)') do |value|
+        config.allow_code_predicates = value
+      end
       parser.on('-e', '--error-mode MODE', String,
         'Error handling mode: o[ff]|l[og]|d[ebug] (default: log)',
         '  off:   no error logging',

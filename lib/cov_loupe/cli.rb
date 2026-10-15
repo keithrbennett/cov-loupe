@@ -276,8 +276,16 @@ module CovLoupe
         .grep(OptionParser::Switch)
         .reject { |switch| switch.long.include?('--help') }
         .each_with_object({}) do |switch, by_flag|
-          (switch.short + switch.long).each { |flag| by_flag[flag] = switch }
+          (switch.short + switch.long).flat_map { |flag| flag_spellings(flag) }
+            .each { |flag| by_flag[flag] = switch }
         end
+    end
+
+    # A negatable switch is listed as --[no-]name; it can be typed as --name or --no-name.
+    private def flag_spellings(flag)
+      return [flag] unless flag.include?('[no-]')
+
+      [flag.sub('[no-]', ''), flag.sub('[no-]', 'no-')]
     end
 
     # Formats a command line for copying into a shell, quoting arguments that need it.

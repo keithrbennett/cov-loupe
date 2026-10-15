@@ -27,7 +27,8 @@ module CovLoupe
     :tracked_globs,
     :log_file,
     :mode,
-    :output_chars
+    :output_chars,
+    :allow_code_predicates
   ) do
     # Set sensible defaults - ALL SYMBOLS FOR ENUMS
     def initialize(
@@ -43,7 +44,8 @@ module CovLoupe
       tracked_globs: nil,
       log_file: nil,
       mode: :cli,
-      output_chars: :default
+      output_chars: :default,
+      allow_code_predicates: false
     )
       # Default to empty array (show all files in the coverage file and don't look for
       # files lacking coverage data)

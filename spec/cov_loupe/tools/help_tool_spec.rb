@@ -22,6 +22,16 @@ RSpec.describe CovLoupe::Tools::HelpTool do
     expect(data['tools']).to all(include('use_when', 'avoid_when', 'inputs'))
   end
 
+  [false, true].each do |allow|
+    it "#{allow ? 'lists' : 'omits'} project_validate when allow_code_predicates is #{allow}" do
+      context = mcp_server_context(app_config: CovLoupe::AppConfig.new(allow_code_predicates: allow))
+      response = described_class.call(server_context: context)
+      tool_names = JSON.parse(response.content.first['text'])['tools'].map { |entry| entry['tool'] }
+
+      expect(tool_names.include?('project_validate')).to be(allow)
+    end
+  end
+
   it 'includes resources with local readme path' do
     response = described_class.call(server_context: server_context)
     payload = response.content.first

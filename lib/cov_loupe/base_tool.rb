@@ -107,6 +107,14 @@ module CovLoupe
     )
     def self.input_schema_def = FILE_INPUT_SCHEMA
 
+    # Tools that execute client-supplied Ruby override this to return true. The MCP server
+    # registers (and help lists) them only when started with --allow-code-predicates.
+    def self.executes_code? = false
+
+    def self.available_in?(server_context)
+      !executes_code? || server_context.app_config&.allow_code_predicates == true
+    end
+
     # Wrap tool execution with consistent error handling.
     # Yields to the block and rescues any error, delegating to handle_mcp_error.
     # This eliminates duplicate rescue blocks across all tools.

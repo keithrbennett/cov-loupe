@@ -50,6 +50,8 @@ The `validate` command accepts Ruby code (via `--inline` or from a file) and exe
 
 The security model assumes the developer controls their workspace and the code they execute. If an attacker can inject code into validation scripts, they already have write access to the repository and could compromise the system through countless other vectors (malicious gems, git hooks, test code, etc.).
 
+The MCP `project_validate` tool is different: its predicate is written by the MCP client (usually an LLM), which the user may not review, and it runs in the server process, outside any sandbox or approval prompt the client applies to shell commands. Point 2 does not hold there, so the server registers the tool only when started with `--allow-code-predicates`. Do not flag the opt-in tool as a vulnerability; do flag any change that would expose code execution over MCP by default.
+
 [⬆ Back to top](#table-of-contents)
 
 ### File System Race Conditions

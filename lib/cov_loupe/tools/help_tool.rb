@@ -8,7 +8,7 @@ module CovLoupe
     class HelpTool < BaseTool
       tool_name 'help'
       description <<~DESC
-        Returns help containing descriptions of all tools, including: use_when, avoid_when, inputs.
+        Returns help describing the other registered tools, including: use_when, avoid_when, inputs.
       DESC
 
       input_schema(
@@ -85,7 +85,9 @@ module CovLoupe
           # Normalize output_chars before error handling so errors also get converted
           output_chars_sym = resolve_output_chars(output_chars, server_context)
           with_error_handling('HelpTool', error_mode: error_mode, output_chars: output_chars_sym) do
-            entries = TOOL_GUIDE.map { |guide| format_entry(guide) }
+            entries = TOOL_GUIDE
+              .select { |guide| guide[:tool].available_in?(server_context) }
+              .map { |guide| format_entry(guide) }
 
             respond_json({ tools: entries, resources: Resources::RESOURCE_MAP },
               output_chars: output_chars_sym)

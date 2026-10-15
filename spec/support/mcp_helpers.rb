@@ -8,6 +8,12 @@ module MCPToolTestHelpers
     instance_double('ServerContext', app_config: nil, mcp_mode?: false)
   end
 
+  # Like null_server_context, but permits tools that execute client-supplied code.
+  def code_predicates_server_context
+    instance_double('ServerContext',
+      app_config: CovLoupe::AppConfig.new(allow_code_predicates: true), mcp_mode?: false)
+  end
+
   def mcp_server_context(app_config: nil)
     instance_double(
       'ServerContext',

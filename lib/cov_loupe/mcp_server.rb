@@ -8,9 +8,11 @@ require_relative 'resources'
 # Each tool call builds its own CoverageModel and relies on ModelDataCache for shared
 # coverage data, so request-specific state does not leak across calls.
 #
-# The TOOLSET constant defines which tools are registered. Each tool class inherits from
-# BaseTool, which provides shared error handling, JSON response formatting, and model
-# configuration merging from the server context plus per-call arguments.
+# The TOOLSET constant lists every tool; #toolset, which the server registers, omits those
+# that execute client-supplied code (project_validate) unless --allow-code-predicates was
+# given at startup. Each tool class inherits from BaseTool, which provides shared error
+# handling, JSON response formatting, and model configuration merging from the server
+# context plus per-call arguments.
 module CovLoupe
   class MCPServer
     def initialize(context: CovLoupe.context)
@@ -30,7 +32,8 @@ module CovLoupe
       end
     end
 
-    # Tool classes registered with the MCP server. Order determines listing in help output.
+    # Every tool class; #toolset is the subset actually registered, in this order.
+    # (The help tool's listing follows HelpTool::TOOL_GUIDE.)
     # File-scope tools require a `path` argument; project-scope tools do not.
     TOOLSET = [
       Tools::ProjectCoverageTool,
@@ -45,8 +48,9 @@ module CovLoupe
     ].freeze
 
     # Expose the registered tools so embedders can introspect without booting the server.
+    # Tools that execute client-supplied code are omitted unless --allow-code-predicates was given.
     def toolset
-      TOOLSET
+      TOOLSET.select { |tool| tool.available_in?(context) }
     end
 
     attr_reader :context

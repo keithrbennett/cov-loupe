@@ -7,7 +7,7 @@ RSpec.describe 'MCP structured payload schema version' do
 
   let(:root) { (FIXTURES_DIR / 'project1').to_s }
   let(:no_timestamp_root) { (FIXTURES_DIR / 'project_no_timestamp').to_s }
-  let(:server_context) { null_server_context }
+  let(:server_context) { code_predicates_server_context }
 
   before do
     setup_mcp_response_stub

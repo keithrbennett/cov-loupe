@@ -173,7 +173,7 @@ Cursor also asks you to approve each server before it will start it. Approve it 
 ```sh
 cursor-agent mcp enable cov-loupe
 cursor-agent mcp list                    # should show: cov-loupe: ready
-cursor-agent mcp list-tools cov-loupe    # starts the server and lists its 9 tools; no model needed
+cursor-agent mcp list-tools cov-loupe    # starts the server and lists its 8 tools (9 with --allow-code-predicates); no model needed
 ```
 
 To remove the server, delete its entry from `mcp.json` (or run `cursor-agent mcp disable cov-loupe` to stop it loading while keeping the entry).
@@ -361,7 +361,7 @@ See [Troubleshooting](TROUBLESHOOTING.md#rubygems-wrapper-prints-to-stdout-befor
 
 ### Tool Catalog
 
-cov-loupe exposes 9 MCP tools:
+cov-loupe exposes 8 MCP tools by default, and 9 when started with `--allow-code-predicates`:
 
 | Tool | Purpose | Key Parameters |
 |------|---------|----------------|
@@ -371,7 +371,7 @@ cov-loupe exposes 9 MCP tools:
 | `file_uncovered_lines` | List uncovered lines | `path` |
 | `project_coverage` | Project-wide coverage (JSON, table, YAML, etc.) | `sort_order`, `tracked_globs`, `format` |
 | `project_coverage_totals` | Aggregated line totals | `tracked_globs` |
-| `project_validate` | Validate coverage policies | `code` or `file` |
+| `project_validate` | Validate coverage policies (only with `--allow-code-predicates`) | `code` or `file` |
 | `help` | Tool discovery | (none) |
 | `version` | Version information | (none) |
 
@@ -478,9 +478,10 @@ When the MCP server starts, you can pass CLI options via the startup command. Th
 | `-n`, `--context-lines` | ❌ No | N/A | CLI-only presentation flag (not used by MCP) |
 | `-C`, `--color BOOLEAN` | ❌ No | N/A | CLI-only presentation flag (not used by MCP) |
 | `-m`, `--mode` | ✅ Required | N/A | **Required for MCP mode:** `-m mcp` or `--mode mcp`. Default: `cli`. |
+| `--[no-]allow-code-predicates` | ✅ Yes | N/A | Registers `project_validate`, which runs client-supplied Ruby (see [Policy Validation Tools](#policy-validation-tools)). Default: off; `--no-allow-code-predicates` overrides a `COV_LOUPE_OPTS` setting. |
 
 **Key Takeaways:**
-- **Server-level options** (`--error-mode`, `--log-file`): Set once when server starts, apply to all tool calls
+- **Server-level options** (`--error-mode`, `--log-file`, `--allow-code-predicates`): Set once when server starts, apply to all tool calls
 - **Tool-level options** (`root`, `coverage_file`, `raise_on_stale`, `tracked_globs`): CLI args provide defaults; per-tool JSON params override when provided
 - **CLI-only options** (`--format`, `--source`, etc.): Not applicable to MCP mode
 
@@ -552,6 +553,11 @@ when a file has no coverable lines (for example, a file containing only comments
 #### Policy Validation Tools
 
 **`project_validate`** - Validate coverage against custom policies
+
+The server registers `project_validate` only when started with `--allow-code-predicates`, for example `"args": ["-m", "mcp", "--allow-code-predicates"]`. Without the flag, the tool is absent from `tools/list` and `help`, and calling it returns a JSON-RPC `-32602` ("Invalid params") error whose `data` is `"Tool not found: project_validate"`.
+
+It is off by default because the predicate is Ruby written by the MCP client, usually an LLM, and the user may never see it. The server runs as its own process, outside any shell sandbox or command-approval prompts the client applies, so a client steered by prompt injection could run arbitrary code with your privileges. Enable it only if you accept that risk, for example on a large project where a predicate's single Boolean is far smaller than the `project_coverage` output an LLM would otherwise have to read. Clients that have a shell can run `cov-loupe validate` instead, which goes through the client's usual command controls.
+
 - Parameters: Either `code` (Ruby string) OR `file` (path to Ruby file), plus optional `root`, `coverage_file`, `raise_on_stale`, `error_mode`
 - Returns: `{"schema_version": 1, "result": Boolean}`. The predicate's return value is coerced by truthiness (as in the CLI exit code), so `result` is always a Boolean; a false result still has `isError: false` because the tool call succeeded.
 - Execution errors (syntax error in the predicate, missing predicate file, etc.) return `isError: true` with the friendly error message in `content`

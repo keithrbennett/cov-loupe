@@ -85,7 +85,7 @@ before { setup_mcp_response_stub }
 
 **CLI commands:** Add a command class under `lib/cov_loupe/commands/`, register it in `CovLoupe::Commands::CommandFactory::COMMAND_MAP`, and add tests.
 
-**MCP tools:** Create `*_tool.rb` in `lib/cov_loupe/tools/`, register in `mcp_server.rb`
+**MCP tools:** Create `*_tool.rb` in `lib/cov_loupe/tools/`, register in `mcp_server.rb`. A tool that runs client-supplied code must override `executes_code?` to return true, so that it is registered only with `--allow-code-predicates`.
 
 **Coverage features:** Add core data operations to `CoverageModel` in `lib/cov_loupe/model/model.rb` or pure line-counting logic to `CoverageCalculator` in `lib/cov_loupe/coverage/coverage_calculator.rb`.
 

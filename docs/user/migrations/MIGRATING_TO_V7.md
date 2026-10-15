@@ -16,6 +16,7 @@ This document describes the breaking changes introduced in version 7.0.0.
 - [CLI Exit Codes Remapped](#cli-exit-codes-remapped)
 - [Percentages Truncated, Not Rounded](#percentages-truncated-not-rounded)
 - [Staleness Values Renamed](#staleness-values-renamed)
+- [`project_validate` Requires `--allow-code-predicates`](#project_validate-requires---allow-code-predicates)
 
 ---
 
@@ -295,3 +296,11 @@ Staleness states now have one name everywhere. The per-file `stale` value and th
 This applies to library hashes, CLI output in all formats, and MCP tool payloads.
 
 **Migration:** replace `stale == "missing"` checks with `"deleted"` and `stale == "error"` with `"unreadable"`, and read `by_type["deleted"]` instead of `by_type["missing_from_disk"]`. Replace `StaleStatus::MISSING_FROM_DISK` with `StaleStatus::DELETED`. Update `validate` predicates and scripts that parse the `totals` or `list` text output the same way.
+
+## `project_validate` Requires `--allow-code-predicates` {#project_validate-requires---allow-code-predicates}
+
+The MCP server no longer registers `project_validate` by default. It runs Ruby predicates that the MCP client writes, with the server's full privileges, outside any sandbox or approval prompt the client applies to shell commands. In 7.0 the server registers it only when started with `--allow-code-predicates`. Without the flag, `project_validate` is absent from `tools/list` and the `help` tool's listing, and calling it returns a JSON-RPC `-32602` ("Invalid params") error whose `data` is `"Tool not found: project_validate"`, instead of a result.
+
+The CLI `validate` subcommand is unchanged and needs no flag.
+
+**Migration:** if you use `project_validate` and accept the risk, add `--allow-code-predicates` to the server's arguments, e.g. `"args": ["-m", "mcp", "--allow-code-predicates"]`. Otherwise, run `cov-loupe validate` from a shell, or ask the client to apply your criteria to `project_coverage` output.

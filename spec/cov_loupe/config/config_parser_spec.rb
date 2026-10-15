@@ -12,6 +12,10 @@ RSpec.describe CovLoupe::ConfigParser do
       { args: %w[--coverage-file build/coverage], attr: :coverage_file, expected: 'build/coverage' },
       { args: %w[-n 3], attr: :source_context, expected: 3 },
       { args: %w[--context-lines 3], attr: :source_context, expected: 3 },
+      { args: %w[--allow-code-predicates], attr: :allow_code_predicates, expected: true },
+      # A later --no- form overrides an earlier one, e.g. one set in COV_LOUPE_OPTS.
+      { args: %w[--allow-code-predicates --no-allow-code-predicates], attr: :allow_code_predicates,
+        expected: false },
     ].each do |tc|
       it "'#{tc[:args].join(' ')}' sets #{tc[:attr]} to #{tc[:expected].inspect}" do
         config = described_class.parse(tc[:args] + %w[summary lib/foo.rb])

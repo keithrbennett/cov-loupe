@@ -772,6 +772,15 @@ clp --mode mcp           # MCP server mode (required for MCP), long option form
 clp -m cli list          # CLI mode (default), can use to override environment variable
 ```
 
+### `--[no-]allow-code-predicates`
+
+MCP mode only: registers the `project_validate` tool, which runs Ruby predicates supplied by the MCP client with full process privileges. Off by default. The CLI `validate` subcommand does not need it, and CLI mode ignores the option, so it can be set in a `COV_LOUPE_OPTS` shared by both modes. See [MCP Integration: Policy Validation Tools](MCP_INTEGRATION.md#policy-validation-tools).
+
+```sh
+clp -m mcp --allow-code-predicates     # enable project_validate
+clp -m mcp --no-allow-code-predicates  # disable it, overriding COV_LOUPE_OPTS
+```
+
 ### `validate <file> | -i <code>`, `v <file> | -i <code>`
 
 Validate coverage against custom policies for CI/CD enforcement.

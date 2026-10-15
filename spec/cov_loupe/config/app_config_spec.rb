@@ -16,6 +16,7 @@ RSpec.describe CovLoupe::AppConfig do
       expect(config.source_mode).to be_nil
       expect(config.tracked_globs).to eq([])
       expect(config.log_file).to be_nil
+      expect(config.allow_code_predicates).to be(false)
     end
 
     it 'applies default tracked globs when not provided' do

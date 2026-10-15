@@ -19,6 +19,8 @@ module CovLoupe
         - "Run coverage policy from file" → {"file": "coverage_policy.rb"}
       DESC
 
+      def self.executes_code? = true
+
       input_schema(**coverage_schema(
         additional_properties: {
           code: {
@@ -40,6 +42,12 @@ module CovLoupe
           output_chars_sym = resolve_output_chars(output_chars, server_context)
           with_error_handling('ProjectValidateTool',
             error_mode: error_mode, output_chars: output_chars_sym) do
+            # MCPServer#toolset already omits this tool; this also covers servers built from TOOLSET.
+            unless available_in?(server_context)
+              raise UsageError,
+                'project_validate is disabled; start the MCP server with --allow-code-predicates'
+            end
+
             model, config = create_configured_model(
               server_context: server_context,
               root:           root,

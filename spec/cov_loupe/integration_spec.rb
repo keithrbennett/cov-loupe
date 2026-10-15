@@ -335,20 +335,54 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
       end
     end
 
-    it 'executes project_validate via JSON-RPC' do
-      resp = jsonrpc_tool_call(
-        80,
-        'project_validate',
-        {
-          code:          '->(m) { true }',
-          root:          project_root,
-          coverage_file: coverage_dir,
-        }
-      )
-      result = expect_jsonrpc_result(resp, 80)
-      expect(result['isError']).to be(false)
-      content = result['content']
-      expect(JSON.parse(content.first['text'])).to include('result' => true)
+    it 'does not register project_validate without --allow-code-predicates' do
+      aggregate_failures do
+        tools = expect_jsonrpc_result(jsonrpc_call(81, 'tools/list'), 81)['tools']
+        expect(tools.map { |t| t['name'] }).not_to include('project_validate')
+
+        resp = jsonrpc_tool_call(82, 'project_validate', { code: '->(m) { true }' })
+        expect_jsonrpc_error(resp, 82)
+      end
+    end
+
+    context 'with --allow-code-predicates' do
+      let(:default_env) do
+        super().merge('COV_LOUPE_OPTS' => "#{super()['COV_LOUPE_OPTS']} --allow-code-predicates")
+      end
+
+      it 'lists project_validate in tools/list' do
+        tools = expect_jsonrpc_result(jsonrpc_call(83, 'tools/list'), 83)['tools']
+        expect(tools.map { |t| t['name'] }).to include('project_validate')
+      end
+
+      it 'executes project_validate via JSON-RPC' do
+        resp = jsonrpc_tool_call(
+          80,
+          'project_validate',
+          {
+            code:          '->(m) { true }',
+            root:          project_root,
+            coverage_file: coverage_dir,
+          }
+        )
+        result = expect_jsonrpc_result(resp, 80)
+        expect(result['isError']).to be(false)
+        content = result['content']
+        expect(JSON.parse(content.first['text'])).to include('result' => true)
+      end
+
+      it 'returns a tool error for an invalid predicate' do
+        resp = jsonrpc_tool_call(
+          9,
+          'project_validate',
+          {
+            code:          'this is not valid ruby {',
+            root:          project_root,
+            coverage_file: coverage_dir,
+          }
+        )
+        expect_jsonrpc_tool_error(resp, 9)
+      end
     end
 
     it 'handles error cases' do
@@ -375,17 +409,6 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
           }
         )
         expect_jsonrpc_tool_error(project_scope_error_resp, 11)
-
-        project_error_resp = jsonrpc_tool_call(
-          9,
-          'project_validate',
-          {
-            code:          'this is not valid ruby {',
-            root:          project_root,
-            coverage_file: coverage_dir,
-          }
-        )
-        expect_jsonrpc_tool_error(project_error_resp, 9)
       end
 
       aggregate_failures 'protocol- and dispatch-level failures' do

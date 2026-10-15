@@ -114,6 +114,7 @@ Rather than pretending to sandbox untrusted code, we treat validation predicates
 2. **Code review workflow**: Predicates live in version control alongside tests
 3. **CI/CD best practices**: Same permissions model as running tests themselves
 4. **Example predicates**: Well-documented examples showing safe patterns
+5. **MCP opt-in**: The MCP server registers `project_validate` only when started with `--allow-code-predicates`. Over MCP the predicate is written by the client (usually an LLM), not reviewed by the user, and runs in the server process, outside any sandbox or approval prompt the client puts on shell commands. The CLI needs no flag, since its predicates come through the user's own shell.
 
 #### Predicate API
 

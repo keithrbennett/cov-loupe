@@ -46,6 +46,8 @@ RSpec.describe CovLoupe::CoverageCLI do
       { args: ['list', '--mode', 'mcp'],                  expected: '--mode' },
       { args: ['list', '-m', 'cli'],                      expected: '-m' },
       { args: ['summary', 'lib/foo.rb', '--mode=mcp'],    expected: '--mode=mcp' },
+      { args: ['list', '--allow-code-predicates'],        expected: '--allow-code-predicates' },
+      { args: ['list', '--no-allow-code-predicates'],     expected: '--no-allow-code-predicates' },
     ].each do |test_case|
       it "detects misplaced #{test_case[:expected]} option after subcommand" do
         _out, err, status = run_fixture_cli_with_status(*test_case[:args])
@@ -68,6 +70,8 @@ RSpec.describe CovLoupe::CoverageCLI do
         'cov-loupe -e <MODE> totals'],
       [%w[totals -e -f json], 'cov-loupe totals -e -f json',
         'cov-loupe -e <MODE> -f json totals'],
+      [%w[totals --no-allow-code-predicates], 'cov-loupe totals --no-allow-code-predicates',
+        'cov-loupe --no-allow-code-predicates totals'],
       [%w[-R proj totals --format json], 'cov-loupe -R proj totals --format json',
         'cov-loupe -R proj --format json totals'],
       [%w[-- totals --format json], 'cov-loupe -- totals --format json',

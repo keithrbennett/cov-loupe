@@ -44,7 +44,7 @@ cov-loupe is organized around a single coverage data model that feeds three deli
 
 - `CovLoupe::BaseTool` centralizes JSON schema definitions, error conversion, and response serialization for the MCP protocol.
 - Individual tools reside in `lib/cov_loupe/tools/` and follow a consistent shape: define an input schema, call into `CoverageModel`, then serialize via `respond_json`. Examples include `ProjectCoverageTool`, `FileCoverageSummaryTool`, and `FileUncoveredLinesTool`.
-- Tools are registered in `CovLoupe::MCPServer::TOOLSET`. Adding a new tool requires creating a subclass and appending it to that list.
+- `CovLoupe::MCPServer::TOOLSET` lists every tool. Adding a new tool requires creating a subclass and appending it to that list. The server registers `MCPServer#toolset`, which omits tools whose `executes_code?` returns true unless it was started with `--allow-code-predicates`. A new tool that runs client-supplied code must override `executes_code?` to return true, or it will be exposed by default.
 
 ## Error Handling & Logging
 
@@ -119,7 +119,7 @@ Comprehensive test coverage exists:
 
 1. Add or update data processing inside `CoverageModel` or `CoverageCalculator` when a new metric is needed.
 2. Surface that metric through all interfaces: add a CLI option/subcommand, create an MCP tool, and expose a library helper method.
-3. Register the new tool in `MCPServer` and update CLI option parsing in `CoverageCLI`.
+3. Register the new tool in `MCPServer` and update CLI option parsing in `CoverageCLI`. If the tool runs client-supplied code, override `executes_code?` to return true (see the MCP layer notes above).
 4. Provide tests under `spec/` mirroring the lib path (`spec/cov_loupe/..._spec.rb`).
 5. Update documentation to reflect the new capability.
 

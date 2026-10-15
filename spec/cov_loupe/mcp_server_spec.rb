@@ -16,7 +16,8 @@ RSpec.describe CovLoupe::MCPServer do
 
     server_context = CovLoupe.create_context(
       error_handler: CovLoupe::ErrorHandlerFactory.for_mcp_server,
-      log_target:    'stderr'
+      log_target:    'stderr',
+      app_config:    CovLoupe::AppConfig.new(allow_code_predicates: true)
     )
     server = described_class.new(context: server_context)
     baseline_context = CovLoupe.context
@@ -52,6 +53,26 @@ RSpec.describe CovLoupe::MCPServer do
     )
   end
 
+  describe '#toolset' do
+    [
+      { app_config: nil, includes_validate: false },
+      { app_config: CovLoupe::AppConfig.new, includes_validate: false },
+      { app_config: CovLoupe::AppConfig.new(allow_code_predicates: true), includes_validate: true },
+    ].each do |tc|
+      it "#{tc[:includes_validate] ? 'includes' : 'omits'} ProjectValidateTool when " \
+         "allow_code_predicates is #{tc[:app_config]&.allow_code_predicates.inspect}" do
+        context = CovLoupe.create_context(
+          error_handler: CovLoupe::ErrorHandlerFactory.for_mcp_server,
+          app_config:    tc[:app_config]
+        )
+        toolset = described_class.new(context: context).toolset
+
+        expect(toolset.include?(CovLoupe::Tools::ProjectValidateTool)).to be(tc[:includes_validate])
+        expect(toolset).to include(*(described_class::TOOLSET - [CovLoupe::Tools::ProjectValidateTool]))
+      end
+    end
+  end
+
   describe 'TOOLSET and TOOL_GUIDE consistency' do
     it 'includes all tools documented in HelpTool TOOL_GUIDE' do
       # Get tool classes from TOOLSET
@@ -83,7 +104,7 @@ RSpec.describe CovLoupe::MCPServer do
       end
     end
 
-    it 'registers the expected number of tools' do
+    it 'lists the expected number of tools in TOOLSET, before #toolset filtering' do
       expect(described_class::TOOLSET.length).to eq(9)
     end
 
