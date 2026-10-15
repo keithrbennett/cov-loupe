@@ -10,6 +10,8 @@ module CovLoupe
   # settings before dispatching to the appropriate runner. Uses order! so that
   # subcommand-specific options (e.g., 'validate -i') are not consumed by the
   # global parser.
+  #
+  # @api private
   class ConfigParser
     attr_reader :config, :argv
 

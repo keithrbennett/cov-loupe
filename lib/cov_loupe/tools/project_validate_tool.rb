@@ -6,6 +6,7 @@ require_relative '../config/predicate_evaluator'
 
 module CovLoupe
   module Tools
+    # @api private
     class ProjectValidateTool < BaseTool
       tool_name 'project_validate'
       description <<~DESC

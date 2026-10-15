@@ -15,6 +15,8 @@ module CovLoupe
   #   relativizer = PathRelativizer.new(root: "/project", scalar_keys: ["file"], array_keys: ["files"])
   #   relativizer.relativize({ "file" => "/project/lib/foo.rb", "files" => ["/project/lib/bar.rb"] })
   #   # => { "file" => "lib/foo.rb", "files" => ["lib/bar.rb"] }
+  #
+  # @api private
   class PathRelativizer
     def initialize(root:, scalar_keys:, array_keys: [])
       @root = Pathname.new(PathUtils.expand(root || '.'))

@@ -15,6 +15,8 @@ module CovLoupe
   # "Missing" is reserved for "no coverage data":
   #   - MISSING_FROM_COVERAGE → tracked file not found in coverage data
   #   - SKIPPED              → file skipped due to processing error
+  #
+  # @api private
   module StaleStatus
     OK = 'ok'
     DELETED = 'deleted'

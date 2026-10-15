@@ -14,6 +14,8 @@ module CovLoupe
   # convert_standard_error maps Ruby's built-in exceptions to the CovLoupe error hierarchy,
   # using the `context` parameter to choose more specific messages (e.g., Errno::ENOENT
   # becomes CoverageFileNotFoundError in :coverage_loading context but FileNotFoundError otherwise).
+  #
+  # @api private
   class ErrorHandler
     attr_accessor :error_mode, :logger
 

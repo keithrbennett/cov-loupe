@@ -14,6 +14,8 @@ module CovLoupe
     # Factory that maps subcommand names to their command classes.
     # Validates the command name and raises UsageError with the full usage
     # synopsis if the command is unknown.
+    #
+    # @api private
     class CommandFactory
       COMMAND_MAP = {
         'list'      => ListCommand,

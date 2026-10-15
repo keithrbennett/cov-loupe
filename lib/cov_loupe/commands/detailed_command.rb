@@ -7,6 +7,7 @@ require_relative '../staleness/stale_status'
 
 module CovLoupe
   module Commands
+    # @api private
     class DetailedCommand < BaseCommand
       def execute(args)
         handle_with_path(args, 'detailed') do |path|

@@ -16,6 +16,8 @@ module CovLoupe
     # When a relative path is given, it is expanded against both the current working directory
     # and the project root. If both expansions point to valid locations, an ambiguity error
     # is raised to prevent silently using the wrong file.
+    #
+    # @api private
     class CoverageFilePathResolver
       COVERAGE_FILE_NAME = 'coverage.json'
 

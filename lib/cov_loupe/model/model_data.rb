@@ -9,5 +9,7 @@ module CovLoupe
   # @attr_reader coverage_map [Hash] Map of absolute file paths to coverage data
   # @attr_reader timestamp [Integer] Coverage run timestamp in epoch seconds
   # @attr_reader coverage_file_path [String] Absolute path to the coverage.json file
+  #
+  # @api private
   ModelData = Data.define(:coverage_map, :timestamp, :coverage_file_path)
 end

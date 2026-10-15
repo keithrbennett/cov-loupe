@@ -9,6 +9,8 @@ module CovLoupe
     # Subclasses must implement #build_payload, which calls a CoverageModel
     # method (e.g., :summary_for, :raw_for) for the given file path.
     # The base class enriches the payload with staleness status from model.staleness_for.
+    #
+    # @api private
     class BaseCoveragePresenter
       include PayloadCaching
 

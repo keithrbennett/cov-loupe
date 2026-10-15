@@ -13,6 +13,8 @@ module CovLoupe
     # Covered and uncovered lines are marked in the output, with optional ANSI
     # color coding. The context value controls how many surrounding lines are
     # shown in :uncovered mode.
+    #
+    # @api private
     class SourceFormatter
       def initialize(color_enabled: true, output_chars: :default)
         @color_enabled = color_enabled

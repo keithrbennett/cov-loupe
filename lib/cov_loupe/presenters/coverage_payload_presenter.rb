@@ -8,6 +8,8 @@ module CovLoupe
     #
     # Delegates to a CoverageModel method (specified by payload_method) and adds
     # staleness status. Used by both CLI commands and MCP tools.
+    #
+    # @api private
     class CoveragePayloadPresenter < BaseCoveragePresenter
       def initialize(model:, path:, payload_method:, raise_on_stale: nil)
         super(model: model, path: path)

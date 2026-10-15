@@ -29,6 +29,8 @@ module CovLoupe
   #
   # File-scope tools (summary, raw, detailed, uncovered) use call_with_file_payload
   # which infers the model method from the tool class name.
+  #
+  # @api private
   class BaseTool < ::MCP::Tool
     COMMON_PROPERTIES = {
       root:           {

@@ -2,6 +2,7 @@
 
 module CovLoupe
   module Scripts
+    # @api private
     module ReleaseMetadata
       # Shape check: at least MAJOR.MINOR.PATCH, dot-separated. Gem::Version does the rest.
       VERSION_PATTERN = /\A\d+\.\d+\.\d+(?:\.[0-9A-Za-z]+)*\z/

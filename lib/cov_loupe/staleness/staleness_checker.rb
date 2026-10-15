@@ -24,6 +24,8 @@ module CovLoupe
   #   - 'newer'          → source mtime exceeds coverage timestamp (only when no length mismatch)
   #   - 'length_mismatch'→ source line count differs from coverage array length
   #   - 'unreadable'     → file could not be read (permissions, I/O)
+  #
+  # @api private
   class StalenessChecker
     MODES = %i[off error].freeze
 

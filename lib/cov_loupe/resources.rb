@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module CovLoupe
+  # @api private
   module Resources
     REPOSITORY_URL = 'https://github.com/keithrbennett/cov-loupe'
     DOCUMENTATION_WEB_URL = 'https://keithrbennett.github.io/cov-loupe/'

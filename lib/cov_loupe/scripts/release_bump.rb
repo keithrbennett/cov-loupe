@@ -5,6 +5,7 @@ require_relative 'release_metadata'
 
 module CovLoupe
   module Scripts
+    # @api private
     class ReleaseBump
       ROOT = Pathname.new(__dir__).join('../../..').expand_path
 

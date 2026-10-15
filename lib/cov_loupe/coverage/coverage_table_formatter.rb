@@ -15,6 +15,8 @@ module CovLoupe
   #   - Staleness indicator
   #
   # A footer row summarizes file counts (total, ok, stale).
+  #
+  # @api private
   class CoverageTableFormatter
     # Format coverage rows as a table with box-drawing or ASCII characters.
     #

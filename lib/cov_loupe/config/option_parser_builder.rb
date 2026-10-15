@@ -8,6 +8,7 @@ require_relative '../errors/errors'
 require_relative '../exit_codes'
 
 module CovLoupe
+  # @api private
   class OptionParserBuilder
     HORIZONTAL_RULE = '-' * 79
 

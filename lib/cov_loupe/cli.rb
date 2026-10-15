@@ -24,6 +24,8 @@ module CovLoupe
   # Option parsing uses order! so that global options before the subcommand are consumed
   # and the subcommand name + its arguments remain in argv. Global options placed after
   # the subcommand trigger a helpful error message.
+  #
+  # @api private
   class CoverageCLI
     HORIZONTAL_RULE = '-' * 79
 

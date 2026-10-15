@@ -8,6 +8,8 @@ module CovLoupe
     # Facade that provides a single entry point for creating and using resolvers.
     # Delegates to CoverageFilePathResolver (file discovery) and CoverageLineResolver
     # (coverage lookup). This keeps resolver creation details out of client code.
+    #
+    # @api private
     class ResolverHelpers
       def self.create_coverage_resolver(cov_data, root:, volume_case_sensitive:)
         CoverageLineResolver.new(cov_data, root: root, volume_case_sensitive: volume_case_sensitive)

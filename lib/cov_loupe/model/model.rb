@@ -35,6 +35,8 @@ module CovLoupe
   # Thread safety: CoverageModel instances are NOT thread-safe. The shared
   # ModelDataCache is thread-safe, but per-instance state like @skipped_rows
   # is mutable and unsynchronized.
+  #
+  # @api public
   class CoverageModel
     RELATIVIZER_SCALAR_KEYS = %w[file file_path].freeze
     RELATIVIZER_ARRAY_KEYS = %w[
@@ -45,10 +47,15 @@ module CovLoupe
       length_mismatch_files
       unreadable_files
     ].freeze
+    private_constant :RELATIVIZER_SCALAR_KEYS, :RELATIVIZER_ARRAY_KEYS
 
+    # @api private
     DEFAULT_SORT_ORDER = :descending
 
-    attr_reader :relativizer, :skipped_rows, :volume_case_sensitive, :coverage_file_path
+    attr_reader :coverage_file_path
+
+    # @api private
+    attr_reader :relativizer, :skipped_rows, :volume_case_sensitive
 
     # Create a CoverageModel
     #
@@ -59,7 +66,8 @@ module CovLoupe
     # - raise_on_stale: boolean (default false). When true, raises
     #   stale errors if sources are newer than coverage or line counts mismatch.
     # - tracked_globs: array of glob patterns (default []). Used for filtering and tracking.
-    # - logger: logger instance (defaults to CovLoupe.logger)
+    # - logger: internal (@api private); a CovLoupe::Logger, defaulting to CovLoupe.logger.
+    #   Library callers configure logging through the context instead.
     def initialize(root: '.', coverage_file: nil, raise_on_stale: false, tracked_globs: [],
       logger: nil)
       @root = File.expand_path(root || '.')
@@ -283,6 +291,8 @@ module CovLoupe
     # Clears the resolved coverage file path to allow re-resolution.
     # ModelDataCache automatically handles coverage file changes on each access,
     # so explicit refresh is rarely needed. This method is primarily for testing.
+    #
+    # @api private
     def refresh_data
       @resolved_coverage_file_path = nil
       self

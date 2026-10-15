@@ -4,6 +4,7 @@ require_relative 'command_execution'
 
 module CovLoupe
   module Scripts
+    # @api private
     class SetupDocServer
       include CommandExecution
 

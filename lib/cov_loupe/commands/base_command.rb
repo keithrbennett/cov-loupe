@@ -15,6 +15,8 @@ module CovLoupe
     # - Path-based argument handling with automatic error conversion
     # - Structured format output (JSON, YAML, etc.) with optional source code display
     # - Extra argument validation
+    #
+    # @api private
     class BaseCommand
       def initialize(cli_context)
         @cli = cli_context

@@ -409,6 +409,24 @@ RSpec.describe CovLoupe::CoverageModel do
     end
   end
 
+  describe 'private constants' do
+    {
+      RELATIVIZER_SCALAR_KEYS: -> { CovLoupe::CoverageModel::RELATIVIZER_SCALAR_KEYS },
+      RELATIVIZER_ARRAY_KEYS:  -> { CovLoupe::CoverageModel::RELATIVIZER_ARRAY_KEYS },
+    }.each do |name, reference|
+      # Literal references are used because const_get bypasses constant privacy.
+      it "raises NameError when #{name} is referenced from outside" do
+        expect(&reference).to raise_error(NameError, /private constant/)
+      end
+    end
+  end
+
+  describe '#coverage_file_path' do
+    it 'returns the absolute path of the loaded coverage.json' do
+      expect(model.coverage_file_path).to eq(File.expand_path(FIXTURE_PROJECT1_COVERAGE_PATH))
+    end
+  end
+
   describe 'format_table' do
     it 'delegates to CoverageTableFormatter for formatting' do
       expect(CovLoupe::CoverageTableFormatter).to receive(:format).and_call_original

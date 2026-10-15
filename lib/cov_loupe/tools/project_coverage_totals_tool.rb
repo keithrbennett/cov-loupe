@@ -6,6 +6,7 @@ require_relative '../presenters/project_totals_presenter'
 
 module CovLoupe
   module Tools
+    # @api private
     class ProjectCoverageTotalsTool < BaseTool
       tool_name 'project_coverage_totals'
       description <<~DESC

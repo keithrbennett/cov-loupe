@@ -5,6 +5,8 @@ require 'fileutils'
 module CovLoupe
   # Handles detection and caching of filesystem volume case sensitivity.
   # Provides thread-safe case sensitivity detection with caching for performance.
+  #
+  # @api private
   module VolumeCaseSensitivity
     # Mutex for thread-safe cache access
     CACHE_MUTEX = Mutex.new

@@ -9,6 +9,7 @@ require_relative '../formatters/coverage_warnings'
 
 module CovLoupe
   module Tools
+    # @api private
     class ProjectCoverageTool < BaseTool
       tool_name 'project_coverage'
       description <<~DESC

@@ -7,6 +7,20 @@
 
 ### Breaking
 
+- **Public API declared.** Only the public API defined in
+  [Public API and Versioning](docs/user/LIBRARY_API.md#public-api-and-versioning) follows
+  Semantic Versioning: Ruby classes and methods tagged `@api public` in the source (among
+  them `CovLoupe.run`, `CoverageModel`, the error classes, and `ExitCodes`), the shipped
+  payload schemas, CLI options and subcommands, and MCP tool names and arguments. Classes
+  and methods tagged `@api private`, and human-readable text output, may change in any
+  release. `CoverageModel::RELATIVIZER_SCALAR_KEYS`,
+  `CoverageModel::RELATIVIZER_ARRAY_KEYS`, and `CovLoupe::StalenessFormatterMixin` are now
+  private constants and raise `NameError` when referenced from outside. Error handlers
+  (`ErrorHandler`, `ErrorHandlerFactory`, `CovLoupe.error_handler`, `error_handler=`) are
+  internal because library calls never consult the context's configured handler, and
+  `CovLoupe.create_context` no longer requires `error_handler:`. Nothing else changed
+  behavior. See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#public-api-declared).
 - **`project_validate` is opt-in in the MCP server.** The server now registers
   `project_validate` only when started with `--allow-code-predicates`. Without it, the tool is
   absent from `tools/list` and `help`, and calls return a JSON-RPC `-32602` error whose `data`
@@ -17,7 +31,8 @@
   `"deleted"` and `"unreadable"`, and the totals `stale.by_type` key `missing_from_disk` is now
   `deleted`, matching the `deleted_files`/`unreadable_files` list arrays. Text output follows:
   `totals` prints `Stale: deleted = N` (was `missing on disk`), and the `list` legend uses the
-  new names. `StaleStatus::MISSING_FROM_DISK` is replaced by `StaleStatus::DELETED`. See
+  new names. Code that used the internal constant `StaleStatus::MISSING_FROM_DISK` should
+  compare against the string `"deleted"`. See
   [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#staleness-values-renamed).
 - **Ruby 3.3 or later is required.** The minimum supported Ruby is now 3.3 (was 3.2).
   Ruby 3.2 has reached end of life, and 3.3 is the oldest Ruby still maintained. See [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#ruby-33-or-later-required).
@@ -48,8 +63,8 @@
   validation raises `UsageError`/`ConfigurationError` directly and is unaffected.
 - **`CoverageCLI::SUBCOMMANDS` moved to `CovLoupe::SUBCOMMANDS`.** The list of valid
   subcommands now lives in its own file so startup option-error handling does not
-  need to load the whole CLI. Code that referenced the old constant must use the new
-  path.
+  need to load the whole CLI. Both constants are internal; for the public list of
+  subcommands, see [CLI Usage](docs/user/CLI_USAGE.md#subcommands).
 - **Logging defaults and fallback behavior changed.** CLI and MCP sessions now
   log to `stderr` by default, while library usage is quiet by default. The
   previous implicit `./cov_loupe.log` target and `COV-LOUPE-LOG-ERROR.log`
@@ -77,6 +92,7 @@
 - **The `resultset` names are replaced by `coverage_file` names.** The `--coverage-file` option (`-c`; see below), the `coverage_file` MCP tool argument, `CoverageModel.new(coverage_file:)`, `#coverage_file_path`, `CoverageReporter.report(coverage_file:)`, `CovLoupe::CoverageFileNotFoundError`, and `Resolvers::CoverageFilePathResolver` are the only spellings. `--resultset`, the `resultset` tool argument, `resultset:` keywords, `#resultset_path`, `ResultsetNotFoundError`, `ResultsetPathResolver`, `ResolverHelpers.find_resultset`, and `AppConfig#resultset` are gone, with no deprecation period. `ResultsetLoader` is replaced by `CoverageJsonLoader`, whose `Result` has `coverage_map` and `timestamp` only.
     - `ResolverHelpers.create_resultset_resolver` and its `candidates:` keyword are removed. Instantiate `CoverageFilePathResolver.new(root:)` directly.
     - Direct callers of `CoverageRepository` and `CoverageJsonLoader` must also update `coverage_file_path:`/`path:` to `coverage_file:`/`resolved_coverage_file:` respectively; `CoverageRepository#coverage_file_path` is now `#resolved_coverage_file`.
+    - `CoverageFilePathResolver`, `ResolverHelpers`, `CoverageRepository`, `CoverageJsonLoader`, and `AppConfig` are internal as of 7.0 and may change in any release.
     - See [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md) for the full rename table.
 - **Short options `-c` and `-n` reassigned.** The coverage file option is `-c`/`--coverage-file` (6.x: `-r`/`--resultset`), and `--context-lines` is now `-n` (was `-c`).
     - `-r` now fails with `ambiguous option: -r`. An old `-c N` for context lines is parsed as `--coverage-file N` and fails with a not-found error, so update shell aliases, `COV_LOUPE_OPTS`, and MCP server `args`.
@@ -103,7 +119,8 @@
   called twice: first with `reraise: true`, expected to raise the converted error, then with
   that converted error. A handler may provide `convert_standard_error` to control the
   conversion. As before, the handler is called for every error the CLI reports except invalid
-  options, whatever the log target. See [Custom Error Handlers](docs/user/ADVANCED_USAGE.md#custom-error-handlers).
+  options, whatever the log target. `CoverageCLI` and custom error handlers are internal as
+  of 7.0; see [Public API and Versioning](docs/user/LIBRARY_API.md#public-api-and-versioning).
 - **Misplaced global option hints keep option values.** `cov-loupe totals --format json` now
   suggests `cov-loupe --format json totals` (previously `--format totals`). The suggested
   command keeps options given before the subcommand and quotes arguments that need it.

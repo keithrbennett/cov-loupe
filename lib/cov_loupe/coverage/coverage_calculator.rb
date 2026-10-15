@@ -9,6 +9,8 @@ module CovLoupe
   #   - nil     → non-code line (not counted in totals)
   #
   # Line numbers in output are 1-indexed (matching editor display).
+  #
+  # @api private
   class CoverageCalculator
     # Calculates coverage summary statistics from a coverage array.
     #

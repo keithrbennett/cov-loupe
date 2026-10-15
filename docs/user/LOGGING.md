@@ -1,6 +1,6 @@
 # Logging
 
-cov-loupe writes diagnostics through `CovLoupe::Logger`. CLI and MCP sessions use
+cov-loupe writes diagnostics to the logger of the active context. CLI and MCP sessions use
 `stderr` by default; library sessions have logging disabled by default. Use
 `--log-file`/`-l`, `CovLoupe.default_log_file`, or `CovLoupe.active_log_file` to
 choose another target. A file path enables persistent logging, `stderr` is

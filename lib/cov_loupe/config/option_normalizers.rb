@@ -8,6 +8,8 @@ module CovLoupe
   #   - strict: false → return a default value (nil or specified default) on invalid values
   #
   # All normalizers accept both full names and single-character abbreviations.
+  #
+  # @api private
   module OptionNormalizers
     SORT_ORDER_MAP = {
       'a'          => :ascending,

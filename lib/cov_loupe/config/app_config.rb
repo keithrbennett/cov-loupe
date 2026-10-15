@@ -14,6 +14,8 @@ module CovLoupe
   #
   # All enum values are stored as symbols (:table, :json, :descending, etc.)
   # for consistent comparison throughout the codebase.
+  #
+  # @api private
   AppConfig = Struct.new(
     :root,
     :coverage_file,

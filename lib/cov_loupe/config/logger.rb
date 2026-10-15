@@ -21,6 +21,8 @@ module CovLoupe
   # stderr. CLI and MCP sessions default to stderr; library sessions default to
   # logging off. The safe_log method suppresses logging failures, making it safe
   # for use in rescue blocks.
+  #
+  # @api private
   class Logger
     DEFAULT_LOG_TARGET = 'stderr'
 

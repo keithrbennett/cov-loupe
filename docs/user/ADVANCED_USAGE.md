@@ -306,28 +306,23 @@ rescue CovLoupe::CoverageDataError => e
 end
 ```
 
-### Custom Error Handlers
+### Running the CLI from Ruby
 
-Provide custom error handlers when embedding the CLI. A handler must implement
-`handle_error(error, context:, reraise:)`. The CLI calls it with `reraise: false`
-for every error it reports, whatever the log target and `--error-mode`, and then
-prints the user-facing message itself. Invalid options and option values are the
-exception: they are reported during option parsing, without the handler. A handler may also provide
-`convert_standard_error`, like `CovLoupe::ErrorHandler`, to control how unexpected
-errors are converted; otherwise the built-in conversion is used.
+To run the CLI from Ruby, call `CovLoupe.run` with the same arguments you would pass on the
+command line. Control error logging and stack traces with `--error-mode` and `--log-file`
+in those arguments or in `COV_LOUPE_OPTS`. `CovLoupe.run` may call `exit`. Unlike the
+`cov-loupe` executable, it does not install `INT`/`TERM` handlers, check the Ruby version,
+or treat `-v`/`--version` anywhere in the arguments as a version request.
 
 ```ruby
-class CustomErrorHandler
-  def handle_error(error, context: nil, reraise: true)
-    # Log to custom service
-    ErrorTracker.notify(error, context: context)
-
-    raise error if reraise
-  end
-end
-
-cli = CovLoupe::CoverageCLI.new(error_handler: CustomErrorHandler.new)
+CovLoupe.run(%w[--error-mode debug --log-file cov_loupe.log list])
 ```
+
+`CovLoupe::CoverageCLI` is internal, and the error handler protocol (`handle_error` and
+`convert_standard_error`) is not public API, so a handler class you write may stop working
+in any release. See [Public API and Versioning](LIBRARY_API.md#public-api-and-versioning). To act on
+errors in your own code, use the library API and rescue the
+[exception types](LIBRARY_API.md#exception-types).
 
 ---
 

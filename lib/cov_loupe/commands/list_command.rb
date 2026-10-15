@@ -4,6 +4,7 @@ require_relative 'base_command'
 
 module CovLoupe
   module Commands
+    # @api private
     class ListCommand < BaseCommand
       def execute(args)
         reject_extra_args(args, 'list')

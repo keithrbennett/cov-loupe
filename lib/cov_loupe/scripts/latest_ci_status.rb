@@ -5,6 +5,7 @@ require_relative 'command_execution'
 
 module CovLoupe
   module Scripts
+    # @api private
     class LatestCiStatus
       include CommandExecution
 

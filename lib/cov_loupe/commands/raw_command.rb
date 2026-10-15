@@ -6,6 +6,7 @@ require_relative '../formatters/table_formatter'
 
 module CovLoupe
   module Commands
+    # @api private
     class RawCommand < BaseCommand
       def execute(args)
         handle_with_path(args, 'raw') do |path|

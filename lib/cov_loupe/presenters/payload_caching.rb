@@ -9,6 +9,8 @@ module CovLoupe
     #   2. relativized_payload — same data with paths converted relative to project root
     #
     # Consumers must implement #compute_absolute_payload to define what data to fetch.
+    #
+    # @api private
     module PayloadCaching
       # Returns the absolute-path payload.
       # Consumers must implement #compute_absolute_payload.

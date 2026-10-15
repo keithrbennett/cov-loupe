@@ -10,6 +10,8 @@ module CovLoupe
   # coverage generation and source file modification, plus the delta in seconds.
   #
   # File lists are capped at 10 entries to keep error messages readable.
+  #
+  # @api private
   class StalenessMessageFormatter
     def initialize(cov_timestamp:, coverage_file_path: nil, output_chars: :default)
       @cov_timestamp = cov_timestamp

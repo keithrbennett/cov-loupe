@@ -9,6 +9,8 @@ module CovLoupe
   #   - CLI:       :log mode (errors logged, no stack traces unless requested)
   #   - Library:   :off mode (no logging side effects, let consumers handle errors)
   #   - MCP Server: :log mode (errors logged for server debugging)
+  #
+  # @api private
   module ErrorHandlerFactory
     # Error handler for CLI usage
     # - Logs errors for debugging

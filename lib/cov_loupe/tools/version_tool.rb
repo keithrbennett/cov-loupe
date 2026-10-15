@@ -4,6 +4,7 @@ require_relative '../base_tool'
 
 module CovLoupe
   module Tools
+    # @api private
     class VersionTool < BaseTool
       tool_name 'version'
       description <<~DESC

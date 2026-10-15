@@ -11,6 +11,8 @@ module CovLoupe
     # Wraps CoverageModel#list and enriches the output with:
     # - File counts (total, ok, stale) for quick overview
     # - Relativized paths for all file lists (skipped, missing, newer, deleted, etc.)
+    #
+    # @api private
     class ProjectCoveragePresenter
       include PayloadCaching
 

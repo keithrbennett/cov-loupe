@@ -17,6 +17,8 @@ module CovLoupe
   # The timestamp comes from meta.timestamp (ISO 8601) and is normalized to
   # integer epoch seconds. A missing or unparseable timestamp becomes 0, which
   # disables time-based staleness checks.
+  #
+  # @api private
   class CoverageJsonLoader
     Result = Struct.new(:coverage_map, :timestamp)
 

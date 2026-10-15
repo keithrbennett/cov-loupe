@@ -21,6 +21,8 @@ module CovLoupe
   # Why a singleton? CoverageModel instances are lightweight (created per request in MCP mode),
   # but loading and normalizing the coverage file is expensive. The singleton cache ensures that
   # repeated requests for the same coverage file reuse the parsed data until the file changes.
+  #
+  # @api private
   class ModelDataCache
     # Mutex for thread-safe singleton initialization.
     # Using a constant ensures it cannot be reset, avoiding race conditions in JRuby.

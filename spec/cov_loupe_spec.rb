@@ -226,6 +226,21 @@ RSpec.describe CovLoupe do
     end
   end
 
+  describe '.create_context' do
+    it 'defaults error_handler to the library handler' do
+      context = described_class.create_context
+      expect(context.error_handler).to be_a(CovLoupe::ErrorHandler)
+      expect(context.error_handler.error_mode).to eq(:off)
+    end
+
+    it 'accepts log_target: alone, as library callers use it' do
+      context = described_class.create_context(log_target: 'stderr')
+      expect(context.log_target).to eq('stderr')
+      expect(context).to be_library_mode
+      expect(context.error_handler.error_mode).to eq(:off)
+    end
+  end
+
   describe '.version' do
     it 'returns the VERSION constant' do
       expect(described_class.version).to eq(CovLoupe::VERSION)

@@ -6,6 +6,7 @@ Use this gem programmatically to inspect coverage without running the CLI or MCP
 
 ## Table of Contents
 
+- [Public API and Versioning](#public-api-and-versioning)
 - [Quick Start](#quick-start)
 - [Schema Version](#schema-version)
 - [Method Reference](#method-reference)
@@ -13,27 +14,50 @@ Use this gem programmatically to inspect coverage without running the CLI or MCP
 - [Error Handling](#error-handling)
 - [Advanced Recipes](#advanced-recipes)
 
-## API Boundary and Compatibility
+## Public API and Versioning
 
-CovLoupe seeks to provide a stable programmatic interface for inspecting test coverage data.
-The following are the supported interfaces that users should depend on:
+Starting with 7.0, cov-loupe follows [Semantic Versioning](https://semver.org/) for its public API, and only for it:
 
-- **`CovLoupe.run`** – Entry point for running the tool in CLI or MCP mode
-- **`CovLoupe::CoverageModel`** – Primary class for querying coverage data
-- **`CovLoupe::SCHEMA_VERSION`** – Integer version of structured coverage payload shapes
-- **Methods documented in this guide** – `list`, `summary_for`, `uncovered_for`, `detailed_for`, `raw_for`, `format_table`, `project_totals`, and `relativize`
+- **Major** releases may make incompatible changes to it. Each one is described in a [migration guide](migrations/README.md).
+- **Minor** releases may add to it: new methods, optional keyword arguments, CLI options, MCP tools or arguments, and payload keys.
+- **Patch** releases fix bugs without changing it.
 
-All other constants, classes, modules, and internal methods not listed above are implementation details and may change between releases without notice.
+The public API is:
 
-The project aims to keep documented interfaces as compatible as practical across minor and patch releases. When breaking changes become necessary, they will be communicated via migration guides and release notes.
+- **Ruby library**: the classes, modules, methods, and constants tagged `@api public` in the source. The tags, not a list in these docs, define it. In outline, it is the `CovLoupe` entry methods (such as `run`, `create_context`, and `with_context`), the classes and modules `CoverageModel`, `CoverageReporter`, `PayloadSchema`, and `ExitCodes`, the [exception classes](#exception-types), and the context objects returned by `create_context`; the tags give the exact members. Of a public method's arguments, only those documented in these guides or in its doc comment are public. To see the tags without reading the source, run `yard doc --api public` for a reference containing only the public API, or browse the gem on [RubyDoc.info](https://www.rubydoc.info/gems/cov-loupe), which marks internal items as part of a private API.
+- **Structured output**, **CLI**, and **MCP server** behavior, as described below.
+- **`validate` predicates**: a predicate is any object responding to `call`; it receives a `CoverageModel` and returns truthy to pass.
 
-Logging is configured through the active context. See the [logging initialization
-and target testing guide](LOGGING.md#log-file-initialization-and-target-testing)
-for startup probes, lazy file creation, and mode-specific logging failures. In
-an explicitly created library-mode context, logging is off by default and an
-unusable explicit log target raises `CovLoupe::LoggingError` when the context is
-created. The ambient default context is also quiet; CLI and MCP entry points
-create their own mode-specific contexts with `stderr` as the default target.
+Everything else is internal and may change or be removed in any release, including a patch release, without a migration note. That includes anything tagged `@api private` and undocumented arguments of public methods. Internals described in the [architecture notes](../dev/ARCHITECTURE.md), or used in older guides and migration notes, are still internal. Pre-releases of 7.0.0 may still change the public API.
+
+### Structured Output
+
+The shapes of library coverage hashes, structured CLI output (`-f json`, `pretty_json`, and `yaml`), and structured MCP tool payloads are public. They are defined by the [shipped JSON Schemas](#schema-version), together with the meaning of `percentage` and the staleness values described there.
+
+`schema_version` and the gem version move separately:
+
+- `CovLoupe::SCHEMA_VERSION` versions only the payload shapes, and increments on an incompatible change as defined under [Schema Version](#schema-version). Because payloads are public, that also requires a major gem release.
+- A compatible change, such as adding a key, changes neither `schema_version` nor the major gem version, and can ship in a minor release.
+- A major gem release can leave `schema_version` unchanged when its breaking changes are elsewhere, for example in a CLI option or a Ruby method.
+- Each release emits only the current `schema_version`. The schema files for earlier versions remain installed, so `PayloadSchema.schema_path` can locate the schema needed to validate a saved payload.
+
+### CLI
+
+- The `cov-loupe` executable, its subcommands and their single-letter aliases, their positional arguments, and `validate`'s `-i`/`--inline` option.
+- The global options documented in [CLI Usage](CLI_USAGE.md#global-options): long and short names, accepted values, and defaults.
+- The `COV_LOUPE_OPTS` environment variable and its precedence below command-line arguments.
+- [Exit codes](CLI_USAGE.md#exit-codes).
+
+### MCP Server
+
+- Starting the server with `-m mcp` / `--mode mcp`, and the `--allow-code-predicates` gate for `project_validate`.
+- The [tool names](MCP_INTEGRATION.md#tool-catalog), and each tool's argument names, types, enum values, and defaults.
+- Successful payloads as described under Structured Output, and the split between `isError: true` results and JSON-RPC `error` responses described in [Error Handling](ERROR_HANDLING.md#mcp-server-mode).
+
+### Not Covered
+
+- **Human-readable text**: table layouts, the Ruby-rendered output formats (`amazing_print`, `inspect`, `puts`, `pretty_print`), which depend on the Ruby version and other gems, `totals` and other text output, `--help` and `help` tool prose, error message wording, `user_friendly_message` text, log messages, and the string returned by `format_table` or `CoverageReporter.report`. Match on exception classes, exit codes, `isError`, and structured payloads instead.
+- **Error handlers**: library calls raise exceptions and never consult the context's configured error handler, so the error handler classes, the `error_handler:` keyword, and the handler protocol (`handle_error`, `convert_standard_error`) are internal. Rescue the [exception types](#exception-types) instead.
 
 ## Quick Start
 
@@ -45,7 +69,6 @@ require "cov_loupe"
 # - coverage_file: nil (uses coverage/coverage.json under root)
 # - raise_on_stale: false (don't raise on stale data)
 # - tracked_globs: [] (no project-level file-set checks)
-# - logger: CovLoupe.logger
 model = CovLoupe::CoverageModel.new
 
 # Custom configuration (non-default values):
@@ -53,8 +76,7 @@ model = CovLoupe::CoverageModel.new(
   root: File.join(Dir.home, 'project'),          # non-default project root
   coverage_file: "build/coverage",                # coverage.json file, or its directory
   raise_on_stale: true,                          # enable strict staleness checks (raise on stale)
-  tracked_globs: ["lib/cov_loupe/tools/**/*.rb"],# for 'list' staleness: flag new/missing files
-  logger: Logger.new($stderr)                    # optional custom logger
+  tracked_globs: ["lib/cov_loupe/tools/**/*.rb"] # for 'list' staleness: flag new/missing files
 )
 
 # List all files with coverage summary
@@ -69,6 +91,14 @@ uncovered = model.uncovered_for(target)
 detailed = model.detailed_for(target)
 raw = model.raw_for(target)
 ```
+
+Logging is configured through the active context. See the [logging initialization
+and target testing guide](LOGGING.md#log-file-initialization-and-target-testing)
+for startup probes, lazy file creation, and mode-specific logging failures. In
+an explicitly created library-mode context, logging is off by default and an
+unusable explicit log target raises `CovLoupe::LoggingError` when the context is
+created. The ambient default context is also quiet; CLI and MCP entry points
+create their own mode-specific contexts with `stderr` as the default target.
 
 ## Schema Version
 
@@ -202,7 +232,7 @@ Generates formatted ASCII table string.
 - `rows` (Array<Hash>, optional): Custom row data; defaults to `list`
 - `sort_order` (Symbol, optional): `:descending` (default) or `:ascending`
 - `raise_on_stale` (Boolean, optional): Whether to raise error if project is stale. Defaults to model setting.
-- `tracked_globs` (Array<String>, optional): Patterns to filter files.
+- `tracked_globs` (Array<String>, optional): Patterns to filter files. Defaults to model setting.
 - `output_chars` (Symbol, optional): Character mode for table borders and symbols (`:default`, `:fancy`, or `:ascii`).
 
 **Returns:** `String` - Formatted table with Unicode borders
@@ -219,12 +249,12 @@ lib_table = model.format_table(lib_files, sort_order: :descending)
 puts lib_table
 ```
 
-### `project_totals(tracked_globs: [], raise_on_stale: nil)`
+### `project_totals(tracked_globs: model default, raise_on_stale: model default)`
 
 Returns aggregated coverage totals across all files.
 
 **Parameters:**
-- `tracked_globs` (Array<String> or String, optional): Glob patterns to filter files
+- `tracked_globs` (Array<String> or String, optional): Glob patterns to filter files. Defaults to model setting.
 - `raise_on_stale` (Boolean, optional): Whether to raise error if project is stale. Defaults to model setting.
 
 **Returns:** `Hash` - See [project_totals return type](#project_totals)
@@ -268,6 +298,33 @@ relative_summary = model.relativize(summary)
 list_result = model.list
 files = list_result['files']
 relative_files = model.relativize(files)
+```
+
+### `staleness_for(path)`
+
+Returns the staleness of one file without raising.
+
+**Parameters:**
+- `path` (String): File path (absolute or relative to root)
+
+**Returns:** `String` - One of `"ok"`, `"deleted"`, `"newer"`, `"length_mismatch"`, or `"unreadable"`. `"unreadable"` also covers a check that could not be completed, including for a path with no coverage entry; this method does not raise `CovLoupe::FileError`.
+
+**Example:**
+```ruby
+model.staleness_for('lib/foo.rb')
+# => "ok"
+```
+
+### `coverage_file_path`
+
+Returns the absolute path of the `coverage.json` file the model loaded.
+
+**Returns:** `String`
+
+**Example:**
+```ruby
+model.coverage_file_path
+# => "/path/to/project/coverage/coverage.json"
 ```
 
 ## Return Types
@@ -424,14 +481,23 @@ Note: The `without_coverage` hash will only be present if `tracked_globs` were s
 
 ### Exception Types
 
-The library raises these custom exceptions:
+All cov-loupe exceptions inherit from `CovLoupe::Error`, which provides `user_friendly_message` and `original_error`. Rescue a parent class to handle all of its subclasses, and list a subclass before its parent when rescuing both.
 
-- **`CovLoupe::CoverageFileNotFoundError`** - Coverage data file not found
-- **`CovLoupe::FileError`** - Requested file not in coverage data
-- **`CovLoupe::CoverageDataStaleError`** - Coverage data is stale (only when `raise_on_stale: true`)
-- **`CovLoupe::CoverageDataError`** - Invalid coverage data format or structure
-
-All exceptions inherit from `CovLoupe::Error`.
+- **`CovLoupe::Error`** - Base class
+  - **`ConfigurationError`** - Invalid configuration
+    - **`LoggingError`** - Unusable log target; `#target` names it
+  - **`UsageError`** - Invalid command-line usage
+  - **`PredicateError`** - A `validate` predicate could not be loaded or raised an error
+  - **`UnknownError`** - An unexpected error that fits no other class
+  - **`FileError`** - Requested file not in coverage data, or another file or path problem
+    - **`FileNotFoundError`** - File does not exist
+    - **`FilePermissionError`** - Permission denied
+    - **`NotAFileError`** - Path is a directory, not a file
+    - **`CoverageFileNotFoundError`** - `coverage.json` not found
+  - **`CoverageDataError`** - Coverage data cannot be used: invalid JSON, an unsupported `meta.schema_version`, or a bad structure
+    - **`CorruptCoverageDataError`** - A file's coverage entry has no usable `lines` array
+    - **`CoverageDataStaleError`** - A file's coverage is stale (only with `raise_on_stale: true`)
+    - **`CoverageDataProjectStaleError`** - Project coverage is stale (only with `raise_on_stale: true`)
 
 ### Basic Error Handling
 
@@ -443,11 +509,11 @@ begin
   summary = model.summary_for("lib/foo.rb")
   percentage = summary['summary']['percentage']
   puts "Coverage: #{percentage ? "#{percentage}%" : 'n/a'}"
-rescue CovLoupe::FileError => e
-  puts "File not in coverage data: #{e.message}"
-rescue CovLoupe::CoverageFileNotFoundError => e
+rescue CovLoupe::CoverageFileNotFoundError => e # subclass of FileError, so rescue it first
   puts "Coverage data not found: #{e.message}"
   puts "Run your tests first: bundle exec rspec"
+rescue CovLoupe::FileError => e
+  puts "File not in coverage data: #{e.message}"
 rescue CovLoupe::Error => e
   puts "Coverage error: #{e.message}"
 end
@@ -798,7 +864,7 @@ reporter.generate_markdown_report("coverage_report.md")
 
 ### Custom Library Context (Advanced)
 
-By default, `CoverageModel` uses the active CovLoupe context for error handling and logging. For advanced scenarios where a block of work needs different logging or error handling, create a context and run that work inside `CovLoupe.with_context`.
+By default, `CoverageModel` logs through the active CovLoupe context. When a block of work needs a different log target, create a context and run that work inside `CovLoupe.with_context`.
 
 ```ruby
 require "cov_loupe"
@@ -806,10 +872,7 @@ require "cov_loupe"
 # Scenario: Analyzing coverage for multiple projects in one script
 
 # Project A: Detailed logging for debugging
-context_a = CovLoupe.create_context(
-  error_handler: CovLoupe::ErrorHandlerFactory.for_library,
-  log_target: 'project_a_coverage.log'
-)
+context_a = CovLoupe.create_context(log_target: 'project_a_coverage.log')
 
 summary_a = CovLoupe.with_context(context_a) do
   model_a = CovLoupe::CoverageModel.new(
@@ -833,14 +896,12 @@ end
 
 **When to use custom contexts:**
 - Managing coverage for multiple projects in one script
-- Different error handling strategies for separate blocks of work
 - Separate log files for different data sources
 - Testing scenarios requiring isolated configurations
 
 **Simple use case (most common):**
 ```ruby
 # For most use cases, just configure the global context once
-CovLoupe.error_handler = CovLoupe::ErrorHandlerFactory.for_library
 CovLoupe.default_log_file = 'coverage_analysis.log'
 
 # All models automatically use the active global context

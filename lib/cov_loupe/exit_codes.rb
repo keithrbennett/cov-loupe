@@ -2,6 +2,8 @@
 
 module CovLoupe
   # Process exit codes used by the CLI. Keep docs/user/CLI_USAGE.md in sync.
+  #
+  # @api public
   module ExitCodes
     SUCCESS           = 0 # command succeeded; for `validate`, the predicate passed
     ERROR             = 1 # runtime error (missing/stale/corrupt coverage data, bad path, etc.)

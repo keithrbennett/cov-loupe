@@ -11,7 +11,28 @@ module CovLoupe
   # Implemented as a Data class (introduced in Ruby 3.2) for immutability and structural equality.
   # The custom #with method ensures the derived `logger` field is regenerated when
   # log_target or mode changes, since the logger depends on both.
+  #
+  # Public API is limited to instances returned by CovLoupe.create_context, their
+  # #log_target, and #with(log_target:); construct contexts through create_context.
+  #
+  # The @!attribute entries below tag the Data-generated readers, which do not inherit
+  # the class's @api tag in YARD.
+  #
+  # @api public
+  #
+  # @!attribute [r] log_target
+  #   @return [String, Symbol, nil] the log target this context writes diagnostics to
+  #   @api public
+  # @!attribute [r] error_handler
+  #   @api private
+  # @!attribute [r] mode
+  #   @api private
+  # @!attribute [r] app_config
+  #   @api private
+  # @!attribute [r] logger
+  #   @api private
   AppContext = Data.define(:error_handler, :log_target, :mode, :app_config, :logger) do
+    # @api private
     def initialize(error_handler:, log_target: nil, mode: :library, app_config: nil, logger: nil)
       logger ||= Logger.new(target: log_target, mode: mode)
       super
@@ -35,14 +56,17 @@ module CovLoupe
       super
     end
 
+    # @api private
     def mcp_mode?
       mode == :mcp
     end
 
+    # @api private
     def cli_mode?
       mode == :cli
     end
 
+    # @api private
     def library_mode?
       mode == :library
     end

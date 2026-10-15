@@ -9,6 +9,7 @@ require_relative 'release_metadata'
 
 module CovLoupe
   module Scripts
+    # @api private
     class PreReleaseCheck
       include CommandExecution
 

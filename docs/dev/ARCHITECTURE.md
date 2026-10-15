@@ -8,7 +8,7 @@ cov-loupe is organized around a single coverage data model that feeds three deli
 
 - **Executable** – `exe/cov-loupe` bootstraps the gem, enforces Ruby >= 3.3, and delegates to `CovLoupe.run(ARGV)`.
 - **Mode Negotiation** – `CovLoupe.run` inspects environment defaults from `COV_LOUPE_OPTS` and parses the `-m/--mode` flag. It defaults to CLI mode and instantiates `CovLoupe::CoverageCLI`. When `-m mcp` or `--mode mcp` is specified, it instantiates `CovLoupe::MCPServer` for MCP protocol communication over STDIO.
-- **Embedded Usage** – Applications embed the gem by instantiating `CovLoupe::CoverageModel` directly, optionally wrapping work in `CovLoupe.with_context` to install a library-oriented error handler.
+- **Embedded Usage** – Applications embed the gem by instantiating `CovLoupe::CoverageModel` directly, optionally wrapping work in `CovLoupe.with_context` to scope a log target to that work.
 
 ## Coverage Data Pipeline
 
@@ -38,7 +38,8 @@ cov-loupe is organized around a single coverage data model that feeds three deli
 ### Library API
 
 - Consuming code instantiates `CoverageModel` directly for fine-grained control over coverage queries.
-- Use `CovLoupe::ErrorHandlerFactory.for_library` together with `CovLoupe.with_context` when an embedded caller wants to suppress CLI-friendly error logging.
+- Library calls raise `CovLoupe::Error` subclasses for callers to rescue; they never consult the context's configured error handler. To log a block of work to a different target, run it inside `CovLoupe.with_context(CovLoupe.create_context(log_target: ...))`.
+- The Ruby public API is whatever is tagged `@api public` in the source (see [Public API and Versioning](../user/LIBRARY_API.md#public-api-and-versioning)); classes described in this document are otherwise internal.
 
 ## MCP Tool Stack
 
@@ -54,7 +55,7 @@ cov-loupe is organized around a single coverage data model that feeds three deli
 - Two helper accessors clarify intent:
     - `CovLoupe.default_log_file` / `default_log_file=` adjust the baseline log sink that future contexts inherit.
     - `CovLoupe.active_log_file` / `active_log_file=` mutate only the current context (or create one on demand) so the change applies immediately without touching the default.
-- `ErrorHandlerFactory` wires the appropriate handler per runtime: CLI, MCP server, or embedded library, each of which installs its handler inside a fresh `AppContext` before executing user work.
+- `ErrorHandlerFactory` wires the appropriate handler for the CLI and the MCP server, each of which installs its handler inside a fresh `AppContext` before executing user work. Library contexts carry a default `for_library` handler, but library calls raise exceptions and never consult it.
 - Diagnostics are written through `CovLoupe::Logger` to `stderr` by default in CLI and MCP modes; library mode is quiet by default. See the [logging initialization and target testing guide](../user/LOGGING.md#log-file-initialization-and-target-testing) for probe behavior, cached failures, and explicit file-target details. MCP tool-execution errors reach this logger, but argument-validation failures emitted by the MCP SDK before cov-loupe runs do not. Override the destination with CLI `--log-file`, set `CovLoupe.default_log_file` for future contexts, or temporarily tweak `CovLoupe.active_log_file` when a caller needs a different destination mid-run.
 
 ## Output Character Mode

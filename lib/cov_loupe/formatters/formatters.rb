@@ -4,6 +4,7 @@ require 'stringio'
 require_relative '../output_chars'
 
 module CovLoupe
+  # @api private
   module Formatters
     # Multi-format output dispatcher for coverage data.
     #

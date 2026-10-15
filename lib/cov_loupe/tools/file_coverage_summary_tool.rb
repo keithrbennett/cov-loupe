@@ -6,6 +6,7 @@ require_relative '../presenters/coverage_payload_presenter'
 
 module CovLoupe
   module Tools
+    # @api private
     class FileCoverageSummaryTool < BaseTool
       tool_name 'file_coverage_summary'
       description <<~DESC

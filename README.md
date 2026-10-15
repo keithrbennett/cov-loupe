@@ -130,6 +130,8 @@ summary = model.summary_for("lib/cov_loupe/model/model.rb")
 
 Use `model.relativize(...)` when you want library payloads with project-relative paths. It preserves `schema_version`. See [Library API](docs/user/LIBRARY_API.md#schema-version) for the payload compatibility rules.
 
+Only the public API defined under [Public API and Versioning](docs/user/LIBRARY_API.md#public-api-and-versioning), including Ruby classes and methods tagged `@api public`, follows Semantic Versioning; other classes and methods in the gem are internal and may change in any release.
+
 **MCP Server:**
 See [MCP Integration Guide](docs/user/MCP_INTEGRATION.md) for AI assistant setup.
 

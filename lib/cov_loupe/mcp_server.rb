@@ -14,6 +14,7 @@ require_relative 'resources'
 # handling, JSON response formatting, and model configuration merging from the server
 # context plus per-call arguments.
 module CovLoupe
+  # @api private
   class MCPServer
     def initialize(context: CovLoupe.context)
       @context = context

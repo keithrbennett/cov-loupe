@@ -8,6 +8,8 @@ module CovLoupe
     # (written to stderr) and the MCP project_coverage tool (appended to table output).
     # Each method takes a ProjectCoveragePresenter and returns a String ('' when there is
     # nothing to report).
+    #
+    # @api private
     module CoverageWarnings
       TIMESTAMP_WARNING_LINES = [
         'Coverage timestamps are missing. Time-based staleness checks were skipped.',

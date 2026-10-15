@@ -9,6 +9,8 @@ module CovLoupe
   # Security Warning:
   # Predicates execute as arbitrary Ruby code with full system privileges.
   # Only use predicates from trusted sources.
+  #
+  # @api private
   class PredicateEvaluator
     # Evaluate a predicate from a code string
     #

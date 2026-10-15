@@ -5,6 +5,7 @@ require_relative '../config/option_normalizers'
 
 module CovLoupe
   module OptionParsers
+    # @api private
     class EnvOptionsParser
       ENV_VAR = 'COV_LOUPE_OPTS'
 

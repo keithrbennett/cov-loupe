@@ -8,6 +8,8 @@ module CovLoupe
   # Used by CLI subcommands (summary, raw, uncovered, detailed) to format
   # per-file data as aligned tables. Column widths are computed from content.
   # Supports horizontal alignment per column (left, right, center).
+  #
+  # @api private
   class TableFormatter
     # Format data as a table with box-drawing or ASCII characters.
     # @param headers [Array<String>] Column headers

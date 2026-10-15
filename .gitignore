@@ -4,6 +4,7 @@
 /opencode.json
 
 # Directory for untracked AI reports, of which there may be many
+/agent-council-reports/
 /untracked/
 /reports/
 

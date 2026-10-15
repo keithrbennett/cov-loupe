@@ -6,6 +6,7 @@ require_relative '../formatters/coverage_warnings'
 
 module CovLoupe
   module Commands
+    # @api private
     class TotalsCommand < BaseCommand
       def execute(args)
         reject_extra_args(args, 'totals')

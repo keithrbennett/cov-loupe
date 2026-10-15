@@ -5,6 +5,7 @@ require_relative 'setup_doc_server'
 
 module CovLoupe
   module Scripts
+    # @api private
     class StartDocServer
       include CommandExecution
 

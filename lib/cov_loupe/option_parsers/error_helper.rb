@@ -5,6 +5,7 @@ require_relative '../exit_codes'
 
 module CovLoupe
   module OptionParsers
+    # @api private
     class ErrorHelper
       def initialize(subcommands)
         @subcommands = subcommands

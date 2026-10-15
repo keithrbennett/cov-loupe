@@ -15,6 +15,8 @@ module CovLoupe
     # an ambiguity error is raised to prevent silent data corruption.
     #
     # This resolver is string-based only — it does not touch the filesystem.
+    #
+    # @api private
     class CoverageLineResolver
       # @param cov_data [Hash] coverage data map keyed by file path
       # @param root [String, nil] project root used for path stripping

@@ -12,6 +12,8 @@ module CovLoupe
   #   mode = OutputChars.resolve_mode(:default)  # => :fancy or :ascii
   #   charset = OutputChars.charset_for(mode)    # => hash of border chars
   #   text = OutputChars.convert("café", mode)   # => "caf?" in :ascii mode
+  #
+  # @api private
   module OutputChars
     # Valid output character modes
     MODES = %i[default fancy ascii].freeze

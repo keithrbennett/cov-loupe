@@ -19,6 +19,8 @@ module CovLoupe
     # @attr_reader coverage_map [Hash] A map of absolute file paths to coverage data.
     # @attr_reader timestamp [Integer] The coverage run timestamp in epoch seconds.
     # @attr_reader resolved_coverage_file [String] The resolved absolute path to the coverage file.
+    #
+    # @api private
     class CoverageRepository
       attr_reader :coverage_map, :timestamp, :resolved_coverage_file
 

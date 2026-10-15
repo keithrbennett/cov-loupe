@@ -17,6 +17,8 @@ module CovLoupe
   # from a global setting. This is important for projects that span multiple
   # volumes (e.g., project on macOS case-insensitive volume, coverage file on a
   # case-sensitive external drive).
+  #
+  # @api private
   module PathUtils
     # Platform detection - delegates to main CovLoupe module for testability
     def self.windows?

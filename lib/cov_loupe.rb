@@ -62,6 +62,8 @@ module CovLoupe
     # Primary entry point. Parses argv to determine mode (CLI or MCP server),
     # then dispatches accordingly. Environment options from COV_LOUPE_OPTS are
     # prepended before parsing so CLI arguments always take precedence.
+    #
+    # @api public
     def run(argv)
       # Parse config to determine mode
       require_relative 'cov_loupe/config/config_parser'
@@ -101,6 +103,8 @@ module CovLoupe
     # Temporarily sets a thread-local context for the duration of the block,
     # restoring the previous context afterward. Used to scope logging and
     # error handling to a specific mode (CLI, MCP, library).
+    #
+    # @api public
     def with_context(context)
       previous = Thread.current[THREAD_CONTEXT_KEY]
       Thread.current[THREAD_CONTEXT_KEY] = context
@@ -109,23 +113,30 @@ module CovLoupe
       Thread.current[THREAD_CONTEXT_KEY] = previous
     end
 
+    # @api private
     def context
       Thread.current[THREAD_CONTEXT_KEY] || default_context
     end
 
-    def create_context(error_handler:, log_target: nil, mode: :library, app_config: nil)
+    # Only log_target: is public. The error_handler:, mode:, and app_config: keywords are
+    # internal; library code raises exceptions and never consults the context's handler.
+    #
+    # @api public
+    def create_context(error_handler: nil, log_target: nil, mode: :library, app_config: nil)
       AppContext.new(
-        error_handler: error_handler,
+        error_handler: error_handler || ErrorHandlerFactory.for_library,
         log_target:    log_target.nil? ? default_context.log_target : log_target,
         mode:          mode,
         app_config:    app_config
       )
     end
 
+    # @api public
     def default_log_file
       default_context.log_target
     end
 
+    # @api public
     def default_log_file=(value)
       AppConfig.validate_log_file!(value)
       mutex.synchronize do
@@ -135,10 +146,12 @@ module CovLoupe
       value # rubocop:disable Lint/Void -- Setter should return assigned value for direct calls.
     end
 
+    # @api public
     def active_log_file
       context.log_target
     end
 
+    # @api public
     def active_log_file=(value)
       AppConfig.validate_log_file!(value)
       current = Thread.current[THREAD_CONTEXT_KEY]
@@ -150,10 +163,12 @@ module CovLoupe
       end
     end
 
+    # @api private
     def error_handler
       context.error_handler
     end
 
+    # @api private
     def error_handler=(handler)
       mutex.synchronize do
         previous_default = internal_default_context
@@ -161,17 +176,21 @@ module CovLoupe
       end
     end
 
+    # @api private
     def logger
       context.logger
     end
 
     # Returns true if running on Windows (mingw, mswin, cygwin).
+    #
+    # @api private
     def windows?
       return @windows if defined?(@windows)
 
       @windows = RUBY_PLATFORM.match?(/mingw|mswin|cygwin/)
     end
 
+    # @api public
     def version
       VERSION
     end

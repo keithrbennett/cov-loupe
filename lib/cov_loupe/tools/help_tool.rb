@@ -5,6 +5,7 @@ require_relative '../resources'
 
 module CovLoupe
   module Tools
+    # @api private
     class HelpTool < BaseTool
       tool_name 'help'
       description <<~DESC

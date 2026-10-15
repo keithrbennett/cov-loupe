@@ -9,6 +9,8 @@ module CovLoupe
   # Case-insensitive matching is automatically applied on case-insensitive volumes,
   # detected by testing the volume containing the project root (or the path being matched
   # when no root is given).
+  #
+  # @api private
   module GlobUtils
     GLOB_MATCH_FLAGS = File::FNM_PATHNAME | File::FNM_EXTGLOB
 

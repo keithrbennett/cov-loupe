@@ -25,11 +25,10 @@ $ cov-loupe --error-mode debug s nonexistent.rb
 
 ## Library Mode
 
-Calls to `CovLoupe::CoverageModel` raise custom exceptions you can handle programmatically:
+Calls to `CovLoupe::CoverageModel` raise custom exceptions rather than printing or logging them; rescue them in your code. To keep the diagnostics cov-loupe logs along the way, such as skipped coverage rows, give the context a log target:
 
 ```ruby
-handler = CovLoupe::ErrorHandlerFactory.for_library  # disables CLI-style logging
-context = CovLoupe.create_context(error_handler: handler)
+context = CovLoupe.create_context(log_target: 'cov_loupe.log')
 
 CovLoupe.with_context(context) do
   model = CovLoupe::CoverageModel.new
@@ -41,17 +40,9 @@ CovLoupe.with_context(context) do
 end
 ```
 
-Available exception classes:
-- `CovLoupe::Error` - Base error class
-- `CovLoupe::FileError` - Requested file not in coverage data
-- `CovLoupe::FileNotFoundError` - File does not exist on disk (subclass of `FileError`)
-- `CovLoupe::FilePermissionError` - File permission denied (subclass of `FileError`)
-- `CovLoupe::CoverageDataError` - Invalid or missing coverage data
-- `CovLoupe::CoverageFileNotFoundError` - Coverage data file not found (subclass of `FileError`)
-- `CovLoupe::CoverageDataStaleError` - Coverage data is stale (when `raise_on_stale: true`)
-- `CovLoupe::CoverageDataProjectStaleError` - Project-wide staleness error
-- `CovLoupe::ConfigurationError` - Configuration problems
-- `CovLoupe::UsageError` - Command usage errors
+Library calls never consult the context's configured error handler, and the error handler classes and protocol (`handle_error`, `convert_standard_error`) are not public API; see [Public API and Versioning](LIBRARY_API.md#public-api-and-versioning).
+
+See [Exception Types](LIBRARY_API.md#exception-types) for the full exception hierarchy.
 
 ## MCP Server Mode
 
@@ -66,21 +57,6 @@ the result's `isError` field. Protocol- and dispatch-level failures do not conta
 
 - **Logging enabled** - Tool-execution errors handled by cov-loupe go to `stderr` by default; use `--log-file` to choose an explicit persistent file target. See the [logging initialization and target testing guide](LOGGING.md#log-file-initialization-and-target-testing); MCP SDK argument-validation failures do not reach cov-loupe's logger
 - **Clean error messages** - User-friendly messages, no stack traces by default
-
-## Custom Error Handlers
-
-Library usage can opt into different logging behavior by installing a custom handler on the active context:
-
-```ruby
-handler = CovLoupe::ErrorHandler.new(error_mode: :log)
-
-context = CovLoupe.create_context(error_handler: handler)
-
-CovLoupe.with_context(context) do
-  model = CovLoupe::CoverageModel.new
-  model.summary_for('lib/cov_loupe/model/model.rb')
-end
-```
 
 ## Stale Coverage Errors
 

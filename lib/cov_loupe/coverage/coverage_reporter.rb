@@ -31,6 +31,7 @@ module CovLoupe
   #     root: '/path/to/project'
   #   )
   #
+  # @api public
   module CoverageReporter
     module_function def report(threshold: 80, count: 5, model: nil, root: nil, coverage_file: nil)
       # Determine default root from SimpleCov if available

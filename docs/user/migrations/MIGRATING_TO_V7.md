@@ -17,6 +17,7 @@ This document describes the breaking changes introduced in version 7.0.0.
 - [Percentages Truncated, Not Rounded](#percentages-truncated-not-rounded)
 - [Staleness Values Renamed](#staleness-values-renamed)
 - [`project_validate` Requires `--allow-code-predicates`](#project_validate-requires---allow-code-predicates)
+- [Public API Declared](#public-api-declared)
 
 ---
 
@@ -149,6 +150,8 @@ v7.0 replaces every `resultset` name in the CLI, MCP tools, and library API with
 | `CovLoupe::ResultsetLoader` | `CovLoupe::CoverageJsonLoader` |
 | `CoverageRepository.new(coverage_file_path:)` | `CoverageRepository.new(coverage_file:)` |
 | `CoverageRepository#coverage_file_path` | `#resolved_coverage_file` |
+
+Of these, only the CLI option, the MCP argument, the `CoverageModel` names, `CoverageReporter.report(coverage_file:)`, and the error classes and readers are public in 7.0. The resolver, loader, repository, and `AppConfig` names are internal, so they may change again in any release; see [Public API Declared](#public-api-declared).
 
 **Before (v6.x):**
 
@@ -289,13 +292,13 @@ Staleness states now have one name everywhere. The per-file `stale` value and th
 | Totals `files.with_coverage.stale.by_type` key | `missing_from_disk` | `deleted` |
 | `totals` text output | `Stale: missing on disk = N` | `Stale: deleted = N` |
 | `list` table legend | `Staleness: error, missing, newer, length_mismatch` | `Staleness: deleted, newer, length_mismatch, unreadable` |
-| Library constant | `StaleStatus::MISSING_FROM_DISK` | `StaleStatus::DELETED` |
+| Library code testing for a deleted source | `StaleStatus::MISSING_FROM_DISK` | the string `"deleted"` (`StaleStatus` is internal) |
 
 `"ok"`, `"newer"`, and `"length_mismatch"` are unchanged. "Missing" now only means absent coverage data (`missing_tracked_files`, `missing_from_coverage`) or an absent coverage timestamp (`timestamp_status: "missing"`). `CoverageModel#staleness_for` returns `"unreadable"` (was `"error"`) when the staleness check itself fails. `StaleStatus.normalize` now rejects `"missing"` and `"error"`.
 
 This applies to library hashes, CLI output in all formats, and MCP tool payloads.
 
-**Migration:** replace `stale == "missing"` checks with `"deleted"` and `stale == "error"` with `"unreadable"`, and read `by_type["deleted"]` instead of `by_type["missing_from_disk"]`. Replace `StaleStatus::MISSING_FROM_DISK` with `StaleStatus::DELETED`. Update `validate` predicates and scripts that parse the `totals` or `list` text output the same way.
+**Migration:** replace `stale == "missing"` checks with `"deleted"` and `stale == "error"` with `"unreadable"`, and read `by_type["deleted"]` instead of `by_type["missing_from_disk"]`. Replace `StaleStatus::MISSING_FROM_DISK` with the string `"deleted"` rather than `StaleStatus::DELETED`, since `StaleStatus` is internal as of 7.0 (see [Public API Declared](#public-api-declared)). Update `validate` predicates and scripts that parse the `totals` or `list` text output the same way.
 
 ## `project_validate` Requires `--allow-code-predicates` {#project_validate-requires---allow-code-predicates}
 
@@ -304,3 +307,15 @@ The MCP server no longer registers `project_validate` by default. It runs Ruby p
 The CLI `validate` subcommand is unchanged and needs no flag.
 
 **Migration:** if you use `project_validate` and accept the risk, add `--allow-code-predicates` to the server's arguments, e.g. `"args": ["-m", "mcp", "--allow-code-predicates"]`. Otherwise, run `cov-loupe validate` from a shell, or ask the client to apply your criteria to `project_coverage` output.
+
+## Public API Declared {#public-api-declared}
+
+In 6.x, the Library API guide's "API Boundary and Compatibility" section named `CovLoupe.run`, `CoverageModel`, and eight `CoverageModel` methods as supported, and promised to keep them compatible "as practical" across minor and patch releases. Other guides and migration notes, though, used many more classes, including internal ones renamed earlier in this guide. 7.0 replaces that section with [Public API and Versioning](../LIBRARY_API.md#public-api-and-versioning), which defines the public surface across the library, structured output, CLI, and MCP server, and commits to Semantic Versioning for it.
+
+For the Ruby library, the source defines the public API: classes, modules, methods, and constants tagged `@api public` are public, and those tagged `@api private` are internal, including the internal members of partly public classes such as `CoverageModel` and the context object. The public parts include `CovLoupe.run`, `CoverageModel`, `PayloadSchema.schema_path`, the error classes, `ExitCodes`, `CoverageReporter.report`, and the context and logging methods. The payload schemas, CLI options and subcommands, and MCP tools and their arguments are public too. Everything else is internal and may change in any release. That includes classes renamed earlier in this guide, such as `Resolvers::CoverageFilePathResolver`, `CoverageRepository`, `CoverageJsonLoader`, `AppConfig`, and `StaleStatus`. Human-readable text (tables, text output, error message wording) is also outside the public API; structured output is covered through its `schema_version`.
+
+Three internal constants are now private constants, so referencing them from outside the gem raises `NameError`: `CoverageModel::RELATIVIZER_SCALAR_KEYS`, `CoverageModel::RELATIVIZER_ARRAY_KEYS`, and `CovLoupe::StalenessFormatterMixin`.
+
+Error handlers (`ErrorHandler`, `ErrorHandlerFactory`, `CovLoupe.error_handler`, `error_handler=`, and the `error_handler:` keyword of `create_context`) are internal, because library calls raise exceptions and never consult the context's configured handler. `create_context` no longer requires `error_handler:`, so library code can call `CovLoupe.create_context(log_target: ...)`; existing calls that pass it keep working. Nothing else changed behavior.
+
+**Migration:** if you call anything tagged `@api private`, or otherwise outside [Public API and Versioning](../LIBRARY_API.md#public-api-and-versioning), move to a public equivalent (for example, compare staleness strings such as `"deleted"` instead of `StaleStatus::DELETED`, and use `CovLoupe.run` instead of instantiating `CoverageCLI`), or pin cov-loupe to an exact version. If the public API doesn't cover your use, open an issue.

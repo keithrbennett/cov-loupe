@@ -5,6 +5,8 @@ require_relative 'payload_caching'
 module CovLoupe
   module Presenters
     # Provides aggregated line totals and overall coverage (covered lines / coverable lines) across the project.
+    #
+    # @api private
     class ProjectTotalsPresenter
       include PayloadCaching
 

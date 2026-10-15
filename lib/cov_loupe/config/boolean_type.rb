@@ -19,6 +19,8 @@ module CovLoupe
   #   --flag=no      → false
   #   --flag yes     → true
   #   --flag false   → false
+  #
+  # @api private
   class BooleanType
     # Values that map to true
     TRUE_VALUES = %w[yes y true t on + 1].freeze

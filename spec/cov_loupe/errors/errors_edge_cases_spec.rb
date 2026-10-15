@@ -294,4 +294,10 @@ RSpec.describe CovLoupe do
       end
     end
   end
+
+  describe 'StalenessFormatterMixin' do
+    it 'raises NameError when referenced from outside' do
+      expect { CovLoupe::StalenessFormatterMixin }.to raise_error(NameError, /private constant/)
+    end
+  end
 end

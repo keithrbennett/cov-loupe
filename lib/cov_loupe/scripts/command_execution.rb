@@ -5,6 +5,7 @@ require 'shellwords'
 
 module CovLoupe
   module Scripts
+    # @api private
     module CommandExecution
       # Execute a command and return its stdout.
       #

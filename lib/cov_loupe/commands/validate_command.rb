@@ -13,6 +13,8 @@ module CovLoupe
     # Usage:
     #   cov-loupe validate policy.rb                # File mode
     #   cov-loupe validate -i '->(m) { ... }'       # Inline mode
+    #
+    # @api private
     class ValidateCommand < BaseCommand
       def execute(args)
         # Parse command-specific options

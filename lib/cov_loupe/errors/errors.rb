@@ -26,6 +26,8 @@ module CovLoupe
   #           └── CoverageDataProjectStaleError — project-wide staleness
   #
   # Base error class for all SimpleCov MCP errors
+  #
+  # @api public
   class Error < StandardError
     attr_reader :original_error
 
@@ -40,18 +42,23 @@ module CovLoupe
 
     # The backtrace most useful for diagnosis: the wrapped exception's, which points at the
     # actual failure site (e.g., inside a predicate), rather than where it was re-raised.
+    #
+    # @api private
     def diagnostic_backtrace
       original_error&.backtrace || backtrace
     end
   end
 
   # Configuration or setup related errors
+  #
+  # @api public
   class ConfigurationError < Error
     def user_friendly_message
       "Configuration error: #{message}"
     end
   end
 
+  # @api public
   class LoggingError < ConfigurationError
     attr_reader :target
 
@@ -62,6 +69,8 @@ module CovLoupe
   end
 
   # Error wrapper when the root cause is unknown or unclassified.
+  #
+  # @api public
   class UnknownError < Error
     def user_friendly_message
       "An unexpected error occurred: #{message}"
@@ -70,6 +79,8 @@ module CovLoupe
 
   # A user-supplied predicate failed to load or raised while running. Distinct from
   # CoverageDataError so callers (and AI agents) fix the predicate, not the coverage data.
+  #
+  # @api public
   class PredicateError < Error
     def user_friendly_message
       "Predicate error: #{message}"
@@ -77,6 +88,8 @@ module CovLoupe
   end
 
   # File or path related errors
+  #
+  # @api public
   class FileError < Error
     def user_friendly_message
       "File error: #{message}"
@@ -84,10 +97,15 @@ module CovLoupe
   end
 
   # More specific file errors
+  #
+  # @api public
   class FileNotFoundError < FileError; end
+  # @api public
   class FilePermissionError < FileError; end
+  # @api public
   class NotAFileError < FileError; end
 
+  # @api public
   class CoverageFileNotFoundError < FileError
     def user_friendly_message
       base = "File error: #{message}"
@@ -109,12 +127,15 @@ module CovLoupe
   end
 
   # Coverage data related errors
+  #
+  # @api public
   class CoverageDataError < Error
     def user_friendly_message
       "Coverage data error: #{message}"
     end
   end
 
+  # @api public
   class CorruptCoverageDataError < CoverageDataError
     def user_friendly_message
       "Corrupt coverage data: #{message}"
@@ -122,6 +143,8 @@ module CovLoupe
   end
 
   # Shared module for stale error formatting
+  #
+  # @api private
   module StalenessFormatterMixin
     private def formatter
       @formatter ||= StalenessMessageFormatter.new(
@@ -130,8 +153,11 @@ module CovLoupe
       )
     end
   end
+  private_constant :StalenessFormatterMixin
 
   # Coverage data is present but appears stale compared to source files
+  #
+  # @api public
   class CoverageDataStaleError < CoverageDataError
     include StalenessFormatterMixin
 
@@ -165,6 +191,8 @@ module CovLoupe
 
   # Project-level stale coverage (global) — coverage timestamp older than
   # one or more source files, or new tracked files missing from coverage.
+  #
+  # @api public
   class CoverageDataProjectStaleError < CoverageDataError
     include StalenessFormatterMixin
 
@@ -201,7 +229,10 @@ module CovLoupe
   end
 
   # Command line usage errors
+  #
+  # @api public
   class UsageError < Error
+    # @api private
     def self.for_subcommand(usage_fragment)
       new("Usage: cov-loupe #{usage_fragment}")
     end

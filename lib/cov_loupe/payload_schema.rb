@@ -3,8 +3,12 @@
 require_relative 'version'
 
 module CovLoupe
-  # Adds the version of a coverage payload without changing the input hash.
+  # Locates the shipped JSON Schemas for structured payloads (public: schema_path and
+  # SCHEMA_NAMES), and adds schema_version to payloads (internal: add).
+  #
+  # @api public
   module PayloadSchema
+    # @api private
     SCHEMA_DIR = File.expand_path('schemas', __dir__).freeze
     SCHEMA_NAMES = %w[summary raw uncovered detailed list totals validate_result help].freeze
 
@@ -28,6 +32,7 @@ module CovLoupe
       path
     end
 
+    # @api private
     def self.add(payload)
       raise TypeError, 'Structured payload must be a Hash' unless payload.is_a?(Hash)
 
