@@ -45,50 +45,13 @@ Prefer project‑local tools and scripts (for example, bin/ scripts, package.jso
 - Do not add gems unless necessary.
 - If `ruby-lsp` is available, prefer symbol-aware analysis over broad file dumping when the tool supports that workflow.
 
-## Repository Snapshot
-- Ruby gem exposing a SimpleCov coverage CLI (`exe/cov-loupe`) and MCP server; library lives under `lib/cov_loupe/`.
-- Key files: main entry point at `lib/cov_loupe.rb`, core modules in `lib/cov_loupe/` including `cli.rb`, `model/model.rb`, `mcp_server.rb`, and tool implementations in `lib/cov_loupe/tools/*.rb`.
-- Tests: RSpec under `spec/` with fixtures in `spec/fixtures/`; running tests produces `coverage/coverage.json` consumed by the tools.
-- Useful commands:
-  - `bundle install` – install dependencies
-  - `bundle exec rspec` – run rspec (currently not working in Codex for macOS)
-  - `bundle exec exe/cov-loupe ...` – run CLI or MCP server directly
-  - `cov-loupe list` – table view of coverage data
-
 ## Project Overview
 `cov-loupe` is a Ruby gem that ships both a CLI and an MCP (Model Context Protocol) server for inspecting SimpleCov coverage data. It reads SimpleCov's `coverage.json` directly (the format written by SimpleCov 1.x; SimpleCov is not a dependency and is never loaded, and the file's `meta.schema_version` is checked on load) and exposes multiple data formats: file summaries, raw line arrays, uncovered lines, per-line detail, and repo-level tables.
-
-### Key Technologies
-- **Ruby** – implementation language and packaging format (gem).
-- **MCP (Model Context Protocol)** – JSON-RPC server for editor/agent integrations.
-- **RSpec** – primary test framework.
-- **Simplecov** - test coverage analysis tool
 
 ### Dual Mode Architecture
 `CovLoupe.run` operates in either CLI mode (default) or MCP server mode (when `-m mcp` or `--mode mcp` is specified). This dual-mode entry point enables both interactive commands and background tool-serving from the same executable.
 
-### Core Components
-- `lib/cov_loupe/model/model.rb` (`CoverageModel`) – core API for querying and shaping coverage data.
-- `lib/cov_loupe/cli.rb` (`CoverageCLI`) – CLI interface with subcommands like `list`, `summary`, `raw`, and more.
-- `lib/cov_loupe/mcp_server.rb` (`MCPServer`) – JSON-RPC server that exposes tools to MCP clients.
-- `lib/cov_loupe/tools/*.rb` – tool implementations (`file_coverage_summary`, `project_coverage`, etc.).
-- Error handling utilities keep behavior context-aware: friendly CLI output, raised exceptions for libraries, and `tools/call` results with `isError: true` for MCP argument-validation and tool-execution failures. Protocol- or dispatch-level failures such as unknown tools remain JSON-RPC errors.
-
-### Coverage Data Flow
-1. Read SimpleCov `coverage.json` files without loading SimpleCov at runtime.
-2. Resolve file paths using exact normalized matches and project-root-relative matching.
-3. Provide coverage data in multiple formats: raw arrays, summaries, uncovered lines, per-line details, totals, and formatted tables.
-
 ## Building, Running, and Testing
-
-### Prerequisites
-- Ruby >= 3.3
-- Bundler
-
-### Installation
-```sh
-bundle install
-```
 
 ### Running Tests
 Run the full suite (and generate `coverage/coverage.json`) with:
@@ -100,6 +63,7 @@ You can also run the default Rake task:
 rake
 ```
 Use `bundle exec rspec spec/path_spec.rb` to target specific specs when needed.
+`bundle exec rspec` is currently not working in Codex for macOS.
 
 ### Manual Testing
 - Run the CLI locally during development:
@@ -121,25 +85,9 @@ Use `bundle exec rspec spec/path_spec.rb` to target specific specs when needed.
   contract tests. Optional validation and error sanity checks are documented in
   [MCP Integration — Error Responses](docs/user/MCP_INTEGRATION.md#error-responses).
 
-### Building
-```sh
-gem build cov-loupe.gemspec
-gem install cov-loupe-*.gem
-```
-
 ## CLI Usage
 
 Run `bundle exec exe/cov-loupe` for up-to-date usage information.
-
-The `cov-loupe` executable can be run directly (`bundle exec exe/cov-loupe ...` or `cov-loupe ...` when installed). Core subcommands (with single-character abbreviations):
-- `list`, `l` – show a table of all files and their coverage.
-- `summary <path>`, `s` – show covered/total/percentage for one file.
-- `raw <path>`, `r` – print the raw SimpleCov lines array.
-- `uncovered <path>`, `u` – list uncovered line numbers.
-- `detailed <path>`, `d` – show per-line hit counts and coverage status.
-- `totals`, `t` – show aggregated totals for the project.
-- `validate <file|-i code>`, `v` – run a Ruby predicate to enforce coverage policies.
-- Use `-v` / `--version` to print the version string and exit.
 
 ## MCP Server Usage
 Run `cov-loupe` in MCP mode with `-m mcp`/`--mode mcp`. You can issue JSON-RPC requests over stdio, for example:
