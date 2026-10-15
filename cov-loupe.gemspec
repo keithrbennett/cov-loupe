@@ -30,7 +30,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ['lib']
 
   # Runtime deps (stdlib: json, time, pathname, yaml)
-  spec.add_dependency 'amazing_print', '~> 2.0'
+  spec.add_dependency 'amazing_print', '>= 2', '< 4'
   spec.add_dependency 'logger'
   # MCP 0.15 is the minimum supported version because earlier releases reported tool
   # argument-validation failures as top-level JSON-RPC errors. Since 0.15, those failures are
