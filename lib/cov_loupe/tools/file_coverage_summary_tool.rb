@@ -12,7 +12,7 @@ module CovLoupe
         Use this when the user asks for the covered/total line counts and percentage for a specific file.
         Do not use this for multi-file reports; use project_coverage for per-file listings or project_coverage_totals for aggregate totals.
         Inputs: file path (required) plus optional root/coverage_file/raise_on_stale flag inherited from BaseTool.
-        Output: JSON object {"file": String, "summary": {"covered": Integer, "total": Integer, "percentage": Float | null}, "stale": "ok" | "missing" | "newer" | "length_mismatch" | "error"}.
+        Output: JSON object {"file": String, "summary": {"covered": Integer, "total": Integer, "percentage": Float | null}, "stale": "ok" | "deleted" | "newer" | "length_mismatch" | "unreadable"}.
         Examples: "What is the coverage for lib/cov_loupe/tools/project_coverage_tool.rb?".
       DESC
       input_schema(**input_schema_def)

@@ -5,26 +5,28 @@ module CovLoupe
   #
   # Status values used across the codebase:
   #   - 'ok'             → file is fresh, coverage matches source
-  #   - 'missing'        → source file has been deleted
+  #   - 'deleted'        → source file has been deleted
   #   - 'newer'          → source file mtime exceeds coverage timestamp
   #   - 'length_mismatch'→ source line count differs from coverage array length
-  #   - 'error'          → source file could not be read
+  #   - 'unreadable'     → source file could not be read
   #
-  # Additional status values used in project totals (not per-file):
-  #   - MISSING_FROM_DISK, NEWER, LENGTH_MISMATCH, UNREADABLE  → labels for stale breakdown
+  # The same names are used as project totals stale.by_type keys (DELETED, NEWER,
+  # LENGTH_MISMATCH, UNREADABLE) and match the list payload's *_files arrays.
+  # "Missing" is reserved for "no coverage data":
   #   - MISSING_FROM_COVERAGE → tracked file not found in coverage data
   #   - SKIPPED              → file skipped due to processing error
   module StaleStatus
-    VALID_STATUSES = %w[ok missing newer length_mismatch error].freeze
-    MISSING_FROM_DISK = 'missing_from_disk'
+    OK = 'ok'
+    DELETED = 'deleted'
     NEWER = 'newer'
     LENGTH_MISMATCH = 'length_mismatch'
     UNREADABLE = 'unreadable'
+    VALID_STATUSES = [OK, DELETED, NEWER, LENGTH_MISMATCH, UNREADABLE].freeze
     MISSING_FROM_COVERAGE = 'missing_from_coverage'
     SKIPPED = 'skipped'
 
     module_function def stale?(value)
-      normalize(value) != 'ok'
+      normalize(value) != OK
     end
 
     module_function def normalize(value)

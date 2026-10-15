@@ -32,7 +32,7 @@ Reads SimpleCov's `coverage.json`, the documented JSON formatter output that Sim
 
 - ✅ **Multiple interfaces** - CLI, MCP server, and Ruby API
 - **Annotated source code** - `-s full|uncovered|none` / `--source full|uncovered|none` with `-n N` / `--context-lines N` for context lines
-- ✅ **Staleness detection** - Identify outdated coverage (missing files, timestamp mismatches, line count changes)
+- ✅ **Staleness detection** - Identify outdated coverage (deleted files, timestamp mismatches, line count changes)
 - ✅ **Multi-suite aware** - Reads SimpleCov's already-merged `coverage.json`, so RSpec + Cucumber (etc.) appear as one coverage map
 - ✅ **Flexible path resolution** - Works with absolute or relative paths
 - ✅ **Comprehensive error handling** - Context-aware messages for each mode

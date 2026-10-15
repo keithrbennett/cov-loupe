@@ -56,10 +56,10 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
                 'stale' => {
                   'total'   => 1,
                   'by_type' => {
-                    'missing_from_disk' => 0,
-                    'newer'             => 1,
-                    'length_mismatch'   => 0,
-                    'unreadable'        => 0,
+                    'deleted'         => 0,
+                    'newer'           => 1,
+                    'length_mismatch' => 0,
+                    'unreadable'      => 0,
                   },
                 },
               },
@@ -83,7 +83,7 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
         aggregate_failures do
           expect(output).to include('File breakdown:')
           expect(output).to include('With coverage: 3 total, 2 ok, 1 stale')
-          expect(output).to include('newer than coverage = 1')
+          expect(output).to include('Stale: deleted = 0, newer than coverage = 1')
           expect(output).to include('Without coverage: 1 total')
           expect(output).to include('Missing from coverage = 1')
         end
@@ -132,10 +132,10 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
               'stale' => {
                 'total'   => 0,
                 'by_type' => {
-                  'missing_from_disk' => 0,
-                  'newer'             => 0,
-                  'length_mismatch'   => 0,
-                  'unreadable'        => 0,
+                  'deleted'         => 0,
+                  'newer'           => 0,
+                  'length_mismatch' => 0,
+                  'unreadable'      => 0,
                 },
               },
             },

@@ -3,7 +3,7 @@
 # Helpers for mocking and stubbing objects in RSpec tests.
 module MockingHelpers
   # Stub staleness checking to return a specific value
-  # @param value [String] The staleness value to return ("length_mismatch", "newer", "missing", "error", or "ok")
+  # @param value [String] The staleness value to return ("ok", "deleted", "newer", "length_mismatch", or "unreadable")
   def stub_staleness_check(value)
     checker_double = instance_double(CovLoupe::StalenessChecker)
     allow(checker_double).to receive_messages(

@@ -44,8 +44,8 @@ module CovLoupe
       },
       raise_on_stale: {
         type:        'boolean',
-        description: 'If true, raise error if coverage data is stale (missing files, ' \
-          'timestamp mismatch). Defaults to false.',
+        description: 'If true, raise error if coverage data is stale (deleted or unreadable ' \
+          'source files, timestamp or line-count mismatch). Defaults to false.',
         default:     false,
       },
       error_mode:     {

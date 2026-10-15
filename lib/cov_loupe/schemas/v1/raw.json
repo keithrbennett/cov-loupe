@@ -12,6 +12,6 @@
       "items": {"type": ["integer", "null"], "minimum": 0},
       "description": "SimpleCov hit counts; null denotes a non-code line."
     },
-    "stale": {"type": "string", "enum": ["ok", "missing", "newer", "length_mismatch", "error"], "description": "File staleness, present in CLI and MCP output."}
+    "stale": {"type": "string", "enum": ["ok", "deleted", "newer", "length_mismatch", "unreadable"], "description": "File staleness, present in CLI and MCP output."}
   }
 }

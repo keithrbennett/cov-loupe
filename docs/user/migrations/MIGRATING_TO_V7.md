@@ -15,6 +15,7 @@ This document describes the breaking changes introduced in version 7.0.0.
 - [Logging Defaults, Target Probing, and Lazy File Creation](#logging-defaults-target-probing-and-lazy-file-creation)
 - [CLI Exit Codes Remapped](#cli-exit-codes-remapped)
 - [Percentages Truncated, Not Rounded](#percentages-truncated-not-rounded)
+- [Staleness Values Renamed](#staleness-values-renamed)
 
 ---
 
@@ -273,3 +274,24 @@ This applies to every `percentage` value: library hashes, CLI output in all form
 `CoverageReporter.report` now prints two decimals instead of one (`  99.95%` rather than `100.0%`).
 
 **Migration:** check `validate` predicates and other scripts that compare a percentage to an exact or near-boundary value. For example, `percentage >= 66.67` no longer passes for 2 of 3 lines. Thresholds like `>= 100` or `>= 80` now hold only when coverage actually reaches that value.
+
+---
+
+## Staleness Values Renamed {#staleness-values-renamed}
+
+Staleness states now have one name everywhere. The per-file `stale` value and the `project_totals` `stale.by_type` keys use the same names as the `list` arrays (`deleted_files`, `newer_files`, `length_mismatch_files`, `unreadable_files`):
+
+| Where | 6.x | 7.0 |
+|---|---|---|
+| Per-file `stale` value (deleted source) | `"missing"` | `"deleted"` |
+| Per-file `stale` value (unreadable source or failed check) | `"error"` | `"unreadable"` |
+| Totals `files.with_coverage.stale.by_type` key | `missing_from_disk` | `deleted` |
+| `totals` text output | `Stale: missing on disk = N` | `Stale: deleted = N` |
+| `list` table legend | `Staleness: error, missing, newer, length_mismatch` | `Staleness: deleted, newer, length_mismatch, unreadable` |
+| Library constant | `StaleStatus::MISSING_FROM_DISK` | `StaleStatus::DELETED` |
+
+`"ok"`, `"newer"`, and `"length_mismatch"` are unchanged. "Missing" now only means absent coverage data (`missing_tracked_files`, `missing_from_coverage`) or an absent coverage timestamp (`timestamp_status: "missing"`). `CoverageModel#staleness_for` returns `"unreadable"` (was `"error"`) when the staleness check itself fails. `StaleStatus.normalize` now rejects `"missing"` and `"error"`.
+
+This applies to library hashes, CLI output in all formats, and MCP tool payloads.
+
+**Migration:** replace `stale == "missing"` checks with `"deleted"` and `stale == "error"` with `"unreadable"`, and read `by_type["deleted"]` instead of `by_type["missing_from_disk"]`. Replace `StaleStatus::MISSING_FROM_DISK` with `StaleStatus::DELETED`. Update `validate` predicates and scripts that parse the `totals` or `list` text output the same way.

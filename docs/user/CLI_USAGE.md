@@ -112,7 +112,7 @@ Default sort order is descending (highest coverage first) so the lowest-coverage
 Files: total 7, ok 7, stale 0
 ```
 
-**Stale indicators:** missing (missing file), newer (timestamp mismatch), length_mismatch (line count mismatch), error (staleness check error)
+**Stale indicators:** deleted (source file deleted), newer (timestamp mismatch), length_mismatch (line count mismatch), unreadable (source file could not be read, or its staleness check failed)
 
 ### `summary <path>`, `s <path>`
 
@@ -375,7 +375,7 @@ Lines (7 ok files): 47 total, 38 covered, 9 uncovered (80.85%)
 
 File breakdown:
   With coverage: 7 total, 7 ok, 0 stale
-    Stale: missing on disk = 0, newer than coverage = 0, line mismatch = 0, unreadable = 0
+    Stale: deleted = 0, newer than coverage = 0, line mismatch = 0, unreadable = 0
 ```
 
 **With `--tracked-globs` enabled:**
@@ -388,7 +388,7 @@ Lines (4 ok files): 24 total, 19 covered, 5 uncovered (79.16%)
 
 File breakdown:
   With coverage: 4 total, 4 ok, 0 stale
-    Stale: missing on disk = 0, newer than coverage = 0, line mismatch = 0, unreadable = 0
+    Stale: deleted = 0, newer than coverage = 0, line mismatch = 0, unreadable = 0
   Without coverage: 2 total
     Missing from coverage = 2, unreadable = 0, skipped (errors) = 0
 ```
@@ -414,7 +414,7 @@ File breakdown:
       "stale": {
         "total": 0,
         "by_type": {
-          "missing_from_disk": 0,
+          "deleted": 0,
           "newer": 0,
           "length_mismatch": 0,
           "unreadable": 0
@@ -429,11 +429,11 @@ File breakdown:
 **Notes:**
 - `lines` are based on fresh coverage entries only.
 - `lines.included_files` is the count of non-stale files included in the line totals; `lines.excluded_files` is the count of stale files excluded.
-- `with_coverage.stale.by_type` uses readable labels: `missing_from_disk`, `newer`,
+- `with_coverage.stale.by_type` keys match the per-file `stale` values: `deleted`, `newer`,
   `length_mismatch`, `unreadable`.
 - `without_coverage` is only present when tracking is enabled (tracked globs provided).
 - Respects `-g` / `--tracked-globs` when you only want to aggregate a subset of files.
-- Totals exclude stale files (`"missing"`, `"newer"`, `"length_mismatch"`, `"error"`) so the aggregate reflects only fresh coverage data.
+- Totals exclude stale files (`"deleted"`, `"newer"`, `"length_mismatch"`, `"unreadable"`) so the aggregate reflects only fresh coverage data.
 - Honors `-S` / `--raise-on-stale` to raise if coverage data is out of date.
 
 ## Global Options
@@ -600,10 +600,10 @@ clp --raise-on-stale false
 ```
 
 **Staleness conditions:**
-- **"missing"** (Missing): Source file no longer exists on disk
+- **"deleted"** (Deleted): Source file no longer exists on disk
 - **"newer"** (Timestamp): Source file modified after coverage was generated
 - **"length_mismatch"** (Length): Source file line count differs from coverage data
-- **"error"** (Error): Staleness check failed due to permission or I/O errors
+- **"unreadable"** (Unreadable): Source file could not be read (permission or I/O errors), or its staleness check failed
 - Tracked files missing from coverage (with --tracked-globs)
 
 <a id="tracked-globs"></a>
@@ -857,9 +857,10 @@ Every structured CLI format and library coverage hash begins with integer `schem
 
 **Staleness values:**
 - `"ok"` - Coverage data is current
-- `"missing"` - File missing (no longer exists on disk)
+- `"deleted"` - Source file deleted (no longer exists on disk)
 - `"newer"` - Timestamp mismatch (file modified after coverage)
 - `"length_mismatch"` - Length mismatch (line count differs)
+- `"unreadable"` - Source file could not be read, or its staleness check failed
 
 ### Source Display
 
@@ -996,7 +997,7 @@ clp -S true
 clp -S true -g "lib/payments/**/*.rb,lib/ops/jobs/**/*.rb" list
 
 # See which files are stale (don't error)
-clp list  # Stale column shows missing/newer/length_mismatch/error markers
+clp list  # Stale column shows deleted/newer/length_mismatch/unreadable markers
 ```
 
 ### Source Code Display

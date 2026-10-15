@@ -26,10 +26,10 @@
       "properties": {
         "covered": {"type": "integer", "minimum": 0, "description": "Lines with at least one hit."},
         "total": {"type": "integer", "minimum": 0, "description": "Coverable lines."},
-        "percentage": {"type": ["number", "null"], "minimum": 0, "maximum": 100, "description": "Covered percent, or null when there are no coverable lines."}
+        "percentage": {"type": ["number", "null"], "minimum": 0, "maximum": 100, "description": "Line coverage percent (covered / coverable lines), truncated to two decimals; null when there are no coverable lines."}
       }
     },
-    "stale": {"type": "string", "enum": ["ok", "missing", "newer", "length_mismatch", "error"], "description": "File staleness, present in CLI and MCP output."},
+    "stale": {"type": "string", "enum": ["ok", "deleted", "newer", "length_mismatch", "unreadable"], "description": "File staleness, present in CLI and MCP output."},
     "source": {"$ref": "#/$defs/source", "description": "Optional annotated source rows from CLI --source."}
   },
   "$defs": {

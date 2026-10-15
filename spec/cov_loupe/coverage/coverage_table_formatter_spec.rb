@@ -20,7 +20,7 @@ RSpec.describe CovLoupe::CoverageTableFormatter do
             'percentage' => 50.0,
             'covered'    => 5,
             'total'      => 10,
-            'stale'      => 'missing',
+            'stale'      => 'deleted',
           },
           {
             'file'       => 'lib/baz.rb',
@@ -87,7 +87,7 @@ RSpec.describe CovLoupe::CoverageTableFormatter do
       it 'includes stale indicators' do
         output = described_class.format(rows)
 
-        expect(output).to include('missing', 'newer') # Missing file, Timestamp mismatch
+        expect(output).to include('deleted', 'newer') # Deleted file, Timestamp mismatch
       end
 
       it 'includes summary counts footer' do
@@ -99,7 +99,7 @@ RSpec.describe CovLoupe::CoverageTableFormatter do
       it 'includes staleness legend when stale files present' do
         output = described_class.format(rows)
 
-        staleness_msg = 'Staleness: error, missing, newer, length_mismatch'
+        staleness_msg = 'Staleness: deleted, newer, length_mismatch, unreadable'
         expect(output).to include(staleness_msg)
       end
 
@@ -258,7 +258,7 @@ RSpec.describe CovLoupe::CoverageTableFormatter do
             'percentage' => 50.0,
             'covered'    => 5,
             'total'      => 10,
-            'stale'      => 'missing',
+            'stale'      => 'deleted',
           },
           {
             'file'       => 'lib/baz.rb',

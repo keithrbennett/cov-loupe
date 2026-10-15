@@ -51,7 +51,7 @@ RSpec.describe CovLoupe::Presenters::CoveragePayloadPresenter do
         'uncovered' => [2, 4],
         'summary'   => { 'covered' => 2, 'total' => 4, 'percentage' => 50.0 },
       },
-      stale:          'missing',
+      stale:          'deleted',
       expected_keys:  %w[uncovered summary],
     },
   ].each do |config|

@@ -531,7 +531,7 @@ when a file has no coverable lines (for example, a file containing only comments
 {"schema_version": 1, "file": "...", "lines": [1, 0, null, 5, 2, null, 1], "stale": "ok"}
 ```
 
-**Staleness values:** `"ok"` (fresh), `"missing"` (missing), `"newer"` (timestamp), `"length_mismatch"` (length), `"error"` (staleness check error)
+**Staleness values:** `"ok"` (fresh), `"deleted"` (source deleted), `"newer"` (timestamp), `"length_mismatch"` (length), `"unreadable"` (source could not be read, or its staleness check failed)
 
 #### Project-Wide Tools
 
@@ -545,7 +545,7 @@ when a file has no coverable lines (for example, a file containing only comments
 
 **`project_coverage_totals`** - Aggregated line totals
 - Parameters: `tracked_globs` (array), `raise_on_stale`
-- Returns: `{"schema_version":1,"lines":{"total":N,"covered":N,"uncovered":N,"percentage":Float|null,"included_files":N,"excluded_files":N},"tracking":{"enabled":Boolean,"globs":[String]},"files":{"total":N,"with_coverage":{"total":N,"ok":N,"stale":{"total":N,"by_type":{"missing_from_disk":N,"newer":N,"length_mismatch":N,"unreadable":N}}},"without_coverage":{"total":N,"by_type":{"missing_from_coverage":N,"unreadable":N,"skipped":N}}},"timestamp_status":"ok|missing","warnings":[String]}`
+- Returns: `{"schema_version":1,"lines":{"total":N,"covered":N,"uncovered":N,"percentage":Float|null,"included_files":N,"excluded_files":N},"tracking":{"enabled":Boolean,"globs":[String]},"files":{"total":N,"with_coverage":{"total":N,"ok":N,"stale":{"total":N,"by_type":{"deleted":N,"newer":N,"length_mismatch":N,"unreadable":N}}},"without_coverage":{"total":N,"by_type":{"missing_from_coverage":N,"unreadable":N,"skipped":N}}},"timestamp_status":"ok|missing","warnings":[String]}`
 - `without_coverage` is only present when tracking is enabled (tracked globs provided).
 - `warnings` is present when `timestamp_status` is `"missing"`.
 

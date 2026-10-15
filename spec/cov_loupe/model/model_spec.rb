@@ -300,7 +300,7 @@ RSpec.describe CovLoupe::CoverageModel do
         unreadable_files:      [abs_foo],
         file_statuses:         {
           abs_bar => 'length_mismatch',
-          abs_foo => 'error',
+          abs_foo => 'unreadable',
         }
       )
 
@@ -369,7 +369,7 @@ RSpec.describe CovLoupe::CoverageModel do
 
       stub_staleness_checker(
         unreadable_files: [abs_foo],
-        file_statuses:    { abs_foo => 'error' }
+        file_statuses:    { abs_foo => 'unreadable' }
       )
 
       totals = model.project_totals(tracked_globs: ['lib/**/*.rb'])
@@ -380,20 +380,20 @@ RSpec.describe CovLoupe::CoverageModel do
       end
     end
 
-    it 'increments missing_from_disk count for files with \"missing\" status' do
+    it 'increments deleted count for files with "deleted" status' do
       abs_foo = File.expand_path('lib/foo.rb', root)
 
       stub_staleness_checker(
         deleted_files: [abs_foo],
         file_statuses: {
-          abs_foo => 'missing',
+          abs_foo => 'deleted',
         }
       )
 
       totals = model.project_totals
 
       expect(totals['files']['with_coverage']['stale']['by_type']).to include(
-        'missing_from_disk' => 1
+        'deleted' => 1
       )
     end
   end
@@ -483,7 +483,7 @@ RSpec.describe CovLoupe::CoverageModel do
   end
 
   describe '#staleness_for' do
-    it "returns 'E' marker and logs error when staleness check fails" do
+    it "returns 'unreadable' and logs error when staleness check fails" do
       logger = instance_double(CovLoupe::Logger)
       allow(CovLoupe).to receive(:logger).and_return(logger)
       allow(logger).to receive(:safe_log)
@@ -496,7 +496,7 @@ RSpec.describe CovLoupe::CoverageModel do
 
       result = model_with_logger.staleness_for('lib/foo.rb')
 
-      expect(result).to eq('error')
+      expect(result).to eq('unreadable')
       expect(logger).to have_received(:safe_log).with(/Failed to check staleness/)
     end
   end
@@ -797,7 +797,7 @@ end['covered']).to eq(3)
         model_with_deleted = described_class.new(root: root, coverage_file: temp_coverage_file)
 
         staleness = model_with_deleted.staleness_for('lib/deleted.rb')
-        expect(staleness).to eq('missing')
+        expect(staleness).to eq('deleted')
       end
     end
 
@@ -838,7 +838,7 @@ end['covered']).to eq(3)
 
         # staleness_for uses raise_on_stale: false internally
         staleness = strict_model.staleness_for('lib/deleted.rb')
-        expect(staleness).to eq('missing')
+        expect(staleness).to eq('deleted')
       end
     end
 

@@ -180,7 +180,7 @@ module CovLoupe
       length_mismatch_files = Array(project_staleness_details[:length_mismatch_files]).uniq
       unreadable_files = Array(project_staleness_details[:unreadable_files]).uniq
       rows.each do |row|
-        row['stale'] = file_statuses.fetch(row['file'], 'ok')
+        row['stale'] = file_statuses.fetch(row['file'], StaleStatus::OK)
       end
 
       {
@@ -234,7 +234,7 @@ module CovLoupe
         .file_staleness_status(file_abs, coverage_lines)
     rescue => e
       @logger.safe_log("Failed to check staleness for #{path}: #{e.message}")
-      'error'
+      StaleStatus::UNREADABLE
     end
 
     # Returns formatted table string for all files coverage data
@@ -313,9 +313,9 @@ module CovLoupe
           'total'      => summary['total'],
           'percentage' => summary['percentage'],
 
-          # We set 'stale' => 'ok' as a placeholder, then in list we overwrite it
+          # We set 'stale' => StaleStatus::OK as a placeholder, then in list we overwrite it
           # with the true status from the project report.
-          'stale'      => 'ok',
+          'stale'      => StaleStatus::OK,
         }
       end
 
@@ -434,7 +434,7 @@ module CovLoupe
         raise FileError, "No coverage data found for file: #{path}"
       end
 
-      # When raise_on_stale is false, allow missing files to return coverage data
+      # When raise_on_stale is false, allow deleted files to return coverage data
       # The staleness status will be added by the presenter via staleness_for
       if raise_on_stale && !File.file?(file_abs)
         raise FileNotFoundError, "File not found: #{path}"
@@ -517,25 +517,20 @@ module CovLoupe
 
     private def stale_breakdown(rows)
       stale_by_type = {
-        StaleStatus::MISSING_FROM_DISK => 0,
-        StaleStatus::NEWER             => 0,
-        StaleStatus::LENGTH_MISMATCH   => 0,
-        StaleStatus::UNREADABLE        => 0,
+        StaleStatus::DELETED         => 0,
+        StaleStatus::NEWER           => 0,
+        StaleStatus::LENGTH_MISMATCH => 0,
+        StaleStatus::UNREADABLE      => 0,
       }
       ok_files = 0
 
       rows.each do |row|
-        case row['stale']
-        when 'ok'
+        # Per-file stale values double as the by_type keys.
+        status = row['stale']
+        if status == StaleStatus::OK
           ok_files += 1
-        when 'missing'
-          stale_by_type[StaleStatus::MISSING_FROM_DISK] += 1
-        when 'newer'
-          stale_by_type[StaleStatus::NEWER] += 1
-        when 'length_mismatch'
-          stale_by_type[StaleStatus::LENGTH_MISMATCH] += 1
-        when 'error'
-          stale_by_type[StaleStatus::UNREADABLE] += 1
+        elsif stale_by_type.key?(status)
+          stale_by_type[status] += 1
         end
       end
 

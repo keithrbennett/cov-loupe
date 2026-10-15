@@ -7,6 +7,12 @@
 
 ### Breaking
 
+- **Staleness values renamed.** Per-file `stale` values `"missing"` and `"error"` are now
+  `"deleted"` and `"unreadable"`, and the totals `stale.by_type` key `missing_from_disk` is now
+  `deleted`, matching the `deleted_files`/`unreadable_files` list arrays. Text output follows:
+  `totals` prints `Stale: deleted = N` (was `missing on disk`), and the `list` legend uses the
+  new names. `StaleStatus::MISSING_FROM_DISK` is replaced by `StaleStatus::DELETED`. See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#staleness-values-renamed).
 - **Ruby 3.3 or later is required.** The minimum supported Ruby is now 3.3 (was 3.2).
   Ruby 3.2 has reached end of life, and 3.3 is the oldest Ruby still maintained. See [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#ruby-33-or-later-required).
 - **CLI exit codes were remapped.** `validate` now exits `3` when the predicate

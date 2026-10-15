@@ -366,9 +366,9 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
             expect(result['summary']).to include('total' => 3)
           end
 
-          # Verify staleness_for returns 'missing' for the file
+          # Verify staleness_for returns 'deleted' for the file
           staleness = model.staleness_for('lib/deleted_file.rb')
-          expect(staleness).to eq('missing')
+          expect(staleness).to eq('deleted')
         end
       end
 

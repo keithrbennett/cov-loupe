@@ -191,7 +191,7 @@ Check your coverage tool configuration to ensure timestamps are recorded.
 **What this means:**
 - Time-based staleness checks (the `"newer"` indicator) cannot run without timestamps
 - Files modified after coverage collection won't be flagged as stale
-- Only line count mismatches and missing files will be detected
+- Only line count mismatches and deleted or unreadable files will be detected
 - The `timestamp_status` field in JSON output will show `"missing"` instead of `"ok"`
 
 **Where it appears:**

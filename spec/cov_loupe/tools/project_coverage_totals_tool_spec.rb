@@ -35,10 +35,10 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTotalsTool do
           'stale' => {
             'total'   => 0,
             'by_type' => {
-              'missing_from_disk' => 0,
-              'newer'             => 0,
-              'length_mismatch'   => 0,
-              'unreadable'        => 0,
+              'deleted'         => 0,
+              'newer'           => 0,
+              'length_mismatch' => 0,
+              'unreadable'      => 0,
             },
           },
         },
@@ -104,10 +104,10 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTotalsTool do
               'stale' => {
                 'total'   => 0,
                 'by_type' => {
-                  'missing_from_disk' => 0,
-                  'newer'             => 0,
-                  'length_mismatch'   => 0,
-                  'unreadable'        => 0,
+                  'deleted'         => 0,
+                  'newer'           => 0,
+                  'length_mismatch' => 0,
+                  'unreadable'      => 0,
                 },
               },
             },

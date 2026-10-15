@@ -14,7 +14,7 @@
     "skipped_files": {"type": "array", "items": {"$ref": "#/$defs/skipped_row"}, "description": "Files skipped because coverage data could not be processed."},
     "missing_tracked_files": {"$ref": "#/$defs/paths", "description": "Tracked files absent from coverage data."},
     "newer_files": {"$ref": "#/$defs/paths", "description": "Sources newer than the coverage timestamp."},
-    "deleted_files": {"$ref": "#/$defs/paths", "description": "Coverage entries whose source files are missing."},
+    "deleted_files": {"$ref": "#/$defs/paths", "description": "Coverage entries whose source files have been deleted."},
     "length_mismatch_files": {"$ref": "#/$defs/paths", "description": "Files whose source line count differs from coverage data."},
     "unreadable_files": {"$ref": "#/$defs/paths", "description": "Source files that could not be read."},
     "timestamp_status": {"type": "string", "enum": ["ok", "missing"], "description": "Whether the coverage timestamp is available."},
@@ -29,8 +29,8 @@
         "file": {"type": "string", "description": "Absolute or project-relative source path."},
         "covered": {"type": "integer", "minimum": 0, "description": "Lines with at least one hit."},
         "total": {"type": "integer", "minimum": 0, "description": "Coverable lines."},
-        "percentage": {"type": ["number", "null"], "minimum": 0, "maximum": 100, "description": "Covered percent, or null when there are no coverable lines."},
-        "stale": {"type": "string", "enum": ["ok", "missing", "newer", "length_mismatch", "error"], "description": "File staleness."}
+        "percentage": {"type": ["number", "null"], "minimum": 0, "maximum": 100, "description": "Line coverage percent (covered / coverable lines), truncated to two decimals; null when there are no coverable lines."},
+        "stale": {"type": "string", "enum": ["ok", "deleted", "newer", "length_mismatch", "unreadable"], "description": "File staleness."}
       }
     },
     "skipped_row": {

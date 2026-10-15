@@ -32,10 +32,10 @@ RSpec.describe CovLoupe::Presenters::ProjectTotalsPresenter do
           'stale' => {
             'total'   => 1,
             'by_type' => {
-              'missing_from_disk' => 0,
-              'newer'             => 1,
-              'length_mismatch'   => 0,
-              'unreadable'        => 0,
+              'deleted'         => 0,
+              'newer'           => 1,
+              'length_mismatch' => 0,
+              'unreadable'      => 0,
             },
           },
         },

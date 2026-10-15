@@ -93,6 +93,10 @@ files = saved.fetch('files')
 
 The schema version increments when a key is removed, renamed, or moved, or when a value's type or meaning changes. An incompatible change gets a new `vN` directory copied from the previous version and then edited; earlier version directories are never modified. Adding a key is compatible: add it to the current version's schema file without bumping the version. Consumers must ignore unknown keys so compatible additions remain readable; avoid relying on an exact top-level key set or processing every top-level key as coverage data.
 
+`percentage` always means line coverage: covered lines divided by coverable lines, truncated (not rounded) to two decimals, or `nil` when there are no coverable lines. If other metrics such as branch coverage are added later, they will get their own keys rather than changing what `percentage` means.
+
+Staleness values share one vocabulary across payloads. A per-file `stale` value is one of `"ok"`, `"deleted"`, `"newer"`, `"length_mismatch"`, or `"unreadable"`. The non-`"ok"` values are also the `project_totals` `stale.by_type` keys and match the `list` arrays `deleted_files`, `newer_files`, `length_mismatch_files`, and `unreadable_files`. "Missing" refers only to absent coverage data (`missing_tracked_files`, `missing_from_coverage`) or an absent coverage timestamp (`timestamp_status`).
+
 ## Method Reference
 
 ### `list(sort_order: :descending, raise_on_stale: model default, tracked_globs: model default)`
@@ -239,7 +243,7 @@ totals = model.project_totals
 lib_totals = model.project_totals(tracked_globs: 'lib/**/*.rb')
 ```
 
-When `raise_on_stale: true` is set, the method raises on stale coverage instead of returning totals. Otherwise, totals exclude stale files (with staleness indicators `"missing"`, `"newer"`, `"length_mismatch"`, `"error"`) from line counts and report stale breakdowns under `files['with_coverage']['stale']`.
+When `raise_on_stale: true` is set, the method raises on stale coverage instead of returning totals. Otherwise, totals exclude stale files (with staleness indicators `"deleted"`, `"newer"`, `"length_mismatch"`, `"unreadable"`) from line counts and report stale breakdowns under `files['with_coverage']['stale']`.
 
 Note: The `without_coverage` hash will only be present if `tracked_globs` were specified.
 
@@ -280,8 +284,8 @@ Returns `Hash` with file data and staleness metadata:
       'file' => String,       # Absolute file path
       'covered' => Integer,   # Number of covered lines
       'total' => Integer,     # Total relevant lines
-      'percentage' => Float | nil, # Coverage percentage (0.00-100.00); nil if no coverable lines
-      'stale' => String       # Staleness indicator: "ok", "error", "missing", "newer", or "length_mismatch"
+      'percentage' => Float | nil, # Line coverage percentage (0.00-100.00); nil if no coverable lines
+      'stale' => String       # Staleness indicator: "ok", "deleted", "newer", "length_mismatch", or "unreadable"
     }
   ],
   'skipped_files' => Array<Hash>,          # Skipped rows; each hash has 'file', 'error', 'error_class'
@@ -305,12 +309,12 @@ Returns `Hash`:
   'summary' => {
     'covered' => Integer, # Number of covered lines
     'total' => Integer,   # Total relevant lines
-    'percentage' => Float | nil # Coverage percentage (0.00-100.00); nil if no coverable lines
+    'percentage' => Float | nil # Line coverage percentage (0.00-100.00); nil if no coverable lines
   }
 }
 ```
 
-The CLI and MCP responses add a `'stale'` field with values `"ok"`, `"missing"`, `"newer"`, `"length_mismatch"`, or `"error"`.
+The CLI and MCP responses add a `'stale'` field with values `"ok"`, `"deleted"`, `"newer"`, `"length_mismatch"`, or `"unreadable"`.
 
 ### `uncovered_for` {#uncovered_for}
 
@@ -378,7 +382,7 @@ Returns `Hash`:
     'total' => Integer,            # Total relevant lines across all files
     'covered' => Integer,          # Total covered lines
     'uncovered' => Integer,        # Total uncovered lines
-    'percentage' => Float | nil,   # Overall percent covered; nil if no measurable lines
+    'percentage' => Float | nil,   # Overall line coverage percent; nil if no measurable lines
     'included_files' => Integer,   # Non-stale files included in line totals
     'excluded_files' => Integer    # Stale files excluded from line totals
   },
@@ -394,7 +398,7 @@ Returns `Hash`:
       'stale' => {
         'total' => Integer,      # Stale coverage entries
         'by_type' => {
-          'missing_from_disk' => Integer,
+          'deleted' => Integer,
           'newer' => Integer,
           'length_mismatch' => Integer,
           'unreadable' => Integer
@@ -848,10 +852,10 @@ model = CovLoupe::CoverageModel.new
 The `list` method returns a `'stale'` field for each file with one of these values:
 
 - `"ok"` - Coverage data is current
-- `"missing"` - **Missing**: File no longer exists on disk
+- `"deleted"` - **Deleted**: File no longer exists on disk
 - `"newer"` - **Timestamp**: File modified more recently than coverage data
 - `"length_mismatch"` - **Length**: Source file line count differs from coverage data
-- `"error"` - **Error**: Staleness check failed
+- `"unreadable"` - **Unreadable**: Source file could not be read, or its staleness check failed
 
 **Note:** Per-file methods (`summary_for`, `uncovered_for`, `detailed_for`, `raw_for`) do not include staleness information in their return values. To check staleness for an individual file, call `model.staleness_for(path)`.
 

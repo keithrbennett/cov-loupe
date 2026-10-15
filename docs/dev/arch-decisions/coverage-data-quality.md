@@ -41,12 +41,12 @@ We implemented a **staleness detection system** with configurable error modes th
 
 The `StalenessChecker` class (defined in `lib/cov_loupe/staleness/staleness_checker.rb`) detects four distinct types of staleness:
 
-1. **Type "error" (Error)**: The staleness check itself failed
-   - Returned by `CoverageModel#staleness_for` when an exception is raised during staleness checking
+1. **Type "unreadable" (Unreadable)**: The source file could not be read, or its staleness check failed
+   - Returned by `file_staleness_status` on permission or I/O errors, and by `CoverageModel#staleness_for` when an exception is raised during staleness checking
    - Example: File permission errors, resolver failures, or other unexpected issues
-   - The error is logged but execution continues with an "error" status instead of crashing
+   - The error is logged but execution continues with an "unreadable" status instead of crashing
 
-2. **Type "missing" (Missing)**: The source file exists in coverage but is now deleted/missing
+2. **Type "deleted" (Deleted)**: The source file exists in coverage but has been deleted from disk
    - Returned by `file_staleness_status` when `File.file?(file_abs)` returns false
    - Example: File was deleted after tests ran
 
@@ -113,7 +113,7 @@ This allows:
 
 **File-level** (`check_file!` and `file_staleness_status`):
 - Checks a single file's staleness
-- Returns one of the staleness status strings ("ok", "missing", "newer", "length_mismatch", "error")
+- Returns one of the staleness status strings ("ok", "deleted", "newer", "length_mismatch", "unreadable")
 - Used by single-file tools (summary, detailed, uncovered)
 
 **Project-level** (`check_project!`):
@@ -126,7 +126,7 @@ This allows:
 - Used by `project_coverage`
 
 **Totals behavior**:
-- `project_totals` excludes any stale files ("missing", "newer", "length_mismatch", "error") from aggregate counts.
+- `project_totals` excludes any stale files ("deleted", "newer", "length_mismatch", "unreadable") from aggregate counts.
 - Totals include explicit `with_coverage`/`without_coverage` breakdowns so callers can reconcile what was omitted.
 - The `without_coverage` payload includes counts for three categories:
     - `missing_from_coverage`: Tracked files that have no coverage data in the coverage file
@@ -179,7 +179,7 @@ before merging results.
 
 #### Edge Cases Handled
 
-1. **Deleted files**: Appear as "missing" type staleness
+1. **Deleted files**: Appear as "deleted" type staleness
 2. **Empty files**: `cov_len.positive?` guard prevents false positives
 3. **No coverage timestamp**: Defaults to 0, effectively disabling timestamp checks
 

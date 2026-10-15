@@ -8,7 +8,7 @@ RSpec.describe CovLoupe::CoverageReporter do
   let(:files_data) do
     [
       { 'file' => '/project/lib/zero.rb',   'percentage' =>  0.0, 'covered' =>  0, 'total' => 10,
-        'stale' => 'missing' },
+        'stale' => 'deleted' },
       { 'file' => '/project/lib/low.rb',    'percentage' => 25.0, 'covered' =>  5, 'total' => 20,
         'stale' => 'ok' },
       { 'file' => '/project/lib/empty.rb',  'percentage' => nil,  'covered' =>  0, 'total' =>  0,
@@ -112,7 +112,7 @@ RSpec.describe CovLoupe::CoverageReporter do
     it 'marks stale files in the output' do
       result = described_class.report(threshold: 80, count: 5, model: model)
 
-      expect(result).to include('lib/zero.rb (stale: missing)')
+      expect(result).to include('lib/zero.rb (stale: deleted)')
       expect(result).not_to include('lib/low.rb (stale: ok)')
     end
   end

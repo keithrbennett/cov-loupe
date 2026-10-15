@@ -44,7 +44,7 @@ module CovLoupe
       lines << summary_counts(converted_rows)
       if converted_rows.any? { |f| StaleStatus.stale?(f['stale']) }
         lines <<
-          'Staleness: error, missing, newer, length_mismatch'
+          'Staleness: deleted, newer, length_mismatch, unreadable'
       end
       lines.join("\n")
     end
