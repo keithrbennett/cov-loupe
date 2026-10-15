@@ -72,7 +72,7 @@ jobs:
 
       - name: Upload Pages artifact
         if: github.ref_type == 'tag'
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: site
 
