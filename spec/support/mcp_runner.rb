@@ -37,6 +37,14 @@ module Spec
             stderr_str = stderr.read
             status = wait_thr.value
           end
+        rescue Timeout::Error
+          # popen3's ensure waits for the child without a limit, so end it before leaving.
+          begin
+            Process.kill('KILL', wait_thr.pid)
+          rescue Errno::ESRCH
+            # already exited
+          end
+          raise
         end
 
         { stdout: stdout_str, stderr: stderr_str, status: status }

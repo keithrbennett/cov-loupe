@@ -33,7 +33,9 @@
   root as absolute paths instead of `../` paths, and a relative path whose first directory
   starts with `~` is reported with a `./` prefix (for example `./~vendor/a.rb`), including in
   `CoverageReporter.report` text. Relative `coverage.json` keys and `format_table` row paths
-  starting with `~` now resolve to a directory under the root instead of a home directory;
+  starting with `~` now resolve to a directory under the root (6.x expanded such `.resultset.json`
+  keys as home directories, raising for an unknown user, and used such row paths as written, so
+  no `tracked_globs` pattern matched them);
   query path arguments and `tracked_globs` still follow `File.expand_path`. Table rows with
   equal coverage are ordered by absolute path, as in `list`, so ties involving files outside
   the root may order differently. CLI and MCP output is otherwise unchanged. See

@@ -124,14 +124,7 @@ RSpec.describe CovLoupe do
       require 'rbconfig'
       require 'timeout'
 
-      exe = File.expand_path('../exe/cov-loupe', __dir__)
-      ruby_source = <<~RUBY
-        executable = File.read(#{exe.dump})
-        executable_without_run = executable.sub(/\\nCovLoupeExecutable\\.run\\n\\z/, "\\n")
-        raise 'could not remove executable invocation' if executable == executable_without_run
-
-        eval(executable_without_run, TOPLEVEL_BINDING, #{exe.dump})
-        CovLoupeExecutable.install_signal_handlers
+      ruby_source = signal_trap_prelude + <<~RUBY
         $stderr.puts 'ready'
         # Keep writing so the signal arrives while the main thread holds $stderr's write lock.
         loop { $stderr.write('.' * 1024) }
@@ -152,7 +145,11 @@ RSpec.describe CovLoupe do
 
           # Drain stderr concurrently: the child floods it, and the trap's own write blocks
           # on a full pipe if nothing is reading it.
-          stderr_reader = Thread.new { stderr.read }
+          stderr_reader = Thread.new do
+            stderr.read
+          rescue IOError # popen3 closed the pipe after a failure
+            ''
+          end
           Process.kill(sig, pid)
 
           Timeout.timeout(INTEGRATION_TIMEOUT) do
@@ -160,6 +157,10 @@ RSpec.describe CovLoupe do
             stderr_str = stderr_reader.value.gsub(/\.{2,}/, '') # drop the filler dots
             status = wait_thr.value
           end
+        rescue Timeout::Error
+          # popen3's ensure waits for the child without a limit, so end it before leaving.
+          kill_process(pid)
+          raise
         end
 
         aggregate_failures "SIG#{sig}" do
@@ -170,7 +171,50 @@ RSpec.describe CovLoupe do
       end
     end
 
-    def wait_for_ready_marker(stderr, wait_thr, timeout_seconds = 5)
+    it 'exits with the signal status when stderr is closed' do
+      skip 'Signal handling is Unix-specific' if described_class.windows?
+
+      require 'open3'
+      require 'rbconfig'
+      require 'timeout'
+
+      # The trap's stderr write raises here; the process must still exit 128+signal.
+      ruby_source = signal_trap_prelude + <<~RUBY
+        $stdout.puts 'ready'
+        $stdout.flush
+        sleep
+      RUBY
+
+      status = nil
+      Open3.popen2(RbConfig.ruby, '-e', ruby_source, err: :close) do |_stdin, stdout, wait_thr|
+        Timeout.timeout(INTEGRATION_TIMEOUT) do
+          raise 'subprocess exited before installing signal traps' unless stdout.gets == "ready\n"
+
+          Process.kill('TERM', wait_thr.pid)
+          status = wait_thr.value
+        end
+      rescue Timeout::Error
+        kill_process(wait_thr.pid)
+        raise
+      end
+
+      expect(status.exitstatus).to eq(143)
+    end
+
+    # Ruby source that loads the executable without running it and installs its signal traps.
+    def signal_trap_prelude
+      exe = File.expand_path('../exe/cov-loupe', __dir__)
+      <<~RUBY
+        executable = File.read(#{exe.dump})
+        executable_without_run = executable.sub(/\\nCovLoupeExecutable\\.run\\n\\z/, "\\n")
+        raise 'could not remove executable invocation' if executable == executable_without_run
+
+        eval(executable_without_run, TOPLEVEL_BINDING, #{exe.dump})
+        CovLoupeExecutable.install_signal_handlers
+      RUBY
+    end
+
+    def wait_for_ready_marker(stderr, wait_thr, timeout_seconds = INTEGRATION_TIMEOUT)
       Timeout.timeout(timeout_seconds) do
         loop do
           raise 'subprocess exited before installing signal traps' unless wait_thr.alive?
@@ -178,6 +222,12 @@ RSpec.describe CovLoupe do
           break if stderr.gets == "ready\n"
         end
       end
+    end
+
+    def kill_process(pid)
+      Process.kill('KILL', pid)
+    rescue Errno::ESRCH
+      # already exited
     end
 
     def non_runtime_stderr(stderr_str)

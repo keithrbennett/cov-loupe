@@ -17,7 +17,11 @@ module CovLoupeExecutable
       Signal.trap(sig) do
         # syswrite skips the IO write lock, which the interrupted code may already hold;
         # IO#write here would raise ThreadError (recursive locking).
-        $stderr.syswrite "\nReceived SIG#{sig}. Exiting.\n"
+        begin
+          $stderr.syswrite "\nReceived SIG#{sig}. Exiting.\n"
+        rescue SystemCallError, IOError
+          # stderr is closed or its reader is gone; still exit with the signal status.
+        end
         exit(SIGNAL_EXIT_BASE + Signal.list[sig])
       end
     end
