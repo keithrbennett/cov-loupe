@@ -15,7 +15,9 @@ module CovLoupeExecutable
   def self.install_signal_handlers
     %w[INT TERM].each do |sig|
       Signal.trap(sig) do
-        $stderr.write "\nReceived SIG#{sig}. Exiting.\n"
+        # syswrite skips the IO write lock, which the interrupted code may already hold;
+        # IO#write here would raise ThreadError (recursive locking).
+        $stderr.syswrite "\nReceived SIG#{sig}. Exiting.\n"
         exit(SIGNAL_EXIT_BASE + Signal.list[sig])
       end
     end

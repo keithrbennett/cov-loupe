@@ -133,7 +133,8 @@ RSpec.describe CovLoupe do
         eval(executable_without_run, TOPLEVEL_BINDING, #{exe.dump})
         CovLoupeExecutable.install_signal_handlers
         $stderr.puts 'ready'
-        sleep
+        # Keep writing so the signal arrives while the main thread holds $stderr's write lock.
+        loop { $stderr.write('.' * 1024) }
       RUBY
 
       {
@@ -149,11 +150,14 @@ RSpec.describe CovLoupe do
 
           wait_for_ready_marker(stderr, wait_thr)
 
+          # Drain stderr concurrently: the child floods it, and the trap's own write blocks
+          # on a full pipe if nothing is reading it.
+          stderr_reader = Thread.new { stderr.read }
           Process.kill(sig, pid)
 
           Timeout.timeout(INTEGRATION_TIMEOUT) do
             stdout_str = stdout.read
-            stderr_str = stderr.read
+            stderr_str = stderr_reader.value.gsub(/\.{2,}/, '') # drop the filler dots
             status = wait_thr.value
           end
         end
