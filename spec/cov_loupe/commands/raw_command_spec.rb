@@ -27,12 +27,12 @@ RSpec.describe CovLoupe::Commands::RawCommand do
       it 'still prints the raw table' do
         mock_presenter(
           CovLoupe::Presenters::CoveragePayloadPresenter,
-          absolute_payload: {
+          payload:       {
             'file'  => 'lib/perfect.rb',
             'lines' => [1, 1, 1],
             'stale' => 'ok',
           },
-          relative_path:    'lib/perfect.rb'
+          relative_path: 'lib/perfect.rb'
         )
 
         output = capture_command_output(command, ['lib/perfect.rb'])

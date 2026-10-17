@@ -297,14 +297,24 @@ RSpec.describe CovLoupe::StalenessChecker do
       expect { checker_with_edge_case.send(:rel, file_outside) }.not_to raise_error
     end
 
-    it 'handles files outside project root gracefully (returns relative path with ..)' do
+    it 'keeps files outside the project root absolute' do
       # Use a sibling path to ensure both live on the same drive/volume
       file_outside = File.expand_path('../external_file.rb', tmpdir)
 
-      # This should return a relative path with .. (not trigger ArgumentError)
-      result = checker.send(:rel, file_outside)
-      expect(result).to include('..') # Should contain relative navigation
-      expect(result).not_to start_with('/') # Should be relative, not absolute
+      expect(checker.send(:rel, file_outside)).to eq(file_outside)
+    end
+
+    it 'reports a stale file outside the project root by its absolute path' do
+      Dir.mktmpdir('cov_loupe_outside') do |dir|
+        file_outside = File.join(dir, 'out.rb')
+        File.write(file_outside, "a = 1\n")
+        error_checker = described_class.new(root: tmpdir, coverage_file: nil, mode: 'error',
+          timestamp: Time.now)
+
+        # Two coverage entries for a one-line file is a length mismatch
+        expect { error_checker.check_file!(file_outside, [1, 0]) }
+          .to raise_error(CovLoupe::CoverageDataStaleError) { |e| expect(e.file_path).to eq(file_outside) }
+      end
     end
 
     it 'allows project-level staleness checks to handle coverage outside root' do

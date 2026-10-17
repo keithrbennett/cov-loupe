@@ -50,7 +50,7 @@ def output_examples
     ```ruby
     # Filter files by directory (e.g., only show files in lib/)
     files_data = model.list['files']
-    lib_files = files_data.select { |file| file["file"].include?("/lib/") }
+    lib_files = files_data.select { |file| file["file"].start_with?("lib/") }
     lib_files_table = model.format_table(lib_files)
     # => formatted table showing only files from lib/ directory
     ```
@@ -59,7 +59,7 @@ def output_examples
 
   # Execute the code
   files_data = model.list['files']
-  lib_files = files_data.select { |file| file['file'].include?('/lib/') }
+  lib_files = files_data.select { |file| file['file'].start_with?('lib/') }
   lib_files_table = model.format_table(lib_files)
   puts <<~DOC
     Result:

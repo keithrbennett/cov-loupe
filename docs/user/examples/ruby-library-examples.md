@@ -60,15 +60,13 @@ end
 
 ```ruby
 require "cov_loupe"
-require "pathname"
 
 root = "docs/fixtures/demo_project"
 model = CovLoupe::CoverageModel.new(root: root)
 list = model.list['files']
 
-# Filter to lib/payments (coverage data stores absolute paths)
-lib_root = File.expand_path("lib/payments", File.expand_path(root, Dir.pwd))
-lib_files = list.select { |f| f['file'].start_with?(lib_root) }
+# Filter to lib/payments (paths are relative to root)
+lib_files = list.select { |f| f['file'].start_with?('lib/payments/') }
 
 # Generate custom table
 table = model.format_table(lib_files, sort_order: :ascending)
@@ -77,7 +75,6 @@ puts table
 # Or create your own format
 lib_files.each do |file|
   status = file['percentage'].nil? || file['percentage'] >= 90 ? '✓' : '⚠'
-  relative_path = Pathname.new(file['file']).relative_path_from(Pathname.pwd)
-  puts "#{status} #{relative_path}: #{file['percentage'] ? "#{file['percentage']}%" : 'n/a'}"
+  puts "#{status} #{file['file']}: #{file['percentage'] ? "#{file['percentage']}%" : 'n/a'}"
 end
 ```

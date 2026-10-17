@@ -14,7 +14,7 @@ RSpec.describe CovLoupe::CoverageCLI do
   end
 
   describe '#show_default_report' do
-    it 'prints JSON summary using relativized payload when json mode is enabled' do
+    it 'prints JSON summary using the presenter payload when json mode is enabled' do
       cli.config.format = :json
 
       _result, output, _err = capture_io do

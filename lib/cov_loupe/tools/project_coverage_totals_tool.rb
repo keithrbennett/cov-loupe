@@ -45,7 +45,7 @@ module CovLoupe
               raise_on_stale: config[:raise_on_stale],
               tracked_globs:  config[:tracked_globs]
             )
-            payload = presenter.relativized_payload
+            payload = presenter.payload
 
             # Add warnings array if timestamp_status is missing
             if payload['timestamp_status'] == 'missing'

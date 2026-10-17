@@ -50,7 +50,6 @@ module CovLoupe
       file_list = list_result['files']
         .select { |f| f['percentage'] && f['percentage'] < threshold }
         .first(count)
-      file_list = model.relativize(file_list)
 
       return nil if file_list.empty?
 

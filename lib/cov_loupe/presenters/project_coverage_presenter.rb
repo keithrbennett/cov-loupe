@@ -10,7 +10,6 @@ module CovLoupe
     #
     # Wraps CoverageModel#list and enriches the output with:
     # - File counts (total, ok, stale) for quick overview
-    # - Relativized paths for all file lists (skipped, missing, newer, deleted, etc.)
     #
     # @api private
     class ProjectCoveragePresenter
@@ -25,53 +24,53 @@ module CovLoupe
         @tracked_globs = tracked_globs
       end
 
-      # Returns the relativized file rows.
+      # Returns the project-relative file rows.
       def relative_files
-        relativized_payload['files']
+        payload['files']
       end
 
       # Returns the coverage counts with relative file paths.
       def relative_counts
-        relativized_payload['counts']
+        payload['counts']
       end
 
-      # Returns the relativized skipped files.
+      # Returns the project-relative skipped files.
       def relative_skipped_files
-        relativized_payload['skipped_files']
+        payload['skipped_files']
       end
 
-      # Returns the relativized missing tracked files.
+      # Returns the project-relative missing tracked files.
       def relative_missing_tracked_files
-        relativized_payload['missing_tracked_files']
+        payload['missing_tracked_files']
       end
 
-      # Returns the relativized newer files.
+      # Returns the project-relative newer files.
       def relative_newer_files
-        relativized_payload['newer_files']
+        payload['newer_files']
       end
 
-      # Returns the relativized deleted files.
+      # Returns the project-relative deleted files.
       def relative_deleted_files
-        relativized_payload['deleted_files']
+        payload['deleted_files']
       end
 
-      # Returns the relativized length-mismatch files.
+      # Returns the project-relative length-mismatch files.
       def relative_length_mismatch_files
-        relativized_payload['length_mismatch_files']
+        payload['length_mismatch_files']
       end
 
-      # Returns the relativized unreadable files.
+      # Returns the project-relative unreadable files.
       def relative_unreadable_files
-        relativized_payload['unreadable_files']
+        payload['unreadable_files']
       end
 
       # Returns the timestamp status indicating whether coverage timestamps are available.
       # Can be 'ok' (timestamps available) or 'missing' (no timestamps, staleness checks skipped).
       def timestamp_status
-        relativized_payload['timestamp_status']
+        payload['timestamp_status']
       end
 
-      private def compute_absolute_payload
+      private def compute_payload
         list_result = model.list(
           sort_order:     sort_order,
           raise_on_stale: raise_on_stale,

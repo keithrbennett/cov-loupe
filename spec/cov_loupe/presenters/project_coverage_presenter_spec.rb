@@ -19,14 +19,14 @@ RSpec.describe CovLoupe::Presenters::ProjectCoveragePresenter do
   let(:files) do
     [
       {
-        'file'       => '/abs/path/lib/foo.rb',
+        'file'       => 'lib/foo.rb',
         'covered'    => 5,
         'total'      => 6,
         'percentage' => 83.33,
         'stale'      => 'ok',
       },
       {
-        'file'       => '/abs/path/lib/bar.rb',
+        'file'       => 'lib/bar.rb',
         'covered'    => 1,
         'total'      => 6,
         'percentage' => 16.67,
@@ -41,76 +41,53 @@ RSpec.describe CovLoupe::Presenters::ProjectCoveragePresenter do
       tracked_globs: tracked_globs).and_return({
         'files'                 => files,
         'skipped_files'         => [
-          { 'file' => '/abs/path/lib/skipped.rb', 'error' => 'boom' },
+          { 'file' => 'lib/skipped.rb', 'error' => 'boom' },
         ],
-        'missing_tracked_files' => ['/abs/path/lib/missing.rb'],
+        'missing_tracked_files' => ['lib/missing.rb'],
         'newer_files'           => [],
-        'deleted_files'         => ['/abs/path/lib/deleted.rb'],
-        'length_mismatch_files' => ['/abs/path/lib/bad_length.rb'],
-        'unreadable_files'      => ['/abs/path/lib/unreadable.rb'],
+        'deleted_files'         => ['lib/deleted.rb'],
+        'length_mismatch_files' => ['lib/bad_length.rb'],
+        'unreadable_files'      => ['lib/unreadable.rb'],
         'timestamp_status'      => 'ok',
       })
-    allow(model).to receive(:relativize) do |payload|
-      relativizer = CovLoupe::PathRelativizer.new(
-        root:        '/abs/path',
-        scalar_keys: %w[file file_path],
-        array_keys:  %w[
-          newer_files
-          deleted_files
-          missing_tracked_files
-          skipped_files
-          length_mismatch_files
-          unreadable_files
-        ]
-      )
-      relativizer.relativize(payload)
-    end
   end
 
-  describe '#absolute_payload' do
+  describe '#payload' do
     it 'returns files and counts with stale metadata' do
-      payload = presenter.absolute_payload
+      payload = presenter.payload
 
       expect(payload['files']).to eq(files)
       expect(payload['counts']).to eq({ 'total' => 2, 'ok' => 1, 'stale' => 1 })
     end
 
     it 'includes timestamp_status in the payload' do
-      payload = presenter.absolute_payload
+      payload = presenter.payload
 
       expect(payload['timestamp_status']).to eq('ok')
     end
 
     it 'memoizes the computed payload' do
-      presenter.absolute_payload
-      presenter.absolute_payload
+      presenter.payload
+      presenter.payload
 
       expect(model).to have_received(:list).once
     end
   end
 
-  describe '#relativized_payload' do
-    it 'relativizes the files list' do
-      relativized = presenter.relativized_payload
-
-      expect(relativized['files'].map { |f| f['file'] }).to eq(%w[lib/foo.rb lib/bar.rb])
-    end
-  end
-
   describe '#relative_files' do
-    it 'returns the relativized file list' do
+    it 'returns the file list' do
       expect(presenter.relative_files.map { |f| f['file'] }).to eq(%w[lib/foo.rb lib/bar.rb])
     end
   end
 
   describe '#relative_counts' do
-    it 'returns the relativized counts hash' do
+    it 'returns the counts hash' do
       expect(presenter.relative_counts).to eq({ 'total' => 2, 'ok' => 1, 'stale' => 1 })
     end
   end
 
   describe '#relative_skipped_files' do
-    it 'returns the relativized skipped files' do
+    it 'returns the skipped files' do
       expect(presenter.relative_skipped_files).to eq([
         { 'file' => 'lib/skipped.rb', 'error' => 'boom' },
       ])
@@ -118,31 +95,31 @@ RSpec.describe CovLoupe::Presenters::ProjectCoveragePresenter do
   end
 
   describe '#relative_missing_tracked_files' do
-    it 'returns the relativized missing tracked files' do
+    it 'returns the missing tracked files' do
       expect(presenter.relative_missing_tracked_files).to eq(['lib/missing.rb'])
     end
   end
 
   describe '#relative_newer_files' do
-    it 'returns the relativized newer files' do
+    it 'returns the newer files' do
       expect(presenter.relative_newer_files).to eq([])
     end
   end
 
   describe '#relative_deleted_files' do
-    it 'returns the relativized deleted files' do
+    it 'returns the deleted files' do
       expect(presenter.relative_deleted_files).to eq(['lib/deleted.rb'])
     end
   end
 
   describe '#relative_length_mismatch_files' do
-    it 'returns the relativized length mismatch files' do
+    it 'returns the length mismatch files' do
       expect(presenter.relative_length_mismatch_files).to eq(['lib/bad_length.rb'])
     end
   end
 
   describe '#relative_unreadable_files' do
-    it 'returns the relativized unreadable files' do
+    it 'returns the unreadable files' do
       expect(presenter.relative_unreadable_files).to eq(['lib/unreadable.rb'])
     end
   end
@@ -169,7 +146,7 @@ RSpec.describe CovLoupe::Presenters::ProjectCoveragePresenter do
 
       it 'returns "missing"' do
         # Clear memoized payload
-        presenter.instance_variable_set(:@absolute_payload, nil)
+        presenter.instance_variable_set(:@payload, nil)
         expect(presenter.timestamp_status).to eq('missing')
       end
     end

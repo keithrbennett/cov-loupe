@@ -16,6 +16,7 @@ This document describes the breaking changes introduced in version 7.0.0.
 - [CLI Exit Codes Remapped](#cli-exit-codes-remapped)
 - [Percentages Truncated, Not Rounded](#percentages-truncated-not-rounded)
 - [Staleness Values Renamed](#staleness-values-renamed)
+- [Library Results Use Project-Relative Paths](#library-results-use-project-relative-paths)
 - [`project_validate` Requires `--allow-code-predicates`](#project_validate-requires---allow-code-predicates)
 - [Public API Declared](#public-api-declared)
 
@@ -31,7 +32,7 @@ cov-loupe 7.0 requires Ruby 3.3 or later; 6.x supported Ruby 3.2, which has reac
 
 Every hash returned by a public `CoverageModel` coverage method, successful structured CLI payload (`-f json`, `pretty_json`, `yaml`, and the other non-table formats), and structured MCP tool payload now starts with top-level integer `"schema_version": 1`. The existing payload keys remain at the top level; there is no wrapper. For example, a file summary begins `{"schema_version":1,"file":"lib/foo.rb",...}`. MCP clients should check `result.isError` before parsing the tool content.
 
-Library methods such as `CoverageModel#summary_for`, `#list`, and `#project_totals` now include this field, so saved JSON, YAML, or Marshal output carries the marker automatically. `relativize` preserves it. Table and text output, MCP `version` text, and error responses are unchanged. This version is separate from the gem version and from SimpleCov's `schema_version` in the input `coverage.json` file. See [Schema Version](../LIBRARY_API.md#schema-version) for the compatibility rules.
+Library methods such as `CoverageModel#summary_for`, `#list`, and `#project_totals` now include this field, so saved JSON, YAML, or Marshal output carries the marker automatically. Table and text output, MCP `version` text, and error responses are unchanged. This version is separate from the gem version and from SimpleCov's `schema_version` in the input `coverage.json` file. See [Schema Version](../LIBRARY_API.md#schema-version) for the compatibility rules.
 
 **Migration:** If a consumer compares exact top-level key sets or iterates every top-level key, account for `schema_version` before processing the coverage fields. Check that its value is `1` when reading saved payloads, and ignore other unknown keys.
 
@@ -299,6 +300,29 @@ Staleness states now have one name everywhere. The per-file `stale` value and th
 This applies to library hashes, CLI output in all formats, and MCP tool payloads.
 
 **Migration:** replace `stale == "missing"` checks with `"deleted"` and `stale == "error"` with `"unreadable"`, and read `by_type["deleted"]` instead of `by_type["missing_from_disk"]`. Replace `StaleStatus::MISSING_FROM_DISK` with the string `"deleted"` rather than `StaleStatus::DELETED`, since `StaleStatus` is internal as of 7.0 (see [Public API Declared](#public-api-declared)). Update `validate` predicates and scripts that parse the `totals` or `list` text output the same way.
+
+## Library Results Use Project-Relative Paths {#library-results-use-project-relative-paths}
+
+In 6.x, `CoverageModel#list`, `#summary_for`, `#uncovered_for`, `#detailed_for`, and `#raw_for` returned absolute file paths, while the CLI and MCP server reported project-relative ones; `CoverageModel#relativize` converted library results to the relative form. In 7.0 the library returns the same paths as the CLI and MCP server, so every payload has one shape. A path inside the project root is relative to the root; a path outside it stays absolute. This applies to every `file` value, including the `list` `files` and `skipped_files` rows. The other `list` path arrays (`missing_tracked_files`, `newer_files`, `deleted_files`, `length_mismatch_files`, and `unreadable_files`) were already relative for files inside the root, but showed files outside it as `../` paths; they now show those as absolute paths, in the library, CLI, and MCP output alike. Staleness errors change the same way: `CoverageDataStaleError#file_path`, the `CoverageDataProjectStaleError` path arrays, and the error messages report files outside the root as absolute paths. A relative path whose first directory starts with `~` is reported with a `./` prefix (for example `./~vendor/a.rb`) in all modes, so `File.expand_path` does not treat it as a home directory. On input, relative `coverage.json` keys and `format_table` row paths starting with `~` resolve to a directory under the root (6.x expanded them as home directories, or raised for an unknown user); query path arguments and `tracked_globs` still follow `File.expand_path`, so write `./~vendor/a.rb` to name such a directory there. `CoverageModel#relativize` is removed. `CoverageModel#format_table` called without rows now shows relative paths too (it showed absolute paths in 6.x). `validate` predicates receive library results, so a predicate that prints `f['file']` now prints relative paths. Table rows with equal coverage are ordered by absolute path, as in `list`; in 6.x the CLI and MCP tables ordered them by the displayed path, so ties involving files outside the root may order differently. Otherwise CLI and MCP output is unchanged, and `CoverageReporter.report` prints the same text apart from the `./~` prefix.
+
+The path arguments the methods accept are unchanged: absolute paths and paths relative to the root both work, so a `file` value from one result can be passed straight to another query.
+
+**Before (v6.x):**
+```ruby
+model = CovLoupe::CoverageModel.new(root: '/path/to/project')
+model.summary_for('lib/foo.rb')['file']
+# => "/path/to/project/lib/foo.rb"
+model.relativize(model.summary_for('lib/foo.rb'))['file']
+# => "lib/foo.rb"
+```
+
+**After (v7.0):**
+```ruby
+model.summary_for('lib/foo.rb')['file']
+# => "lib/foo.rb"
+```
+
+**Migration:** remove `model.relativize(...)` calls and use the results directly. Use `File.expand_path(path, model.root)` if you need absolute paths; `CoverageModel#root` is public in 7.0 and returns the absolute project root the model resolved. Code that matched paths by an absolute prefix (for example `f['file'].start_with?(File.expand_path('lib', root))`) should match the relative form instead (`f['file'].start_with?('lib/')`).
 
 ## `project_validate` Requires `--allow-code-predicates` {#project_validate-requires---allow-code-predicates}
 

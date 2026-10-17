@@ -16,13 +16,13 @@ module MockingHelpers
 
   # Stub a presenter with specific payload data
   # @param presenter_class [Class] The presenter class to stub (e.g., CovLoupe::Presenters::CoveragePayloadPresenter)
-  # @param absolute_payload [Hash] The data hash to return from #absolute_payload
+  # @param payload [Hash] The data hash to return from #payload
   # @param relative_path [String] The path to return from #relative_path
-  def mock_presenter(presenter_class, absolute_payload:, relative_path:)
+  def mock_presenter(presenter_class, payload:, relative_path:)
     presenter_double = instance_double(presenter_class)
     allow(presenter_double).to receive_messages(
-      absolute_payload: absolute_payload,
-      relative_path:    relative_path
+      payload:       payload,
+      relative_path: relative_path
     )
     allow(presenter_class).to receive(:new).and_return(presenter_double)
     presenter_double
@@ -35,13 +35,14 @@ module MockingHelpers
     CovLoupe::PathRelativizer.new(
       root:        root,
       scalar_keys: %w[file file_path],
-      array_keys:  %w[newer_files missing_files deleted_files]
+      array_keys:  %w[newer_files missing_tracked_files deleted_files]
     )
   end
 
   # Stub a CoverageModel with common test configuration
   # @param model_method [Symbol] The method to stub (e.g., :summary_for, :raw_for)
-  # @param mock_data [Hash] The data to return from the stubbed method
+  # @param mock_data [Hash] The data to return from the stubbed method; its paths are
+  #   relativized against root, as the real model does
   # @param file_path [String] The file path argument for the stubbed method
   # @param staleness [String] The staleness value to return (default: "ok")
   # @param root [String] The root path for the relativizer (default: '/abs/path')
@@ -50,11 +51,10 @@ module MockingHelpers
     staleness: 'ok', root: '/abs/path')
     model = instance_double(CovLoupe::CoverageModel)
     allow(CovLoupe::CoverageModel).to receive(:new).and_return(model)
-    # Accept any keyword arguments (like raise_on_stale) in addition to the file path
-    allow(model).to receive(model_method).with(file_path, any_args).and_return(mock_data)
-
     relativizer = create_test_relativizer(root: root)
-    allow(model).to receive(:relativize) { |payload| relativizer.relativize(payload) }
+    # Accept any keyword arguments (like raise_on_stale) in addition to the file path
+    allow(model).to receive(model_method).with(file_path, any_args)
+      .and_return(relativizer.relativize(mock_data))
     allow(model).to receive(:staleness_for).with(file_path).and_return(staleness)
 
     model

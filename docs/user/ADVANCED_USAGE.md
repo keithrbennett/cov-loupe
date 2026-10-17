@@ -403,25 +403,18 @@ CoveragePolicy.new
 
 See [examples/success_predicates/README.md](../examples/success_predicates.md) for more examples.
 
-### Path Relativization
+### Absolute Paths
 
-Convert absolute paths to relative for cleaner output:
+Library results report file paths relative to the project root, as the CLI and MCP server do. Files outside the root keep their absolute paths. Expand a path against `model.root` when you need an absolute one:
 
 ```ruby
 model = CovLoupe::CoverageModel.new(root: '/path/to/project')
 
-# Get data with absolute paths
 data = model.summary_for('app/models/order.rb')
-# => { 'file' => '/path/to/project/app/models/order.rb', ... }
+# => { 'schema_version' => 1, 'file' => 'app/models/order.rb', ... }
 
-# Relativize paths
-relative_data = model.relativize(data)
-# => { 'file' => 'app/models/order.rb', ... }
-
-# Works with list payloads too
-list_result = model.list
-relative_list = model.relativize(list_result)
-relative_files = relative_list['files']
+File.expand_path(data['file'], model.root)
+# => "/path/to/project/app/models/order.rb"
 ```
 
 ---
@@ -682,7 +675,7 @@ CSV.open('coverage.csv', 'w') do |csv|
   csv << ['File', 'Coverage %', 'Lines Covered', 'Total Lines', 'Stale']
   files.each do |f|
     csv << [
-      model.relativize(f)['file'],
+      f['file'],
       f['percentage'],
       f['covered'],
       f['total'],
@@ -719,9 +712,7 @@ template = ERB.new(<<~HTML)
 HTML
 
 model = CovLoupe::CoverageModel.new
-list_result = model.list
-relative_list = model.relativize(list_result)
-files = relative_list['files']
+files = model.list['files']
 File.write('coverage.html', template.result(binding))
 ```
 

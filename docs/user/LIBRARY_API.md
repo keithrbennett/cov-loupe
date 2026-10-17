@@ -102,7 +102,7 @@ create their own mode-specific contexts with `stderr` as the default target.
 
 ## Schema Version
 
-The hash returned by each public coverage query (`list`, `summary_for`, `uncovered_for`, `detailed_for`, `raw_for`, and `project_totals`) starts with `'schema_version' => CovLoupe::SCHEMA_VERSION`. The value is currently `1`. The key stays with the hash when you call `model.relativize` or serialize it to JSON, YAML, or Marshal. It is independent of the gem's `CovLoupe::VERSION` and of SimpleCov's `schema_version` in the input `coverage.json` file. Methods returning text or status values do not add the key.
+The hash returned by each public coverage query (`list`, `summary_for`, `uncovered_for`, `detailed_for`, `raw_for`, and `project_totals`) starts with `'schema_version' => CovLoupe::SCHEMA_VERSION`. The value is currently `1`. The key stays with the hash when you serialize it to JSON, YAML, or Marshal. It is independent of the gem's `CovLoupe::VERSION` and of SimpleCov's `schema_version` in the input `coverage.json` file. Methods returning text or status values do not add the key.
 
 The shipped [JSON Schema files](../../lib/cov_loupe/schemas/v1/) define the eight v1 payload shapes: `summary`, `raw`, `uncovered`, `detailed`, `list`, `totals`, `validate_result`, and `help`. Each file uses JSON Schema draft 2020-12. `CovLoupe::PayloadSchema.schema_path('list', version: 1)` returns the installed file path; an unknown name or version raises `ArgumentError`. Library `list` and CLI/MCP project coverage share `list.json`: presentation-only `counts` and `warnings` are optional. The schema IDs use URNs until stable public schema URLs are available.
 
@@ -127,6 +127,10 @@ The schema version increments when a key is removed, renamed, or moved, or when 
 
 Staleness values share one vocabulary across payloads. A per-file `stale` value is one of `"ok"`, `"deleted"`, `"newer"`, `"length_mismatch"`, or `"unreadable"`. The non-`"ok"` values are also the `project_totals` `stale.by_type` keys and match the `list` arrays `deleted_files`, `newer_files`, `length_mismatch_files`, and `unreadable_files`. "Missing" refers only to absent coverage data (`missing_tracked_files`, `missing_from_coverage`) or an absent coverage timestamp (`timestamp_status`).
 
+File paths in payloads (`file` values and the `list` path arrays) are relative to the project root, such as `'lib/foo.rb'`. A file outside the root keeps its absolute path. A relative path whose first directory starts with `~` gets a `./` prefix, so expanding it never resolves to a home directory. Library, CLI, and MCP payloads report the same paths. If you need absolute paths, expand them against the model's root: `File.expand_path(row['file'], model.root)`. `model.root` is the absolute project root, resolved when the model was created.
+
+Paths and glob patterns you pass in (query `path` arguments and `tracked_globs`) follow `File.expand_path` rules, so a leading `~` or `~user` means a home directory. To name a directory under the root whose name starts with `~`, write it as `./~vendor/a.rb`, the form payloads use. Paths cov-loupe reads as data, namely relative `coverage.json` keys and the `file` values of rows passed to `format_table`, always treat a leading `~` as a directory under the root.
+
 ## Method Reference
 
 ### `list(sort_order: :descending, raise_on_stale: model default, tracked_globs: model default)`
@@ -145,7 +149,7 @@ Returns coverage summary for all files in the coverage file.
 list_result = model.list
 # => { 'schema_version' => 1, 'files' => [...], ... }
 files = list_result['files']
-# => [ { 'file' => '/abs/path/lib/foo.rb', 'covered' => 12, 'total' => 14, 'percentage' => 85.71, 'stale' => "ok" }, ... ]
+# => [ { 'file' => 'lib/foo.rb', 'covered' => 12, 'total' => 14, 'percentage' => 85.71, 'stale' => "ok" }, ... ]
 
 # Get worst coverage first
 worst_files = model.list(sort_order: :ascending)['files'].first(10)
@@ -168,7 +172,7 @@ Returns coverage summary for a specific file.
 **Example:**
 ```ruby
 summary = model.summary_for(target)
-# => { 'schema_version' => 1, 'file' => '/abs/.../lib/foo.rb', 'summary' => {'covered'=>12, 'total'=>14, 'percentage'=>85.71} }
+# => { 'schema_version' => 1, 'file' => 'lib/foo.rb', 'summary' => {'covered'=>12, 'total'=>14, 'percentage'=>85.71} }
 ```
 
 **Note:** `CoverageModel#summary_for` returns the schema version, file path, and summary. The CLI and MCP tools add a `stale` field via `CoveragePayloadPresenter`; if you need staleness in library code, call `model.staleness_for(path)` separately.
@@ -187,7 +191,7 @@ Returns list of uncovered line numbers for a specific file.
 **Example:**
 ```ruby
 uncovered = model.uncovered_for("lib/foo.rb")
-# => { 'schema_version' => 1, 'file' => '/abs/.../lib/foo.rb', 'uncovered' => [5, 9, 12], 'summary' => { ... } }
+# => { 'schema_version' => 1, 'file' => 'lib/foo.rb', 'uncovered' => [5, 9, 12], 'summary' => { ... } }
 ```
 
 ### `detailed_for(path)`
@@ -204,7 +208,7 @@ Returns per-line coverage details with hit counts.
 **Example:**
 ```ruby
 detailed = model.detailed_for("lib/foo.rb")
-# => { 'schema_version' => 1, 'file' => '/abs/.../lib/foo.rb', 'lines' => [{'line' => 1, 'hits' => 1, 'covered' => true}, ...], 'summary' => { ... } }
+# => { 'schema_version' => 1, 'file' => 'lib/foo.rb', 'lines' => [{'line' => 1, 'hits' => 1, 'covered' => true}, ...], 'summary' => { ... } }
 ```
 
 ### `raw_for(path)`
@@ -221,7 +225,7 @@ Returns raw SimpleCov lines array for a specific file.
 **Example:**
 ```ruby
 raw = model.raw_for("lib/foo.rb")
-# => { 'schema_version' => 1, 'file' => '/abs/.../lib/foo.rb', 'lines' => [nil, 1, 0, 3, ...] }
+# => { 'schema_version' => 1, 'file' => 'lib/foo.rb', 'lines' => [nil, 1, 0, 3, ...] }
 ```
 
 ### `format_table(rows = nil, sort_order: :descending, raise_on_stale: model default, tracked_globs: model default, output_chars: :default)`
@@ -229,7 +233,7 @@ raw = model.raw_for("lib/foo.rb")
 Generates formatted ASCII table string.
 
 **Parameters:**
-- `rows` (Array<Hash>, optional): Custom row data; defaults to `list`
+- `rows` (Array<Hash>, optional): Custom row data, such as `list['files']`; `file` values may be relative to the project root or absolute. Defaults to `list`
 - `sort_order` (Symbol, optional): `:descending` (default) or `:ascending`
 - `raise_on_stale` (Boolean, optional): Whether to raise error if project is stale. Defaults to model setting.
 - `tracked_globs` (Array<String>, optional): Patterns to filter files. Defaults to model setting.
@@ -244,7 +248,7 @@ table = model.format_table
 puts table
 
 # Custom rows
-lib_files = model.list['files'].select { |f| f['file'].include?('/lib/') }
+lib_files = model.list['files'].select { |f| f['file'].start_with?('lib/') }
 lib_table = model.format_table(lib_files, sort_order: :descending)
 puts lib_table
 ```
@@ -277,29 +281,6 @@ When `raise_on_stale: true` is set, the method raises on stale coverage instead 
 
 Note: The `without_coverage` hash will only be present if `tracked_globs` were specified.
 
-### `relativize(data)`
-
-Converts absolute file paths in coverage data to relative paths from project root.
-
-**Parameters:**
-- `data` (Hash or Array<Hash>): Coverage data with absolute file paths
-
-**Returns:** `Hash` or `Array<Hash>` - Same structure with relative paths
-
-**Example:**
-```ruby
-summary = model.summary_for('lib/cov_loupe/model/model.rb')
-# => { 'schema_version' => 1, 'file' => '/path/to/project/lib/cov_loupe/model/model.rb', ... }
-
-relative_summary = model.relativize(summary)
-# => { 'schema_version' => 1, 'file' => 'lib/cov_loupe/model/model.rb', ... }
-
-# Works with arrays too
-list_result = model.list
-files = list_result['files']
-relative_files = model.relativize(files)
-```
-
 ### `staleness_for(path)`
 
 Returns the staleness of one file without raising.
@@ -327,6 +308,20 @@ model.coverage_file_path
 # => "/path/to/project/coverage/coverage.json"
 ```
 
+### `root`
+
+Returns the absolute project root, resolved when the model was created. Relative payload paths are relative to it.
+
+**Returns:** `String`
+
+**Example:**
+```ruby
+model.root
+# => "/path/to/project"
+File.expand_path(model.summary_for('lib/foo.rb')['file'], model.root)
+# => "/path/to/project/lib/foo.rb"
+```
+
 ## Return Types
 
 ### `list`
@@ -338,7 +333,7 @@ Returns `Hash` with file data and staleness metadata:
   'schema_version' => Integer, # Currently 1; first top-level key
   'files' => [
     {
-      'file' => String,       # Absolute file path
+      'file' => String,       # Project-relative path (absolute if outside the root)
       'covered' => Integer,   # Number of covered lines
       'total' => Integer,     # Total relevant lines
       'percentage' => Float | nil, # Line coverage percentage (0.00-100.00); nil if no coverable lines
@@ -362,7 +357,7 @@ Returns `Hash`:
 ```ruby
 {
   'schema_version' => Integer, # Currently 1; first top-level key
-  'file' => String,       # Absolute file path
+  'file' => String,       # Project-relative path (absolute if outside the root)
   'summary' => {
     'covered' => Integer, # Number of covered lines
     'total' => Integer,   # Total relevant lines
@@ -380,7 +375,7 @@ Returns `Hash`:
 ```ruby
 {
   'schema_version' => Integer, # Currently 1; first top-level key
-  'file' => String,       # Absolute file path
+  'file' => String,       # Project-relative path (absolute if outside the root)
   'uncovered' => Array<Integer>,  # Line numbers that are not covered
   'summary' => {
     'covered' => Integer,
@@ -397,7 +392,7 @@ Returns `Hash`:
 ```ruby
 {
   'schema_version' => Integer, # Currently 1; first top-level key
-  'file' => String,       # Absolute file path
+  'file' => String,       # Project-relative path (absolute if outside the root)
   'lines' => Array<Hash>, # Per-line coverage details
   'summary' => {
     'covered' => Integer,
@@ -423,7 +418,7 @@ Returns `Hash`:
 ```ruby
 {
   'schema_version' => Integer, # Currently 1; first top-level key
-  'file' => String,              # Absolute file path
+  'file' => String,              # Project-relative path (absolute if outside the root)
   'lines' => Array<Integer | nil>   # SimpleCov lines array (nil = irrelevant, 0 = uncovered, >0 = hit count)
 }
 ```

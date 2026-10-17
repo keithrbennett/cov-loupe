@@ -122,13 +122,13 @@ model = CovLoupe::CoverageModel.new
 list_result = model.list
 # => { "schema_version" => 1, "files" => [...], ... }
 files = list_result["files"]
-# => [{ "file" => "/path/to/project/lib/cov_loupe/model/model.rb", "covered" => 114, "total" => 118, "percentage" => 96.61, "stale" => "ok" }, ...]
+# => [{ "file" => "lib/cov_loupe/model/model.rb", "covered" => 114, "total" => 118, "percentage" => 96.61, "stale" => "ok" }, ...]
 
 summary = model.summary_for("lib/cov_loupe/model/model.rb")
-# => { "schema_version" => 1, "file" => "/path/to/project/lib/cov_loupe/model/model.rb", "summary" => { "covered" => 114, "total" => 118, "percentage" => 96.61 } }
+# => { "schema_version" => 1, "file" => "lib/cov_loupe/model/model.rb", "summary" => { "covered" => 114, "total" => 118, "percentage" => 96.61 } }
 ```
 
-Use `model.relativize(...)` when you want library payloads with project-relative paths. It preserves `schema_version`. See [Library API](docs/user/LIBRARY_API.md#schema-version) for the payload compatibility rules.
+Library payloads report file paths relative to the project root, like the CLI and MCP output; files outside the root keep absolute paths. See [Library API](docs/user/LIBRARY_API.md#schema-version) for the payload compatibility rules.
 
 Only the public API defined under [Public API and Versioning](docs/user/LIBRARY_API.md#public-api-and-versioning), including Ruby classes and methods tagged `@api public`, follows Semantic Versioning; other classes and methods in the gem are internal and may change in any release.
 

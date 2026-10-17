@@ -6,7 +6,7 @@
   "required": ["schema_version", "file", "summary"],
   "properties": {
     "schema_version": {"const": 1, "description": "Version of this payload shape."},
-    "file": {"type": "string", "description": "Absolute or project-relative source path."},
+    "file": {"type": "string", "description": "Source path relative to the project root; absolute if the file is outside it."},
     "summary": {
       "type": "object",
       "required": ["covered", "total", "percentage"],

@@ -21,6 +21,23 @@
   `CovLoupe.create_context` no longer requires `error_handler:`. Nothing else changed
   behavior. See
   [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#public-api-declared).
+- **Library results use project-relative paths.** `CoverageModel#list`, `#summary_for`,
+  `#uncovered_for`, `#detailed_for`, and `#raw_for` now return the same paths as the CLI and
+  MCP server: relative to the project root, or absolute for files outside it (6.x returned
+  absolute `file` values). `CoverageModel#relativize` is removed; use
+  `File.expand_path(path, model.root)` if you need absolute paths (`CoverageModel#root` is a
+  new public reader). `validate` predicates receive these results, so they now see relative
+  paths too. In all modes, the `list` path arrays (`newer_files`, `deleted_files`, and so on)
+  and staleness errors (`CoverageDataStaleError#file_path`, the
+  `CoverageDataProjectStaleError` arrays, and their messages) now report files outside the
+  root as absolute paths instead of `../` paths, and a relative path whose first directory
+  starts with `~` is reported with a `./` prefix (for example `./~vendor/a.rb`), including in
+  `CoverageReporter.report` text. Relative `coverage.json` keys and `format_table` row paths
+  starting with `~` now resolve to a directory under the root instead of a home directory;
+  query path arguments and `tracked_globs` still follow `File.expand_path`. Table rows with
+  equal coverage are ordered by absolute path, as in `list`, so ties involving files outside
+  the root may order differently. CLI and MCP output is otherwise unchanged. See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#library-results-use-project-relative-paths).
 - **`project_validate` is opt-in in the MCP server.** The server now registers
   `project_validate` only when started with `--allow-code-predicates`. Without it, the tool is
   absent from `tools/list` and `help`, and calls return a JSON-RPC `-32602` error whose `data`

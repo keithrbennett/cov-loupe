@@ -6,7 +6,7 @@ RSpec.describe CovLoupe::Formatters::SourceFormatter do
   subject(:formatter) { described_class.new(color_enabled: color_enabled) }
 
   let(:color_enabled) { false }
-  let(:model) { instance_double(CovLoupe::CoverageModel) }
+  let(:model) { instance_double(CovLoupe::CoverageModel, root: Dir.pwd) }
   let(:path) { 'lib/foo.rb' }
   let(:abs_path) { File.expand_path(path) }
   let(:source_content) do
@@ -22,7 +22,7 @@ RSpec.describe CovLoupe::Formatters::SourceFormatter do
 
   before do
     allow(model).to receive(:raw_for).with(path).and_return(
-      'file'  => abs_path,
+      'file'  => path,
       'lines' => coverage_lines
     )
     allow(File).to receive(:file?).with(abs_path).and_return(true)
@@ -104,7 +104,7 @@ RSpec.describe CovLoupe::Formatters::SourceFormatter do
         bad_coverage = [1, 1, bad_object, nil, nil]
 
         allow(model).to receive(:raw_for).with(path)
-          .and_return('file' => abs_path, 'lines' => bad_coverage)
+          .and_return('file' => path, 'lines' => bad_coverage)
 
         result = formatter.format_source_for(model, path, mode: :full)
         expect(result).to eq('[source not available]')
@@ -285,7 +285,7 @@ RSpec.describe CovLoupe::Formatters::SourceFormatter do
       allow(CovLoupe).to receive(:logger).and_return(mock_logger)
       allow(mock_logger).to receive(:safe_log)
       allow(model).to receive(:raw_for).with(path).and_return(
-        'file'  => abs_path,
+        'file'  => path,
         'lines' => coverage_lines
       )
       allow(File).to receive(:file?).with(abs_path).and_return(true)
@@ -302,7 +302,7 @@ RSpec.describe CovLoupe::Formatters::SourceFormatter do
       bad_coverage = [1, 1, bad_object, nil, nil]
 
       allow(model).to receive(:raw_for).with(path)
-        .and_return('file' => abs_path, 'lines' => bad_coverage)
+        .and_return('file' => path, 'lines' => bad_coverage)
 
       formatter.format_source_for(model, path, mode: :full)
 
@@ -318,7 +318,7 @@ RSpec.describe CovLoupe::Formatters::SourceFormatter do
       bad_coverage = [1, 1, bad_object, nil, nil]
 
       allow(model).to receive(:raw_for).with(path)
-        .and_return('file' => abs_path, 'lines' => bad_coverage)
+        .and_return('file' => path, 'lines' => bad_coverage)
 
       formatter.format_source_for(model, path, mode: :full)
 
@@ -334,7 +334,7 @@ RSpec.describe CovLoupe::Formatters::SourceFormatter do
       bad_coverage = [1, 1, bad_object, nil, nil]
 
       allow(model).to receive(:raw_for).with(path)
-        .and_return('file' => abs_path, 'lines' => bad_coverage)
+        .and_return('file' => path, 'lines' => bad_coverage)
 
       result = formatter.format_source_for(model, path, mode: :full)
 

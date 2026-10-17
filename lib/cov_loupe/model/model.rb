@@ -22,6 +22,9 @@ module CovLoupe
   # Provides file-level queries (raw_for, summary_for, uncovered_for, detailed_for),
   # project-level queries (list, project_totals), and table formatting (format_table).
   #
+  # Coverage data is keyed by absolute path internally. Query results report paths
+  # relative to the project root; paths outside the root stay absolute.
+  #
   # Construction eagerly validates that the coverage file exists and loads initial data
   # via ModelDataCache. Subsequent data accesses check the cache on every call and
   # auto-reload if the coverage file has changed (based on mtime + MD5 digest).
@@ -30,7 +33,7 @@ module CovLoupe
   # - CoverageCalculator for line counting and aggregation
   # - StalenessChecker for time-based and line-count staleness detection
   # - CoverageLineResolver for looking up files in the coverage map
-  # - PathRelativizer for converting absolute paths to project-relative form
+  # - PathRelativizer for converting result paths to project-relative form
   #
   # Thread safety: CoverageModel instances are NOT thread-safe. The shared
   # ModelDataCache is thread-safe, but per-instance state like @skipped_rows
@@ -53,6 +56,11 @@ module CovLoupe
     DEFAULT_SORT_ORDER = :descending
 
     attr_reader :coverage_file_path
+
+    # The absolute project root, resolved when the model was created. Expand a relative
+    # result path against it to get an absolute path.
+    # @return [String]
+    attr_reader :root
 
     # @api private
     attr_reader :relativizer, :skipped_rows, :volume_case_sensitive
@@ -100,41 +108,38 @@ module CovLoupe
       @volume_case_sensitive = PathUtils.volume_case_sensitive?(@root)
     end
 
-    # Returns { 'file' => <absolute_path>, 'lines' => [hits|nil,...] }
+    # Returns { 'file' => <relative_path>, 'lines' => [hits|nil,...] }
     def raw_for(path, raise_on_stale: @default_raise_on_stale)
       file_abs, coverage_lines = coverage_data_for(path, raise_on_stale: raise_on_stale)
-      # Dup so callers can't mutate the array held in the shared coverage cache
-      PayloadSchema.add('file' => file_abs, 'lines' => coverage_lines.dup)
+      # relative_paths returns a deep copy, so callers can't mutate the cached lines array
+      relative_paths(PayloadSchema.add('file' => file_abs, 'lines' => coverage_lines))
     end
 
-    def relativize(payload)
-      relativizer.relativize(payload)
-    end
-
-    # Returns { 'file' => <absolute_path>, 'summary' => {'covered'=>, 'total'=>, 'percentage'=>} }
+    # Returns { 'file' => <relative_path>, 'summary' => {'covered'=>, 'total'=>, 'percentage'=>} }
     def summary_for(path, raise_on_stale: @default_raise_on_stale)
       file_abs, coverage_lines = coverage_data_for(path, raise_on_stale: raise_on_stale)
-      PayloadSchema.add('file' => file_abs, 'summary' => CoverageCalculator.summary(coverage_lines))
+      relative_paths(PayloadSchema.add('file' => file_abs,
+        'summary' => CoverageCalculator.summary(coverage_lines)))
     end
 
-    # Returns { 'file' => <absolute_path>, 'uncovered' => [line,...], 'summary' => {...} }
+    # Returns { 'file' => <relative_path>, 'uncovered' => [line,...], 'summary' => {...} }
     def uncovered_for(path, raise_on_stale: @default_raise_on_stale)
       file_abs, coverage_lines = coverage_data_for(path, raise_on_stale: raise_on_stale)
-      PayloadSchema.add({
+      relative_paths(PayloadSchema.add({
         'file'      => file_abs,
         'uncovered' => CoverageCalculator.uncovered(coverage_lines),
         'summary'   => CoverageCalculator.summary(coverage_lines),
-      })
+      }))
     end
 
-    # Returns { 'file' => <absolute_path>, 'lines' => [{'line'=>,'hits'=>,'covered'=>},...], 'summary' => {...} }
+    # Returns { 'file' => <relative_path>, 'lines' => [{'line'=>,'hits'=>,'covered'=>},...], 'summary' => {...} }
     def detailed_for(path, raise_on_stale: @default_raise_on_stale)
       file_abs, coverage_lines = coverage_data_for(path, raise_on_stale: raise_on_stale)
-      PayloadSchema.add({
+      relative_paths(PayloadSchema.add({
         'file'    => file_abs,
         'lines'   => CoverageCalculator.detailed(coverage_lines),
         'summary' => CoverageCalculator.summary(coverage_lines),
-      })
+      }))
     end
 
     # Returns a list of coverage data for all tracked files.
@@ -160,8 +165,8 @@ module CovLoupe
     def list(sort_order: DEFAULT_SORT_ORDER,
       raise_on_stale: @default_raise_on_stale,
       tracked_globs: @default_tracked_globs)
-      PayloadSchema.add(unversioned_list(sort_order: sort_order,
-        raise_on_stale: raise_on_stale, tracked_globs: tracked_globs))
+      relative_paths(PayloadSchema.add(unversioned_list(sort_order: sort_order,
+        raise_on_stale: raise_on_stale, tracked_globs: tracked_globs)))
     end
 
     private def unversioned_list(sort_order:, raise_on_stale:, tracked_globs:)
@@ -248,7 +253,8 @@ module CovLoupe
     # Returns formatted table string for all files coverage data
     # Delegates to CoverageTableFormatter for presentation logic
     #
-    # @param rows [Array<Hash>, nil] Pre-computed rows, or nil to compute from coverage data
+    # @param rows [Array<Hash>, nil] Pre-computed rows (e.g. list['files']), or nil to compute
+    #   from coverage data
     # @param sort_order [Symbol] Sort order (:ascending or :descending)
     # @param raise_on_stale [Boolean] Whether to raise on stale coverage data
     # @param tracked_globs [Array<String>, nil] Glob patterns for tracked files
@@ -261,6 +267,11 @@ module CovLoupe
       rows = prepare_rows(rows, sort_order: sort_order, raise_on_stale: raise_on_stale,
         tracked_globs: tracked_globs)
       CoverageTableFormatter.format(rows, output_chars: output_chars)
+    end
+
+    # Converts the configured path keys in a query result to project-relative form.
+    private def relative_paths(payload)
+      relativizer.relativize(payload)
     end
 
     # Lazily resolves the coverage file path on first access
@@ -368,7 +379,7 @@ module CovLoupe
     end
 
     private def prepare_rows(rows, sort_order:, raise_on_stale:, tracked_globs:)
-      files = rows || unversioned_list(sort_order: sort_order, raise_on_stale: raise_on_stale,
+      files = rows || list(sort_order: sort_order, raise_on_stale: raise_on_stale,
         tracked_globs: tracked_globs)['files']
 
       files = sort_rows(files.dup, sort_order: sort_order)
@@ -380,6 +391,9 @@ module CovLoupe
       # Nil percentages (e.g., files with no coverable lines) are grouped at one end:
       #   - Descending mode: nil files sort first (before 100%)
       #   - Ascending mode: nil files sort last (after 100%)
+      # Ties break on absolute path, as in list; expand lazily since only ties need it.
+      abs_paths = Hash.new { |cache, file| cache[file] = PathUtils.expand_from_root(file, @root) }
+
       percent_comparator = sort_order == :descending \
         ? ->(left, right) { right <=> left }
         : ->(left, right) { left <=> right }
@@ -408,7 +422,9 @@ module CovLoupe
           return percent_comp_result if percent_comp_result != 0
         end
 
-        a['file'] <=> b['file'] # stable tiebreaker: alphabetical by path
+        # Stable tiebreaker: alphabetical by absolute path, so relative rows from list
+        # sort the same way as the absolute rows used internally.
+        abs_paths[a['file']] <=> abs_paths[b['file']]
       end
 
       rows.sort { |a, b| comparator.(a, b) }
@@ -416,7 +432,8 @@ module CovLoupe
 
     # Filters coverage rows to only include files matching the given glob patterns.
     #
-    # @param rows [Array<Hash>] coverage rows with 'file' keys containing absolute paths
+    # @param rows [Array<Hash>] coverage rows with 'file' keys containing absolute paths, or
+    #   project-relative paths when format_table receives rows from a query result
     # @param tracked_globs [Array<String>, String, nil] glob patterns to match against
     # @return [Array<Hash>] rows whose files match at least one pattern (or all rows if no patterns)
     private def filter_rows_by_globs(rows, tracked_globs)
@@ -509,7 +526,7 @@ module CovLoupe
     private def unreadable_without_row(list_result)
       accounted = (list_result['files'] + Array(list_result['skipped_files'])).to_set { |r| r['file'] }
       Array(list_result['unreadable_files']).count do |path|
-        !accounted.include?(File.expand_path(path, @root))
+        !accounted.include?(PathUtils.expand_from_root(path, @root))
       end
     end
 

@@ -23,17 +23,16 @@ module CovLoupe
 
       # Returns the cached stale status for the file.
       def stale
-        absolute_payload['stale']
+        payload['stale']
       end
 
-      # Returns the relativized file path used in CLI output.
+      # Returns the project-relative file path used in CLI output.
       def relative_path
-        relativized_payload['file']
+        payload['file']
       end
 
-      private def compute_absolute_payload
-        payload = build_payload
-        payload.merge('stale' => model.staleness_for(path))
+      private def compute_payload
+        build_payload.merge('stale' => model.staleness_for(path))
       end
 
       private def build_payload

@@ -15,6 +15,12 @@ RSpec.describe CovLoupe::PathUtils do
         expect(result).to eq('lib/file.rb')
       end
 
+      it 'prefixes ./ when the first component starts with ~' do
+        result = described_class.relativize("#{root}/~nouser/file.rb", root)
+        expect(result).to eq('./~nouser/file.rb')
+        expect(File.expand_path(result, root)).to eq(File.expand_path("#{root}/~nouser/file.rb"))
+      end
+
       it 'handles nested directories' do
         deep_path = "#{root}/deep/nested/path/file.rb"
         result = described_class.relativize(deep_path, root)
@@ -365,6 +371,21 @@ RSpec.describe CovLoupe::PathUtils do
 
         result = described_class.relativize(path, root)
         expect(result).to eq(path)
+      end
+    end
+  end
+
+  describe '.expand_from_root' do
+    let(:root) { '/home/user/project' }
+
+    [
+      ['a relative path', 'lib/a.rb', 'lib/a.rb'],
+      ['a bare ~ path as a literal directory', '~nouser/a.rb', './~nouser/a.rb'],
+      ['a ./~ path', './~nouser/a.rb', './~nouser/a.rb'],
+      ['an absolute path outside the root', '/tmp/x/../a.rb', '/tmp/a.rb'],
+    ].each do |description, path, expected|
+      it "expands #{description}" do
+        expect(described_class.expand_from_root(path, root)).to eq(File.expand_path(expected, root))
       end
     end
   end

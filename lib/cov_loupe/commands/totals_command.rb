@@ -16,8 +16,8 @@ module CovLoupe
           raise_on_stale: config.raise_on_stale,
           tracked_globs:  config.tracked_globs
         )
-        payload = presenter.absolute_payload
-        return if maybe_output_structured_format?(payload, model)
+        payload = presenter.payload
+        return if maybe_output_structured_format?(payload)
 
         lines = payload['lines']
         files = payload['files']

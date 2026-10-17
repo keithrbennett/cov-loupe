@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative '../output_chars'
+require_relative '../paths/path_utils'
 
 module CovLoupe
   module Formatters
@@ -25,7 +26,7 @@ module CovLoupe
         raw = fetch_raw(model, path)
         return '[source not available]' unless raw
 
-        abs = raw['file']
+        abs = PathUtils.expand_from_root(raw['file'], model.root)
         lines_cov = raw['lines']
         src = File.file?(abs) ? File.readlines(abs, chomp: true) : nil
         return '[source not available]' unless src
@@ -47,7 +48,7 @@ module CovLoupe
         raw = fetch_raw(model, path)
         return nil unless raw
 
-        abs = raw['file']
+        abs = PathUtils.expand_from_root(raw['file'], model.root)
         lines_cov = raw['lines']
         src = File.file?(abs) ? File.readlines(abs, chomp: true) : nil
         return nil unless src

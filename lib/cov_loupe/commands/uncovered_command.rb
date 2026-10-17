@@ -12,7 +12,7 @@ module CovLoupe
         handle_with_path(args, 'uncovered') do |path|
           presenter = Presenters::CoveragePayloadPresenter.new(model: model, path: path,
             payload_method: :uncovered_for)
-          data = presenter.absolute_payload
+          data = presenter.payload
           break if emit_structured_format_with_optional_source?(data, model, path)
 
           relative_path = convert_text(presenter.relative_path)

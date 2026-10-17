@@ -13,7 +13,7 @@ module CovLoupe
         handle_with_path(args, 'summary') do |path|
           presenter = Presenters::CoveragePayloadPresenter.new(model: model, path: path,
             payload_method: :summary_for)
-          data = presenter.absolute_payload
+          data = presenter.payload
           break if emit_structured_format_with_optional_source?(data, model, path)
 
           relative_path = convert_text(presenter.relative_path)

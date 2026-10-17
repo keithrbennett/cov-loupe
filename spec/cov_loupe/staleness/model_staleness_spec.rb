@@ -102,9 +102,9 @@ RSpec.describe CovLoupe::CoverageModel do
       result = model.list(tracked_globs: ['lib/foo.rb'])
 
       # bar.rb should not appear in the results at all since it's outside tracked_globs
-      expect(result['files'].map { |f| f['file'] }).to eq([File.join(root, 'lib', 'foo.rb')])
+      expect(result['files'].map { |f| f['file'] }).to eq(['lib/foo.rb'])
       # foo.rb should not be marked as stale (no mismatch, and timestamp is current)
-      foo_row = result['files'].find { |f| f['file'] == File.join(root, 'lib', 'foo.rb') }
+      foo_row = result['files'].find { |f| f['file'] == 'lib/foo.rb' }
       expect(foo_row['stale']).to eq('ok')
     end
 
@@ -149,8 +149,8 @@ RSpec.describe CovLoupe::CoverageModel do
         model = described_class.new(root: root, raise_on_stale: false)
         result = model.list(tracked_globs: ['lib/foo.rb', 'lib/bar.rb'])
 
-        expect(result['skipped_files'].map { |f| f['file'] }).to eq([bar_path])
-        expect(result['skipped_files']).not_to include(hash_including('file' => baz_path))
+        expect(result['skipped_files'].map { |f| f['file'] }).to eq(['lib/bar.rb'])
+        expect(result['skipped_files']).not_to include(hash_including('file' => 'lib/baz.rb'))
       end
 
       it 'includes all skipped files when tracked_globs is not specified' do
@@ -158,7 +158,7 @@ RSpec.describe CovLoupe::CoverageModel do
         result = model.list
 
         skipped_paths = result['skipped_files'].map { |f| f['file'] }
-        expect(skipped_paths).to include(bar_path, baz_path)
+        expect(skipped_paths).to include('lib/bar.rb', 'lib/baz.rb')
         expect(skipped_paths.length).to eq(2)
       end
     end

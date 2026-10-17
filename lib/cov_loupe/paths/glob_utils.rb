@@ -88,15 +88,19 @@ module CovLoupe
     #
     # @param items [Array<Hash>] items to filter
     # @param patterns [Array<String>] absolute glob patterns
-    # @param key [String] key in item hash containing the absolute file path
-    # @param root [String, nil] project root; when given, case sensitivity is detected once
-    #   from its volume rather than per item
+    # @param key [String] key in item hash containing the file path
+    # @param root [String, nil] project root; when given, relative item paths are expanded
+    #   against it, and case sensitivity is detected once from its volume rather than per item
     # @return [Array<Hash>] items whose file path matches at least one pattern
     module_function def filter_by_pattern(items, patterns, key: 'file', root: nil)
       return items if patterns.nil? || patterns.empty?
 
-      flags = root && match_flags(File.expand_path(root))
-      items.select { |item| matches_any_pattern?(item[key], patterns, flags: flags) }
+      abs_root = root && File.expand_path(root)
+      flags = abs_root && match_flags(abs_root)
+      items.select do |item|
+        path = abs_root ? PathUtils.expand_from_root(item[key], abs_root) : item[key]
+        matches_any_pattern?(path, patterns, flags: flags)
+      end
     end
 
     # Filters an array of absolute file paths by glob patterns.

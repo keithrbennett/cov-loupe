@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 require 'time'
-require 'pathname'
 require_relative '../errors/errors'
 require_relative 'stale_status'
 require_relative '../resolvers/resolver_helpers'
+require_relative '../paths/path_utils'
 
 module CovLoupe
   # Lightweight service object to check staleness of coverage vs. sources.
@@ -281,12 +281,9 @@ module CovLoupe
       [exists, file_mtime, read_error]
     end
 
+    # Project-relative path for reports; paths outside the root stay absolute.
     private def rel(path)
-      # Handle relative vs absolute path mismatches that cause ArgumentError
-      Pathname.new(path).relative_path_from(Pathname.new(@root)).to_s
-    rescue ArgumentError
-      # Path is outside the project root or has a different prefix type, fall back to absolute path
-      path.to_s
+      PathUtils.relativize(path.to_s, @root)
     end
 
     # Centralized computation of staleness-related details for a single file.

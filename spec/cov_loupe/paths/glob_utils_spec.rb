@@ -250,6 +250,14 @@ RSpec.describe CovLoupe::GlobUtils do
       result = described_class.filter_by_pattern(custom_items, patterns, key: 'path')
       expect(result).to contain_exactly({ 'path' => '/root/lib/foo.rb' })
     end
+
+    it 'expands relative item paths against root when root is given' do
+      root = File.expand_path('/root')
+      relative_items = [{ 'file' => 'lib/foo.rb' }, { 'file' => 'spec/foo_spec.rb' }]
+      patterns = [File.join(root, 'lib/*.rb')]
+      result = described_class.filter_by_pattern(relative_items, patterns, root: root)
+      expect(result).to eq([{ 'file' => 'lib/foo.rb' }])
+    end
   end
 
   describe 'root-based case-sensitivity detection' do

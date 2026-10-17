@@ -12,8 +12,8 @@ module CovLoupe
         handle_with_path(args, 'raw') do |path|
           presenter = Presenters::CoveragePayloadPresenter.new(model: model, path: path,
             payload_method: :raw_for)
-          data = presenter.absolute_payload
-          break if maybe_output_structured_format?(data, model)
+          data = presenter.payload
+          break if maybe_output_structured_format?(data)
 
           relative_path = convert_text(presenter.relative_path)
           puts "File: #{relative_path}"

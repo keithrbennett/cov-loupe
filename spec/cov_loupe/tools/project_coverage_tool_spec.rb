@@ -262,7 +262,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
 
         presenter = instance_double(CovLoupe::Presenters::ProjectCoveragePresenter)
         allow(CovLoupe::Presenters::ProjectCoveragePresenter).to receive(:new).and_return(presenter)
-        allow(presenter).to receive(:relativized_payload).and_return(test_payload)
+        allow(presenter).to receive(:payload).and_return(test_payload)
       end
     end
 
@@ -293,11 +293,8 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
       it 'includes exclusions summary when tracked files are missing' do
         model = instance_double(CovLoupe::CoverageModel)
         allow(CovLoupe::CoverageModel).to receive(:new).and_return(model)
-        allow(model).to receive(:relativize) { |p| p }
 
-        relativizer = instance_double(CovLoupe::PathRelativizer)
         allow(model).to receive_messages(
-          relativizer:  relativizer,
           skipped_rows: [],
           format_table: "Mock\nTable"
         )
@@ -344,11 +341,8 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
       it 'includes timestamp warning when timestamps are missing' do
         model = instance_double(CovLoupe::CoverageModel)
         allow(CovLoupe::CoverageModel).to receive(:new).and_return(model)
-        allow(model).to receive(:relativize) { |p| p }
 
-        relativizer = instance_double(CovLoupe::PathRelativizer)
         allow(model).to receive_messages(
-          relativizer:  relativizer,
           skipped_rows: [],
           format_table: "Mock\nTable"
         )
@@ -405,7 +399,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
 
       presenter = instance_double(CovLoupe::Presenters::ProjectCoveragePresenter)
       allow(CovLoupe::Presenters::ProjectCoveragePresenter).to receive(:new).and_return(presenter)
-      allow(presenter).to receive(:relativized_payload).and_return(test_payload)
+      allow(presenter).to receive(:payload).and_return(test_payload)
 
       output = described_class.call(root: root, server_context: server_context).content.first['text']
       data = JSON.parse(output)
@@ -577,7 +571,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
 
       presenter = instance_double(CovLoupe::Presenters::ProjectCoveragePresenter)
       allow(CovLoupe::Presenters::ProjectCoveragePresenter).to receive(:new).and_return(presenter)
-      allow(presenter).to receive(:relativized_payload).and_return(test_payload)
+      allow(presenter).to receive(:payload).and_return(test_payload)
 
       described_class.call(root: root, raise_on_stale: true, server_context: server_context)
 

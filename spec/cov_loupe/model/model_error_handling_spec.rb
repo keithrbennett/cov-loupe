@@ -212,7 +212,7 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
         expect(file_names).not_to include('foo.rb')
         expect(list_result['skipped_files']).to contain_exactly(
           hash_including(
-            'file'        => foo_path,
+            'file'        => 'lib/foo.rb',
             'error'       => 'Missing file',
             'error_class' => 'CovLoupe::FileError'
           )
@@ -233,7 +233,7 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
         expect(file_names).not_to include('foo.rb')
         expect(list_result['skipped_files']).to contain_exactly(
           hash_including(
-            'file'        => foo_path,
+            'file'        => 'lib/foo.rb',
             'error'       => 'Corrupted coverage entry',
             'error_class' => 'CovLoupe::CorruptCoverageDataError'
           )
@@ -502,7 +502,7 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
       expect(file_names).not_to include('foo.rb')
       expect(list_result['skipped_files']).to contain_exactly(
         hash_including(
-          'file'        => foo_path,
+          'file'        => 'lib/foo.rb',
           'error_class' => 'CovLoupe::CoverageDataError'
         )
       )

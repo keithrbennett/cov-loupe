@@ -98,7 +98,7 @@ module CovLoupe
         # First pass: normalize all keys and track the mapping
         map.each do |original_key, value|
           # Expand to absolute path first
-          expanded_key = PathUtils.expand(original_key, @root)
+          expanded_key = PathUtils.expand_from_root(original_key, @root)
 
           # Then apply case normalization for collision detection only
           # Pass root to ensure case-sensitivity is derived from root's volume

@@ -46,7 +46,6 @@ RSpec.describe 'examples/success_predicates' do
         { 'file' => 'lib/api/client.rb', 'percentage' => percentage },
       ]
       model = instance_double(CovLoupe::CoverageModel, list: { 'files' => files })
-      allow(model).to receive(:relativize) { |payload| payload }
 
       expect(evaluate('directory_specific_thresholds_predicate.rb', model)).to be(expected)
     end

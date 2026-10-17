@@ -7,15 +7,15 @@ RSpec.describe CovLoupe::CoverageReporter do
   # Data is pre-sorted by percentage ascending (as model.list returns)
   let(:files_data) do
     [
-      { 'file' => '/project/lib/zero.rb',   'percentage' =>  0.0, 'covered' =>  0, 'total' => 10,
+      { 'file' => 'lib/zero.rb',   'percentage' =>  0.0, 'covered' =>  0, 'total' => 10,
         'stale' => 'deleted' },
-      { 'file' => '/project/lib/low.rb',    'percentage' => 25.0, 'covered' =>  5, 'total' => 20,
+      { 'file' => 'lib/low.rb',    'percentage' => 25.0, 'covered' =>  5, 'total' => 20,
         'stale' => 'ok' },
-      { 'file' => '/project/lib/empty.rb',  'percentage' => nil,  'covered' =>  0, 'total' =>  0,
+      { 'file' => 'lib/empty.rb',  'percentage' => nil,  'covered' =>  0, 'total' =>  0,
         'stale' => 'ok' },
-      { 'file' => '/project/lib/medium.rb', 'percentage' => 60.0, 'covered' => 12, 'total' => 20,
+      { 'file' => 'lib/medium.rb', 'percentage' => 60.0, 'covered' => 12, 'total' => 20,
         'stale' => 'ok' },
-      { 'file' => '/project/lib/high.rb',   'percentage' => 95.0, 'covered' => 19, 'total' => 20,
+      { 'file' => 'lib/high.rb',   'percentage' => 95.0, 'covered' => 19, 'total' => 20,
         'stale' => 'ok' },
     ]
   end
@@ -28,9 +28,6 @@ RSpec.describe CovLoupe::CoverageReporter do
       'newer_files'           => [],
       'deleted_files'         => [],
     })
-    allow(model).to receive(:relativize) do |files|
-      files.map { |f| f.merge('file' => f['file'].sub('/project/', '')) }
-    end
   end
 
   describe '.report' do
@@ -85,13 +82,6 @@ RSpec.describe CovLoupe::CoverageReporter do
       expect(result).to include('lib/high.rb')
     end
 
-    it 'relativizes file paths' do
-      result = described_class.report(threshold: 80, count: 5, model: model)
-
-      expect(result).to include('lib/zero.rb')
-      expect(result).not_to include('/project/')
-    end
-
     it 'aligns percentages correctly' do
       result = described_class.report(threshold: 100, count: 5, model: model)
       lines = result.split("\n")
@@ -102,7 +92,7 @@ RSpec.describe CovLoupe::CoverageReporter do
     end
 
     it 'does not display incomplete coverage as 100%' do
-      files_data.replace([{ 'file' => '/project/lib/almost.rb', 'percentage' => 99.95, 'stale' => 'ok' }])
+      files_data.replace([{ 'file' => 'lib/almost.rb', 'percentage' => 99.95, 'stale' => 'ok' }])
       result = described_class.report(threshold: 100, count: 5, model: model)
 
       expect(result).to include(' 99.95%  lib/almost.rb')

@@ -26,7 +26,7 @@
       "type": "object",
       "required": ["file", "covered", "total", "percentage", "stale"],
       "properties": {
-        "file": {"type": "string", "description": "Absolute or project-relative source path."},
+        "file": {"type": "string", "description": "Source path relative to the project root; absolute if the file is outside it."},
         "covered": {"type": "integer", "minimum": 0, "description": "Lines with at least one hit."},
         "total": {"type": "integer", "minimum": 0, "description": "Coverable lines."},
         "percentage": {"type": ["number", "null"], "minimum": 0, "maximum": 100, "description": "Line coverage percent (covered / coverable lines), truncated to two decimals; null when there are no coverable lines."},
@@ -37,12 +37,12 @@
       "type": "object",
       "required": ["file", "error", "error_class"],
       "properties": {
-        "file": {"type": "string", "description": "Absolute or project-relative source path."},
+        "file": {"type": "string", "description": "Source path relative to the project root; absolute if the file is outside it."},
         "error": {"type": "string", "description": "Reason the row was skipped."},
         "error_class": {"type": "string", "description": "Ruby exception class name."}
       }
     },
-    "paths": {"type": "array", "items": {"type": "string"}},
+    "paths": {"type": "array", "items": {"type": "string", "description": "Source path relative to the project root; absolute if the file is outside it."}},
     "counts": {
       "type": "object",
       "required": ["total", "ok", "stale"],

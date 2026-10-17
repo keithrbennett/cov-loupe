@@ -61,11 +61,10 @@ module CovLoupe
         raise UsageError, "Unexpected argument(s) for '#{command_name}': #{extra}"
       end
 
-      protected def maybe_output_structured_format?(obj, model)
+      protected def maybe_output_structured_format?(obj)
         return false if config.format == :table
 
-        payload = PayloadSchema.add(model.relativize(obj))
-        puts CovLoupe::Formatters.format(payload, config.format,
+        puts CovLoupe::Formatters.format(PayloadSchema.add(obj), config.format,
           output_chars: config.output_chars)
         true
       end
@@ -74,7 +73,7 @@ module CovLoupe
         return false if config.format == :table
 
         payload = config.source_mode ? data.merge('source' => build_source_payload(model, path)) : data
-        maybe_output_structured_format?(payload, model)
+        maybe_output_structured_format?(payload)
       end
 
       protected def build_source_payload(model, path)

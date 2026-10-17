@@ -100,19 +100,19 @@ RSpec.describe CovLoupe::CoverageModel do
       files = model.list['files']
       aggregate_failures 'Descending sort' do
         expect(files.first).to include(
-          'file'       => File.expand_path('lib/foo.rb', root),
+          'file'       => 'lib/foo.rb',
           'percentage' => a_value_within(0.01).of(66.66)
         )
-        expect(files.last).to include('file' => File.expand_path('lib/bar.rb', root))
+        expect(files.last).to include('file' => 'lib/bar.rb')
       end
 
       files_asc = model.list(sort_order: :ascending)['files']
       aggregate_failures 'Ascending sort' do
         expect(files_asc.first).to include(
-          'file'       => File.expand_path('lib/bar.rb', root),
+          'file'       => 'lib/bar.rb',
           'percentage' => a_value_within(0.01).of(33.33)
         )
-        expect(files_asc.last).to include('file' => File.expand_path('lib/foo.rb', root))
+        expect(files_asc.last).to include('file' => 'lib/foo.rb')
       end
     end
 
@@ -124,15 +124,15 @@ RSpec.describe CovLoupe::CoverageModel do
         # Single glob
         files = model.list(tracked_globs: ['lib/foo.rb'])['files']
         expect(files.length).to eq(1)
-        expect(files.first['file']).to eq(abs_foo)
+        expect(files.first['file']).to eq('lib/foo.rb')
 
         # Multiple globs
         files_multi = model.list(tracked_globs: ['lib/foo.rb', abs_bar])['files']
-        expect(files_multi.map { |f| f['file'] }).to contain_exactly(abs_foo, abs_bar)
+        expect(files_multi.map { |f| f['file'] }).to contain_exactly('lib/foo.rb', 'lib/bar.rb')
 
         # Absolute pattern
         files_abs = model.list(tracked_globs: [abs_foo])['files']
-        expect(files_abs.map { |f| f['file'] }).to contain_exactly(abs_foo)
+        expect(files_abs.map { |f| f['file'] }).to contain_exactly('lib/foo.rb')
       end
     end
 
@@ -163,11 +163,11 @@ RSpec.describe CovLoupe::CoverageModel do
 
       result = model.list
 
-      expect(result['files'].map { |row| row['file'] }).not_to include(abs_foo)
+      expect(result['files'].map { |row| row['file'] }).not_to include('lib/foo.rb')
 
       expect(result['skipped_files']).to contain_exactly(
         hash_including(
-          'file'        => abs_foo,
+          'file'        => 'lib/foo.rb',
           'error'       => 'corrupt data',
           'error_class' => 'CovLoupe::CoverageDataError'
         )
@@ -182,7 +182,7 @@ RSpec.describe CovLoupe::CoverageModel do
 
       result = model.list
 
-      expect(result['newer_files']).to contain_exactly(newer_file)
+      expect(result['newer_files']).to contain_exactly('lib/foo.rb')
     end
 
     it 'reports deleted_files' do
@@ -218,12 +218,100 @@ RSpec.describe CovLoupe::CoverageModel do
     end
   end
 
-  it 'preserves schema_version and key order when relativizing a model result' do
-    result = model.relativize(model.summary_for('lib/foo.rb'))
+  describe 'paths in query results' do
+    let(:in_project_file) { File.join(root, 'lib', 'foo.rb') }
+    let(:outside_file) { File.expand_path('../zz_outside_root.rb', root) }
+    let(:tmp_dir) { Dir.mktmpdir('cov_loupe_outside_root') }
+    let(:mixed_coverage_file) { File.join(tmp_dir, 'coverage.json') }
+    let(:mixed_model) { described_class.new(root: root, coverage_file: mixed_coverage_file) }
 
-    expect(result.keys.first).to eq('schema_version')
-    expect(result['schema_version']).to eq(CovLoupe::SCHEMA_VERSION)
-    expect(result['file']).to eq('lib/foo.rb')
+    # Equal percentages (50%), so ordering falls through to the path tiebreaker.
+    before do
+      File.write(mixed_coverage_file, JSON.generate(coverage_json_document(coverage: {
+        in_project_file => { 'lines' => [1, 0] },
+        outside_file    => { 'lines' => [1, 0] },
+      })))
+    end
+
+    after { FileUtils.rm_rf(tmp_dir) }
+
+    # project_totals is omitted because its payload carries no file paths.
+    {
+      raw_for:       ->(m, path) { m.raw_for(path)['file'] },
+      summary_for:   ->(m, path) { m.summary_for(path)['file'] },
+      uncovered_for: ->(m, path) { m.uncovered_for(path)['file'] },
+      detailed_for:  ->(m, path) { m.detailed_for(path)['file'] },
+      list:          ->(m, path) { m.list(tracked_globs: [path])['files'].map { |row| row['file'] } },
+    }.each do |method, file_from|
+      # Symbols name the lets above; strings are literal paths.
+      [
+        ['a relative in-project path', 'lib/foo.rb', 'a project-relative path', 'lib/foo.rb'],
+        ['an absolute in-project path', :in_project_file, 'a project-relative path', 'lib/foo.rb'],
+        ['a path outside the root', :outside_file, 'an absolute path', :outside_file],
+      ].each do |input_desc, input, expected_desc, expected|
+        it "#{method} given #{input_desc} returns #{expected_desc}" do
+          resolve = ->(value) { value.is_a?(Symbol) ? send(value) : value }
+          result = Array(file_from.call(mixed_model, resolve.(input)))
+          expect(result).to eq([resolve.(expected)])
+        end
+      end
+    end
+
+    it 'keeps outside-root paths absolute in list path arrays' do
+      expect(mixed_model.list['deleted_files']).to contain_exactly(outside_file)
+    end
+
+    it 'orders format_table rows like list when percentages tie' do
+      list_order = mixed_model.list['files'].map { |row| row['file'] }
+      table = mixed_model.format_table(mixed_model.list['files'])
+      table_order = list_order.sort_by { |file| table.index(file) }
+
+      expect(table_order).to eq(list_order)
+    end
+
+    context 'with a directory whose name starts with ~' do
+      let(:tilde_root) { Dir.mktmpdir('cov_loupe_tilde_root') }
+      let(:tilde_file) { File.join(tilde_root, '~nouser', 'a.rb') }
+      let(:coverage_key) { tilde_file }
+      let(:tilde_model) do
+        coverage_file = File.join(tilde_root, 'coverage.json')
+        File.write(coverage_file, JSON.generate(coverage_json_document(coverage: {
+          coverage_key => { 'lines' => [1, 0] },
+        })))
+        described_class.new(root: tilde_root, coverage_file: coverage_file)
+      end
+
+      before do
+        FileUtils.mkdir_p(File.dirname(tilde_file))
+        File.write(tilde_file, "a = 1\nb = 2\n")
+      end
+
+      after { FileUtils.rm_rf(tilde_root) }
+
+      [['an absolute', nil], ['a relative', '~nouser/a.rb']].each do |key_form, relative_key|
+        context "with #{key_form} coverage key" do
+          let(:coverage_key) { relative_key || tilde_file }
+
+          it 'returns a path that resolves back under the root' do
+            file = tilde_model.list['files'].first['file']
+
+            aggregate_failures do
+              expect(file).to eq('./~nouser/a.rb')
+              expect(tilde_model.summary_for(file)['file']).to eq(file)
+              expect(tilde_model.format_table(tilde_model.list['files'], tracked_globs: ['**/*.rb']))
+                .to include('~nouser/a.rb')
+            end
+          end
+        end
+      end
+
+      it 'treats a caller-supplied ~ row path as a directory under the root' do
+        rows = [{ 'file' => '~nouser/a.rb', 'percentage' => 50.0, 'covered' => 1, 'total' => 2,
+                  'stale' => 'ok' }]
+
+        expect(tilde_model.format_table(rows, tracked_globs: ['**/*.rb'])).to include('~nouser/a.rb')
+      end
+    end
   end
 
   it 'validates tracked files missing coverage and stale files with missing timestamps' do
@@ -427,6 +515,17 @@ RSpec.describe CovLoupe::CoverageModel do
     end
   end
 
+  describe '#root' do
+    [
+      ['an absolute root', ->(root) { root }],
+      ['a relative root', ->(root) { Pathname(root).relative_path_from(Dir.pwd).to_s }],
+    ].each do |description, root_arg|
+      it "returns the absolute project root given #{description}" do
+        expect(described_class.new(root: root_arg.call(root)).root).to eq(File.expand_path(root))
+      end
+    end
+  end
+
   describe 'format_table' do
     it 'delegates to CoverageTableFormatter for formatting' do
       expect(CovLoupe::CoverageTableFormatter).to receive(:format).and_call_original
@@ -440,6 +539,7 @@ RSpec.describe CovLoupe::CoverageModel do
         # Default sort
         output = model.format_table
         expect(output).to include('lib/foo.rb', 'lib/bar.rb')
+        expect(output).not_to include(File.expand_path('lib/foo.rb', root))
 
         # Empty rows
         expect(model.format_table([])).to eq('No coverage data found')
@@ -457,6 +557,13 @@ RSpec.describe CovLoupe::CoverageModel do
         output_desc = model.format_table(list_data, sort_order: :descending)
         expect(output_desc.index('foo.rb')).to be < output_desc.index('bar.rb')
       end
+    end
+
+    it 'applies tracked_globs to the project-relative rows returned by list' do
+      table = model.format_table(model.list['files'], tracked_globs: ['lib/foo.rb'])
+
+      expect(table).to include('lib/foo.rb')
+      expect(table).not_to include('lib/bar.rb')
     end
   end
 
@@ -721,7 +828,7 @@ end['covered']).to eq(3)
       result = model_with_logger.summary_for(existing_file, raise_on_stale: false)
 
       expect(result).to include(
-        'file'    => existing_file_abs,
+        'file'    => existing_file,
         'summary' => be_a(Hash)
       )
     end
@@ -782,14 +889,14 @@ end['covered']).to eq(3)
           # summary_for
           summary = model_with_deleted.summary_for('lib/deleted.rb')
           expect(summary).to include(
-            'file'    => missing_file_path,
+            'file'    => 'lib/deleted.rb',
             'summary' => include('total' => 3, 'covered' => 2)
           )
 
           # detailed_for
           detailed = model_with_deleted.detailed_for('lib/deleted.rb')
           expect(detailed).to include(
-            'file'    => missing_file_path,
+            'file'    => 'lib/deleted.rb',
             'lines'   => be_an(Array),
             'summary' => include('total' => 3)
           )
@@ -797,14 +904,14 @@ end['covered']).to eq(3)
           # raw_for
           raw = model_with_deleted.raw_for('lib/deleted.rb')
           expect(raw).to include(
-            'file'  => missing_file_path,
+            'file'  => 'lib/deleted.rb',
             'lines' => [1, 0, 1]
           )
 
           # uncovered_for
           uncovered = model_with_deleted.uncovered_for('lib/deleted.rb')
           expect(uncovered).to include(
-            'file'      => missing_file_path,
+            'file'      => 'lib/deleted.rb',
             'uncovered' => [2],
             'summary'   => include('total' => 3)
           )

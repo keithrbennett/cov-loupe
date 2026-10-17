@@ -369,7 +369,7 @@ RSpec.describe CovLoupe::CoverageCLI do
         relative_skipped_files:         [],
         relative_files:                 [],
         timestamp_status:               status,
-        relativized_payload:            { 'files' => [], 'counts' => {} }
+        payload:                        { 'files' => [], 'counts' => {} }
       )
       allow(CovLoupe::Presenters::ProjectCoveragePresenter)
         .to receive(:new).and_return(presenter_double)

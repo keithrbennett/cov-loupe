@@ -10,7 +10,7 @@ RSpec.describe CovLoupe::Presenters::CoveragePayloadPresenter do
       payload_method: :summary_for,
       model_method:   :summary_for,
       payload:        {
-        'file'    => '/abs/path/lib/foo.rb',
+        'file'    => 'lib/foo.rb',
         'summary' => { 'covered' => 8, 'total' => 10, 'percentage' => 80.0 },
       },
       stale:          'ok',
@@ -21,7 +21,7 @@ RSpec.describe CovLoupe::Presenters::CoveragePayloadPresenter do
       payload_method: :raw_for,
       model_method:   :raw_for,
       payload:        {
-        'file'  => '/abs/path/lib/foo.rb',
+        'file'  => 'lib/foo.rb',
         'lines' => [1, 0, nil, 2],
       },
       stale:          'length_mismatch',
@@ -32,7 +32,7 @@ RSpec.describe CovLoupe::Presenters::CoveragePayloadPresenter do
       payload_method: :detailed_for,
       model_method:   :detailed_for,
       payload:        {
-        'file'    => '/abs/path/lib/foo.rb',
+        'file'    => 'lib/foo.rb',
         'lines'   => [
           { 'line' => 1, 'hits' => 1, 'covered' => true },
           { 'line' => 2, 'hits' => 0, 'covered' => false },
@@ -47,7 +47,7 @@ RSpec.describe CovLoupe::Presenters::CoveragePayloadPresenter do
       payload_method: :uncovered_for,
       model_method:   :uncovered_for,
       payload:        {
-        'file'      => '/abs/path/lib/foo.rb',
+        'file'      => 'lib/foo.rb',
         'uncovered' => [2, 4],
         'summary'   => { 'covered' => 2, 'total' => 4, 'percentage' => 50.0 },
       },
@@ -62,15 +62,15 @@ RSpec.describe CovLoupe::Presenters::CoveragePayloadPresenter do
   end
 
   describe CovLoupe::Presenters::PayloadCaching do
-    it 'raises NotImplementedError when compute_absolute_payload is not implemented' do
+    it 'raises NotImplementedError when compute_payload is not implemented' do
       klass = Class.new do
         include CovLoupe::Presenters::PayloadCaching
       end
 
       instance = klass.new
-      expect { instance.absolute_payload }.to raise_error(
+      expect { instance.payload }.to raise_error(
         NotImplementedError,
-        /must implement #compute_absolute_payload/
+        /must implement #compute_payload/
       )
     end
   end

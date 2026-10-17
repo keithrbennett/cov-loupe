@@ -24,14 +24,14 @@ require_relative 'cov_loupe/coverage/coverage_reporter'
 #   - CoverageCLI / MCPServer: presentation layer (CLI commands vs JSON-RPC tool calls)
 #   - CoverageRepository: data access layer (reads coverage.json, normalizes paths)
 #   - ModelDataCache: singleton cache that auto-invalidates when the coverage file changes
-#   - Presenters: memoized adapters that compute absolute payloads, then relativize paths for output
+#   - Presenters: memoized adapters that shape model payloads for CLI and MCP output
 #
 # Data flow for a typical request:
 #   1. CoverageJsonLoader reads coverage.json
 #   2. CoverageRepository normalizes keys to absolute paths
 #   3. ModelDataCache stores the resulting ModelData (coverage_map + timestamp)
 #   4. CoverageModel queries the cache and applies staleness/glob filters
-#   5. Presenters wrap the model output and relativize paths for display
+#   5. Presenters wrap the model output (already project-relative) for display
 #   6. CLI commands or MCP tools format the presenter output for the user
 #
 module CovLoupe

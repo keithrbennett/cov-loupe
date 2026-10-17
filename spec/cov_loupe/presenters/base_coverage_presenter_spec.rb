@@ -14,9 +14,9 @@ RSpec.describe CovLoupe::Presenters::BaseCoveragePresenter do
     end
   end
 
-  describe '#absolute_payload' do
+  describe '#payload' do
     it 'raises NotImplementedError because build_payload is abstract' do
-      expect { presenter.absolute_payload }.to raise_error(NotImplementedError)
+      expect { presenter.payload }.to raise_error(NotImplementedError)
     end
   end
 
@@ -31,47 +31,32 @@ RSpec.describe CovLoupe::Presenters::BaseCoveragePresenter do
       end
     end
     let(:presenter) { concrete_class.new(model: model, path: path) }
-    let(:payload_with_stale) { { 'file' => path, 'data' => 'test', 'stale' => 'ok' } }
 
     before do
       allow(model).to receive(:staleness_for).with(path).and_return('ok')
-      allow(model).to receive(:relativize).with(payload_with_stale).and_return(payload_with_stale)
     end
 
-    describe '#absolute_payload' do
+    describe '#payload' do
       it 'merges stale status into payload' do
-        expect(presenter.absolute_payload).to include('stale' => 'ok')
-        expect(presenter.absolute_payload).to include('data' => 'test')
+        expect(presenter.payload).to include('stale' => 'ok')
+        expect(presenter.payload).to include('data' => 'test')
       end
 
       it 'caches the result' do
-        r1 = presenter.absolute_payload
-        r2 = presenter.absolute_payload
+        r1 = presenter.payload
+        r2 = presenter.payload
         expect(r1).to equal(r2)
       end
     end
 
-    describe '#relativized_payload' do
-      it 'delegates to model.relativize' do
-        expect(model).to receive(:relativize).with(presenter.absolute_payload)
-        presenter.relativized_payload
-      end
-
-      it 'caches the result' do
-        presenter.relativized_payload
-        expect(model).to have_received(:relativize).once
-        presenter.relativized_payload
-      end
-    end
-
     describe '#stale' do
-      it 'delegates to absolute_payload' do
+      it 'delegates to payload' do
         expect(presenter.stale).to eq('ok')
       end
     end
 
     describe '#relative_path' do
-      it 'delegates to relativized_payload' do
+      it 'delegates to payload' do
         expect(presenter.relative_path).to eq('lib/foo.rb')
       end
     end

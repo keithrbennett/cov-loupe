@@ -99,7 +99,7 @@ module CovLoupe
         end
 
         private def respond_with_formatted_payload(presenter, format_sym, output_chars_sym)
-          payload = presenter.relativized_payload
+          payload = presenter.payload
 
           if payload['timestamp_status'] == 'missing'
             payload['warnings'] = Formatters::CoverageWarnings::TIMESTAMP_WARNING_LINES.dup

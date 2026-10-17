@@ -138,7 +138,7 @@ module CovLoupe
         warn_report_text(Formatters::CoverageWarnings.exclusions_summary(presenter, config.output_chars))
       else
         require_relative 'formatters/formatters'
-        output.puts Formatters.format(PayloadSchema.add(presenter.relativized_payload), config.format,
+        output.puts Formatters.format(PayloadSchema.add(presenter.payload), config.format,
           output_chars: config.output_chars)
         warn_report_text(Formatters::CoverageWarnings.skipped_rows_warning(presenter, config.output_chars))
       end

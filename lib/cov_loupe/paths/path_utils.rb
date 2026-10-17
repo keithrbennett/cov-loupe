@@ -88,7 +88,28 @@ module CovLoupe
       end
     end
 
+    # Prefixes './' to a relative path starting with '~' so File.expand_path treats it as a
+    # literal directory name rather than a home directory reference.
+    private_class_method def self.protect_tilde(path)
+      path.start_with?('~') ? "./#{path}" : path
+    end
+
+    # Expands a payload path against root. Absolute paths keep their location (on Windows, a
+    # drive-less one takes root's drive); a relative path starting with '~' is treated as a
+    # literal directory under root, never a home directory.
+    #
+    # @param path [String] relative or absolute path, such as a payload 'file' value
+    # @param root [String] root directory relative paths are resolved against
+    # @return [String] absolute path
+    def self.expand_from_root(path, root)
+      # Passing root for absolute paths too lets Windows anchor drive-less paths to root's drive.
+      expand(protect_tilde(path), root)
+    end
+
     # Converts an absolute path to a path relative to the given root
+    #
+    # A relative result whose first component starts with '~' gets a './' prefix, so
+    # File.expand_path(result, root) resolves it under root instead of to a home directory.
     #
     # @param path [String] absolute path to relativize
     # @param root [String] root directory for relativization
@@ -96,8 +117,7 @@ module CovLoupe
     def self.relativize(path, root)
       return path if path.nil? || path.empty? || root.nil? || root.empty?
 
-      # Only expand relative paths against root; absolute paths expand without base
-      abs_path = absolute?(path) ? expand(path) : expand(path, root)
+      abs_path = expand_from_root(path, root)
       abs_root = expand(root)
 
       # Check if path is within root using normalized comparison
@@ -123,11 +143,8 @@ module CovLoupe
       # Pathname computes the relative path from the normalized strings, which may all be
       # lowercase on case-insensitive volumes. Rebuild the result from abs_path so reports
       # keep the casing the user actually sees on disk.
-      if !case_sensitive && relative != '.'
-        preserve_original_casing(relative, abs_path, abs_root)
-      else
-        relative
-      end
+      relative = preserve_original_casing(relative, abs_path, abs_root) if !case_sensitive && relative != '.'
+      protect_tilde(relative)
     rescue ArgumentError
       # Path is on a different drive or cannot be made relative
       path

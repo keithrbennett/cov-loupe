@@ -24,7 +24,7 @@ module CovLoupe
   #   1. Tool class receives call() with JSON params from MCP client
   #   2. Config is merged: server_context.app_config < explicit tool params
   #   3. CoverageModel is created for the call and reuses shared cached data
-  #   4. Presenter computes payload (absolute paths, then relativized)
+  #   4. Presenter computes the payload (project-relative paths from the model)
   #   5. respond_json formats the output
   #
   # File-scope tools (summary, raw, detailed, uncovered) use call_with_file_payload
@@ -325,7 +325,7 @@ module CovLoupe
           payload_method: payload_method_for(tool_name),
           raise_on_stale: config[:raise_on_stale]
         )
-        respond_json(presenter.relativized_payload, pretty: true, output_chars: output_chars_sym)
+        respond_json(presenter.payload, pretty: true, output_chars: output_chars_sym)
       end
     end
 
