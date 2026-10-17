@@ -6,8 +6,8 @@ begin
   require 'simplecov-cobertura'
   SimpleCov.enable_coverage :branch
   SimpleCov.start do
-    add_filter(%r{^/spec/})
-    track_files 'lib/**/*.rb'
+    # Report only lib/, including files no spec loads.
+    cover 'lib/**/*.rb'
     formatter SimpleCov::Formatter::MultiFormatter.new([
       SimpleCov::Formatter::HTMLFormatter,
       SimpleCov::Formatter::CoberturaFormatter,
