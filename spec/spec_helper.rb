@@ -56,8 +56,10 @@ TEST_FILE_TIMESTAMP = 1_000
 # Used to verify log timestamps in tests
 TIMESTAMP_REGEX = /\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}\]/
 
-# Default timeout for integration tests (longer on JRuby due to startup overhead)
-INTEGRATION_TIMEOUT = RUBY_PLATFORM.include?('java') ? 15 : 5
+# Default timeout for integration tests (longer on JRuby due to startup overhead).
+# An MCP subprocess call normally takes under a second, but can take several seconds on a
+# heavily loaded machine; the timeout only guards against hangs, so leave ample headroom.
+INTEGRATION_TIMEOUT = RUBY_PLATFORM.include?('java') ? 30 : 15
 
 # Automatically require all files in spec/support and spec/shared_examples
 Dir[File.join(__dir__, 'support', '**', '*.rb')].each { |f| require f }
