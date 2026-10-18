@@ -26,8 +26,11 @@ RSpec.describe CovLoupe::Logger do
       # target,      mode,      stderr?, file_target?
       ['stderr',     :library,  true,    false],
       ['  STDERR  ', :library,  true,    false],
-      [':off',       :cli,      false,   false],
-      [nil,          :library,  false,   false],
+      ['off',        :cli,      false,   false],
+      [:off,         :library,  false,   false],
+      [:off,         :cli,      false,   false],
+      [:stderr,      :library,  true,    false],
+      [nil,         :library,  false,   false],
       [nil,          :cli,      true,    false],
       ['app.log',    :library,  false,   true],
     ].each do |target, mode, stderr, file_target|
@@ -36,6 +39,16 @@ RSpec.describe CovLoupe::Logger do
         expect(logger.stderr?).to be stderr
         expect(logger.file_target?).to be file_target
       end
+    end
+
+    it 'stores symbol targets in their canonical string form' do
+      expect(described_class.new(target: :off, mode: :library).target).to eq('off')
+      expect(described_class.new(target: :stderr, mode: :cli).target).to eq('stderr')
+    end
+
+    it 'rejects a stdout symbol at initialization' do
+      expect { described_class.new(target: :stdout, mode: :library) }
+        .to raise_error(CovLoupe::ConfigurationError, /stdout.*not permitted/)
     end
 
     it 'rejects stdout at initialization' do
@@ -72,7 +85,7 @@ RSpec.describe CovLoupe::Logger do
     it 'defaults library logging to off' do
       logger = described_class.new(target: nil, mode: :library)
 
-      expect(logger.target).to eq(':off')
+      expect(logger.target).to eq('off')
       expect { logger.info('not emitted') }.not_to raise_error
       expect(File.exist?('cov_loupe.log')).to be false
     end
@@ -107,29 +120,21 @@ RSpec.describe CovLoupe::Logger do
       expect(logger.instance_variable_get(:@init_error)).to be_nil
     end
 
-    it 'normalizes the :off sentinel with case and surrounding whitespace' do
-      %w[:off :OFF].each do |target|
+    it 'normalizes off with case and surrounding whitespace' do
+      %w[off OFF].each do |target|
         logger = described_class.new(target: "  #{target}  ", mode: :cli)
 
+        expect(logger.target).to eq('off')
         expect { logger.info('not emitted') }.not_to raise_error
         expect(logger.instance_variable_get(:@logger)).to be_nil
       end
     end
 
-    it 'treats off without a colon as a literal file target' do
-      %w[off OFF].each do |target|
-        logger = described_class.new(target: target, mode: :cli)
-        logger.info('literal target')
-
-        expect(File.read(target)).to include('literal target')
-      end
-    end
-
-    it 'treats a whitespace-wrapped off without a colon as a literal file target' do
-      logger = described_class.new(target: ' off ', mode: :cli)
+    it 'writes to a file literally named off when given as ./off' do
+      logger = described_class.new(target: './off', mode: :cli)
       logger.info('literal target')
 
-      expect(File.read(' off ')).to include('literal target')
+      expect(File.read('off')).to include('literal target')
     end
   end
 
@@ -219,9 +224,9 @@ RSpec.describe CovLoupe::Logger do
     end
   end
 
-  describe ':off' do
+  describe 'off' do
     it 'does not raise or create files' do
-      logger = described_class.new(target: ':off', mode: :cli)
+      logger = described_class.new(target: 'off', mode: :cli)
 
       expect { logger.info('test') }.not_to raise_error
       expect { logger.safe_log('test') }.not_to raise_error

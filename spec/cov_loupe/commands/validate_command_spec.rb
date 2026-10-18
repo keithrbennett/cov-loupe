@@ -159,7 +159,7 @@ RSpec.describe CovLoupe::Commands::ValidateCommand do
         path = File.join(dir, 'prédicate_é.rb')
         File.write(path, "->(model) { raise 'Boom!' }\n")
         _out, err, status = run_fixture_cli_with_status(
-          '--output-chars', 'ascii', '--error-mode', 'debug', '--log-file', ':off',
+          '--output-chars', 'ascii', '--error-mode', 'debug', '--log-file', 'off',
           'validate', path
         )
         expect(status).to eq(4)

@@ -672,7 +672,7 @@ Without globs, this array is empty (no expectations = no violations).
 
 Log target. The default is `stderr`; use a file path for persistent logging.
 Use 'stderr' to log to a standard stream.
-Use ':off' to disable logging entirely (cross-platform alternative to /dev/null).
+Use 'off' to disable logging entirely (cross-platform alternative to /dev/null).
 Logging to 'stdout' is not permitted because it would corrupt command output.
 
 With the default `stderr` target, the CLI does not log its parameters or errors there;
@@ -687,7 +687,7 @@ unknown subcommand or misplaced global options, are logged to the file.
 ```sh
 clp -l /var/log/simplecov.log  # -l = --log-file
 clp -l stderr                   # Log to standard error
-clp -l :off                     # Disable logging entirely
+clp -l off                      # Disable logging entirely
 ```
 
 **Default:** `stderr` — see the [logging initialization and target testing guide](LOGGING.md#log-file-initialization-and-target-testing).

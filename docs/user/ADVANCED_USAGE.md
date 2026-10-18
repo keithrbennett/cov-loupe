@@ -53,7 +53,7 @@ This lets MCP clients programmatically distinguish a failed tool call from a suc
 
 The MCP server logs tool-execution errors and other cov-loupe diagnostics to `stderr` by default. See the [logging initialization and target testing guide](LOGGING.md#log-file-initialization-and-target-testing) for details about startup probing, append-mode checks, cached failures, and explicit file targets. Argument-validation failures emitted by the MCP SDK before cov-loupe runs do not reach this logger.
 
-To use a persistent log file, specify the `--log-file` (or `-l`) argument wherever and however you configure your MCP server. For example, include `-l /path/to/logfile.log` in your server configuration. To use standard error explicitly, use `-l stderr`. To disable logging entirely, use `-l :off` (cross-platform alternative to `/dev/null`).
+To use a persistent log file, specify the `--log-file` (or `-l`) argument wherever and however you configure your MCP server. For example, include `-l /path/to/logfile.log` in your server configuration. To use standard error explicitly, use `-l stderr`. To disable logging entirely, use `-l off` (cross-platform alternative to `/dev/null`).
 
 **Warning:** Explicit log files may grow unbounded in long-running or CI usage. cov-loupe does not rotate them; use external rotation or periodically clean them up.
 

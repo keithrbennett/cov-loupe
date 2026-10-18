@@ -278,7 +278,7 @@ RSpec.describe CovLoupe::CoverageCLI do
     end
 
     # Unlike the built-in handler, a custom one is called whatever the log target.
-    %w[stderr :off file].each do |target|
+    %w[stderr off file].each do |target|
       it "passes an unexpected error to the handler with a #{target} log target" do
         Dir.mktmpdir do |dir|
           log_target = target == 'file' ? File.join(dir, 'cov-loupe.log') : target

@@ -87,7 +87,7 @@ module CovLoupe
 
       raise ConfigurationError,
         'Logging to stdout is not permitted because it corrupts command output. ' \
-        "Use 'stderr', a file path, or ':off' to disable logging."
+        "Use 'stderr', a file path, or 'off' to disable logging."
     end
   end
 end

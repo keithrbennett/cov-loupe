@@ -110,7 +110,7 @@ module CovLoupe
         exit ExitCodes::SUCCESS
       end
       parser.on('-l', '--log-file PATH', String,
-        'Log target (default stderr, use a file path for persistent logging, :off to disable)') do |value|
+        'Log target (default stderr, use a file path for persistent logging, off to disable)') do |value|
         config.log_file = value
       end
       parser.on('-m', '--mode MODE', String,

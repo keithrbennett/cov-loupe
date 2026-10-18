@@ -11,7 +11,7 @@ module CovLoupe
   # Log targets:
   #   - File path (explicit persistent target)
   #   - 'stderr' for stream output
-  #   - ':off' to disable logging entirely
+  #   - 'off' to disable logging entirely (use './off' for a file literally named off)
   #   - nil for the mode-specific default (stderr for CLI/MCP, off for library)
   #
   # 'stdout' is never a valid target because it would corrupt command output.
@@ -25,19 +25,24 @@ module CovLoupe
   # @api private
   class Logger
     DEFAULT_LOG_TARGET = 'stderr'
+    OFF_TARGET = 'off'
 
     attr_reader :target
 
     def initialize(target:, mode: :library)
+      target = target.to_s if target.is_a?(Symbol)
+
       if normalized_target(target) == 'stdout'
         raise ConfigurationError,
           'Logging to stdout is not permitted because it corrupts command output. ' \
-          "Use 'stderr', a file path, or ':off' to disable logging."
+          "Use 'stderr', a file path, or 'off' to disable logging."
       end
 
       @mode = mode
       @target = if target.nil?
-        mode == :library ? ':off' : DEFAULT_LOG_TARGET
+        mode == :library ? OFF_TARGET : DEFAULT_LOG_TARGET
+      elsif logging_disabled?(target)
+        OFF_TARGET
       else
         target
       end
@@ -95,7 +100,7 @@ module CovLoupe
     end
 
     private def logging_disabled?(target)
-      normalized_target(target) == ':off'
+      normalized_target(target) == OFF_TARGET
     end
 
     private def stderr_target?(target)

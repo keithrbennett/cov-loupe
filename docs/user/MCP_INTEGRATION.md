@@ -677,7 +677,7 @@ tail -f /path/to/your-configured-log-file.log
 grep ERROR /path/to/your-configured-log-file.log | tail -20
 ```
 
-To use a persistent log file, specify the `--log-file` (or `-l`) argument wherever and however you configure your MCP server. For example, include `-l /path/to/logfile.log` in your server configuration. To use standard error explicitly, use `-l stderr`. To disable logging entirely, use `-l :off` (cross-platform alternative to `/dev/null`).
+To use a persistent log file, specify the `--log-file` (or `-l`) argument wherever and however you configure your MCP server. For example, include `-l /path/to/logfile.log` in your server configuration. To use standard error explicitly, use `-l stderr`. To disable logging entirely, use `-l off` (cross-platform alternative to `/dev/null`).
 
 **Warning:** Explicit log files may grow unbounded in long-running or CI usage. cov-loupe does not rotate them; use external rotation or periodically clean them up.
 

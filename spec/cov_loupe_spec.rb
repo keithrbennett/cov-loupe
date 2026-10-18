@@ -75,7 +75,7 @@ RSpec.describe CovLoupe do
   describe 'default context' do
     it 'keeps the internal default context quiet for library callers' do
       expect(described_class.context.mode).to eq(:library)
-      expect(CovLoupe::Logger.new(target: nil, mode: :library).target).to eq(':off')
+      expect(CovLoupe::Logger.new(target: nil, mode: :library).target).to eq('off')
     end
   end
 

@@ -7,6 +7,14 @@
 
 ### Breaking
 
+- **`off` disables logging.** `--log-file off` (any case, surrounding whitespace ignored),
+  `COV_LOUPE_OPTS`, and the Ruby API now treat `off` as the reserved word that disables
+  logging, like `stderr` is reserved. The old `':off'` spelling is no longer recognized and
+  would now be used as a log file name, so replace it with `off`. The symbol `:off` is
+  accepted (it previously raised `CovLoupe::LoggingError`). A log file literally named
+  `off` must now be written `./off`. `CovLoupe.default_log_file` and `AppContext#log_target`
+  report a disabled target as `'off'` instead of `':off'`. See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md).
 - **Public API declared.** Only the public API defined in
   [Public API and Versioning](docs/user/LIBRARY_API.md#public-api-and-versioning) follows
   Semantic Versioning: Ruby classes and methods tagged `@api public` in the source (among

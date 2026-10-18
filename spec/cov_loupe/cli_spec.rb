@@ -130,7 +130,7 @@ RSpec.describe CovLoupe::CoverageCLI do
     ].each do |tc|
       it "prints #{tc[:frames]} backtrace frames with --error-mode #{tc[:mode]}" do
         _out, err, status = run_fixture_cli_with_status(
-          '--error-mode', tc[:mode], '--log-file', ':off', 'summary', 'lib/does_not_exist.rb'
+          '--error-mode', tc[:mode], '--log-file', 'off', 'summary', 'lib/does_not_exist.rb'
         )
 
         aggregate_failures do
@@ -243,37 +243,37 @@ RSpec.describe CovLoupe::CoverageCLI do
       expect(CovLoupe.active_log_file).to eq(original_target)
     end
 
-    it 'supports :off sentinel to disable logging' do
+    it 'supports off sentinel to disable logging' do
       expect(CovLoupe).to receive(:create_context)
         .and_wrap_original do |m, error_handler:, log_target:, mode:|
-        expect(log_target).to eq(':off')
+        expect(log_target).to eq('off')
         m.call(error_handler: error_handler, log_target: log_target, mode: mode)
       end
-      run_cli('--format', 'json', '--log-file', ':off', 'summary', 'lib/foo.rb')
+      run_cli('--format', 'json', '--log-file', 'off', 'summary', 'lib/foo.rb')
     end
 
-    it 'supports case-insensitive :off sentinel' do
+    it 'supports case-insensitive off sentinel' do
       expect(CovLoupe).to receive(:create_context)
         .and_wrap_original do |m, error_handler:, log_target:, mode:|
-        expect(log_target).to eq(':OFF')
+        expect(log_target).to eq('OFF')
         m.call(error_handler: error_handler, log_target: log_target, mode: mode)
       end
-      run_cli('--format', 'json', '--log-file', ':OFF', 'summary', 'lib/foo.rb')
+      run_cli('--format', 'json', '--log-file', 'OFF', 'summary', 'lib/foo.rb')
     end
 
-    it 'supports whitespace-trimmed :off sentinel' do
+    it 'supports whitespace-trimmed off sentinel' do
       expect(CovLoupe).to receive(:create_context)
         .and_wrap_original do |m, error_handler:, log_target:, mode:|
-        expect(log_target).to eq('  :off  ')
+        expect(log_target).to eq('  off  ')
         m.call(error_handler: error_handler, log_target: log_target, mode: mode)
       end
-      run_cli('--format', 'json', '--log-file', '  :off  ', 'summary', 'lib/foo.rb')
+      run_cli('--format', 'json', '--log-file', '  off  ', 'summary', 'lib/foo.rb')
     end
 
-    it 'actually disables logging when --log-file :off is used' do
+    it 'actually disables logging when --log-file off is used' do
       Dir.mktmpdir do |dir|
         Dir.chdir(dir) do
-          logger = CovLoupe::Logger.new(target: ':off', mode: :cli)
+          logger = CovLoupe::Logger.new(target: 'off', mode: :cli)
           logger.info('test message')
           expect(File.exist?('cov_loupe.log')).to be false
           expect(File.exist?('COV-LOUPE-LOG-ERROR.log')).to be false

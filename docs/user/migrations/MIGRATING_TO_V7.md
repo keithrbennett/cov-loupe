@@ -68,7 +68,7 @@ an unusable explicit target; CLI mode reports a warning; and MCP mode returns
 `isError: true` for a logging-target failure. Logging failures are secondary
 diagnostics and do not replace the original MCP tool error.
 
-The `stderr` target is also normalized consistently with `stdout` and `:off`, so
+The `stderr` target is also normalized consistently with `stdout` and `off`, so
 case differences, surrounding whitespace, and symbol values such as `:stderr`
 select the standard-error stream rather than a file path.
 
@@ -76,7 +76,10 @@ select the standard-error stream rather than a file path.
 
 - If you relied on the default `cov_loupe.log`, add an explicit `--log-file`
   path (or configure `CovLoupe.default_log_file` / `CovLoupe.active_log_file`).
-  Otherwise, use the new `stderr` default or `:off`.
+  Otherwise, use the new `stderr` default or `off`.
+- If you disabled logging with `--log-file :off` (or `-l :off`, including in
+  `COV_LOUPE_OPTS` and MCP server configs), change it to `off`. `:off` is now treated as a
+  file name. A log file literally named `off` must be written `./off`.
 - If you relied on `COV-LOUPE-LOG-ERROR.log` as an implicit emergency log,
   configure an explicit file target and arrange any desired external rotation.
 

@@ -120,7 +120,7 @@ Check the following when you see an `Unable to use log target` message:
 - Check the path supplied by `--log-file`/`-l`, `COV_LOUPE_OPTS`, or the MCP
   server configuration.
 - Use `-l stderr` to send diagnostics to standard error while troubleshooting,
-  or use `-l :off` to disable logging.
+  or use `-l off` to disable logging.
 - In MCP mode, a logging initialization failure causes affected tool calls to
   return `isError: true`; correct the target or disable logging and restart the
   server.

@@ -4,7 +4,7 @@ cov-loupe writes diagnostics to the logger of the active context. CLI and MCP se
 `stderr` by default; library sessions have logging disabled by default. Use
 `--log-file`/`-l`, `CovLoupe.default_log_file`, or `CovLoupe.active_log_file` to
 choose another target. A file path enables persistent logging, `stderr` is
-supported explicitly, `:off` disables logging, and `stdout` is not permitted
+supported explicitly, `off` disables logging (use `./off` for a file literally named `off`), and `stdout` is not permitted
 because it would corrupt CLI output or the MCP JSON-RPC stream.
 
 In the CLI, the `CLI parameters` line is written only to a log file, never to

@@ -140,8 +140,8 @@ RSpec.describe CovLoupe::AppConfig do
       expect { config.validate! }.not_to raise_error
     end
 
-    it 'accepts :off log_file' do
-      config = described_class.new(log_file: ':off')
+    it 'accepts off log_file' do
+      config = described_class.new(log_file: 'off')
       expect { config.validate! }.not_to raise_error
     end
 
