@@ -272,6 +272,24 @@ RSpec.describe CovLoupe do
     end
   end
 
+  describe 'log file getters' do
+    it 'return an off target as set, not normalized' do
+      original = described_class.default_log_file
+      Thread.current[:cov_loupe_context] = nil
+
+      ['  OFF  ', :off].each do |value|
+        described_class.default_log_file = value
+        described_class.active_log_file = value
+
+        expect(described_class.default_log_file).to eq(value)
+        expect(described_class.active_log_file).to eq(value)
+      end
+    ensure
+      Thread.current[:cov_loupe_context] = nil
+      described_class.default_log_file = original
+    end
+  end
+
   describe '.default_log_file=' do
     it 'rejects stdout immediately' do
       expect do

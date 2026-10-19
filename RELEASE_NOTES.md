@@ -13,8 +13,8 @@
   would now be used as a log file name, so replace it with `off`. The symbol `:off` is
   accepted (it previously raised `CovLoupe::LoggingError`). A log file literally named
   `off` must now be written `./off`. A disabled logger's `target` is now `'off'` instead of
-  `':off'`; `CovLoupe.default_log_file` and `AppContext#log_target` return the value you set,
-  unchanged. See
+  `':off'`; `CovLoupe.default_log_file`, `CovLoupe.active_log_file`, and
+  `AppContext#log_target` return the value you set, unchanged. See
   [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md).
 - **Public API declared.** Only the public API defined in
   [Public API and Versioning](docs/user/LIBRARY_API.md#public-api-and-versioning) follows

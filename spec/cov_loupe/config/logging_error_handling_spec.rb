@@ -130,11 +130,22 @@ RSpec.describe CovLoupe::Logger do
       end
     end
 
-    it 'no longer recognizes the legacy :off spelling as the disable sentinel' do
+    it "treats the legacy ':off' string as an ordinary file target" do
       logger = described_class.new(target: ':off', mode: :cli)
 
       expect(logger.target).to eq(':off')
       expect(logger.file_target?).to be(true)
+    end
+
+    it 'leaves AppContext#log_target as set while normalizing the logger target' do
+      ['  OFF  ', :off].each do |value|
+        context = CovLoupe::AppContext.new(
+          error_handler: CovLoupe::ErrorHandler.new, log_target: value, mode: :cli
+        )
+
+        expect(context.log_target).to eq(value)
+        expect(context.logger.target).to eq('off')
+      end
     end
 
     it 'writes to a file literally named off when given as ./off' do

@@ -81,7 +81,8 @@ select the standard-error stream rather than a file path.
   `COV_LOUPE_OPTS` and MCP server configs), change it to `off`. `:off` is now treated as a
   file name. A log file literally named `off` must be written `./off`.
 - The same applies in Ruby: replace `CovLoupe.default_log_file = ':off'`,
-  `CovLoupe.active_log_file = ':off'`, and `create_context(log_target: ':off')` with `'off'`
+  `CovLoupe.active_log_file = ':off'`, `create_context(log_target: ':off')`, and
+  `context.with(log_target: ':off')` with `'off'`
   (or the symbol `:off`). Left unchanged, they would write a log file named `:off` (or fail
   on Windows, where `:` is not allowed in file names).
 - If you relied on `COV-LOUPE-LOG-ERROR.log` as an implicit emergency log,
