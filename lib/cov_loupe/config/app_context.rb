@@ -21,7 +21,8 @@ module CovLoupe
   # @api public
   #
   # @!attribute [r] log_target
-  #   @return [String, Symbol, nil] the log target this context writes diagnostics to
+  #   @return [String, Symbol, nil] the log target this context writes diagnostics to,
+  #   exactly as set (not normalized; `Logger#target` holds the normalized value)
   #   @api public
   # @!attribute [r] error_handler
   #   @api private

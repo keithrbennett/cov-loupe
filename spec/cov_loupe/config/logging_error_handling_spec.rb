@@ -130,11 +130,22 @@ RSpec.describe CovLoupe::Logger do
       end
     end
 
-    it "treats the legacy ':off' string as an ordinary file target" do
+    it "no longer recognizes ':off' as the disable sentinel" do
       logger = described_class.new(target: ':off', mode: :cli)
 
       expect(logger.target).to eq(':off')
       expect(logger.file_target?).to be(true)
+    end
+
+    it "keeps the legacy ':off' string as the target through the public context API" do
+      handler = CovLoupe::ErrorHandler.new
+      created = CovLoupe.create_context(error_handler: handler, log_target: ':off', mode: :cli)
+      changed = created.with(log_target: 'other.log').with(log_target: ':off')
+
+      [created, changed].each do |context|
+        expect(context.log_target).to eq(':off')
+        expect(context.logger.target).to eq(':off')
+      end
     end
 
     it 'leaves AppContext#log_target as set while normalizing the logger target' do

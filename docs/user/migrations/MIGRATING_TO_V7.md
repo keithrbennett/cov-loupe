@@ -80,11 +80,12 @@ select the standard-error stream rather than a file path.
 - If you disabled logging with `--log-file :off` (or `-l :off`, including in
   `COV_LOUPE_OPTS` and MCP server configs), change it to `off`. `:off` is now treated as a
   file name. A log file literally named `off` must be written `./off`.
-- The same applies in Ruby: replace `CovLoupe.default_log_file = ':off'`,
-  `CovLoupe.active_log_file = ':off'`, `create_context(log_target: ':off')`, and
-  `context.with(log_target: ':off')` with `'off'`
-  (or the symbol `:off`). Left unchanged, they would write a log file named `:off` (or fail
-  on Windows, where `:` is not allowed in file names).
+- The same applies in Ruby: change a `':off'` log target to `'off'` (or the symbol `:off`)
+  wherever you pass one, for example `CovLoupe.default_log_file = ':off'`,
+  `CovLoupe.active_log_file = ':off'`, a `log_target: ':off'` argument to `create_context`
+  (v6 also required `error_handler:`), or `context.with(log_target: ':off')`. Left
+  unchanged, they would write a log file named `:off` (or fail on Windows, where `:` is not
+  allowed in file names).
 - If you relied on `COV-LOUPE-LOG-ERROR.log` as an implicit emergency log,
   configure an explicit file target and arrange any desired external rotation.
 
