@@ -11,9 +11,7 @@
   An MCP server, command line utility, and library for Ruby SimpleCov test coverage analysis.
 </p>
 
-<p style="text-align:center;">
-  <strong><a href="https://keithrbennett.github.io/cov-loupe/">Documentation Website</a></strong>
-</p>
+**[Documentation Website](https://keithrbennett.github.io/cov-loupe/)**
 
 [![Gem Version](https://badge.fury.io/rb/cov-loupe.svg)](https://badge.fury.io/rb/cov-loupe)
 [![Documentation](https://img.shields.io/badge/docs-online-blue.svg)](https://keithrbennett.github.io/cov-loupe/)
