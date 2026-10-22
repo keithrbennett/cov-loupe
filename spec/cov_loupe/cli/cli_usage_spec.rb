@@ -151,15 +151,16 @@ RSpec.describe CovLoupe::CoverageCLI do
       end
     end
 
-    it 'keeps debug output ASCII-only with --output-chars ascii' do
-      Dir.mktmpdir do |dir|
-        root = File.join(dir, 'projét')
-        Dir.mkdir(root)
-        _out, err, status = run_cli_with_status('--log-file', 'stderr', '--error-mode', 'debug',
-          '--output-chars', 'ascii', '--root', root, 'totals')
-        expect(status).to eq(1)
-        expect(err).to include(missing_message)
-        expect(err).to be_ascii_only
+    it 'leaves paths unchanged with --output-chars ascii' do
+      with_utf8_default_external do
+        Dir.mktmpdir do |dir|
+          root = File.join(dir, "proj\u00e9\u2192")
+          Dir.mkdir(root)
+          _out, err, status = run_cli_with_status('--log-file', 'stderr', '--output-chars', 'ascii',
+            '--root', root, 'totals')
+          expect(status).to eq(1)
+          expect(err).to include(missing_message, "proj\u00e9\u2192")
+        end
       end
     end
 

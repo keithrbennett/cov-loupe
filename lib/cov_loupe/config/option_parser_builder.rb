@@ -133,8 +133,8 @@ module CovLoupe
       parser.on('-O', '--output-chars MODE', String,
         'Output character mode: d[efault]|f[ancy]|a[scii] (default: default)',
         '  default: UTF-8 encoding uses fancy (Unicode), else ascii',
-        '  fancy:   use Unicode box-drawing and symbols',
-        '  ascii:   use ASCII-only characters (0x00-0x7F)') do |value|
+        '  fancy:   draw tables and markers with Unicode characters',
+        '  ascii:   draw tables and markers with ASCII; JSON escapes non-ASCII') do |value|
         config.output_chars = normalize_output_chars(value)
       end
       parser.on('-v', '--version', 'Print version and exit.') do

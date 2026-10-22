@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative '../output_chars'
-
 module CovLoupe
   module Formatters
     # Text renderings of project-coverage exclusions and warnings, shared by the CLI
@@ -25,7 +23,7 @@ module CovLoupe
         relative_unreadable_files:      'Unreadable files',
       }.freeze
 
-      module_function def exclusions_summary(presenter, output_chars)
+      module_function def exclusions_summary(presenter)
         sections = EXCLUDED_FILE_SECTIONS.map { |meth, header| [header, presenter.public_send(meth)] }
         skipped = presenter.relative_skipped_files
         return '' if sections.all? { |_, files| files.empty? } && skipped.empty?
@@ -35,12 +33,12 @@ module CovLoupe
           next if files.empty?
 
           output << "\n#{header} (#{files.length}):"
-          files.each { |file| output << "  - #{OutputChars.convert(file, output_chars)}" }
+          files.each { |file| output << "  - #{file}" }
         end
 
         unless skipped.empty?
           output << "\nFiles skipped due to errors (#{skipped.length}):"
-          output.concat(skipped_row_lines(skipped, output_chars))
+          output.concat(skipped_row_lines(skipped))
         end
 
         output << "\nRun with --raise-on-stale to exit when files are excluded."
@@ -53,23 +51,19 @@ module CovLoupe
         "\nWARNING: #{TIMESTAMP_WARNING_LINES.join("\n")}\n"
       end
 
-      module_function def skipped_rows_warning(presenter, output_chars)
+      module_function def skipped_rows_warning(presenter)
         skipped = presenter.relative_skipped_files
         return '' if skipped.nil? || skipped.empty?
 
         count = skipped.length
         output = ['', "WARNING: #{count} coverage row#{count == 1 ? '' : 's'} skipped due to errors:"]
-        output.concat(skipped_row_lines(skipped, output_chars))
+        output.concat(skipped_row_lines(skipped))
         output << 'Run again with --raise-on-stale to exit when rows are skipped.'
         output.join("\n")
       end
 
-      module_function def skipped_row_lines(skipped, output_chars)
-        skipped.map do |row|
-          file_path = OutputChars.convert(row['file'], output_chars)
-          error_msg = OutputChars.convert(row['error'], output_chars)
-          "  - #{file_path}: #{error_msg}"
-        end
+      module_function def skipped_row_lines(skipped)
+        skipped.map { |row| "  - #{row['file']}: #{row['error']}" }
       end
     end
   end

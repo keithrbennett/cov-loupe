@@ -78,48 +78,6 @@ RSpec.describe CovLoupe::OutputChars do
     end
   end
 
-  describe '.convert' do
-    context 'with :fancy mode' do
-      it 'returns text unchanged' do
-        text = 'Hello café ☕'
-        expect(described_class.convert(text, :fancy)).to eq(text)
-      end
-    end
-
-    context 'with :ascii mode' do
-      it 'converts accented characters to ASCII equivalents' do
-        expect(described_class.convert('café', :ascii)).to eq('cafe')
-        expect(described_class.convert('naïve', :ascii)).to eq('naive')
-      end
-
-      it 'converts special symbols to ASCII equivalents' do
-        expect(described_class.convert('€100', :ascii)).to eq('EUR100')
-        expect(described_class.convert('©2024', :ascii)).to eq('(c)2024')
-        expect(described_class.convert('…', :ascii)).to eq('...')
-      end
-
-      it 'converts box-drawing characters to ASCII' do
-        expect(described_class.convert('┌─┐', :ascii)).to eq('+-+')
-        expect(described_class.convert('│', :ascii)).to eq('|')
-      end
-
-      it 'replaces unknown characters with ?' do
-        # Use a character not in the transliteration map
-        expect(described_class.convert('你好', :ascii)).to eq('??')
-      end
-
-      it 'preserves ASCII characters' do
-        expect(described_class.convert('Hello World!', :ascii)).to eq('Hello World!')
-      end
-    end
-
-    context 'with nil text' do
-      it 'returns nil' do
-        expect(described_class.convert(nil, :ascii)).to be_nil
-      end
-    end
-  end
-
   describe '.ascii_mode?' do
     it 'returns true for :ascii mode' do
       expect(described_class.ascii_mode?(:ascii)).to be true
@@ -139,18 +97,6 @@ RSpec.describe CovLoupe::OutputChars do
       allow(ascii_io).to receive(:external_encoding).and_return(Encoding::US_ASCII)
 
       expect(described_class.ascii_mode?(:default, io: ascii_io)).to be true
-    end
-  end
-
-  describe 'TRANSLITERATIONS' do
-    it 'is frozen' do
-      expect(described_class::TRANSLITERATIONS).to be_frozen
-    end
-
-    it 'contains common accented vowels' do
-      expect(described_class::TRANSLITERATIONS['é']).to eq('e')
-      expect(described_class::TRANSLITERATIONS['ñ']).to eq('n')
-      expect(described_class::TRANSLITERATIONS['ü']).to eq('u')
     end
   end
 end

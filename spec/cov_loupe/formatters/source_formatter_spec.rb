@@ -31,6 +31,19 @@ RSpec.describe CovLoupe::Formatters::SourceFormatter do
   end
 
   describe '#format_source_for' do
+    context 'with output_chars: :ascii' do
+      subject(:formatter) { described_class.new(color_enabled: false, output_chars: :ascii) }
+
+      let(:source_content) { "# caf\u00e9 \u2192 \u2018x\u2019\nclass Foo\n" }
+      let(:coverage_lines) { [nil, 1] }
+
+      it 'marks covered lines with + and leaves the source text unchanged' do
+        lines = formatter.format_source_for(model, path, mode: :full).lines(chomp: true)
+
+        expect(lines).to include("     1     | # caf\u00e9 \u2192 \u2018x\u2019", '     2   + | class Foo')
+      end
+    end
+
     context 'when source is available' do
       it 'renders formatted source lines with line numbers and markers' do
         # Full mode should print every line with coverage markers and numbering.

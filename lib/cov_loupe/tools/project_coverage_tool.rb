@@ -51,7 +51,7 @@ module CovLoupe
           output_chars: nil, server_context:)
           output_chars_sym = resolve_output_chars(output_chars, server_context)
           with_error_handling('ProjectCoverageTool',
-            error_mode: error_mode, output_chars: output_chars_sym) do
+            error_mode: error_mode) do
             model, config = create_configured_model(
               server_context: server_context,
               root:           root,
@@ -91,9 +91,9 @@ module CovLoupe
             output_chars:   output_chars_sym
           )
 
-          table += Formatters::CoverageWarnings.exclusions_summary(presenter, output_chars_sym)
+          table += Formatters::CoverageWarnings.exclusions_summary(presenter)
           table += Formatters::CoverageWarnings.timestamp_warning(presenter)
-          table += Formatters::CoverageWarnings.skipped_rows_warning(presenter, output_chars_sym)
+          table += Formatters::CoverageWarnings.skipped_rows_warning(presenter)
 
           ::MCP::Tool::Response.new([{ 'type' => 'text', 'text' => table }])
         end

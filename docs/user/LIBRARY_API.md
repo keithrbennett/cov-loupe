@@ -230,7 +230,7 @@ raw = model.raw_for("lib/foo.rb")
 
 ### `format_table(rows = nil, sort_order: :descending, raise_on_stale: model default, tracked_globs: model default, output_chars: :default)`
 
-Generates formatted ASCII table string.
+Generates a formatted table string.
 
 **Parameters:**
 - `rows` (Array<Hash>, optional): Custom row data, such as `list['files']`; `file` values may be relative to the project root or absolute. Defaults to `list`
@@ -239,7 +239,7 @@ Generates formatted ASCII table string.
 - `tracked_globs` (Array<String>, optional): Patterns to filter files. Defaults to model setting.
 - `output_chars` (Symbol, optional): Character mode for table borders and symbols (`:default`, `:fancy`, or `:ascii`).
 
-**Returns:** `String` - Formatted table with Unicode borders
+**Returns:** `String` - Formatted table with Unicode box-drawing borders, or ASCII borders in `:ascii` mode (`:default` chooses by the output encoding). File paths are shown as they are in every mode.
 
 **Example:**
 ```ruby

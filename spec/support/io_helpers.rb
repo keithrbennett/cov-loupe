@@ -22,6 +22,27 @@ module TestIOHelpers
     $stderr = old_err
   end
 
+  # Runs the block with Encoding.default_external set to UTF-8. Error messages show paths with
+  # String#inspect, which escapes non-ASCII unless it is UTF-8, and coverage.json with non-ASCII
+  # paths is read in it; pin it so examples with non-ASCII data do not depend on the locale.
+  def with_utf8_default_external
+    original = Encoding.default_external
+    assign_default_external(Encoding::UTF_8)
+    yield
+  ensure
+    assign_default_external(original)
+  end
+
+  # Assigning Encoding.default_external warns; silence only the assignment, because the CLI
+  # prints errors with Kernel#warn, which is silent while $VERBOSE is nil.
+  def assign_default_external(encoding)
+    verbose = $VERBOSE
+    $VERBOSE = nil
+    Encoding.default_external = encoding
+  ensure
+    $VERBOSE = verbose
+  end
+
   # Redirect stdout and stderr for the duration of the block and discard them.
   # Returns the block's return value.
   def suppress_io(&)

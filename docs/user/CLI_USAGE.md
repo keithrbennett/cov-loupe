@@ -718,17 +718,19 @@ clp -e debug summary lib/api/client.rb  # -e = --error-mode
 clp -edebug summary lib/api/client.rb   # attached short option form
 ```
 
+<a id="output-chars"></a>
+
 ### `-O, --output-chars MODE`
 
-Control output character encoding for ASCII-only environments.
+Choose how cov-loupe draws its own decoration (table borders and the covered-line marker): with Unicode characters, or with ASCII for terminals that cannot display them. Your data is never changed.
 
 **Modes:**
 
 | Short | Long        | Description                                       |
 |-------|-------------|---------------------------------------------------|
 | `d`   | `default`   | Auto-detect terminal UTF-8 support (default)      |
-| `f`   | `fancy`     | Force Unicode output with box-drawing characters  |
-| `a`   | `ascii`     | Force ASCII-only output with transliteration      |
+| `f`   | `fancy`     | Draw tables and markers with Unicode characters   |
+| `a`   | `ascii`     | Draw tables and markers with ASCII characters     |
 
 ```sh
 # Default output character mode (auto-detects UTF-8 support)
@@ -743,23 +745,31 @@ clp -O fancy list
 clp -O f list  # f = fancy
 ```
 
-**What gets converted in ASCII mode:**
-- Table borders (│ ─ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼ → | - + + + + + + + + +)
-- Source code markers (covered ✓ → +; uncovered X stays X)
-- Error messages and file paths
-- All formatted output (tables, source, JSON, YAML)
+**What changes in ASCII mode:**
+- Table borders (│ ─ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼ become | - + + + + + + + + +)
+- The covered-line marker in source output (✓ becomes +; the uncovered marker is always `X`)
+- JSON output (`-f json`, `-f pretty_json`) escapes non-ASCII characters as `\uXXXX`. This
+  encodes the data without changing it: parsing the JSON gives back the original text.
 
-**What does NOT get converted:**
-- Log files (preserved in original encoding for debugging fidelity)
-- Gem post-install message
+**What never changes:**
+- Your data: file paths, source lines, error messages, backtraces, and YAML or other text
+  formats are shown exactly as they are, so output in ASCII mode can still contain non-ASCII
+  characters such as accented letters, curly quotes, or Japanese
+- Log files
+
+cov-loupe never rewrites data for display. Ruby itself escapes non-ASCII characters as `\uXXXX`
+in the `inspect` and `pretty_print` formats, and in error messages that quote a path the way
+`inspect` does, when the locale is not UTF-8. That depends on the locale, not on the output mode.
 
 **Use cases:**
-- **CI/CD systems** with ASCII-only terminals: `clp -O ascii list`
-- **Windows** with legacy encoding: `clp -O ascii summary lib/api/client.rb`
-- **Piped output** to files: `clp -O ascii list > coverage.txt`
+- **CI/CD systems** whose logs or terminals cannot draw box-drawing characters: `clp -O ascii list`
+- **Windows** with a legacy code page, so table borders render: `clp -O ascii summary lib/api/client.rb`
+- **Piped output** to files that should not contain box-drawing characters: `clp -O ascii list > coverage.txt`
 - **Force Unicode** even if terminal detection fails: `clp -O fancy list`
 
-**Note:** The default mode auto-detects whether your terminal supports UTF-8. If Unicode characters appear garbled or as question marks, try `clp -O ascii`.
+**Note:** The default mode auto-detects whether your terminal supports UTF-8. If table borders or the ✓ marker appear garbled, try `clp -O ascii`. Non-ASCII characters in your data are shown as your terminal renders them in every mode.
+
+**Limitation:** Table column widths are measured in characters, so wide (for example CJK) characters can leave the right border misaligned.
 
 ### `-m, --mode MODE`
 

@@ -500,7 +500,7 @@ All file-specific tools accept these parameters in the JSON request:
 - `coverage_file` (optional) - Path to the `coverage.json` file, or to a directory containing one. See [Configuring the Coverage File](../index.md#configuring-the-coverage-file) for details.
 - `raise_on_stale` (optional) - Raise error on staleness: `false` (default) or `true`
 - `error_mode` (optional) - Error handling: `"off"`, `"log"` (default), `"debug"` (overrides server-level setting)
-- `output_chars` (optional) - Output character mode: `"default"`, `"fancy"`, or `"ascii"`
+- `output_chars` (optional) - Output character mode: `"default"`, `"fancy"`, or `"ascii"`. `"ascii"` draws table borders with ASCII characters and escapes non-ASCII as `\uXXXX` in successful JSON payloads. Data is never changed, so error results and non-JSON formats can contain non-ASCII characters. See [`--output-chars`](CLI_USAGE.md#output-chars).
 
 `project_coverage` additionally accepts `sort_order` (`"ascending"` or `"descending"`) and `format` (`"json"`, `"pretty_json"`, `"yaml"`, `"amazing_print"`, `"inspect"`, `"puts"`, `"pretty_print"`, `"table"`; short codes: `j`, `J`, `y`, `a`, `i`, `p`, `P`, `t`).
 

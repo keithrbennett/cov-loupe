@@ -16,7 +16,7 @@ module CovLoupe
           data = presenter.payload
           break if emit_structured_format_with_optional_source?(data, model, path)
 
-          relative_path = convert_text(presenter.relative_path)
+          relative_path = presenter.relative_path
           summary = data['summary']
           puts "File: #{relative_path}"
           puts "Coverage: #{summary['covered']}/#{summary['total']} lines " \

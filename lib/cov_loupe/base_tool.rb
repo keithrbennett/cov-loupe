@@ -60,7 +60,8 @@ module CovLoupe
       output_chars:   {
         type:        'string',
         description: "Output character mode: 'default' (UTF-8 encoding uses fancy, else ascii), " \
-                     "'fancy' (Unicode box-drawing and symbols), 'ascii' (ASCII-only 0x00-0x7F). " \
+                     "'fancy' (Unicode table borders), " \
+                     "'ascii' (ASCII table borders; JSON escapes non-ASCII). " \
                      'Accepts: d[efault], f[ancy], a[scii].',
         enum:        %w[default fancy ascii d f a],
         default:     'default',
@@ -123,12 +124,11 @@ module CovLoupe
     #
     # @param tool_name [String] Name of the tool for error reporting
     # @param error_mode [Symbol, String] Error handling mode (:off, :log, :debug)
-    # @param output_chars [Symbol, String, nil] Output character mode for error messages
-    def self.with_error_handling(tool_name, error_mode:, output_chars: :default)
+    def self.with_error_handling(tool_name, error_mode:)
       CovLoupe.logger.raise_if_initialization_failed!
       yield
     rescue => e
-      handle_mcp_error(e, tool_name, error_mode: error_mode, output_chars: output_chars)
+      handle_mcp_error(e, tool_name, error_mode: error_mode)
     end
 
     # Handle errors consistently across all MCP tools.
@@ -139,9 +139,8 @@ module CovLoupe
     # @param error [Exception] The error to handle
     # @param tool_name [String] Name of the tool for error reporting
     # @param error_mode [Symbol, String] Error handling mode
-    # @param output_chars [Symbol, String, nil] Output character mode for error messages
     # @return [MCP::Tool::Response] Error response (isError: true)
-    def self.handle_mcp_error(error, tool_name, error_mode: :log, output_chars: :default)
+    def self.handle_mcp_error(error, tool_name, error_mode: :log)
       # Safely normalize error_mode to a symbol, defaulting to :log for invalid inputs
       # This prevents crashes when MCP clients send invalid types (null, numbers, objects, etc.)
       safe_mode = case error_mode
@@ -166,11 +165,9 @@ module CovLoupe
         # Logging failure must not replace the original tool error.
       end
 
-      # Convert error message to ASCII if needed
-      error_message = normalized.user_friendly_message
       # Preserve the operation error as the primary MCP response. Logging is
       # secondary diagnostics and must not replace or obscure the original error.
-      error_message = OutputChars.convert(error_message, output_chars || :default)
+      error_message = normalized.user_friendly_message
       # Flag the failure in the tool result via isError: true so MCP clients
       # can distinguish failed tool calls from successful ones, rather than
       # embedding error text in a normal success response. This is the
@@ -189,7 +186,7 @@ module CovLoupe
     # @param output_chars [Symbol, String, nil] Output character mode (:default, :fancy, :ascii)
     # @return [MCP::Tool::Response] Response containing the JSON string
     def self.respond_json(payload, pretty: false, output_chars: :default)
-      ascii_only = ascii_only?(output_chars)
+      ascii_only = ascii_mode?(output_chars)
       payload = PayloadSchema.add(payload)
       json = if pretty
         ascii_only ? JSON.pretty_generate(payload, ascii_only: true) : JSON.pretty_generate(payload)
@@ -199,20 +196,20 @@ module CovLoupe
       ::MCP::Tool::Response.new([{ 'type' => 'text', 'text' => json }])
     end
 
-    # Determines if ASCII-only output is required based on the character mode setting.
+    # Determines if ASCII mode is in effect for the character mode setting.
     # Normalizes string inputs to symbols (MCP JSON provides strings, internal code uses symbols).
     # Uses strict validation to raise errors for invalid values.
     #
     # @param char_mode [Symbol, String, nil] The character mode (:default, :fancy, :ascii)
-    # @return [Boolean] true if ASCII-only output is required
+    # @return [Boolean] true if ASCII mode is in effect
     # @raise [CovLoupe::UsageError] if char_mode is invalid
-    def self.ascii_only?(char_mode)
+    def self.ascii_mode?(char_mode)
       return false if char_mode.nil?
 
       normalized_mode_name = normalize_output_chars_strict(char_mode)
       OutputChars.ascii_mode?(normalized_mode_name)
     end
-    private_class_method :ascii_only?
+    private_class_method :ascii_mode?
 
     def self.log_mcp_error(error, tool_name, error_handler)
       # Use the provided error handler for logging
@@ -316,7 +313,7 @@ module CovLoupe
       tool_name = name.split('::').last
       output_chars_sym = resolve_output_chars(output_chars, server_context)
 
-      with_error_handling(tool_name, error_mode: error_mode, output_chars: output_chars_sym) do
+      with_error_handling(tool_name, error_mode: error_mode) do
         model, config = create_configured_model(server_context: server_context,
           **model_option_overrides)
         presenter = Presenters::CoveragePayloadPresenter.new(

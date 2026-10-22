@@ -2,11 +2,12 @@
 
 [Back to main README](../../index.md)
 
-This document describes the architectural decision for implementing a global output character mode that controls ASCII vs Unicode output across CLI and MCP interfaces.
+This document describes the architectural decision for implementing a global output character mode that controls how cov-loupe draws its own decoration (Unicode or ASCII) across CLI and MCP interfaces.
 
 ## Status
 
-Accepted
+Accepted. Amended on 2026-10-22: ASCII mode changes only cov-loupe's own decoration and never
+alters data (see [Amendment](#amendment-ascii-mode-never-changes-data)).
 
 ## Context
 
@@ -32,13 +33,18 @@ This caused issues in environments that don't support Unicode:
 
 Users experienced garbled output, corrupted tables, and unreadable error messages.
 
+(Since the Amendment, ASCII mode addresses only cov-loupe's own decoration in these
+environments; it no longer guarantees ASCII-only output.)
+
 ### Requirements
 
-- **ASCII mode**: Must produce ASCII-only output (0-127 characters) when requested
+- **ASCII mode**: Must draw cov-loupe's own decoration (table borders, the covered-line marker)
+  with ASCII characters when requested, without changing data. (Originally: produce ASCII-only
+  output, 0-127; see the Amendment.)
 - **Fancy mode**: Should use Unicode characters for enhanced readability when supported
 - **Auto-detection**: Default mode should intelligently choose based on environment
 - **MCP integration**: MCP tools must support the same output modes as CLI
-- **Comprehensive coverage**: All output channels must respect the mode setting
+- **Comprehensive coverage**: Every output channel that draws decoration must take it from the mode
 - **Backward compatibility**: Existing behavior (Unicode) should remain the default when supported
 
 ### Considered Approaches
@@ -50,22 +56,27 @@ Users experienced garbled output, corrupted tables, and unreadable error message
 2. **Post-process all output**: Apply ASCII conversion after formatting
    - Inefficient (convert entire formatted output)
    - Could corrupt already-encoded data (JSON structure)
+   - Alters user data along with the decoration (see the Amendment)
 
-3. **Centralized conversion with charsets**: Define separate charsets and convert at formatting time
-   - Clean separation of concerns
-   - Efficient (convert only what's displayed)
+3. **Charsets for decoration**: Define a Unicode and an ASCII charset and choose one where the
+   decoration is drawn
+   - Clean separation of concerns: decoration changes, data does not
+   - No conversion pass over output
    - Consistent across all formatters
 
 ## Decision
 
-We implemented **global output character mode** with centralized conversion using charset definitions.
+We implemented a **global output character mode** that selects a charset for cov-loupe's own
+decoration.
 
 ### Mode Options
 
 Three modes are available:
 - `default`: Auto-detects terminal UTF-8 support at runtime → fancy if supported, otherwise ASCII
-- `fancy`: Forces Unicode output with box-drawing characters and fancy markers
-- `ascii`: Forces ASCII-only output with transliteration fallback to `?` for unknown characters
+- `fancy`: Draws tables with box-drawing characters and marks covered lines with ✓
+- `ascii`: Draws tables with `+ - |` and marks covered lines with `+`; JSON output escapes
+  non-ASCII as `\uXXXX`. Data is never changed. (Originally: transliteration of all output with a
+  `?` fallback; see the Amendment.)
 
 ### Configuration
 
@@ -75,7 +86,9 @@ Three modes are available:
 
 ### Core Implementation
 
-The `OutputChars` module (`lib/cov_loupe/output_chars.rb`) provides:
+The `OutputChars` module (`lib/cov_loupe/output_chars.rb`) provides, in outline (the real
+`resolve_mode` and `ascii_mode?` also take an `io:` whose encoding decides `:default`, and
+`resolve_mode` and `charset_for` raise `ArgumentError` for unknown modes):
 
 ```ruby
 module OutputChars
@@ -87,91 +100,90 @@ module OutputChars
     stdout_utf8? ? :fancy : :ascii
   end
 
-  # Character conversion using transliteration map
-  def self.convert(text, mode)
-    return text unless mode == :ascii
-    text.chars.map { |c| TRANSLITERATIONS[c] || c.ascii_only? ? c : '?' }.join
-  end
+  # Whether ASCII decoration is in effect
+  def self.ascii_mode?(mode) = resolve_mode(mode) == :ascii
 
-  # Charset selection
+  # Charset selection for table borders
   def self.charset_for(mode)
-    mode == :fancy ? FANCY_CHARSET : ASCII_CHARSET
+    mode == :fancy ? UNICODE_CHARSET : ASCII_CHARSET
   end
 end
 ```
 
-### Transliteration Strategy
+### Where the Mode Applies
 
-Instead of a generic library (like `ActiveSupport::Multibyte`), we use an internal `TRANSLITERATIONS` hash mapping common characters to ASCII equivalents:
+1. **Tables** (`TableFormatter`, `CoverageTableFormatter`): borders come from
+   `OutputChars.charset_for`. Cell contents, such as file paths, are shown as they are.
+2. **Source output** (`SourceFormatter`): covered lines are marked `+` instead of `✓`; the
+   uncovered marker is always `X`. Source lines are shown as they are.
+3. **JSON** (`Formatters`, `BaseTool.respond_json`): `JSON.generate(..., ascii_only: true)`
+   escapes non-ASCII as `\uXXXX`. That encodes the data without changing it.
 
-- Accented Latin characters (á → a, é → e, ñ → n, etc.)
-- Symbols and punctuation (→ ->, — --, © (C), etc.)
-- Box-drawing characters (│ → |, ─ → -, ┌ → +, etc.)
+**Not affected:** file paths, source lines, error messages, backtraces, YAML, AmazingPrint,
+`inspect`, `puts` and `pretty_print` output, MCP error results, and log files. cov-loupe never
+rewrites them; Ruby's own `inspect` escapes non-ASCII when the locale is not UTF-8.
 
-Characters without defined mappings fall back to `?` to maintain ASCII-only output.
+## Amendment: ASCII mode never changes data
 
-### Formatter Integration
+Date: 2026-10-22
 
-All formatters respect the `output_chars` parameter:
+The original design passed nearly all output through a transliteration step: accented Latin
+letters and some symbols were converted, and every other non-ASCII character became `?`. That
+destroyed user data (letters in file paths, source lines, method names and error messages) to
+solve a problem that only concerns decoration, because the mode exists for terminals that cannot
+draw fancy table borders. Limiting the replacement to a table of decorative characters was
+considered and rejected, because it would still rewrite data that happens to contain them (a file
+named `John’s – notes.rb` would become `John's - notes.rb`, a path that does not exist).
 
-1. **JSON**: Uses `JSON.generate(..., ascii_only: true)` in ASCII mode
-2. **YAML**: Post-processes through `OutputChars.convert`
-3. **AmazingPrint**: Post-processes through `OutputChars.convert`
-4. **Tables**: Uses appropriate charset (`OutputChars.charset_for`) and converts cell contents
-5. **Source**: Uses ASCII-safe markers and converts source code.
-   Covered lines use `+` instead of `✓`; the uncovered marker `X` stays unchanged.
+So ASCII mode now changes only what cov-loupe draws itself (table borders and the covered-line
+marker), plus the lossless `\uXXXX` escaping of JSON. `OutputChars.convert` and its
+transliteration table were removed.
 
-### Error Message Integration
+Consequences of passing data through unchanged:
 
-- CLI error handlers convert messages via `OutputChars.convert`
-- Staleness error messages convert file paths via `convert_path` lambda
-- Option parser errors converted before display
-- Backtrace lines converted in debug mode
-
-### Scope of Conversion
-
-**Converted in ASCII mode:**
-- All CLI error messages and option parser errors
-- Staleness error messages and file paths
-- Command literal strings (via `convert_text` helper in BaseCommand)
-- MCP tool JSON responses (via `respond_json` with `output_chars: :ascii`)
-- All formatted output (tables, source, JSON, YAML)
-
-**Not converted in ASCII mode:**
-- **Log files**: Preserved in original encoding for debugging fidelity. Log files are system/debugging artifacts, not user-facing output. Converting would lose exact file paths and error details needed for troubleshooting, create inconsistency between logged paths and actual filesystem paths, and provides no user value since logs are developer artifacts.
-- **Gem post-install message**: Intentionally left unchanged per requirements
+- ASCII mode no longer guarantees ASCII-only output. Users who need that can use JSON output in
+  ASCII mode, whose successful payloads are escaped.
+- Nothing scans or rewrites backtrace text any more. This also avoids a JRuby bug: some backtrace
+  lines (from an `instance_eval` with a non-ASCII file name, or from a method with a non-ASCII
+  name) carry stale encoding flags, so iterating their characters (as the old conversion did with
+  `each_char`) can yield `nil` without end.
+- Non-ASCII characters reach the output stream unchanged, as they always did in fancy mode.
+  Writing them raises `Encoding::UndefinedConversionError` only if the stream transcodes to a
+  non-UTF-8 encoding: when it was given one explicitly (for example with `IO#set_encoding`) or
+  when `Encoding.default_internal` is set (for example with `RUBYOPT=-U` in a non-UTF-8 locale).
+  By default Ruby's standard streams do not transcode and write the bytes as they are.
+  (Separately, in a non-UTF-8 locale cov-loupe currently fails earlier, while reading a
+  `coverage.json` that contains non-ASCII paths.)
+- Table column widths use `String#length`, so wide (CJK) characters can misalign the right
+  border. This applies in both modes.
 
 ## Consequences
 
 ### Positive
 
-1. **Broad compatibility**: Works in any terminal environment, including legacy systems
+1. **Broad compatibility**: Table borders and markers render in terminals that cannot draw Unicode box-drawing characters
 2. **Better UX**: Fancy mode provides enhanced readability when Unicode is supported
 3. **Auto-detection**: Default mode adapts to environment without user configuration
-4. **Comprehensive coverage**: All output channels respect the mode setting
+4. **Data fidelity**: Paths, source lines and messages are never altered in any mode
 5. **MCP parity**: CLI and MCP interfaces have identical behavior
-6. **No dependencies**: Internal transliteration map avoids external dependencies
-7. **Consistent behavior**: Single source of truth for character conversion
+6. **No dependencies and little code**: A charset per mode, no conversion pass
 
 ### Negative
 
-1. **Complexity**: Additional configuration option and conversion logic to maintain
-2. **Transliteration coverage**: Not all Unicode characters have mappings (falls back to `?`)
-3. **Performance**: Conversion overhead for every output operation (minimal in practice)
-4. **Test burden**: Comprehensive tests needed across all formatters and modes
+1. **Complexity**: Additional configuration option to maintain
+2. **Not ASCII-only**: Data containing non-ASCII characters still contains them in ASCII mode; only JSON escapes it
+3. **Test burden**: Formatter tests are needed for both modes
 
 ### Trade-offs
 
-- **Internal vs external transliteration**: Internal map is less comprehensive but avoids dependencies and keeps behavior predictable
-- **Charset vs post-processing**: Charsets are cleaner but require formatter awareness; post-processing is simpler but can corrupt structured data
+- **Charset vs post-processing**: Charsets require formatter awareness; post-processing is simpler but corrupts structured data and alters user data
 - **Auto-detection vs explicit default**: Auto-detection is more convenient but less predictable; explicit default is clearer but requires configuration
 
 ### Future Constraints
 
-- Any new formatters must respect `output_chars` parameter
-- New output channels (e.g., HTML) need ASCII mode support
-- Transliteration map must be maintained as new characters are encountered
-- Log files must never be converted (documented design decision)
+- Any new formatter that draws decoration must take it from the mode's charset
+- New output channels (e.g., HTML) need ASCII mode support for their decoration
+- Data must never be rewritten for display
 
 ## Implementation Notes
 
@@ -183,10 +195,8 @@ All formatters respect the `output_chars` parameter:
 
 ### Performance Considerations
 
-- Conversion only applies in ASCII mode (fancy mode is a no-op)
-- Transliteration map lookup is O(1) per character
+- The mode only selects characters for decoration; there is no conversion pass over output
 - JSON `ascii_only: true` is optimized by the json gem
-- Overall performance impact is negligible (< 1ms for typical outputs)
 
 ### Testing Strategy
 
@@ -196,18 +206,16 @@ Comprehensive test coverage ensures correctness:
 - Formatter tests for both ASCII and fancy modes
 - CLI option parsing tests for `--output-chars` flag
 - MCP tool output mode tests
-- Staleness error message tests with Unicode file paths
-- Integration tests across all subcommands with Unicode file names
+- Tests that paths, messages and other data are unchanged in ASCII mode
 
 ## References
 
 - Core implementation: `lib/cov_loupe/output_chars.rb`
 - Configuration: `lib/cov_loupe/config/app_config.rb`, `lib/cov_loupe/config/option_normalizers.rb`
 - Formatters:
-    - `lib/cov_loupe/formatters/formatters.rb` (JSON, YAML, AmazingPrint)
-    - `lib/cov_loupe/formatters/table_formatter.rb` (tables)
-    - `lib/cov_loupe/formatters/source_formatter.rb` (source code)
-- Error handling: `lib/cov_loupe/cli.rb`, `lib/cov_loupe/errors/error_handler.rb`
+    - `lib/cov_loupe/formatters/formatters.rb` (JSON escaping)
+    - `lib/cov_loupe/formatters/table_formatter.rb` and `lib/cov_loupe/coverage/coverage_table_formatter.rb` (tables)
+    - `lib/cov_loupe/formatters/source_formatter.rb` (source code markers)
 - MCP integration: `lib/cov_loupe/base_tool.rb`, `lib/cov_loupe/tools/*.rb`
 - CLI option parsing: `lib/cov_loupe/config/option_parser_builder.rb`
 - Tests:

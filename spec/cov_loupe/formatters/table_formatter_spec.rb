@@ -121,15 +121,10 @@ RSpec.describe CovLoupe::TableFormatter do
         end
       end
 
-      it 'converts cell contents to ASCII' do
+      it 'leaves cell contents unchanged' do
         result = described_class.format(headers: headers, rows: rows, output_chars: :ascii)
 
-        aggregate_failures do
-          expect(result).not_to include('é')
-          expect(result).not_to include('→')
-          expect(result).to include('cafe') # é transliterated
-          expect(result).to include('->') # → transliterated
-        end
+        expect(result).to include('café', '→')
       end
     end
 

@@ -39,10 +39,10 @@ module CovLoupe
       class << self
         def call(code: nil, file: nil, root: nil, coverage_file: nil,
           raise_on_stale: nil, error_mode: 'log', output_chars: nil, server_context:)
-          # Normalize output_chars before error handling so errors also get converted
+          # Resolve (and validate) output_chars for formatting the successful result
           output_chars_sym = resolve_output_chars(output_chars, server_context)
           with_error_handling('ProjectValidateTool',
-            error_mode: error_mode, output_chars: output_chars_sym) do
+            error_mode: error_mode) do
             # MCPServer#toolset already omits this tool; this also covers servers built from TOOLSET.
             unless available_in?(server_context)
               raise UsageError,

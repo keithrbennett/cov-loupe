@@ -38,6 +38,17 @@ RSpec.describe CovLoupe::Tools do
     end
   end
 
+  it 'returns the error message unchanged with output_chars ascii' do
+    message = "boom in lib/caf\u00e9\u2192.rb"
+    allow(CovLoupe::CoverageModel).to receive(:new).and_raise(StandardError, message)
+
+    response = CovLoupe::Tools::FileCoverageSummaryTool.call(path: 'lib/x.rb', error_mode: 'off',
+      output_chars: 'ascii', server_context: server_context)
+
+    expect_mcp_tool_error(response)
+    expect(response.content.first['text']).to include(message)
+  end
+
   # NOTE: VersionTool is covered directly in version_tool_spec.rb, which now
   # asserts the error flag and wire shape for VERSION access and response
   # creation failures, so it is intentionally omitted here.

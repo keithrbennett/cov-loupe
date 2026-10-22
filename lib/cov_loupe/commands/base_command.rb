@@ -5,7 +5,6 @@ require_relative '../formatters/formatters'
 require_relative '../formatters/source_formatter'
 require_relative '../model/model'
 require_relative '../errors/errors'
-require_relative '../output_chars'
 require_relative '../payload_schema'
 
 module CovLoupe
@@ -35,11 +34,6 @@ module CovLoupe
       # Formats a coverage percentage for text output; nil (no coverable lines) shows as 'n/a'.
       protected def format_percentage(percentage)
         percentage.nil? ? 'n/a' : format('%.2f%%', percentage)
-      end
-
-      # Convert text to ASCII if output_chars is :ascii
-      protected def convert_text(text)
-        OutputChars.convert(text, config.output_chars)
       end
 
       protected def handle_with_path(args, name)

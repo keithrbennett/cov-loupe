@@ -102,12 +102,9 @@ RSpec.describe CovLoupe::Formatters do
         expect(result).to include('\\u')
       end
 
-      it 'produces ASCII-only YAML output' do
+      it 'leaves the data unchanged in YAML output' do
         result = described_class.format(unicode_obj, :yaml, output_chars: :ascii)
-        # OutputChars.convert transliterates é -> e and → -> ->
-        expect(result).not_to include('é')
-        expect(result).not_to include('→')
-        expect(result).to include('cafe') # é transliterated to e
+        expect(result).to include('café', '→')
       end
 
       context 'with amazing_print' do
@@ -116,35 +113,17 @@ RSpec.describe CovLoupe::Formatters do
           allow(unicode_obj).to receive(:ai).and_return('café → result')
         end
 
-        it 'converts amazing_print output to ASCII' do
+        it 'leaves the data unchanged in amazing_print output' do
           result = described_class.format(unicode_obj, :amazing_print, output_chars: :ascii)
-          expect(result).not_to include('é')
-          expect(result).not_to include('→')
-          expect(result).to include('cafe')
-          expect(result).to include('->')
+          expect(result).to eq('café → result')
         end
       end
 
-      # NOTE: Ruby's own #inspect/PP already escape non-ASCII characters as \uXXXX
-      # when Encoding.default_external isn't UTF-8-compatible, independent of
-      # OutputChars' own transliteration. Assert only that no raw multi-byte
-      # characters survive, since the exact escaped form is locale-dependent.
-      it 'produces ASCII-only inspect output' do
-        result = described_class.format(unicode_obj, :inspect, output_chars: :ascii)
-        expect(result).not_to include('é')
-        expect(result).not_to include('→')
-      end
-
-      it 'produces ASCII-only puts output' do
-        result = described_class.format(unicode_obj, :puts, output_chars: :ascii)
-        expect(result).not_to include('é')
-        expect(result).not_to include('→')
-      end
-
-      it 'produces ASCII-only pretty_print output' do
-        result = described_class.format(unicode_obj, :pretty_print, output_chars: :ascii)
-        expect(result).not_to include('é')
-        expect(result).not_to include('→')
+      %i[inspect puts pretty_print].each do |format|
+        it "produces the same #{format} output as fancy mode" do
+          expect(described_class.format(unicode_obj, format, output_chars: :ascii))
+            .to eq(described_class.format(unicode_obj, format, output_chars: :fancy))
+        end
       end
     end
   end

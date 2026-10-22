@@ -154,17 +154,18 @@ RSpec.describe CovLoupe::Commands::ValidateCommand do
   end
 
   describe 'output characters' do
-    it 'converts the debug backtrace to ASCII in ascii mode' do
+    it 'leaves the message and debug backtrace unchanged in ascii mode' do
       Dir.mktmpdir do |dir|
-        path = File.join(dir, 'prédicate_é.rb')
-        File.write(path, "->(model) { raise 'Boom!' }\n")
+        path = File.join(dir, "pred\u2192icate.rb")
+        # The escape keeps the predicate source ASCII, so it loads under any locale.
+        File.write(path, "->(model) { raise \"Boom \\u2192 done\" }\n")
         _out, err, status = run_fixture_cli_with_status(
           '--output-chars', 'ascii', '--error-mode', 'debug', '--log-file', 'off',
           'validate', path
         )
         expect(status).to eq(4)
-        expect(err).to match(/pr.dicate_.\.rb:\d+/) # backtrace is shown
-        expect(err).to be_ascii_only
+        # Compared as bytes: on JRuby, err can also hold a stray byte from the eval frame label.
+        expect(err.b).to include("Boom \u2192 done".b, "pred\u2192icate.rb:1".b)
       end
     end
   end

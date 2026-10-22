@@ -31,7 +31,7 @@ module CovLoupe
           tracked_globs: nil, error_mode: 'log', output_chars: nil, server_context:)
           output_chars_sym = resolve_output_chars(output_chars, server_context)
           with_error_handling('ProjectCoverageTotalsTool',
-            error_mode: error_mode, output_chars: output_chars_sym) do
+            error_mode: error_mode) do
             model, config = create_configured_model(
               server_context: server_context,
               root:           root,

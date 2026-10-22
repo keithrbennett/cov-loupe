@@ -185,7 +185,7 @@ module CovLoupe
     end
 
     # Normalize output_chars value.
-    # Controls ASCII vs Unicode (fancy) output for tables and text.
+    # Chooses Unicode (fancy) or ASCII table borders and markers.
     # @param value [String, Symbol] The value to normalize
     # @param strict [Boolean] If true, raises on invalid value; if false, returns default
     # @param default [Symbol] The default value to return if invalid and not strict

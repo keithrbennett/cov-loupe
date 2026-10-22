@@ -348,6 +348,13 @@ RSpec.describe CovLoupe::CoverageTableFormatter do
           expect(output).to include('100.00%')
           expect(output).to include('File')
         end
+
+        it 'leaves non-ASCII file paths unchanged' do
+          path = "lib/caf\u00e9\u2192.rb"
+          output = described_class.format([rows.first.merge('file' => path)], output_chars: :ascii)
+
+          expect(output).to include(path)
+        end
       end
 
       context 'with output_chars: :default' do

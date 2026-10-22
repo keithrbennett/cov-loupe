@@ -351,10 +351,10 @@ RSpec.describe CovLoupe::BaseTool do
     end
   end
 
-  describe '.ascii_only?' do
+  describe '.ascii_mode?' do
     context 'with valid values' do
       it 'returns false for nil' do
-        expect(described_class.send(:ascii_only?, nil)).to be(false)
+        expect(described_class.send(:ascii_mode?, nil)).to be(false)
       end
 
       it 'returns expected values for symbols' do
@@ -363,7 +363,7 @@ RSpec.describe CovLoupe::BaseTool do
           [:fancy, false],
           [:ascii, true],
         ].each do |symbol, expected|
-          expect(described_class.send(:ascii_only?, symbol)).to be(expected)
+          expect(described_class.send(:ascii_mode?, symbol)).to be(expected)
         end
       end
 
@@ -376,7 +376,7 @@ RSpec.describe CovLoupe::BaseTool do
           ['f', false],
           ['a', true],
         ].each do |input, expected|
-          expect(described_class.send(:ascii_only?, input)).to be(expected)
+          expect(described_class.send(:ascii_mode?, input)).to be(expected)
         end
       end
     end
@@ -384,19 +384,19 @@ RSpec.describe CovLoupe::BaseTool do
     context 'with invalid values' do
       it 'raises UsageError for invalid string values' do
         expect do
-          described_class.send(:ascii_only?, 'invalid')
+          described_class.send(:ascii_mode?, 'invalid')
         end.to raise_error(CovLoupe::UsageError, /Invalid output_chars value.*invalid.*Must be one of/)
       end
 
       it 'raises UsageError for non-string, non-symbol types' do
         expect do
-          described_class.send(:ascii_only?, 123)
+          described_class.send(:ascii_mode?, 123)
         end.to raise_error(CovLoupe::UsageError, /Invalid output_chars type.*Integer.*Must be a string/)
       end
 
       it 'raises UsageError for hash values' do
         expect do
-          described_class.send(:ascii_only?, { key: 'value' })
+          described_class.send(:ascii_mode?, { key: 'value' })
         end.to raise_error(CovLoupe::UsageError, /Invalid output_chars type.*Hash.*Must be a string/)
       end
     end
@@ -408,13 +408,13 @@ RSpec.describe CovLoupe::BaseTool do
           [:fancy, false],
           [:ascii, true],
         ].each do |symbol, expected|
-          expect(described_class.send(:ascii_only?, symbol)).to be(expected)
+          expect(described_class.send(:ascii_mode?, symbol)).to be(expected)
         end
       end
 
       it 'accepts invalid symbols without validation' do
         # Symbols are returned as-is (internal use)
-        expect(described_class.send(:ascii_only?, :invalid_symbol)).to be(false)
+        expect(described_class.send(:ascii_mode?, :invalid_symbol)).to be(false)
       end
     end
 

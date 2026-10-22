@@ -60,7 +60,7 @@ cov-loupe is organized around a single coverage data model that feeds three deli
 
 ## Output Character Mode
 
-cov-loupe provides a global output character mode that controls ASCII vs Unicode output across both CLI and MCP interfaces. This feature ensures compatibility with terminals and systems that cannot display Unicode characters while providing rich Unicode output (box-drawing characters, fancy tables) for environments that support it.
+cov-loupe provides a global output character mode that chooses how cov-loupe draws its own decoration (table borders and the covered-line marker) across both CLI and MCP interfaces: with Unicode characters, or with ASCII for terminals and systems that cannot display them. Data is never changed. See the [Output Character Mode decision](arch-decisions/output-character-mode.md).
 
 ### Configuration
 
@@ -70,32 +70,20 @@ cov-loupe provides a global output character mode that controls ASCII vs Unicode
 
 ### Implementation
 
-- **Core conversion** – `OutputChars.convert` uses an internal transliteration map with `?` fallback for characters without ASCII equivalents
-- **Charsets** – Separate charset definitions for fancy (Unicode box-drawing) and ASCII modes
-- **Formatters** – All formatters (JSON, YAML, AmazingPrint, tables, source) respect the output_chars parameter
-    - JSON uses `JSON.generate(..., ascii_only: true)` for ASCII mode
-    - YAML and AmazingPrint post-process output through `OutputChars.convert`
-    - Tables use appropriate charset and convert cell contents
-    - Source output uses ASCII-safe markers (`+/X` instead of Unicode `✓/X`)
+- **Charsets** – Separate charset definitions for fancy (Unicode box-drawing) and ASCII table borders, chosen with `OutputChars.charset_for`
+- **Source markers** – Covered lines are marked `+` instead of `✓` in ASCII mode; the uncovered marker is always `X`
+- **JSON** – `JSON.generate(..., ascii_only: true)` in ASCII mode escapes non-ASCII as `\uXXXX`, which encodes the data without changing it
 
-### Scope of Conversion
+### What ASCII Mode Does Not Change
 
-**Converted in ASCII mode:**
-- CLI error messages and option parser errors
-- Staleness error messages and file paths
-- Command literal strings (via `convert_text` helper in BaseCommand)
-- MCP tool JSON responses (via `respond_json` with `output_chars: :ascii`)
-- All formatted output (tables, source, JSON, YAML)
-
-**Not converted in ASCII mode:**
-- **Log files** – Preserved in original encoding for debugging fidelity. Log files are system/debugging artifacts, not user-facing output. Converting would lose exact file paths and error details needed for troubleshooting, create inconsistency between logged paths and actual filesystem paths, and provides no user value since logs are developer artifacts.
-- **Gem post-install message** – Intentionally left unchanged per requirements
+- **Data** – File paths, source lines, error messages, backtraces, and YAML, AmazingPrint, `inspect`, `puts` and `pretty_print` output are never rewritten by cov-loupe, so they can contain non-ASCII characters in any mode (Ruby's own `inspect` escapes non-ASCII when the locale is not UTF-8)
+- **Log files** – Preserved in original encoding for debugging fidelity
 
 ### Testing
 
 Comprehensive test coverage exists:
 - Mode resolution and normalization tests
-- Formatter tests for ASCII mode (JSON, YAML, AmazingPrint, tables, source)
+- Formatter tests for ASCII mode (JSON escaping, table borders, source markers, data left unchanged)
 - CLI option parsing tests for `--output-chars` flag
 - MCP tool output mode tests
 - Staleness error message tests with Unicode file paths
@@ -105,7 +93,7 @@ Comprehensive test coverage exists:
 - **Environment defaults** – `COV_LOUPE_OPTS` applies baseline CLI flags before parsing the actual command line.
 - **Coverage file overrides** – The location of `coverage.json` can be specified via CLI options or in the MCP configuration. See [Configuring the Coverage File](../index.md#configuring-the-coverage-file) for details.
 - **Tracked globs** – Glob patterns (e.g., `lib/**/*.rb`) that specify which files should have coverage. When provided, cov-loupe alerts you if any matching files are missing from the coverage data, helping catch untested files that were added to the project but never executed during test runs.
-- **Output character mode** – Global control of ASCII vs Unicode output via `-O/--output-chars` (CLI) or `output_chars` parameter (MCP). Default mode auto-detects terminal UTF-8 capability.
+- **Output character mode** – Global choice between Unicode and ASCII table borders and markers via `-O/--output-chars` (CLI) or `output_chars` parameter (MCP). Default mode auto-detects terminal UTF-8 capability.
 - **Colorized source** – CLI-only flags (`--source`, `--context-lines`, `--color`) enhance human-readable reports when working locally.
 
 ## Repository Layout Highlights

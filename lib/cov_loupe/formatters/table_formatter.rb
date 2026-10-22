@@ -24,13 +24,10 @@ module CovLoupe
       resolved_mode = OutputChars.resolve_mode(output_chars)
       charset = OutputChars.charset_for(resolved_mode)
 
-      # Convert cell contents to ASCII if needed
-      convert = ->(text) { OutputChars.convert(text.to_s, resolved_mode) }
-
       alignments ||= [:left] * headers.size
-      converted_headers = headers.map(&convert)
-      converted_rows = rows.map { |row| row.map(&convert) }
-      all_rows = [converted_headers] + converted_rows
+      header_cells = headers.map(&:to_s)
+      row_cells = rows.map { |row| row.map(&:to_s) }
+      all_rows = [header_cells] + row_cells
 
       # Calculate column widths
       widths = headers.size.times.map do |col|
@@ -39,9 +36,9 @@ module CovLoupe
 
       lines = []
       lines << border_line(widths, charset[:top_left], charset[:top_tee], charset[:top_right], charset)
-      lines << data_row(converted_headers, widths, alignments, charset)
+      lines << data_row(header_cells, widths, alignments, charset)
       lines << border_line(widths, charset[:left_tee], charset[:cross], charset[:right_tee], charset)
-      converted_rows.each { |row| lines << data_row(row, widths, alignments, charset) }
+      row_cells.each { |row| lines << data_row(row, widths, alignments, charset) }
       lines << border_line(widths, charset[:bottom_left], charset[:bottom_tee], charset[:bottom_right],
         charset)
 

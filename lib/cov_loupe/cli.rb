@@ -9,7 +9,6 @@ require_relative 'option_parsers/env_options_parser'
 require_relative 'presenters/project_coverage_presenter'
 require_relative 'exit_codes'
 require_relative 'subcommands'
-require_relative 'output_chars'
 require_relative 'formatters/coverage_warnings'
 require_relative 'payload_schema'
 require_relative 'resources'
@@ -135,12 +134,12 @@ module CovLoupe
           output_chars:   config.output_chars
         )
         # The exclusions summary already lists skipped rows.
-        warn_report_text(Formatters::CoverageWarnings.exclusions_summary(presenter, config.output_chars))
+        warn_report_text(Formatters::CoverageWarnings.exclusions_summary(presenter))
       else
         require_relative 'formatters/formatters'
         output.puts Formatters.format(PayloadSchema.add(presenter.payload), config.format,
           output_chars: config.output_chars)
-        warn_report_text(Formatters::CoverageWarnings.skipped_rows_warning(presenter, config.output_chars))
+        warn_report_text(Formatters::CoverageWarnings.skipped_rows_warning(presenter))
       end
 
       warn_report_text(Formatters::CoverageWarnings.timestamp_warning(presenter))
@@ -215,7 +214,7 @@ module CovLoupe
 
     private def handle_option_parser_error(error, argv: [])
       @error_helper ||= OptionParsers::ErrorHelper.new(SUBCOMMANDS)
-      @error_helper.handle_option_parser_error(error, argv: argv, output_chars: config.output_chars)
+      @error_helper.handle_option_parser_error(error, argv: argv)
     end
 
     private def check_for_misplaced_global_options(cmd, args)
@@ -302,13 +301,11 @@ module CovLoupe
 
     private def handle_user_facing_error(error, log_error: error, log_context: 'CLI')
       log_user_facing_error(log_error, log_context)
-      # Convert error message to ASCII if in ascii mode
-      message = OutputChars.convert(error.user_friendly_message, config.output_chars)
-      warn message
+      warn error.user_friendly_message
       if config.error_mode == :debug && (backtrace = error.diagnostic_backtrace)
         # A log file gets the full trace; with a stderr target there is no log entry, so show it all.
         backtrace = backtrace.first(5) unless CovLoupe.logger.stderr?
-        warn OutputChars.convert(backtrace.join("\n"), config.output_chars)
+        warn backtrace.join("\n")
       end
       exit(exit_code_for(error))
     end

@@ -22,12 +22,11 @@ module CovLoupe
         }
       )
       class << self
-        # NOTE: output_chars is accepted for consistency and used in error handling,
-        # though the version string itself is already ASCII-only.
+        # NOTE: output_chars is accepted for consistency with the other tools; the version string
+        # has no decoration, so it has no effect beyond being validated.
         def call(error_mode: 'log', output_chars: nil, server_context: nil, **_args)
-          # Normalize output_chars before error handling so errors also get converted
-          output_chars_sym = resolve_output_chars(output_chars, server_context)
-          with_error_handling('VersionTool', error_mode: error_mode, output_chars: output_chars_sym) do
+          resolve_output_chars(output_chars, server_context) # validates the value
+          with_error_handling('VersionTool', error_mode: error_mode) do
             ::MCP::Tool::Response.new([
               { 'type' => 'text', 'text' => "CovLoupe version: #{CovLoupe::VERSION}" },
             ])

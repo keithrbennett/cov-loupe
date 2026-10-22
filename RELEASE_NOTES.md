@@ -133,6 +133,16 @@
   result. `CoverageReporter.report` now shows two decimals (was one) so it cannot round
   up to `100.0%` either. See [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#percentages-truncated-not-rounded).
 - **Only `coverage/coverage.json` is searched by default.** With no `--coverage-file`, cov-loupe looks only at `coverage/coverage.json` under the project root, where SimpleCov writes it. 6.x tried `.resultset.json`, `coverage/.resultset.json`, and `tmp/.resultset.json` in turn; use `--coverage-file` (`-c`) for any location other than the default.
+- **`--output-chars ascii` no longer changes data.** The mode exists for terminals that cannot
+  draw fancy table borders, but it used to rewrite all output: accented Latin letters and some
+  symbols were transliterated and every other non-ASCII character became `?`, altering file
+  paths, source lines and error messages. Now it changes only what cov-loupe draws itself (table
+  borders and the covered-line marker), and data is shown exactly as it is. This applies to the
+  MCP `output_chars` argument and the library's `output_chars: :ascii` too, and to `default`
+  when it picks ASCII mode for a non-UTF-8 terminal. In ASCII mode, successful JSON payloads
+  still escape non-ASCII characters as `\uXXXX`; other output is no longer guaranteed to be
+  ASCII-only. See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#output-chars-ascii-no-longer-changes-data).
 
 ### Other Changes
 

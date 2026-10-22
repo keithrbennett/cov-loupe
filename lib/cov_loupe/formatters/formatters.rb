@@ -10,13 +10,14 @@ module CovLoupe
     #
     # Supports JSON, pretty JSON, YAML, Amazing Print, inspect, puts, pretty_print,
     # and table formats. Optional format dependencies are loaded only when needed.
-    # ASCII-only output can be requested through output_chars.
+    # In ASCII mode (output_chars), JSON escapes non-ASCII characters as \uXXXX; other formats
+    # keep the data as it is.
     #
     # The :table format is handled separately by CoverageTableFormatter and is
     # passed through here unchanged (table formatting happens at the command level).
 
     # Registry of format lambdas.
-    # Each lambda receives the object to format and an ascii_mode keyword.
+    # Each lambda receives the object to format and an ascii_mode keyword; only JSON uses it.
     FORMATTERS = {
       table:         ->(obj, **) { obj },
       json:          ->(obj, ascii_mode:) {
@@ -27,32 +28,25 @@ module CovLoupe
         require 'json'
         ascii_mode ? JSON.pretty_generate(obj, ascii_only: true) : JSON.pretty_generate(obj)
       },
-      yaml:          ->(obj, ascii_mode:) {
+      yaml:          ->(obj, **) {
         require 'yaml'
-        yaml = obj.to_yaml
-        ascii_mode ? OutputChars.convert(yaml, :ascii) : yaml
+        obj.to_yaml
       },
-      amazing_print: ->(obj, ascii_mode:) {
+      amazing_print: ->(obj, **) {
         require 'amazing_print'
-        result = obj.ai
-        ascii_mode ? OutputChars.convert(result, :ascii) : result
+        obj.ai
       },
-      inspect:       ->(obj, ascii_mode:) {
-        result = obj.inspect
-        ascii_mode ? OutputChars.convert(result, :ascii) : result
-      },
-      puts:          ->(obj, ascii_mode:) {
+      inspect:       ->(obj, **) { obj.inspect },
+      puts:          ->(obj, **) {
         sio = StringIO.new
         sio.puts(obj)
-        result = sio.string
-        ascii_mode ? OutputChars.convert(result, :ascii) : result
+        sio.string
       },
-      pretty_print:  ->(obj, ascii_mode:) {
+      pretty_print:  ->(obj, **) {
         require 'pp'
         sio = StringIO.new
         PP.pp(obj, sio)
-        result = sio.string
-        ascii_mode ? OutputChars.convert(result, :ascii) : result
+        sio.string
       },
     }.freeze
 

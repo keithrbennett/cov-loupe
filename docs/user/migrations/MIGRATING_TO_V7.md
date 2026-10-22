@@ -19,6 +19,7 @@ This document describes the breaking changes introduced in version 7.0.0.
 - [Library Results Use Project-Relative Paths](#library-results-use-project-relative-paths)
 - [`project_validate` Requires `--allow-code-predicates`](#project_validate-requires---allow-code-predicates)
 - [Public API Declared](#public-api-declared)
+- [`--output-chars ascii` No Longer Changes Data](#output-chars-ascii-no-longer-changes-data)
 
 ---
 
@@ -352,3 +353,11 @@ Three internal constants are now private constants, so referencing them from out
 Error handlers (`ErrorHandler`, `ErrorHandlerFactory`, `CovLoupe.error_handler`, `error_handler=`, and the `error_handler:` keyword of `create_context`) are internal, because library calls raise exceptions and never consult the context's configured handler. `create_context` no longer requires `error_handler:`, so library code can call `CovLoupe.create_context(log_target: ...)`; existing calls that pass it keep working. Nothing else changed behavior.
 
 **Migration:** if you call anything tagged `@api private`, or otherwise outside [Public API and Versioning](../LIBRARY_API.md#public-api-and-versioning), move to a public equivalent (for example, compare staleness strings such as `"deleted"` instead of `StaleStatus::DELETED`, and use `CovLoupe.run` instead of instantiating `CoverageCLI`), or pin cov-loupe to an exact version. If the public API doesn't cover your use, open an issue.
+
+## `--output-chars ascii` No Longer Changes Data {#output-chars-ascii-no-longer-changes-data}
+
+In 6.x, ASCII mode (`-O ascii`, the MCP `output_chars: "ascii"` argument, the library's `output_chars: :ascii`, or `default` when it picks ASCII mode for a terminal that does not use UTF-8) produced ASCII-only output by rewriting the text: accented Latin letters and some symbols were transliterated (`é` became `e`, `€` became `EUR`, `→` became `->`), and every other non-ASCII character became `?`. That altered user data such as file paths, source lines and error messages.
+
+In 7.0, ASCII mode changes only what cov-loupe draws itself: table borders use `+ - |`, and covered source lines are marked `+` instead of `✓`. Data is shown exactly as it is in every mode, so text output in ASCII mode can contain non-ASCII characters. In ASCII mode, successful JSON payloads still escape non-ASCII characters as `\uXXXX`, which encodes the data without changing it.
+
+**Migration:** if you relied on ASCII mode to guarantee ASCII-only text output, for example for a consumer that rejects other bytes, use JSON output in ASCII mode (`-O ascii -f json` in the CLI; `output_chars: "ascii"` with a JSON format for MCP tools), or transliterate the output yourself. Only successful JSON payloads are escaped, and only in ASCII mode: error messages (CLI stderr and MCP `Error: ...` results) and non-JSON formats such as tables and YAML are not. Otherwise no change is needed.

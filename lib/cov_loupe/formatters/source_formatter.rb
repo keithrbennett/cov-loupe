@@ -99,9 +99,7 @@ module CovLoupe
 
         rows.each do |r|
           m = marker.call(r['covered'], r['hits'])
-          # Convert source code to ASCII when in ASCII mode
-          code = OutputChars.convert(r['code'], @output_chars)
-          lines << format('%6d  %2s | %s', r['line'], m, code)
+          lines << format('%6d  %2s | %s', r['line'], m, r['code'])
         end
         lines.join("\n")
       end

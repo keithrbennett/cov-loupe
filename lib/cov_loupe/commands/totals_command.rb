@@ -27,7 +27,7 @@ module CovLoupe
 
         if tracking && tracking['enabled']
           puts 'Tracked globs:'
-          tracking['globs'].each { |glob| puts "  - #{convert_text(glob)}" }
+          tracking['globs'].each { |glob| puts "  - #{glob}" }
         else
           puts 'Tracked globs: (tracking disabled)'
         end
