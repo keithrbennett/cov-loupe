@@ -137,6 +137,11 @@ RSpec.describe CovLoupe do
                     params: { name: 'file_coverage_summary', arguments: { path: 'lib/café.rb' } } }
         mcp_out, mcp_err, mcp_status = run.call('-m', 'mcp', '--log-file', 'off',
           extra_rubyopt: '-E:US-ASCII', stdin_data: "#{JSON.generate(request)}\n")
+        # The error log line names the non-ASCII path too, and goes to stderr by default.
+        missing = request.merge(
+          params: { name: 'file_coverage_summary', arguments: { path: 'lib/café-missing.rb' } })
+        _log_out, log_err, log_status = run.call('-m', 'mcp', extra_rubyopt: '-U',
+          stdin_data: "#{JSON.generate(missing)}\n")
 
         aggregate_failures do
           expect(list_status).to be_success, list_err
@@ -148,6 +153,9 @@ RSpec.describe CovLoupe do
           expect(transcode_status.exitstatus).to eq(1)
           expect(transcode_err).to start_with('Text encoding error: U+00E9 from UTF-8 to US-ASCII. ')
           expect(mcp_status).to be_success, mcp_err
+          expect(log_status).to be_success, log_err
+          expect(log_err.force_encoding(Encoding::UTF_8)).to include('ERROR:', 'lib/café-missing.rb')
+          expect(log_err).not_to include('log writing failed')
           mcp_result = JSON.parse(mcp_out)['result']
           expect(mcp_result['isError']).to be(false), mcp_out
           expect(JSON.parse(mcp_result.dig('content', 0, 'text'))).to include(

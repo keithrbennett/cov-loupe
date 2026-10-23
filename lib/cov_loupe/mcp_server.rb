@@ -38,10 +38,10 @@ module CovLoupe
     # The transport sets only the external encoding of stdin and stdout, so when
     # Encoding.default_internal is set (RUBYOPT=-U or -E) reads are still transcoded into it, and a
     # request with non-ASCII characters crashes the server or loses its UTF-8. JSON-RPC over stdio
-    # is UTF-8, so read and write it with no transcoding, as cov-loupe reads its files.
+    # is UTF-8, so read and write it with no transcoding, as cov-loupe reads its files. The same
+    # goes for stderr, where the log lines can name non-ASCII paths.
     private def use_utf8_stdio
-      $stdin.set_encoding(Encoding::UTF_8, Encoding::UTF_8)
-      $stdout.set_encoding(Encoding::UTF_8, Encoding::UTF_8)
+      [$stdin, $stdout, $stderr].each { |io| io.set_encoding(Encoding::UTF_8, Encoding::UTF_8) }
     end
 
     # Every tool class; #toolset is the subset actually registered, in this order.
