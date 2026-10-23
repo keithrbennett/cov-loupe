@@ -26,6 +26,13 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 VENV_DIR="$(mktemp -d "${TMPDIR:-/tmp}/update-docs-deps.XXXXXX")"
 trap 'rm -rf "$VENV_DIR"' EXIT
 
+# The lock file header says Python 3.11 or newer, so do not resolve under an
+# older Python, which could pin packages the header misdescribes.
+if ! python3 -c 'import sys; sys.exit(sys.version_info < (3, 11))'; then
+  echo "Error: python3 must be Python 3.11 or newer." >&2
+  exit 1
+fi
+
 echo "→ Creating temporary virtual environment..."
 python3 -m venv "$VENV_DIR"
 
@@ -41,7 +48,7 @@ echo "→ Freezing dependencies..."
 NEW_LOCK="$VENV_DIR/requirements-lock.txt"
 cat > "$NEW_LOCK" <<EOF
 # Locked documentation build dependencies
-# Requires Python 3.10 or newer.
+# Requires Python 3.11 or newer.
 # Generated: $(date +%Y-%m-%d) by bin/update-docs-deps from requirements.txt.
 EOF
 # Older Pythons preinstall setuptools and wheel in new venvs; they are not docs

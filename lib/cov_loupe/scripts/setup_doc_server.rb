@@ -9,8 +9,15 @@ module CovLoupe
       include CommandExecution
 
       VENV_DIR = '.docs-venv'
+      PYTHON_VERSION_CHECK = ['python3', '-c', 'import sys; sys.exit(sys.version_info < (3, 11))'].freeze
 
       def call
+        _output, supported = run_command_with_status(PYTHON_VERSION_CHECK)
+        unless supported
+          abort_with('The documentation tools require Python 3.11 or newer, and python3 is older or ' \
+            'missing. Install Python 3.11 or newer, make sure python3 resolves to it, and run this again.')
+        end
+
         puts 'Setting up Python virtual environment...'
         run_command(['python3', '-m', 'venv', VENV_DIR], print_output: true)
 

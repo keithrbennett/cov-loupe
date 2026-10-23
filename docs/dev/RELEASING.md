@@ -48,7 +48,7 @@ and stage the files when ready. The task stops if the version is invalid, the
 
 ### 1. Documentation Review
 
-- [ ] **Release review prompt** (optional): [`dev/prompts/review/release-review.md`](../../dev/prompts/review/release-review.md) is a pre-release review prompt for AI agents
+- [ ] **Release review prompt** (optional): [`dev/prompts/review/release-review.md`](https://github.com/keithrbennett/cov-loupe/blob/main/dev/prompts/review/release-review.md) is a pre-release review prompt for AI agents
 
 - [ ] **RELEASE_NOTES.md**: Review release notes after running `release:bump`
     - For major releases: Ensure a `### Breaking` section lists every breaking change (see [Major releases](#major-releases))

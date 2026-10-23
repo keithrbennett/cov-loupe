@@ -8,6 +8,12 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   exit 1
 fi
 
+if ! python3 -c 'import sys; sys.exit(sys.version_info < (3, 11))'; then
+  echo "Error: the documentation tools require Python 3.11 or newer, and python3 is older or missing." >&2
+  echo "Install Python 3.11 or newer, make sure python3 resolves to it, and run this again." >&2
+  return 1
+fi
+
 python3 -m venv .docs-venv
 source .docs-venv/bin/activate
 

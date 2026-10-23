@@ -11,6 +11,19 @@ RSpec.describe CovLoupe::Scripts::SetupDocServer do
     before do
       allow($stdout).to receive(:puts)
       allow($stdout).to receive(:warn)
+      allow(script).to receive(:run_command_with_status)
+        .with(described_class::PYTHON_VERSION_CHECK).and_return(['', true])
+    end
+
+    it 'aborts before creating the venv when python3 is older than 3.11 or missing' do
+      allow(script).to receive(:run_command_with_status)
+        .with(described_class::PYTHON_VERSION_CHECK).and_return(['', false])
+      allow(script).to receive(:abort_with).and_raise(SystemExit)
+      allow(script).to receive(:run_command)
+
+      expect { script.call }.to raise_error(SystemExit)
+      expect(script).to have_received(:abort_with).with(/Python 3\.11 or newer/)
+      expect(script).not_to have_received(:run_command)
     end
 
     it 'creates a docs venv and installs locked dependencies' do

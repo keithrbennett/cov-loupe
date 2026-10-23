@@ -8,7 +8,7 @@ documentation dependencies separate from the Ruby gem dependencies in `.docs-ven
 Run `bin/set-up-python-for-doc-server`, `bin/start-doc-server`, and the `docs:setup` and `docs:serve` Rake
 tasks from the repository root; they use `.docs-venv` relative to the current directory. `bin/build-docs`,
 `bin/audit-docs-deps`, and `bin/update-docs-deps` resolve the repository paths themselves and work from any
-directory. The docs dependency set requires Python 3.10 or newer.
+directory. The docs dependency set requires Python 3.11 or newer.
 
 ## First-Time Setup
 
@@ -20,7 +20,7 @@ source bin/set-up-python-for-doc-server
 
 The script must be sourced because it creates and activates `.docs-venv` in the current shell. It installs the
 locked Python packages from `requirements-lock.txt`, including MkDocs and the configured MkDocs plugins. If
-your default `python3` is older than 3.10, make `python3` resolve to a newer interpreter before sourcing the
+your default `python3` is older than 3.11, make `python3` resolve to a newer interpreter before sourcing the
 script.
 
 After setup, start the server:
@@ -148,7 +148,7 @@ source bin/set-up-python-for-doc-server
 If `python3 -m venv` is unavailable on Ubuntu, install the system venv package for your Python version and run
 the setup command again.
 
-If setup reports that Python is too old, install Python 3.10 or newer, make sure `python3` resolves to it, and
+If setup reports that Python is too old, install Python 3.11 or newer, make sure `python3` resolves to it, and
 run the setup command again.
 
 If port `8000` is already in use, run MkDocs directly with another address:
