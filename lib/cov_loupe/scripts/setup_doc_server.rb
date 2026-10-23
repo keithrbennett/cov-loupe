@@ -22,6 +22,14 @@ module CovLoupe
         run_command(['python3', '-m', 'venv', VENV_DIR], print_output: true)
 
         puts 'Installing dependencies...'
+        install_dependencies
+
+        puts '✓ Documentation server setup complete.'
+      end
+
+      # Installs the locked dependencies into an existing venv. When every pin is already
+      # satisfied this is quick and needs no network access.
+      def install_dependencies
         pip_path = File.join(VENV_DIR, 'bin', 'pip')
         requirements_path = if File.exist?('requirements-lock.txt')
           'requirements-lock.txt'
@@ -29,8 +37,6 @@ module CovLoupe
           'requirements.txt'
         end
         run_command([pip_path, 'install', '-q', '-r', requirements_path], print_output: true)
-
-        puts '✓ Documentation server setup complete.'
       end
     end
   end

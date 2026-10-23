@@ -15,8 +15,11 @@ RSpec.describe CovLoupe::Scripts::StartDocServer do
     end
 
     context 'when mkdocs is found in the docs venv' do
+      let(:setup_script) { instance_double(CovLoupe::Scripts::SetupDocServer, install_dependencies: nil) }
+
       before do
         allow(script).to receive(:command_exists?).with('.docs-venv/bin/mkdocs').and_return(true)
+        allow(CovLoupe::Scripts::SetupDocServer).to receive(:new).and_return(setup_script)
       end
 
       it 'executes the venv mkdocs' do
@@ -29,6 +32,14 @@ RSpec.describe CovLoupe::Scripts::StartDocServer do
 
         expect(script).to receive(:exec).with('.docs-venv/bin/mkdocs', 'serve')
         script.call
+      end
+
+      it 'refreshes the venv dependencies first, so a stale venv does not serve old packages' do
+        allow(script).to receive(:exec) { expect(setup_script).to have_received(:install_dependencies) }
+
+        script.call
+
+        expect(script).to have_received(:exec)
       end
     end
 
@@ -64,7 +75,7 @@ RSpec.describe CovLoupe::Scripts::StartDocServer do
     end
 
     context 'when mkdocs is missing before setup' do
-      let(:setup_script) { instance_double(CovLoupe::Scripts::SetupDocServer, call: nil) }
+      let(:setup_script) { instance_double(CovLoupe::Scripts::SetupDocServer, call: nil, install_dependencies: nil) }
 
       before do
         allow(script).to receive(:command_exists?).with('mkdocs').and_return(false)
@@ -78,6 +89,7 @@ RSpec.describe CovLoupe::Scripts::StartDocServer do
         script.call
 
         expect(setup_script).to have_received(:call)
+        expect(setup_script).not_to have_received(:install_dependencies)
       end
     end
   end

@@ -27,7 +27,13 @@ module CovLoupe
 
       private def resolve_mkdocs_path
         mkdocs_path = File.join(VENV_DIR, 'bin', 'mkdocs')
-        return mkdocs_path if command_exists?(mkdocs_path)
+        if command_exists?(mkdocs_path)
+          # Like bin/build-docs, so a venv that predates a change to the lock file does not serve
+          # with stale packages.
+          puts 'Refreshing documentation dependencies...'
+          SetupDocServer.new.install_dependencies
+          return mkdocs_path
+        end
         return 'mkdocs' if command_exists?('mkdocs')
 
         puts 'Documentation virtual environment not found; setting it up...'
