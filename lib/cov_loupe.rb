@@ -72,6 +72,7 @@ module CovLoupe
         # Prepend environment options once at entry point
         env_argv = extract_env_opts
         full_argv = (env_argv + argv).map { |arg| utf8_arg(arg) }
+        full_argv.each { |arg| validate_arg_encoding(arg) }
         config = ConfigParser.parse(full_argv.dup)
       rescue OptionParser::ParseError => e
         # Loaded only on this error path to keep normal startup light.
@@ -221,6 +222,16 @@ module CovLoupe
 
       utf8 = arg.dup.force_encoding(Encoding::UTF_8)
       utf8.valid_encoding? ? utf8 : arg
+    end
+
+    # An argument whose bytes are invalid in its encoding (such as a file name that is not UTF-8)
+    # makes OptionParser and path handling raise ArgumentError, which reaches the user as a
+    # backtrace or an "unexpected error". Reject it up front with a message that names it.
+    private def validate_arg_encoding(arg)
+      return if !arg.is_a?(String) || arg.valid_encoding?
+
+      raise UsageError, "Argument #{arg.inspect} is not valid #{arg.encoding.name} text. " \
+                        'cov-loupe works with UTF-8 paths and options.'
     end
 
     private def extract_env_opts

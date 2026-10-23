@@ -81,6 +81,22 @@ RSpec.describe CovLoupe do
       expect(stderr).to include('Error: Context lines cannot be negative')
     end
 
+    [
+      ['a positional argument', ['summary', "lib/\xFF.rb"]],
+      ['an option value', ['--root', "/tmp/\xFF", 'list']],
+      ['an argument tagged US-ASCII', ['summary', (+"lib/\xFF.rb").force_encoding(Encoding::US_ASCII)]],
+    ].each do |description, argv|
+      it "exits with code 2 and a friendly message for #{description} that is not valid text" do
+        stderr = capture_stderr do
+          expect { described_class.run(argv) }.to raise_error(SystemExit) do |error|
+            expect(error.status).to eq(CovLoupe::ExitCodes::USAGE)
+          end
+        end
+        expect(stderr).to include('Error: Argument "', '\xFF', 'is not valid', 'UTF-8 paths and options')
+        expect(stderr).not_to include('unexpected error')
+      end
+    end
+
     it 'suggests the matching subcommand when a subcommand is given as an option' do
       stderr = capture_stderr do
         expect { described_class.run(%w[--list]) }.to raise_error(SystemExit)
