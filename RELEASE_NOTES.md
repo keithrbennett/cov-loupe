@@ -183,7 +183,13 @@
     - Fixed: when `Encoding.default_internal` was a non-UTF-8 encoding (for example with
       `RUBYOPT=-E:US-ASCII`), the MCP server crashed on a request containing non-ASCII
       characters, or with an encoding such as ISO-8859-1 misread its paths. It now reads and
-      writes JSON-RPC as UTF-8 with no transcoding.
+      writes JSON-RPC as UTF-8 with no transcoding, and writes its stderr log lines the same
+      way (under `RUBYOPT=-U` and `LANG=C`, a log line naming a non-ASCII path failed with
+      "log writing failed").
+    - Fixed: a command-line argument that is not valid text in its encoding, such as a file
+      name that is not UTF-8, crashed `OptionParser` with a backtrace (as an option value) or
+      reported "An unexpected error occurred" (as a path). It is now rejected with a usage
+      error that names the argument, and exit code 2.
     - CLI output still fails if the output stream transcodes to a non-UTF-8 encoding (for
       example `RUBYOPT=-U` under `LANG=C`). Encoding errors outside coverage loading, such as
       this CLI output failure or one in an MCP tool call, are now reported as a text encoding
