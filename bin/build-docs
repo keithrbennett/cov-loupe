@@ -2,6 +2,9 @@
 # frozen_string_literal: true
 
 # Builds documentation using mkdocs, creating a virtual environment if needed.
+# Installs the locked dependencies into the venv on every run, so an existing venv does not
+# build with stale packages after requirements-lock.txt changes. When every pin is already
+# satisfied this is quick and needs no network access.
 
 SCRIPT_DIR = File.expand_path('..', __dir__)
 VENV_DIR = File.join(SCRIPT_DIR, '.docs-venv')
@@ -13,12 +16,13 @@ end
 def mkdocs_command
   venv_bin = File.join(VENV_DIR, 'bin')
   mkdocs_path = File.join(venv_bin, 'mkdocs')
-  return mkdocs_path if File.executable?(mkdocs_path)
-  return 'mkdocs' if system('command -v mkdocs > /dev/null 2>&1')
+  unless File.executable?(mkdocs_path)
+    return 'mkdocs' if system('command -v mkdocs > /dev/null 2>&1')
 
-  puts 'Creating virtual environment...'
-  run('python3', '-m', 'venv', VENV_DIR)
-  run(File.join(venv_bin, 'pip'), 'install', '-r', File.join(SCRIPT_DIR, 'requirements-lock.txt'))
+    puts 'Creating virtual environment...'
+    run('python3', '-m', 'venv', VENV_DIR)
+  end
+  run(File.join(venv_bin, 'pip'), 'install', '-q', '-r', File.join(SCRIPT_DIR, 'requirements-lock.txt'))
 
   mkdocs_path
 end

@@ -63,6 +63,8 @@ mise.toml
 
 # Lockfile (this is a library; CI resolves dependencies fresh)
 /Gemfile.lock
+# Local per-engine lockfile copies (e.g. Gemfile.lock.jruby)
+/Gemfile.lock.*
 
 # RSpec
 /.rspec_status

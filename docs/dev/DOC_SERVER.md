@@ -133,7 +133,10 @@ Repository settings required for publishing:
 - `requirements.txt` - Broad dependency constraints for documentation tooling.
 - `bin/set-up-python-for-doc-server` - First-time interactive environment setup.
 - `bin/start-doc-server` - Starts `mkdocs serve` with the project configuration.
-- `bin/build-docs` - Runs `mkdocs build --strict` with the project configuration.
+- `bin/build-docs` - Runs `mkdocs build --strict` with the project configuration. It uses
+  `.docs-venv`, creating it if neither it nor a `mkdocs` on your `PATH` exists, and first
+  installs `requirements-lock.txt` into it, so a venv made from an older lock is updated.
+  Packages dropped from the lock stay installed; delete `.docs-venv` for an exact copy.
 - `bin/audit-docs-deps` - Audits `requirements-lock.txt` for known vulnerabilities with `pip-audit`.
 - `bin/update-docs-deps` - Regenerates `requirements-lock.txt` from `requirements.txt`.
 

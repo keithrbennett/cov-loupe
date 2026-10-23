@@ -11,6 +11,9 @@ jobs:
   test:
     name: Run tests (${{ matrix.os }}, Ruby ${{ matrix.ruby-version }})
     runs-on: ${{ matrix.os }}
+    # Fail a hung run (such as a spec waiting on a child process) instead of letting it use
+    # the 6-hour default. JRuby normally takes about 5 minutes, the others under 3.
+    timeout-minutes: ${{ matrix.ruby-version == 'jruby' && 20 || 10 }}
 
     strategy:
       fail-fast: false
@@ -63,6 +66,7 @@ jobs:
   compat:
     name: Compat (simplecov ${{ matrix.simplecov }})
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
