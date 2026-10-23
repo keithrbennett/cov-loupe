@@ -39,7 +39,10 @@ module CovLoupe
     end
 
     def load
-      raw = JSON.parse(File.read(@resolved_coverage_file))
+      # JSON is always UTF-8. 'UTF-8:UTF-8' reads it as UTF-8 and keeps it UTF-8; otherwise a
+      # non-ASCII path is tagged with the locale's encoding, or transcoded to
+      # Encoding.default_internal when that is set, and fails to load or is misread.
+      raw = JSON.parse(File.read(@resolved_coverage_file, encoding: 'UTF-8:UTF-8'))
       unless raw.is_a?(Hash) && raw['coverage'].is_a?(Hash) && raw['meta'].is_a?(Hash)
         raise CoverageDataError,
           'Not a SimpleCov coverage.json document (expected top-level "coverage" and "meta"): ' \

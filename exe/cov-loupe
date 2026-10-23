@@ -9,7 +9,26 @@ module CovLoupeExecutable
     install_signal_handlers
     handle_executable_flags
     ensure_ruby_version!
-    run_application
+    original_external = Encoding.default_external
+    use_utf8_default_external
+    run_application(original_external)
+  end
+
+  # Under the C locale (LANG=C), Ruby tags paths from the file system (Dir.pwd, Dir.glob,
+  # File.expand_path) as US-ASCII or BINARY, so a non-ASCII path never equals the UTF-8 paths in
+  # coverage.json. Make UTF-8 the default for this process then (also when -E sets US-ASCII or
+  # BINARY explicitly). A real locale encoding (such as ISO-8859-1) is left alone, because its
+  # paths are not UTF-8 bytes.
+  def self.use_utf8_default_external
+    return unless [Encoding::US_ASCII, Encoding::BINARY].include?(Encoding.default_external)
+
+    verbose = $VERBOSE
+    begin
+      $VERBOSE = nil # the assignment warns
+      Encoding.default_external = Encoding::UTF_8
+    ensure
+      $VERBOSE = verbose
+    end
   end
 
   def self.install_signal_handlers
@@ -45,12 +64,20 @@ module CovLoupeExecutable
     exit 0
   end
 
-  def self.run_application
-    root = File.expand_path('..', File.realpath(__FILE__))
-    lib  = File.join(root, 'lib')
+  # The gem's lib directory, next to this file's exe directory.
+  def self.lib_dir
+    File.expand_path('../../lib', File.realpath(__FILE__))
+  end
+
+  # original_external is Encoding.default_external as the process started; it still decides
+  # whether the default output character mode can draw Unicode.
+  def self.run_application(original_external)
+    lib = lib_dir
     $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
     require 'cov_loupe'
+    require 'cov_loupe/output_chars'
+    CovLoupe::OutputChars.fallback_encoding = original_external
     CovLoupe.run(ARGV)
   end
 end

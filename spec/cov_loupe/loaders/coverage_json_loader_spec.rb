@@ -25,6 +25,25 @@ RSpec.describe CovLoupe::CoverageJsonLoader do
       end
     end
 
+    [
+      { desc: 'a US-ASCII default external', external: Encoding::US_ASCII, internal: nil },
+      { desc: 'a US-ASCII default internal', external: Encoding::UTF_8, internal: Encoding::US_ASCII },
+    ].each do |tc|
+      it "reads non-ASCII paths as UTF-8 with #{tc[:desc]} encoding" do
+        Dir.mktmpdir do |dir|
+          coverage = { "lib/caf\u00e9\u2192.rb" => { 'lines' => [1] } }
+          path = File.join(dir, 'coverage.json')
+          File.write(path, JSON.generate(coverage_json_document(coverage: coverage)))
+
+          result = with_default_encodings(external: tc[:external], internal: tc[:internal]) do
+            described_class.load(resolved_coverage_file: path, logger: logger)
+          end
+
+          expect(result.coverage_map.keys).to eq(coverage.keys)
+        end
+      end
+    end
+
     it 'accepts an epoch number as the timestamp' do
       Dir.mktmpdir do |dir|
         document = coverage_json_document(coverage: {})

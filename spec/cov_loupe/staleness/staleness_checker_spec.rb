@@ -196,7 +196,7 @@ RSpec.describe CovLoupe::StalenessChecker do
         file = File.join(tmpdir, 'test.rb')
         File.write(file, "line1\nline2\n")
 
-        allow(File).to receive(:read).with(file).and_raise(tc[:error])
+        allow(File).to receive(:binread).with(file).and_raise(tc[:error])
 
         expect(checker.send(:safe_count_lines, file)).to eq(:read_error)
       end
@@ -207,6 +207,15 @@ RSpec.describe CovLoupe::StalenessChecker do
       File.write(file, "line1\nline2\nline3\n")
       # Count newlines to match SimpleCov (3 newlines = length 3)
       expect(checker.send(:safe_count_lines, file)).to eq(3)
+    end
+
+    it 'counts lines of non-ASCII source whatever the default external encoding' do
+      file = File.join(tmpdir, 'non_ascii.rb')
+      File.write(file, "x = 'café'\ny = 1\n")
+      count = with_default_encodings(external: Encoding::US_ASCII) do
+        checker.send(:safe_count_lines, file)
+      end
+      expect(count).to eq(2)
     end
 
     it 'counts lines correctly for file without final newline' do
@@ -419,7 +428,7 @@ RSpec.describe CovLoupe::StalenessChecker do
       create_test_file(test_file, "line1\nline2\n")
       coverage_map = { test_file => [1, 1] }
 
-      allow(File).to receive(:read).with(test_file)
+      allow(File).to receive(:binread).with(test_file)
         .and_raise(Errno::EACCES.new('Permission denied'))
 
       details = checker.check_project_with_lines!(coverage_map, coverage_files: [test_file])
@@ -433,7 +442,7 @@ RSpec.describe CovLoupe::StalenessChecker do
       error_checker = described_class.new(root: tmpdir, coverage_file: nil, mode: :error,
         timestamp: Time.now.to_i)
 
-      allow(File).to receive(:read).with(test_file)
+      allow(File).to receive(:binread).with(test_file)
         .and_raise(Errno::EACCES.new('Permission denied'))
 
       expect do
@@ -504,8 +513,8 @@ RSpec.describe CovLoupe::StalenessChecker do
     end
 
     it 'reports a newer file that cannot be read only as unreadable' do
-      allow(File).to receive(:read).and_call_original
-      allow(File).to receive(:read).with(file).and_raise(Errno::EACCES.new('Permission denied'))
+      allow(File).to receive(:binread).and_call_original
+      allow(File).to receive(:binread).with(file).and_raise(Errno::EACCES.new('Permission denied'))
 
       details = checker.check_project_with_lines!({ file => [1, 1] }, coverage_files: [file])
 

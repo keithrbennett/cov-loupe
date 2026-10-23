@@ -71,7 +71,7 @@ module CovLoupe
       begin
         # Prepend environment options once at entry point
         env_argv = extract_env_opts
-        full_argv = env_argv + argv
+        full_argv = (env_argv + argv).map { |arg| utf8_arg(arg) }
         config = ConfigParser.parse(full_argv.dup)
       rescue OptionParser::ParseError => e
         # Loaded only on this error path to keep normal startup light.
@@ -209,6 +209,18 @@ module CovLoupe
         log_target:    nil,
         mode:          :library
       )
+    end
+
+    # Under a non-UTF-8 locale (LANG=C), arguments arrive tagged BINARY or US-ASCII, and a
+    # non-ASCII path in them never equals the UTF-8 paths in coverage.json. Retag such arguments
+    # when their bytes are valid UTF-8. Arguments in a real locale encoding (such as ISO-8859-1)
+    # are left alone, because relabelling their bytes would change their characters.
+    private def utf8_arg(arg)
+      # ASCII-only arguments are retagged too: `-R .` expands to a path in the current directory.
+      return arg unless arg.is_a?(String) && [Encoding::BINARY, Encoding::US_ASCII].include?(arg.encoding)
+
+      utf8 = arg.dup.force_encoding(Encoding::UTF_8)
+      utf8.valid_encoding? ? utf8 : arg
     end
 
     private def extract_env_opts

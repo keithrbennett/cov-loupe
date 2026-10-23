@@ -27,12 +27,23 @@ RSpec.describe CovLoupe::OutputChars do
         expect(described_class.resolve_mode(:default, io: ascii_io)).to eq(:ascii)
       end
 
-      it 'returns :ascii when output encoding is nil' do
-        nil_encoding_io = instance_double(IO)
-        allow(nil_encoding_io).to receive(:external_encoding).and_return(nil)
-        allow(Encoding).to receive(:default_external).and_return(Encoding::US_ASCII)
+      [
+        { recorded: nil, external: Encoding::US_ASCII, mode: :ascii },
+        { recorded: nil, external: Encoding::UTF_8, mode: :fancy },
+        { recorded: Encoding::US_ASCII, external: Encoding::UTF_8, mode: :ascii },
+        { recorded: Encoding::UTF_8, external: Encoding::US_ASCII, mode: :fancy },
+      ].each do |tc|
+        it "returns :#{tc[:mode]} with recorded fallback #{tc[:recorded].inspect} and " \
+           "#{tc[:external]} default external when output encoding is nil" do
+          nil_encoding_io = instance_double(IO)
+          allow(nil_encoding_io).to receive(:external_encoding).and_return(nil)
+          allow(Encoding).to receive(:default_external).and_return(tc[:external])
+          described_class.fallback_encoding = tc[:recorded]
 
-        expect(described_class.resolve_mode(:default, io: nil_encoding_io)).to eq(:ascii)
+          expect(described_class.resolve_mode(:default, io: nil_encoding_io)).to eq(tc[:mode])
+        ensure
+          described_class.fallback_encoding = nil
+        end
       end
     end
 

@@ -312,7 +312,9 @@ To run the CLI from Ruby, call `CovLoupe.run` with the same arguments you would 
 command line. Control error logging and stack traces with `--error-mode` and `--log-file`
 in those arguments or in `COV_LOUPE_OPTS`. `CovLoupe.run` may call `exit`. Unlike the
 `cov-loupe` executable, it does not install `INT`/`TERM` handlers, check the Ruby version,
-or treat `-v`/`--version` anywhere in the arguments as a version request.
+treat `-v`/`--version` anywhere in the arguments as a version request, or set
+`Encoding.default_external` to UTF-8 under the C locale (see
+[Library API](LIBRARY_API.md#quick-start) for why that matters for non-ASCII paths).
 
 ```ruby
 CovLoupe.run(%w[--error-mode debug --log-file cov_loupe.log list])

@@ -757,9 +757,13 @@ clp -O f list  # f = fancy
   characters such as accented letters, curly quotes, or Japanese
 - Log files
 
-cov-loupe never rewrites data for display. Ruby itself escapes non-ASCII characters as `\uXXXX`
-in the `inspect` and `pretty_print` formats, and in error messages that quote a path the way
-`inspect` does, when the locale is not UTF-8. That depends on the locale, not on the output mode.
+cov-loupe never rewrites data for display. Ruby itself escapes non-ASCII characters as
+`\uXXXX` in the `inspect`, `pretty_print`, `amazing_print` and `puts` formats, and in error
+messages that quote a path the way `inspect` does, when Ruby's default encodings are not UTF-8.
+Under the C locale (`LANG=C`) the `cov-loupe` executable sets `Encoding.default_external` to
+UTF-8, so the characters are shown as they are there (unless `Encoding.default_internal` is
+set to a non-UTF-8 encoding, for example with `RUBYOPT=-E:US-ASCII`; then the other formats
+can fail to write non-ASCII characters at all).
 
 **Use cases:**
 - **CI/CD systems** whose logs or terminals cannot draw box-drawing characters: `clp -O ascii list`

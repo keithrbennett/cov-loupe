@@ -38,7 +38,8 @@ module CoverageFileMockHelpers
     document = coverage_json_document(coverage: coverage || default_coverage, timestamp: timestamp)
 
     allow(File).to receive(:read).and_call_original # Allow real File.read for other calls
-    allow(File).to receive(:read).with(end_with('coverage.json')).and_return(JSON.generate(document))
+    allow(File).to receive(:read).with(end_with('coverage.json'),
+      any_args).and_return(JSON.generate(document))
 
     allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:find_coverage_file)
       .and_wrap_original do |method, search_root, coverage_file: nil|
@@ -58,14 +59,14 @@ module CoverageFileMockHelpers
   # Defaults to matching coverage.json files only, allowing other File.read calls to work normally
   def mock_file_read_error(error, path_matcher: end_with('coverage.json'))
     allow(File).to receive(:read).and_call_original
-    allow(File).to receive(:read).with(path_matcher).and_raise(error)
+    allow(File).to receive(:read).with(path_matcher, any_args).and_raise(error)
   end
 
   # Mock JSON.parse to raise an error (for JSON parsing errors)
   # Defaults to matching coverage.json files only
   def mock_json_parse_error(error, json_content: 'invalid json')
     allow(File).to receive(:read).and_call_original
-    allow(File).to receive(:read).with(end_with('coverage.json')).and_return(json_content)
+    allow(File).to receive(:read).with(end_with('coverage.json'), any_args).and_return(json_content)
     allow(JSON).to receive(:parse).with(json_content).and_raise(error)
   end
 
@@ -73,6 +74,6 @@ module CoverageFileMockHelpers
   # Defaults to matching coverage.json files only, allowing other File.read calls to work normally
   def mock_coverage_data(data, path_matcher: end_with('coverage.json'))
     allow(File).to receive(:read).and_call_original
-    allow(File).to receive(:read).with(path_matcher).and_return(JSON.generate(data))
+    allow(File).to receive(:read).with(path_matcher, any_args).and_return(JSON.generate(data))
   end
 end

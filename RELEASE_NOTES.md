@@ -143,9 +143,50 @@
   still escape non-ASCII characters as `\uXXXX`; other output is no longer guaranteed to be
   ASCII-only. See
   [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#output-chars-ascii-no-longer-changes-data).
+- **Source and predicate files are read as UTF-8 in every locale.** They used to be read in
+  the locale's encoding, so a file in a non-UTF-8 encoding (such as ISO-8859-1) worked under a
+  matching locale. Now source display (`--source`) of such a file shows its non-ASCII bytes
+  raw in the table and escaped (such as `\xE9`) in the other text formats, and JSON or YAML
+  output fails with "Source file is not valid UTF-8"; a `validate` predicate file in such an
+  encoding fails to evaluate if it has non-ASCII characters outside comments, such as in
+  string literals. Convert such files to
+  UTF-8 (a `# encoding:` magic comment lets a predicate parse, but its non-ASCII strings then
+  do not match the UTF-8 coverage data). UTF-8 files, which are Ruby's default, are
+  unaffected. See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#source-and-predicate-files-are-read-as-utf-8).
 
 ### Other Changes
 
+- **Non-ASCII paths and source are read correctly under the C locale.** Under `LANG=C`:
+    - Fixed: a coverage file with a non-ASCII path didn't load, in the CLI or MCP
+      ("Invalid encoding in coverage data").
+    - Fixed: a non-ASCII path given on the command line wasn't found ("No coverage entry
+      found").
+    - Fixed: `list`, `totals`, the per-file commands (`summary`, `uncovered`, `detailed`) and
+      the matching MCP tools failed with an unexpected error when a source file contained
+      non-ASCII text.
+    - Fixed: a `validate` predicate file containing a non-ASCII string literal failed to
+      evaluate.
+    - Fixed: in a directory with a non-ASCII name, `-R .` and `-c coverage` failed, and
+      `--tracked-globs` reported covered non-ASCII files as missing.
+    - `coverage.json`, source files and predicate files are now always read as UTF-8, also
+      when `Encoding.default_internal` is set. For files in another encoding, see the
+      Breaking entry "Source and predicate files are read as UTF-8 in every locale".
+    - Under the C locale the `cov-loupe` executable sets `Encoding.default_external` to
+      UTF-8, so paths from the file system are UTF-8 too, and it treats CLI arguments that
+      arrive as raw bytes as UTF-8 when they are valid UTF-8.
+    - The default output character mode is still chosen from the original encoding, so it is
+      unchanged (on CRuby, CLI output under `LANG=C` still gets ASCII table borders).
+    - One visible change: under `LANG=C` the `inspect`, `pretty_print`, `amazing_print` and
+      `puts` formats now show non-ASCII characters as they are instead of escaping them as
+      `\uXXXX`.
+    - This covers input only. Non-ASCII output still fails if the output stream transcodes
+      to a non-UTF-8 encoding (for example `RUBYOPT=-U` under `LANG=C`), and MCP requests
+      containing non-ASCII characters still fail when `Encoding.default_internal` is a non-UTF-8 encoding.
+    - On JRuby, non-ASCII paths under `LANG=C` remain unsupported, because the JVM cannot
+      open them in that locale.
+    - Library callers must pass non-ASCII paths as UTF-8; see
+      [Quick Start](docs/user/LIBRARY_API.md#quick-start).
 - **Structured payloads now include `schema_version`.** Every library coverage hash (`list`, `summary_for`, `uncovered_for`, `detailed_for`, `raw_for`, `project_totals`), structured CLI output (all formats except `table`), and MCP tool payload now begins with an integer `schema_version` (currently `1`), separate from `CovLoupe::VERSION` and from SimpleCov's own `schema_version` in `coverage.json`. Draft 2020-12 JSON Schema files for each v1 payload shape ship under `lib/cov_loupe/schemas/v1/` and are resolvable via `CovLoupe::PayloadSchema.schema_path`. Adding a key is a compatible change and does not bump the version; see [Schema Version](docs/user/LIBRARY_API.md#schema-version) for the full compatibility rules.
 - **Quieter CLI stderr.** The `CLI parameters` line is now logged only when `--log-file` is a
   file. With the default `stderr` target, a CLI error is printed once, as its user-facing

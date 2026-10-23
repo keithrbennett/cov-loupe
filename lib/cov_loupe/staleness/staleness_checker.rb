@@ -253,8 +253,9 @@ module CovLoupe
     private def safe_count_lines(path)
       return 0 unless File.file?(path)
 
-      # Count newlines to match SimpleCov's line counting (not File.foreach which counts iterations)
-      File.read(path).count("\n")
+      # Count newlines to match SimpleCov's line counting (not File.foreach which counts iterations).
+      # Read bytes: counting in the locale's encoding raises on non-ASCII source under LANG=C.
+      File.binread(path).count("\n")
     rescue SystemCallError, IOError
       :read_error
     end

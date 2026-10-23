@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
+require 'tmpdir'
 
 RSpec.describe CovLoupe::Formatters::SourceFormatter do
   subject(:formatter) { described_class.new(color_enabled: color_enabled) }
@@ -26,7 +27,7 @@ RSpec.describe CovLoupe::Formatters::SourceFormatter do
       'lines' => coverage_lines
     )
     allow(File).to receive(:file?).with(abs_path).and_return(true)
-    allow(File).to receive(:readlines).with(abs_path, chomp: true)
+    allow(File).to receive(:readlines).with(abs_path, chomp: true, encoding: 'UTF-8:UTF-8')
       .and_return(source_content.lines(chomp: true))
   end
 
@@ -152,6 +153,64 @@ RSpec.describe CovLoupe::Formatters::SourceFormatter do
       expect(result).to be_a(Array)
       expect(result.size).to eq(5)
       expect(result.first).to include('code' => 'class Foo', 'line' => 1)
+    end
+
+    [
+      { desc: 'a US-ASCII default external', external: Encoding::US_ASCII, internal: nil },
+      { desc: 'a US-ASCII default internal', external: Encoding::UTF_8, internal: Encoding::US_ASCII },
+    ].each do |tc|
+      it "reads non-ASCII source as UTF-8 with #{tc[:desc]} encoding" do
+        Dir.mktmpdir do |dir|
+          File.write(File.join(dir, 'foo.rb'), "x = 'café'\n")
+          allow(model).to receive(:root).and_return(dir)
+          allow(model).to receive(:raw_for).with('foo.rb')
+            .and_return('file' => 'foo.rb', 'lines' => [1])
+          allow(File).to receive_messages(file?: true)
+          # and_call_original drops the keywords on JRuby; pass them on explicitly.
+          allow(File).to(receive(:readlines).and_wrap_original { |m, *args, **kw| m.call(*args, **kw) })
+
+          result = with_default_encodings(external: tc[:external], internal: tc[:internal]) do
+            formatter.build_source_payload(model, 'foo.rb', mode: :full)
+          end
+
+          expect(result.first['code']).to eq("x = 'café'")
+        end
+      end
+    end
+
+    context 'with a source file that is not valid UTF-8' do
+      let(:dir) { Dir.mktmpdir }
+
+      after { FileUtils.rm_rf(dir) }
+
+      before do
+        File.binwrite(File.join(dir, 'latin1.rb'), "x = 'caf\xE9'\ny = 1\n")
+        allow(model).to receive(:root).and_return(dir)
+        allow(model).to receive(:raw_for).with('latin1.rb')
+          .and_return('file' => 'latin1.rb', 'lines' => [1, 0])
+        allow(File).to receive_messages(file?: true)
+        allow(File).to(receive(:readlines).and_wrap_original { |m, *args, **kw| m.call(*args, **kw) })
+      end
+
+      it 'raises a FileError naming the file when UTF-8 is required' do
+        expect { formatter.build_source_payload(model, 'latin1.rb', mode: :full, require_utf8: true) }
+          .to raise_error(CovLoupe::FileError, /not valid UTF-8: latin1\.rb/)
+      end
+
+      it 'returns the bytes unchanged when UTF-8 is not required' do
+        rows = formatter.build_source_payload(model, 'latin1.rb', mode: :full)
+        expect(rows.first['code'].b).to eq("x = 'caf\xE9'".b)
+      end
+
+      it 'checks only the lines it emits' do
+        rows = formatter.build_source_payload(model, 'latin1.rb', mode: :uncovered, context: 0,
+          require_utf8: true)
+        expect(rows.map { |row| row['code'] }).to eq(['y = 1'])
+      end
+
+      it 'shows the bytes unchanged in text output' do
+        expect(formatter.format_source_for(model, 'latin1.rb', mode: :full).b).to include("caf\xE9".b)
+      end
     end
 
     it 'returns nil when raw coverage is missing' do
@@ -302,7 +361,7 @@ RSpec.describe CovLoupe::Formatters::SourceFormatter do
         'lines' => coverage_lines
       )
       allow(File).to receive(:file?).with(abs_path).and_return(true)
-      allow(File).to receive(:readlines).with(abs_path, chomp: true)
+      allow(File).to receive(:readlines).with(abs_path, chomp: true, encoding: 'UTF-8:UTF-8')
         .and_return(source_content.lines(chomp: true))
     end
 

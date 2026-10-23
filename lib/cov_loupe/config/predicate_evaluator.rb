@@ -46,7 +46,8 @@ module CovLoupe
           raise PredicateError, "Predicate file not found: #{path}"
         end
 
-        content = File.read(path)
+        # Ruby source is UTF-8 by default; don't let the locale decide its encoding.
+        content = File.read(path, encoding: 'UTF-8:UTF-8')
 
         # WARNING: The predicate code executes with full Ruby privileges.
         # It has unrestricted access to the file system, network, and system commands.

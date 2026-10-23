@@ -20,6 +20,7 @@ This document describes the breaking changes introduced in version 7.0.0.
 - [`project_validate` Requires `--allow-code-predicates`](#project_validate-requires---allow-code-predicates)
 - [Public API Declared](#public-api-declared)
 - [`--output-chars ascii` No Longer Changes Data](#output-chars-ascii-no-longer-changes-data)
+- [Source and Predicate Files Are Read as UTF-8](#source-and-predicate-files-are-read-as-utf-8)
 
 ---
 
@@ -361,3 +362,11 @@ In 6.x, ASCII mode (`-O ascii`, the MCP `output_chars: "ascii"` argument, the li
 In 7.0, ASCII mode changes only what cov-loupe draws itself: table borders use `+ - |`, and covered source lines are marked `+` instead of `✓`. Data is shown exactly as it is in every mode, so text output in ASCII mode can contain non-ASCII characters. In ASCII mode, successful JSON payloads still escape non-ASCII characters as `\uXXXX`, which encodes the data without changing it.
 
 **Migration:** if you relied on ASCII mode to guarantee ASCII-only text output, for example for a consumer that rejects other bytes, use JSON output in ASCII mode (`-O ascii -f json` in the CLI; `output_chars: "ascii"` with a JSON format for MCP tools), or transliterate the output yourself. Only successful JSON payloads are escaped, and only in ASCII mode: error messages (CLI stderr and MCP `Error: ...` results) and non-JSON formats such as tables and YAML are not. Otherwise no change is needed.
+
+## Source and Predicate Files Are Read as UTF-8 {#source-and-predicate-files-are-read-as-utf-8}
+
+In 6.x, source files (for source display with `--source`) and `validate` predicate files were read in the locale's encoding. A file in a non-UTF-8 encoding such as ISO-8859-1 therefore worked under a matching locale, while under the C locale (`LANG=C`) predicate files with non-ASCII string literals and JSON source output with non-ASCII characters failed.
+
+In 7.0 they are always read as UTF-8, Ruby's default source encoding, whatever the locale. Non-ASCII UTF-8 files now work under every locale, including `LANG=C`. A file in another encoding is no longer decoded with the locale: source display shows its non-ASCII bytes raw in the table and escaped (such as `\xE9`) in the other text formats, JSON or YAML source output fails with `Source file is not valid UTF-8`, and a predicate file fails to evaluate if it has non-ASCII characters outside comments, such as in string literals.
+
+**Migration:** if your source or predicate files are UTF-8 (or ASCII), no change is needed. Otherwise convert them to UTF-8, for example with `iconv -f ISO-8859-1 -t UTF-8`. A magic comment such as `# encoding: ISO-8859-1` lets a predicate file parse, but its non-ASCII strings are then in that encoding and do not match the UTF-8 paths in the coverage data, so converting is the reliable fix.

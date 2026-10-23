@@ -51,6 +51,11 @@ module CovLoupe
     }.freeze
 
     class << self
+      # The encoding that decides :default when the output stream has none. The executable sets
+      # it to Encoding.default_external as the process started, before it changes that to UTF-8
+      # for reading paths; otherwise Encoding.default_external is used.
+      attr_writer :fallback_encoding
+
       # Resolves :default mode to :fancy or :ascii based on output encoding.
       #
       # @param mode [Symbol] One of :default, :fancy, or :ascii
@@ -92,9 +97,13 @@ module CovLoupe
 
       private def default_mode_for(io)
         encoding = io.respond_to?(:external_encoding) ? io.external_encoding : nil
-        encoding ||= Encoding.default_external
+        encoding ||= fallback_encoding
 
         utf8_compatible?(encoding) ? :fancy : :ascii
+      end
+
+      private def fallback_encoding
+        @fallback_encoding || Encoding.default_external
       end
 
       # Checks if the encoding is UTF-8 compatible.

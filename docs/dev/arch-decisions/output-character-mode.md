@@ -121,7 +121,9 @@ end
 
 **Not affected:** file paths, source lines, error messages, backtraces, YAML, AmazingPrint,
 `inspect`, `puts` and `pretty_print` output, MCP error results, and log files. cov-loupe never
-rewrites them; Ruby's own `inspect` escapes non-ASCII when the locale is not UTF-8.
+rewrites them. Ruby's own `inspect` escapes non-ASCII when its default encodings are not UTF-8;
+under the C locale the executable sets `Encoding.default_external` to UTF-8, so it does not
+(unless `Encoding.default_internal` is set to a non-UTF-8 encoding).
 
 ## Amendment: ASCII mode never changes data
 
@@ -152,8 +154,11 @@ Consequences of passing data through unchanged:
   non-UTF-8 encoding: when it was given one explicitly (for example with `IO#set_encoding`) or
   when `Encoding.default_internal` is set (for example with `RUBYOPT=-U` in a non-UTF-8 locale).
   By default Ruby's standard streams do not transcode and write the bytes as they are.
-  (Separately, in a non-UTF-8 locale cov-loupe currently fails earlier, while reading a
-  `coverage.json` that contains non-ASCII paths.)
+  (This concerns output. On input, `coverage.json`, source and predicate files are always read as UTF-8,
+  and under the C locale the executable sets `Encoding.default_external` to UTF-8 so that
+  paths are UTF-8 too. When the output stream has no encoding, the `default` mode is decided
+  by `Encoding.default_external`: in the executable, its value as the process started, which
+  the executable records before changing it; for library callers, its current value.)
 - Table column widths use `String#length`, so wide (CJK) characters can misalign the right
   border. This applies in both modes.
 

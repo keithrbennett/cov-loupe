@@ -17,6 +17,10 @@ module CovLoupe
     #
     # @api private
     class BaseCommand
+      # Formats whose serializers cannot carry invalid UTF-8 in source lines.
+      UTF8_ONLY_FORMATS = %i[json pretty_json yaml].freeze
+      private_constant :UTF8_ONLY_FORMATS
+
       def initialize(cli_context)
         @cli = cli_context
         @config = cli_context.config
@@ -72,7 +76,7 @@ module CovLoupe
 
       protected def build_source_payload(model, path)
         source_formatter.build_source_payload(model, path, mode: config.source_mode,
-          context: config.source_context)
+          context: config.source_context, require_utf8: UTF8_ONLY_FORMATS.include?(config.format))
       end
 
       protected def print_source_for(model, path)

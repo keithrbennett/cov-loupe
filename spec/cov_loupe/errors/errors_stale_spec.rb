@@ -114,8 +114,8 @@ RSpec.describe CovLoupe::CoverageDataStaleError do
       before do
         FileUtils.mkdir_p(File.dirname(file))
         File.write(file, "line1\nline2\nline3\n")
-        # Mock File.read to simulate permission denied
-        allow(File).to receive(:read).with(file)
+        # Mock File.binread to simulate permission denied
+        allow(File).to receive(:binread).with(file)
           .and_raise(Errno::EACCES.new('Permission denied'))
       end
 

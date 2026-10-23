@@ -76,7 +76,7 @@ cov-loupe provides a global output character mode that chooses how cov-loupe dra
 
 ### What ASCII Mode Does Not Change
 
-- **Data** – File paths, source lines, error messages, backtraces, and YAML, AmazingPrint, `inspect`, `puts` and `pretty_print` output are never rewritten by cov-loupe, so they can contain non-ASCII characters in any mode (Ruby's own `inspect` escapes non-ASCII when the locale is not UTF-8)
+- **Data** – File paths, source lines, error messages, backtraces, and YAML, AmazingPrint, `inspect`, `puts` and `pretty_print` output are never rewritten by cov-loupe, so they can contain non-ASCII characters in any mode (Ruby's own `inspect` escapes non-ASCII when its default encodings are not UTF-8; under the C locale the executable sets `Encoding.default_external` to UTF-8, so it does not, unless `Encoding.default_internal` is set to a non-UTF-8 encoding)
 - **Log files** – Preserved in original encoding for debugging fidelity
 
 ### Testing

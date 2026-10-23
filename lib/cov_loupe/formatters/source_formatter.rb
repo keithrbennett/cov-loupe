@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative '../errors/errors'
 require_relative '../output_chars'
 require_relative '../paths/path_utils'
 
@@ -17,6 +18,11 @@ module CovLoupe
     #
     # @api private
     class SourceFormatter
+      # Ruby source is UTF-8 by default; read it as UTF-8 whatever the locale or
+      # Encoding.default_internal, so non-ASCII lines are not mis-tagged or transcoded.
+      SOURCE_ENCODING = 'UTF-8:UTF-8'
+      private_constant :SOURCE_ENCODING
+
       def initialize(color_enabled: true, output_chars: :default)
         @color_enabled = color_enabled
         @output_chars = output_chars
@@ -28,7 +34,7 @@ module CovLoupe
 
         abs = PathUtils.expand_from_root(raw['file'], model.root)
         lines_cov = raw['lines']
-        src = File.file?(abs) ? File.readlines(abs, chomp: true) : nil
+        src = File.file?(abs) ? File.readlines(abs, chomp: true, encoding: SOURCE_ENCODING) : nil
         return '[source not available]' unless src
 
         begin
@@ -44,16 +50,23 @@ module CovLoupe
         end
       end
 
-      def build_source_payload(model, path, mode: nil, context: 2)
+      # @param require_utf8 [Boolean] raise FileError if an emitted line is not valid UTF-8, for
+      #   formats that cannot carry such bytes (JSON, YAML); other formats escape them
+      def build_source_payload(model, path, mode: nil, context: 2, require_utf8: false)
         raw = fetch_raw(model, path)
         return nil unless raw
 
         abs = PathUtils.expand_from_root(raw['file'], model.root)
         lines_cov = raw['lines']
-        src = File.file?(abs) ? File.readlines(abs, chomp: true) : nil
+        src = File.file?(abs) ? File.readlines(abs, chomp: true, encoding: SOURCE_ENCODING) : nil
         return nil unless src
 
-        build_source_rows(src, lines_cov, mode: mode, context: context)
+        rows = build_source_rows(src, lines_cov, mode: mode, context: context)
+        if require_utf8 && !rows.all? { |row| row['code'].valid_encoding? }
+          raise FileError, "Source file is not valid UTF-8: #{raw['file']}. Convert it to UTF-8 " \
+                           'to include its source in JSON or YAML output.'
+        end
+        rows
       end
 
       def build_source_rows(src_lines, cov_lines, mode:, context: 2)

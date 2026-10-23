@@ -23,22 +23,29 @@ module TestIOHelpers
   end
 
   # Runs the block with Encoding.default_external set to UTF-8. Error messages show paths with
-  # String#inspect, which escapes non-ASCII unless it is UTF-8, and coverage.json with non-ASCII
-  # paths is read in it; pin it so examples with non-ASCII data do not depend on the locale.
-  def with_utf8_default_external
-    original = Encoding.default_external
-    assign_default_external(Encoding::UTF_8)
-    yield
-  ensure
-    assign_default_external(original)
+  # String#inspect, which escapes non-ASCII unless it is UTF-8; pin it so examples with non-ASCII
+  # data do not depend on the locale.
+  def with_utf8_default_external(&)
+    with_default_encodings(external: Encoding::UTF_8, internal: Encoding.default_internal, &)
   end
 
-  # Assigning Encoding.default_external warns; silence only the assignment, because the CLI
-  # prints errors with Kernel#warn, which is silent while $VERBOSE is nil.
-  def assign_default_external(encoding)
+  # Runs the block with the given default external and internal encodings, as a non-UTF-8 locale
+  # (LANG=C) or RUBYOPT=-E would set them, and restores the originals.
+  def with_default_encodings(external:, internal: nil)
+    original = [Encoding.default_external, Encoding.default_internal]
+    assign_default_encodings(external, internal)
+    yield
+  ensure
+    assign_default_encodings(*original)
+  end
+
+  # Assigning the default encodings warns; silence only the assignment, because the CLI prints
+  # errors with Kernel#warn, which is silent while $VERBOSE is nil.
+  def assign_default_encodings(external, internal)
     verbose = $VERBOSE
     $VERBOSE = nil
-    Encoding.default_external = encoding
+    Encoding.default_external = external
+    Encoding.default_internal = internal
   ensure
     $VERBOSE = verbose
   end

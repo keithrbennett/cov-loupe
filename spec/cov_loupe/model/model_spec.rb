@@ -36,7 +36,7 @@ RSpec.describe CovLoupe::CoverageModel do
       # Stub find_coverage_file to return a path, but File.read to raise ENOENT
       allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:find_coverage_file)
         .and_return('/some/path/coverage.json')
-      allow(File).to receive(:read).with('/some/path/coverage.json')
+      allow(File).to receive(:read).with('/some/path/coverage.json', any_args)
         .and_raise(Errno::ENOENT, 'No such file')
 
       expect do
@@ -637,7 +637,7 @@ RSpec.describe CovLoupe::CoverageModel do
 
       allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:find_coverage_file)
         .and_return(File.join(Dir.tmpdir, 'test_coverage_file.json'))
-      allow(File).to receive(:read).with(File.join(Dir.tmpdir, 'test_coverage_file.json'))
+      allow(File).to receive(:read).with(File.join(Dir.tmpdir, 'test_coverage_file.json'), any_args)
         .and_return(JSON.generate(coverage_file))
 
       test_model = described_class.new(root: root)
@@ -662,7 +662,7 @@ RSpec.describe CovLoupe::CoverageModel do
 
       allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:find_coverage_file)
         .and_return(File.join(Dir.tmpdir, 'test_coverage_file.json'))
-      allow(File).to receive(:read).with(File.join(Dir.tmpdir, 'test_coverage_file.json'))
+      allow(File).to receive(:read).with(File.join(Dir.tmpdir, 'test_coverage_file.json'), any_args)
         .and_return(JSON.generate(coverage_file))
 
       test_model = described_class.new(root: root)

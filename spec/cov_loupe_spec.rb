@@ -33,6 +33,23 @@ RSpec.describe CovLoupe do
       end
     end
 
+    it 'retags arguments that are valid UTF-8, as they arrive under a non-UTF-8 locale' do
+      cli = instance_double(described_class::CoverageCLI, run: nil)
+      allow(described_class::CoverageCLI).to receive(:new).and_return(cli)
+      path = 'lib/café.rb'
+      invalid = (+"lib/\xFF.rb").force_encoding(Encoding::BINARY)
+      latin1 = path.encode(Encoding::ISO_8859_1)
+      dot = '.'.encode(Encoding::US_ASCII)
+
+      described_class.run(['summary', path.b, invalid, latin1, dot, :list])
+
+      expect(cli).to have_received(:run) do |argv, **|
+        expect(argv).to eq(['summary', path, invalid, latin1, '.', :list])
+        expect(argv.first(5).map(&:encoding)).to eq(
+          [Encoding::UTF_8, Encoding::UTF_8, Encoding::BINARY, Encoding::ISO_8859_1, Encoding::UTF_8])
+      end
+    end
+
     it 'exits with code 2 and shows friendly error for invalid options' do
       suppress_io do
         expect do
@@ -80,6 +97,48 @@ RSpec.describe CovLoupe do
   end
 
   describe 'executable' do
+    it 'handles non-ASCII paths in a non-ASCII directory under LANG=C' do
+      skip 'LANG=C is a Unix locale' if described_class.windows?
+      skip 'JRuby cannot open non-ASCII paths under LANG=C' if RUBY_ENGINE == 'jruby'
+
+      require 'open3'
+      require 'rbconfig'
+
+      exe = File.expand_path('../exe/cov-loupe', __dir__)
+      lib_path = File.expand_path('../lib', __dir__)
+      Dir.mktmpdir do |tmp|
+        root = File.join(tmp, 'prój')
+        FileUtils.mkdir_p(File.join(root, 'lib'))
+        File.write(File.join(root, 'lib/café.rb'), "x = 'café'\n")
+        FileUtils.mkdir_p(File.join(root, 'coverage'))
+        File.write(File.join(root, 'coverage/coverage.json'), JSON.generate(coverage_json_document(
+          coverage: { 'lib/café.rb' => { 'lines' => [1] } }, timestamp: Time.now.to_i + 60)))
+
+        rubyopt = ENV['RUBYOPT'].to_s.split.grep(/\A-[rI]\S/).join(' ')
+        run = ->(*args) do
+          out, err, status = Open3.capture3(
+            # Keep RUBYOPT's requires and load paths (Bundler), but not options such as -E that
+            # would override LANG=C.
+            { 'LANG' => 'C', 'LC_ALL' => 'C', 'COV_LOUPE_OPTS' => nil, 'RUBYOPT' => rubyopt },
+            RbConfig.ruby, '-I', lib_path, exe, '-R', '.', *args,
+            chdir: root, binmode: true
+          )
+          [out.force_encoding(Encoding::UTF_8), err, status]
+        end
+        list_out, list_err, list_status = run.call('--tracked-globs', 'lib/**/*.rb', 'list')
+        summary_out, summary_err, summary_status = run.call('-c', 'coverage', 'summary', 'lib/café.rb')
+
+        aggregate_failures do
+          expect(list_status).to be_success, list_err
+          expect(list_out).to include('lib/café.rb', 'Files: total 1, ok 1')
+          expect(list_out).not_to include('Missing tracked files')
+          expect(list_out).to start_with('+-') # the C locale still selects ASCII borders
+          expect(summary_status).to be_success, summary_err
+          expect(summary_out).to include('lib/café.rb', '100.00%')
+        end
+      end
+    end
+
     it 'does not require RubyGems when RubyGems starts disabled' do
       require 'open3'
       require 'rbconfig'
@@ -171,6 +230,36 @@ RSpec.describe CovLoupe do
       end
     end
 
+    {
+      'US-ASCII'   => 'UTF-8',
+      'ASCII-8BIT' => 'UTF-8',
+      'ISO-8859-1' => 'ISO-8859-1',
+      'UTF-8'      => 'UTF-8',
+    }.each do |original, expected|
+      it "makes a #{original} default external encoding #{expected}" do
+        require 'open3'
+        require 'rbconfig'
+
+        source = "#{executable_prelude}CovLoupeExecutable.use_utf8_default_external\n" \
+                 'puts Encoding.default_external'
+        out, status = Open3.capture2(RbConfig.ruby, '-E', original, '-e', source)
+
+        expect(status).to be_success
+        expect(out.chomp).to eq(expected)
+      end
+    end
+
+    it 'finds the gem lib directory when lib is not on the load path' do
+      require 'open3'
+      require 'rbconfig'
+
+      out, status = Open3.capture2(RbConfig.ruby, '-e',
+        "#{executable_prelude}puts CovLoupeExecutable.lib_dir")
+
+      expect(status).to be_success
+      expect(out.chomp).to eq(File.realpath(File.expand_path('../lib', __dir__)))
+    end
+
     it 'exits with the signal status when stderr is closed' do
       skip 'Signal handling is Unix-specific' if described_class.windows?
 
@@ -201,8 +290,8 @@ RSpec.describe CovLoupe do
       expect(status.exitstatus).to eq(143)
     end
 
-    # Ruby source that loads the executable without running it and installs its signal traps.
-    def signal_trap_prelude
+    # Ruby source that loads the executable without running it.
+    def executable_prelude
       exe = File.expand_path('../exe/cov-loupe', __dir__)
       <<~RUBY
         executable = File.read(#{exe.dump})
@@ -210,8 +299,12 @@ RSpec.describe CovLoupe do
         raise 'could not remove executable invocation' if executable == executable_without_run
 
         eval(executable_without_run, TOPLEVEL_BINDING, #{exe.dump})
-        CovLoupeExecutable.install_signal_handlers
       RUBY
+    end
+
+    # Ruby source that loads the executable without running it and installs its signal traps.
+    def signal_trap_prelude
+      "#{executable_prelude}CovLoupeExecutable.install_signal_handlers\n"
     end
 
     def wait_for_ready_marker(stderr, wait_thr, timeout_seconds = INTEGRATION_TIMEOUT)

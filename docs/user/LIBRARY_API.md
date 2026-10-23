@@ -100,6 +100,13 @@ unusable explicit log target raises `CovLoupe::LoggingError` when the context is
 created. The ambient default context is also quiet; CLI and MCP entry points
 create their own mode-specific contexts with `stderr` as the default target.
 
+Paths in `coverage.json` are UTF-8. Under the C locale (`LANG=C`), Ruby tags `ARGV`,
+`Dir.pwd`, `Dir.glob` and `File.expand_path` results as US-ASCII or BINARY, so non-ASCII
+paths, including the ones cov-loupe finds itself under a non-ASCII project root, do not
+match. Set `Encoding.default_external = Encoding::UTF_8` before using cov-loupe, as the
+`cov-loupe` executable does, and pass non-ASCII paths from `ARGV` as UTF-8. (That also makes
+the `:default` output character mode draw Unicode table borders.)
+
 ## Schema Version
 
 The hash returned by each public coverage query (`list`, `summary_for`, `uncovered_for`, `detailed_for`, `raw_for`, and `project_totals`) starts with `'schema_version' => CovLoupe::SCHEMA_VERSION`. The value is currently `1`. The key stays with the hash when you serialize it to JSON, YAML, or Marshal. It is independent of the gem's `CovLoupe::VERSION` and of SimpleCov's `schema_version` in the input `coverage.json` file. Methods returning text or status values do not add the key.
