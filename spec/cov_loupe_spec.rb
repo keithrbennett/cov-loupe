@@ -115,22 +115,28 @@ RSpec.describe CovLoupe do
           coverage: { 'lib/café.rb' => { 'lines' => [1] } }, timestamp: Time.now.to_i + 60)))
 
         rubyopt = ENV['RUBYOPT'].to_s.split.grep(/\A-[rI]\S/).join(' ')
-        run = ->(*args, extra_rubyopt: nil) do
+        run = ->(*args, extra_rubyopt: nil, stdin_data: '', opts: nil) do
           out, err, status = Open3.capture3(
             # Keep RUBYOPT's requires and load paths (Bundler), but not options such as -E that
             # would override LANG=C.
-            { 'LANG' => 'C', 'LC_ALL' => 'C', 'COV_LOUPE_OPTS' => nil,
+            { 'LANG' => 'C', 'LC_ALL' => 'C', 'COV_LOUPE_OPTS' => opts,
               'RUBYOPT' => [rubyopt, extra_rubyopt].compact.join(' ') },
             RbConfig.ruby, '-I', lib_path, exe, '-R', '.', *args,
-            chdir: root, binmode: true
+            chdir: root, binmode: true, stdin_data: stdin_data
           )
           [out.force_encoding(Encoding::UTF_8), err, status]
         end
-        list_out, list_err, list_status = run.call('--tracked-globs', 'lib/**/*.rb', 'list')
+        # Environment values arrive as raw bytes under LANG=C too
+        list_out, list_err, list_status = run.call('list', opts: '--tracked-globs lib/café*.rb')
         summary_out, summary_err, summary_status = run.call('-c', 'coverage', 'summary', 'lib/café.rb')
         # -U sets Encoding.default_internal, so $stdout transcodes to US-ASCII and the default
         # report cannot write the non-ASCII path.
         _out, transcode_err, transcode_status = run.call(extra_rubyopt: '-U')
+        # With Encoding.default_internal set to US-ASCII, the MCP request must still be read as UTF-8.
+        request = { jsonrpc: '2.0', id: 1, method: 'tools/call',
+                    params: { name: 'file_coverage_summary', arguments: { path: 'lib/café.rb' } } }
+        mcp_out, mcp_err, mcp_status = run.call('-m', 'mcp', '--log-file', 'off',
+          extra_rubyopt: '-E:US-ASCII', stdin_data: "#{JSON.generate(request)}\n")
 
         aggregate_failures do
           expect(list_status).to be_success, list_err
@@ -141,8 +147,34 @@ RSpec.describe CovLoupe do
           expect(summary_out).to include('lib/café.rb', '100.00%')
           expect(transcode_status.exitstatus).to eq(1)
           expect(transcode_err).to start_with('Text encoding error: U+00E9 from UTF-8 to US-ASCII. ')
+          expect(mcp_status).to be_success, mcp_err
+          mcp_result = JSON.parse(mcp_out)['result']
+          expect(mcp_result['isError']).to be(false), mcp_out
+          expect(JSON.parse(mcp_result.dig('content', 0, 'text'))).to include(
+            'file' => 'lib/café.rb', 'summary' => include('percentage' => 100.0))
         end
       end
+    end
+
+    # The in-process specs pin the default output style to the UTF-8 one, so check here that the
+    # executable records a UTF-8 starting encoding and picks Unicode borders under a UTF-8 locale.
+    it 'selects Unicode table borders under a UTF-8 locale' do
+      skip 'LANG is a Unix locale setting' if described_class.windows?
+
+      require 'open3'
+      require 'rbconfig'
+
+      env = { 'LANG' => 'C.UTF-8', 'LC_ALL' => 'C.UTF-8', 'COV_LOUPE_OPTS' => nil,
+              'RUBYOPT' => ENV['RUBYOPT'].to_s.split.grep(/\A-[rI]\S/).join(' ') }
+      locale, = Open3.capture2(env, RbConfig.ruby, '-e', 'print Encoding.default_external')
+      skip 'the C.UTF-8 locale is not installed' unless locale == 'UTF-8'
+
+      out, err, status = Open3.capture3(env, RbConfig.ruby, '-I', File.expand_path('../lib', __dir__),
+        File.expand_path('../exe/cov-loupe', __dir__), '-R', File.expand_path('fixtures/project1', __dir__),
+        'list', binmode: true)
+
+      expect(status).to be_success, err
+      expect(out.force_encoding(Encoding::UTF_8)).to start_with('┌')
     end
 
     it 'does not require RubyGems when RubyGems starts disabled' do

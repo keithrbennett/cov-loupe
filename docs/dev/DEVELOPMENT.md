@@ -30,6 +30,17 @@ into `.git/hooks` are no longer used. CI runs the same checks regardless.
 bundle exec rspec
 ```
 
+The suite must pass in any locale. CI also runs it under the C locale, where Ruby's default
+external encoding is US-ASCII; to check a change that touches paths, arguments or output:
+
+```sh
+LANG=C LC_ALL=C bundle exec rspec
+```
+
+Specs see captured output as UTF-8 and pick the default output character mode as on a UTF-8
+terminal; a spec that needs another encoding sets it explicitly (see `with_default_encodings` in
+`spec/support/io_helpers.rb`).
+
 ## Project-Specific Patterns
 
 **All Ruby files start with:**

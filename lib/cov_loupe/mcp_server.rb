@@ -29,8 +29,19 @@ module CovLoupe
           instructions:   instructions,
           server_context: context
         )
-        ::MCP::Server::Transports::StdioTransport.new(server).open
+        transport = ::MCP::Server::Transports::StdioTransport.new(server)
+        use_utf8_stdio
+        transport.open
       end
+    end
+
+    # The transport sets only the external encoding of stdin and stdout, so when
+    # Encoding.default_internal is set (RUBYOPT=-U or -E) reads are still transcoded into it, and a
+    # request with non-ASCII characters crashes the server or loses its UTF-8. JSON-RPC over stdio
+    # is UTF-8, so read and write it with no transcoding, as cov-loupe reads its files.
+    private def use_utf8_stdio
+      $stdin.set_encoding('UTF-8:UTF-8')
+      $stdout.set_encoding('UTF-8:UTF-8')
     end
 
     # Every tool class; #toolset is the subset actually registered, in this order.

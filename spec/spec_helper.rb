@@ -84,6 +84,10 @@ RSpec.configure do |config|
 
   config.before do
     CovLoupe::ModelDataCache.instance.clear
+    # Decide the default output character mode as on a UTF-8 terminal, whatever the locale the
+    # suite runs under, as the executable does by recording the encoding it started with.
+    # output_chars_spec covers the detection itself with explicit encodings.
+    CovLoupe::OutputChars.fallback_encoding = Encoding::UTF_8
   end
 
   config.include TestIOHelpers

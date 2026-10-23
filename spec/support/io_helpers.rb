@@ -7,8 +7,9 @@ module TestIOHelpers
   # If swallow_exit: true, SystemExit is rescued and returned as the block value.
   def capture_io(swallow_exit: false)
     old_out, old_err = $stdout, $stderr
-    $stdout = StringIO.new
-    $stderr = StringIO.new
+    # UTF-8 streams, like a UTF-8 terminal; a bare StringIO takes the locale's encoding.
+    $stdout = StringIO.new(String.new(encoding: Encoding::UTF_8))
+    $stderr = StringIO.new(String.new(encoding: Encoding::UTF_8))
     result = begin
       yield
     rescue SystemExit => e

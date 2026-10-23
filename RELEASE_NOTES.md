@@ -180,14 +180,15 @@
     - One visible change: under `LANG=C` the `inspect`, `pretty_print`, `amazing_print` and
       `puts` formats now show non-ASCII characters as they are instead of escaping them as
       `\uXXXX`.
-    - This covers input only. Non-ASCII output still fails if the output stream transcodes
-      to a non-UTF-8 encoding (for example `RUBYOPT=-U` under `LANG=C`), and MCP requests
-      containing non-ASCII characters still fail when `Encoding.default_internal` is a non-UTF-8 encoding.
-      Encoding errors outside coverage loading, such as this CLI output failure or one in an
-      MCP tool call, are now reported as a text encoding error (`CovLoupe::TextEncodingError`)
-      instead of "Invalid encoding in coverage data", which is now used only for errors while
-      loading the coverage data. (The MCP `default_internal` failure above happens in the
-      transport, before a tool runs, so it is unchanged.)
+    - Fixed: when `Encoding.default_internal` was a non-UTF-8 encoding (for example with
+      `RUBYOPT=-E:US-ASCII`), the MCP server crashed on a request containing non-ASCII
+      characters, or with an encoding such as ISO-8859-1 misread its paths. It now reads and
+      writes JSON-RPC as UTF-8 with no transcoding.
+    - CLI output still fails if the output stream transcodes to a non-UTF-8 encoding (for
+      example `RUBYOPT=-U` under `LANG=C`). Encoding errors outside coverage loading, such as
+      this CLI output failure or one in an MCP tool call, are now reported as a text encoding
+      error (`CovLoupe::TextEncodingError`) instead of "Invalid encoding in coverage data",
+      which is now used only for errors while loading the coverage data.
     - On JRuby, non-ASCII paths under `LANG=C` remain unsupported, because the JVM cannot
       open them in that locale.
     - Library callers must pass non-ASCII paths as UTF-8; see
