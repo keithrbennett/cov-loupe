@@ -201,11 +201,11 @@
   does, instead of exiting with a raw Ruby backtrace.
 - **Custom CLI error handlers see an unexpected error once.** A handler passed to
   `CoverageCLI.new(error_handler:)` now receives an unexpected (non-`CovLoupe::Error`) error
-  from a subcommand or the default report once, as the original exception with `reraise: false`. Previously it was
-  called twice: first with `reraise: true`, expected to raise the converted error, then with
-  that converted error. A handler may provide `convert_standard_error` to control the
-  conversion. As before, the handler is called for every error the CLI reports except invalid
-  options, whatever the log target. `CoverageCLI` and custom error handlers are internal as
+  from a subcommand or the default report once, as the original exception with
+  `reraise: false`. Previously it was called twice: first with `reraise: true`, expected to
+  raise the converted error, then with that converted error. A handler may provide
+  `convert_standard_error` to control the conversion. As before, the handler is called for
+  every error the CLI reports except invalid options, whatever the log target. `CoverageCLI` and custom error handlers are internal as
   of 7.0; see [Public API and Versioning](docs/user/LIBRARY_API.md#public-api-and-versioning).
 - **Misplaced global option hints keep option values.** `cov-loupe totals --format json` now
   suggests `cov-loupe --format json totals` (previously `--format totals`). The suggested

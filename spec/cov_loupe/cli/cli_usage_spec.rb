@@ -206,14 +206,12 @@ RSpec.describe CovLoupe::CoverageCLI do
       end
     end
 
-    context 'with a cov-loupe error in the default report' do
-      it 'prints its friendly message without a backtrace' do
-        Dir.mktmpdir do |dir|
-          _out, err, status = run_cli_with_status('--root', dir)
-          expect(status).to eq(1)
-          expect(err).to start_with('File error: Could not find coverage.json')
-          expect(err).not_to include('.rb:')
-        end
+    context 'with an unexpected error in the default report' do
+      it 'prints a friendly message without a backtrace' do
+        allow(CovLoupe::Presenters::ProjectCoveragePresenter).to receive(:new).and_raise(RuntimeError, 'boom')
+        _out, err, status = run_fixture_cli_with_status
+        expect(status).to eq(1)
+        expect(err).to eq("An unexpected error occurred: boom\n")
       end
     end
 
@@ -317,6 +315,14 @@ RSpec.describe CovLoupe::CoverageCLI do
           expect(handler.handled.map(&:last)).to eq(["subcommand 'totals'"])
         end
       end
+    end
+
+    it 'passes an unexpected error in the default report to the handler once' do
+      allow(CovLoupe::Presenters::ProjectCoveragePresenter).to receive(:new).and_raise(RuntimeError, 'boom')
+      err, status = run_with_handler('--log-file', 'stderr')
+      expect(status).to eq(1)
+      expect(err.scan('An unexpected error occurred: boom').size).to eq(1)
+      expect(handler.handled.map(&:last)).to eq(['default report'])
     end
 
     it "uses the handler's convert_standard_error when it provides one" do
