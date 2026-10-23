@@ -206,6 +206,34 @@ RSpec.describe CovLoupe::CoverageCLI do
       end
     end
 
+    context 'with a cov-loupe error in the default report' do
+      it 'prints its friendly message without a backtrace' do
+        Dir.mktmpdir do |dir|
+          _out, err, status = run_cli_with_status('--root', dir)
+          expect(status).to eq(1)
+          expect(err).to start_with('File error: Could not find coverage.json')
+          expect(err).not_to include('.rb:')
+        end
+      end
+    end
+
+    # As when writing non-ASCII output to a stream that transcodes to US-ASCII
+    context 'with an encoding error while reporting' do
+      before do
+        allow(CovLoupe::Presenters::ProjectCoveragePresenter).to receive(:new)
+          .and_raise(Encoding::UndefinedConversionError, 'U+00E9 from UTF-8 to US-ASCII')
+      end
+
+      { 'the list subcommand' => ['list'], 'the default report' => [] }.each do |desc, args|
+        it "reports a text encoding error without blaming the coverage data, for #{desc}" do
+          _out, err, status = run_fixture_cli_with_status(*args)
+          expect(status).to eq(1)
+          expect(err).to start_with('Text encoding error: U+00E9 from UTF-8 to US-ASCII.')
+          expect(err).not_to include('coverage data')
+        end
+      end
+    end
+
     # Through the full entry point, as the cov-loupe executable runs it
     context 'with an unknown subcommand' do
       it 'prints it to stderr exactly once' do

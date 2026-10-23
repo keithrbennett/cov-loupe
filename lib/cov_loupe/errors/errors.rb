@@ -13,6 +13,7 @@ module CovLoupe
   #     ├── ConfigurationError     — setup/config problems
   #     │   └── LoggingError       — logging target setup/write problems
   #     ├── UnknownError           — unclassified exceptions
+  #     ├── TextEncodingError      — encoding conversion failures outside coverage loading
   #     ├── PredicateError         — user predicate failed to load or run
   #     ├── FileError              — file/path problems
   #     │     ├── FileNotFoundError
@@ -74,6 +75,16 @@ module CovLoupe
   class UnknownError < Error
     def user_friendly_message
       "An unexpected error occurred: #{message}"
+    end
+  end
+
+  # Text could not be converted between encodings, outside coverage loading (for example,
+  # output written to a stream that transcodes to a non-UTF-8 encoding).
+  #
+  # @api public
+  class TextEncodingError < Error
+    def user_friendly_message
+      "Text encoding error: #{message}"
     end
   end
 

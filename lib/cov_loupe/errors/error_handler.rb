@@ -66,7 +66,7 @@ module CovLoupe
       when JSON::ParserError
         CoverageDataError.new("Invalid coverage data format: #{error.message}", error)
       when EncodingError
-        CoverageDataError.new("Invalid encoding in coverage data: #{error.message}", error)
+        convert_encoding_error(error, context)
       when RangeError
         CoverageDataError.new("Numeric overflow or range error: #{error.message}", error)
       when TypeError
@@ -95,6 +95,18 @@ module CovLoupe
       else
         filename = extract_filename(error.message)
         FilePermissionError.new("Permission denied accessing file: #{filename}", error)
+      end
+    end
+
+    # Outside coverage loading, an encoding error can come from output, a path argument or an
+    # encoding setting, so the message names the likely settings rather than one cause.
+    private def convert_encoding_error(error, context)
+      if context == :coverage_loading
+        CoverageDataError.new("Invalid encoding in coverage data: #{error.message}", error)
+      else
+        TextEncodingError.new("#{error.message.chomp('.')}. cov-loupe works with UTF-8 text; check that " \
+          'the locale, any Ruby encoding options (such as -E or -U in RUBYOPT) and any paths ' \
+          'you pass use UTF-8.', error)
       end
     end
 

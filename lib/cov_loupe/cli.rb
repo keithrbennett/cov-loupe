@@ -69,7 +69,7 @@ module CovLoupe
         if @cmd
           run_subcommand(@cmd, @cmd_args)
         else
-          show_default_report(sort_order: config.sort_order)
+          run_default_report
         end
       end
     rescue OptionParser::ParseError => e
@@ -197,19 +197,28 @@ module CovLoupe
     end
 
     private def run_subcommand(cmd, args)
-      # Check if user mistakenly placed global options after the subcommand
-      check_for_misplaced_global_options(cmd, args)
+      with_user_facing_errors("subcommand '#{cmd}'") do
+        # Check if user mistakenly placed global options after the subcommand
+        check_for_misplaced_global_options(cmd, args)
 
-      command = Commands::CommandFactory.create(cmd, self)
-      command.execute(args)
+        command = Commands::CommandFactory.create(cmd, self)
+        command.execute(args)
+      end
+    end
+
+    private def run_default_report
+      with_user_facing_errors('default report') { show_default_report(sort_order: config.sort_order) }
+    end
+
+    private def with_user_facing_errors(log_context)
+      yield
     rescue CovLoupe::Error => e
       handle_user_facing_error(e)
     rescue => e
       # Log the original error (not the conversion) so its class reaches the log.
       # Custom error handlers need not implement conversion.
       converter = error_handler.respond_to?(:convert_standard_error) ? error_handler : ErrorHandler.new
-      handle_user_facing_error(converter.convert_standard_error(e),
-        log_error: e, log_context: "subcommand '#{cmd}'")
+      handle_user_facing_error(converter.convert_standard_error(e), log_error: e, log_context: log_context)
     end
 
     private def handle_option_parser_error(error, argv: [])

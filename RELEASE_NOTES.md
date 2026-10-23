@@ -183,6 +183,11 @@
     - This covers input only. Non-ASCII output still fails if the output stream transcodes
       to a non-UTF-8 encoding (for example `RUBYOPT=-U` under `LANG=C`), and MCP requests
       containing non-ASCII characters still fail when `Encoding.default_internal` is a non-UTF-8 encoding.
+      Encoding errors outside coverage loading, such as this CLI output failure or one in an
+      MCP tool call, are now reported as a text encoding error (`CovLoupe::TextEncodingError`)
+      instead of "Invalid encoding in coverage data", which is now used only for errors while
+      loading the coverage data. (The MCP `default_internal` failure above happens in the
+      transport, before a tool runs, so it is unchanged.)
     - On JRuby, non-ASCII paths under `LANG=C` remain unsupported, because the JVM cannot
       open them in that locale.
     - Library callers must pass non-ASCII paths as UTF-8; see
@@ -191,10 +196,12 @@
 - **Quieter CLI stderr.** The `CLI parameters` line is now logged only when `--log-file` is a
   file. With the default `stderr` target, a CLI error is printed once, as its user-facing
   message, instead of also appearing as `ERROR` log lines; `--error-mode debug` follows it with
-  the full stack trace. Unknown-subcommand errors now also reach a `--log-file`.
+  the full stack trace. Unknown-subcommand errors now also reach a `--log-file`. Running
+  `cov-loupe` with no subcommand now reports an unexpected error the same way as a subcommand
+  does, instead of exiting with a raw Ruby backtrace.
 - **Custom CLI error handlers see an unexpected error once.** A handler passed to
   `CoverageCLI.new(error_handler:)` now receives an unexpected (non-`CovLoupe::Error`) error
-  from a subcommand once, as the original exception with `reraise: false`. Previously it was
+  from a subcommand or the default report once, as the original exception with `reraise: false`. Previously it was
   called twice: first with `reraise: true`, expected to raise the converted error, then with
   that converted error. A handler may provide `convert_standard_error` to control the
   conversion. As before, the handler is called for every error the CLI reports except invalid

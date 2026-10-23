@@ -48,11 +48,6 @@ RSpec.describe CovLoupe::ErrorHandler do
         msg:      'Input/output error',
       },
       {
-        error:    EncodingError.new('incompatible encoding'),
-        expected: CovLoupe::CoverageDataError,
-        msg:      'Invalid encoding in coverage data',
-      },
-      {
         error:    RangeError.new('float domain error'),
         expected: CovLoupe::CoverageDataError,
         msg:      'Numeric overflow or range error',
@@ -63,6 +58,33 @@ RSpec.describe CovLoupe::ErrorHandler do
         expect(e).to be_a(spec[:expected])
         expect(e.message).to include(spec[:msg])
       end
+    end
+  end
+
+  describe 'EncodingError mapping' do
+    let(:original) { Encoding::UndefinedConversionError.new('U+00E9 from UTF-8 to US-ASCII') }
+
+    it 'blames the coverage data while coverage is loading' do
+      e = handler.convert_standard_error(original, context: :coverage_loading)
+      expect(e).to be_a(CovLoupe::CoverageDataError)
+      expect(e.message).to start_with('Invalid encoding in coverage data: U+00E9')
+      expect(e.original_error).to equal(original)
+    end
+
+    it 'reports a text encoding error, not a coverage data error, in other contexts' do
+      e = handler.convert_standard_error(original)
+      expect(e).to be_a(CovLoupe::TextEncodingError)
+      expect(e.user_friendly_message).to eq(
+        'Text encoding error: U+00E9 from UTF-8 to US-ASCII. cov-loupe works with UTF-8 text; ' \
+        'check that the locale, any Ruby encoding options (such as -E or -U in RUBYOPT) and any ' \
+        'paths you pass use UTF-8.'
+      )
+      expect(e.original_error).to equal(original)
+    end
+
+    it 'does not double a trailing period' do
+      e = handler.convert_standard_error(Encoding::CompatibilityError.new('incompatible encodings.'))
+      expect(e.message).to start_with('incompatible encodings. cov-loupe works with UTF-8 text')
     end
   end
 

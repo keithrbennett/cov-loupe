@@ -491,6 +491,7 @@ All cov-loupe exceptions inherit from `CovLoupe::Error`, which provides `user_fr
   - **`UsageError`** - Invalid command-line usage
   - **`PredicateError`** - A `validate` predicate could not be loaded or raised an error
   - **`UnknownError`** - An unexpected error that fits no other class
+  - **`TextEncodingError`** - Text could not be converted between encodings outside coverage loading, such as CLI or MCP output to a stream that transcodes to a non-UTF-8 encoding
   - **`FileError`** - Requested file not in coverage data, or another file or path problem
     - **`FileNotFoundError`** - File does not exist
     - **`FilePermissionError`** - Permission denied

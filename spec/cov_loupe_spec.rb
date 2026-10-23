@@ -115,11 +115,12 @@ RSpec.describe CovLoupe do
           coverage: { 'lib/café.rb' => { 'lines' => [1] } }, timestamp: Time.now.to_i + 60)))
 
         rubyopt = ENV['RUBYOPT'].to_s.split.grep(/\A-[rI]\S/).join(' ')
-        run = ->(*args) do
+        run = ->(*args, extra_rubyopt: nil) do
           out, err, status = Open3.capture3(
             # Keep RUBYOPT's requires and load paths (Bundler), but not options such as -E that
             # would override LANG=C.
-            { 'LANG' => 'C', 'LC_ALL' => 'C', 'COV_LOUPE_OPTS' => nil, 'RUBYOPT' => rubyopt },
+            { 'LANG' => 'C', 'LC_ALL' => 'C', 'COV_LOUPE_OPTS' => nil,
+              'RUBYOPT' => [rubyopt, extra_rubyopt].compact.join(' ') },
             RbConfig.ruby, '-I', lib_path, exe, '-R', '.', *args,
             chdir: root, binmode: true
           )
@@ -127,6 +128,9 @@ RSpec.describe CovLoupe do
         end
         list_out, list_err, list_status = run.call('--tracked-globs', 'lib/**/*.rb', 'list')
         summary_out, summary_err, summary_status = run.call('-c', 'coverage', 'summary', 'lib/café.rb')
+        # -U sets Encoding.default_internal, so $stdout transcodes to US-ASCII and the default
+        # report cannot write the non-ASCII path.
+        _out, transcode_err, transcode_status = run.call(extra_rubyopt: '-U')
 
         aggregate_failures do
           expect(list_status).to be_success, list_err
@@ -135,6 +139,8 @@ RSpec.describe CovLoupe do
           expect(list_out).to start_with('+-') # the C locale still selects ASCII borders
           expect(summary_status).to be_success, summary_err
           expect(summary_out).to include('lib/café.rb', '100.00%')
+          expect(transcode_status.exitstatus).to eq(1)
+          expect(transcode_err).to start_with('Text encoding error: U+00E9 from UTF-8 to US-ASCII. ')
         end
       end
     end
