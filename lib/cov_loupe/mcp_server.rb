@@ -40,8 +40,8 @@ module CovLoupe
     # request with non-ASCII characters crashes the server or loses its UTF-8. JSON-RPC over stdio
     # is UTF-8, so read and write it with no transcoding, as cov-loupe reads its files.
     private def use_utf8_stdio
-      $stdin.set_encoding('UTF-8:UTF-8')
-      $stdout.set_encoding('UTF-8:UTF-8')
+      $stdin.set_encoding(Encoding::UTF_8, Encoding::UTF_8)
+      $stdout.set_encoding(Encoding::UTF_8, Encoding::UTF_8)
     end
 
     # Every tool class; #toolset is the subset actually registered, in this order.
