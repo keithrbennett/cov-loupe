@@ -1,11 +1,12 @@
 # CLI Usage Guide
 
-[Back to main README](../index.md)
+[Back to main README](../../README.md)
 
 Complete reference for using cov-loupe from the command line.
 
 > Docs use `clp` as a shortcut pointing at the demo fixture with partial coverage:
 > `alias clp='cov-loupe -R docs/fixtures/demo_project'`  # -R = --root
+> Run the examples from the root of a cov-loupe checkout, since the alias's path is relative.
 > Replace `clp` with `cov-loupe` to run commands against your own project.
 > The demo fixture is a small Rails-like project in `docs/fixtures/demo_project` with intentional coverage gaps for testing `--tracked-globs`.
 > Its coverage timestamp is deliberately set far in the future, so the outputs below are reproducible on a fresh clone.
@@ -18,6 +19,8 @@ Complete reference for using cov-loupe from the command line.
 - [Output Formats](#output-formats)
 - [Environment Variables](#environment-variables)
 - [Examples](#examples)
+- [Exit Codes](#exit-codes)
+- [Next Steps](#next-steps)
 
 ## Quick Reference
 
@@ -49,11 +52,14 @@ clp t
 clp -fJ t
 
 # Evaluate coverage policy ('validate' or 'v')
-clp validate coverage_policy.rb
-clp v coverage_policy.rb
+clp validate examples/success_predicates/project_coverage_minimum_predicate.rb
+clp v examples/success_predicates/project_coverage_minimum_predicate.rb
 clp v -i '->(m) { m.project_totals["lines"]["percentage"].to_f >= 85 }'
+# validate prints no result (only what the predicate itself prints); check the exit code (0 pass, 3 fail). On the demo fixture
+# (80.85% total) these minimum-85% checks fail, so they exit 3.
+echo $?
 
-# Show version (no subcommand; use -v or --version)
+# Show version (no subcommand; use -v or --version; `v` without a dash runs validate)
 clp -v
 clp --version
 
@@ -82,7 +88,7 @@ clp -o d l  # -o = --sort-order, d = descending
 clp -fJ l           
 ```
 
-Default sort order is descending (highest coverage first) so the lowest-coverage files stay visible at the bottom of the scrollback.
+Default sort order is descending (highest coverage first) so the lowest-coverage files stay visible at the bottom of the scrollback. Files with no coverable lines (`n/a`) sort above 100%; see [Sorting Coverage Lists with n/a Entries](ADVANCED_USAGE.md#sorting-coverage-lists-with-na-entries).
 
 **Options:**
 
@@ -90,11 +96,8 @@ Default sort order is descending (highest coverage first) so the lowest-coverage
 |--------|--------------------------|-------------------------------------------------------|
 | `-o`   | `--sort-order`           | Sort by coverage percentage (ascending or descending) |
 | `-g`   | `--tracked-globs`        | Filter to specific file patterns                      |
-| `-S`   | `--raise-on-stale`       | Raise error if coverage is stale (default false)      |
-| `-f J` | `--format pretty_json`   | Output as multi-line, indented JSON                   |
-| `-f j` | `--format json`          | Output as single-line JSON                            |
-| `-f y` | `--format yaml`          | Output as YAML                                        |
-| `-f a` | `--format amazing_print` | Output using AmazingPrint                             |
+| `-S`   | `--raise-on-stale BOOLEAN` | Raise error if coverage is stale (default false)    |
+| `-f`   | `--format`               | Output format, e.g. `J` (pretty JSON), `j`, `y`, `a`; see [Output Formats](#output-formats) |
 
 **Output (table format):**
 ```
@@ -114,6 +117,8 @@ Files: total 7, ok 7, stale 0
 
 **Stale indicators:** deleted (source file deleted), newer (timestamp mismatch), length_mismatch (line count mismatch), unreadable (source file could not be read, or its staleness check failed)
 
+**Skipped rows:** a coverage row with invalid data is left out of the report. It is listed in the exclusions summary on `stderr` (table format) or in `skipped_files` (structured formats, with a warning on `stderr`). With `--raise-on-stale true`, such a row is an error instead.
+
 ### `summary <path>`, `s <path>`
 
 Show covered/total/percentage for a specific file.
@@ -126,6 +131,7 @@ clp -s full s app/models/order.rb  # -s = --source
 ```
 
 **Arguments:**
+
 - `<path>` - File path (relative to project root or absolute)
 
 **Options:**
@@ -137,6 +143,8 @@ clp -s full s app/models/order.rb  # -s = --source
 | `-f y` | `--format yaml`          | Output as YAML                                 |
 | `-f a` | `--format amazing_print` | Output using AmazingPrint                      |
 | `-s`   | `--source MODE`          | Include source code (full, uncovered, or none) |
+| `-n`   | `--context-lines N`      | Lines of context around uncovered lines with `-s uncovered` (default: 2) |
+| `-C`   | `--color BOOLEAN`        | Enable (`true`)/disable (`false`) coverage marker colors |
 
 **Output (default format):**
 ```
@@ -173,15 +181,16 @@ clp -s uncovered -n 3 u app/controllers/orders_controller.rb  # -s = --source, -
 ```
 
 **Arguments:**
+
 - `<path>` - File path (relative to project root or absolute)
 
 **Options:**
 
 | Short  | Long                     | Description                                          |
 |--------|--------------------------|------------------------------------------------------|
-| `-s`   | `--source MODE`          | Show source (full, uncovered, none)                  |
+| `-s`   | `--source MODE`          | Include source code (full, uncovered, or none)       |
 | `-n`   | `--context-lines N`      | Lines of context around uncovered lines (default: 2) |
-| `-C`   | `--color BOOLEAN`        | Enable (`true`)/disable (`false`) syntax coloring    |
+| `-C`   | `--color BOOLEAN`        | Enable (`true`)/disable (`false`) coverage marker colors |
 | `-f J` | `--format pretty_json`   | Output as multi-line, indented JSON                  |
 | `-f j` | `--format json`          | Output as single-line JSON                           |
 | `-f y` | `--format yaml`          | Output as YAML                                       |
@@ -201,7 +210,7 @@ Coverage: 70.00% (7/10 lines)
 └──────┘
 ```
 
-**Output (with source):**
+**Output (with source, `-s uncovered` and the default 2 context lines):**
 ```
 File: app/controllers/orders_controller.rb
 Coverage: 70.00% (7/10 lines)
@@ -226,9 +235,12 @@ Coverage: 70.00% (7/10 lines)
     18  ✓ |       def cancel(id)
     19  ✓ |         order = @repo.find(id)
     20  X |         return :missing unless order
+    21    |
+    22  ✓ |         @repo.cancel(id)
 ```
 
 **Legend:**
+
 - `✓` - Line is covered
 - `X` - Line is not covered
 - ` ` - Line is not executable (comments, blank lines)
@@ -245,6 +257,7 @@ clp -s full d app/models/order.rb  # -s = --source
 ```
 
 **Arguments:**
+
 - `<path>` - File path (relative to project root or absolute)
 
 **Options:**
@@ -255,7 +268,9 @@ clp -s full d app/models/order.rb  # -s = --source
 | `-f j` | `--format json`          | Output as single-line JSON          |
 | `-f y` | `--format yaml`          | Output as YAML                      |
 | `-f a` | `--format amazing_print` | Output using AmazingPrint           |
-| `-s`   | `--source MODE`          | Include source code                 |
+| `-s`   | `--source MODE`          | Include source code (full, uncovered, or none) |
+| `-n`   | `--context-lines N`      | Lines of context around uncovered lines with `-s uncovered` (default: 2) |
+| `-C`   | `--color BOOLEAN`        | Enable (`true`)/disable (`false`) coverage marker colors |
 
 **Output (default format):**
 ```
@@ -275,7 +290,7 @@ Coverage: 6/7 lines (85.71%)
 └──────┴──────┴─────────┘
 ```
 
-**Output (JSON format):**
+**Output (JSON format, condensed; `-fJ` puts each element on its own line):**
 ```json
 {
   "schema_version": 1,
@@ -309,6 +324,7 @@ clp -fJ r app/models/order.rb
 ```
 
 **Arguments:**
+
 - `<path>` - File path (relative to project root or absolute)
 
 **Output (default format):**
@@ -341,7 +357,7 @@ File: app/models/order.rb
 └──────┴──────────┘
 ```
 
-**Output (JSON format):**
+**Output (JSON format, condensed; `-fJ` puts each element on its own line):**
 ```json
 {
   "schema_version": 1,
@@ -352,9 +368,10 @@ File: app/models/order.rb
 ```
 
 **Array explanation:**
+
 - Integer (e.g., `1`, `5`) - Number of times line was executed
 - `0` - Line is executable but was not executed
-- `null` - Line is not executable (comment, blank line)
+- `null` - Line is not executable (comment, blank line), or excluded from coverage. Lines SimpleCov marked `"ignored"` (excluded with `nocov` blocks or directive comments) are returned as `null` and, like other `null` lines, are not counted in covered or total lines or in percentages.
 
 ### `totals`, `t`
 
@@ -367,7 +384,7 @@ clp -fJ t
 clp -g "lib/ops/jobs/*.rb" t  # -g = --tracked-globs
 ```
 
-**Output (default format):**
+**Output of `clp totals` (default format):**
 ```
 Tracked globs: (tracking disabled)
 
@@ -378,19 +395,19 @@ File breakdown:
     Stale: deleted = 0, newer than coverage = 0, line mismatch = 0, unreadable = 0
 ```
 
-**With `--tracked-globs` enabled:**
+**With `--tracked-globs` enabled (`clp -g "lib/**/*.rb,app/**/*.rb" t`):**
 ```
 Tracked globs:
   - lib/**/*.rb
   - app/**/*.rb
 
-Lines (4 ok files): 24 total, 19 covered, 5 uncovered (79.16%)
+Lines (7 ok files): 47 total, 38 covered, 9 uncovered (80.85%)
 
 File breakdown:
-  With coverage: 4 total, 4 ok, 0 stale
+  With coverage: 7 total, 7 ok, 0 stale
     Stale: deleted = 0, newer than coverage = 0, line mismatch = 0, unreadable = 0
-  Without coverage: 2 total
-    Missing from coverage = 2, unreadable = 0, skipped (errors) = 0
+  Without coverage: 3 total
+    Missing from coverage = 3, unreadable = 0, skipped (errors) = 0
 ```
 
 **Output (JSON format):**
@@ -427,6 +444,7 @@ File breakdown:
 ```
 
 **Notes:**
+
 - `lines` are based on fresh coverage entries only.
 - `lines.included_files` is the count of non-stale files included in the line totals; `lines.excluded_files` is the count of stale files excluded.
 - `with_coverage.stale.by_type` keys match the per-file `stale` values: `deleted`, `newer`,
@@ -434,11 +452,11 @@ File breakdown:
 - `without_coverage` is only present when tracking is enabled (tracked globs provided).
 - Respects `-g` / `--tracked-globs` when you only want to aggregate a subset of files.
 - Totals exclude stale files (`"deleted"`, `"newer"`, `"length_mismatch"`, `"unreadable"`) so the aggregate reflects only fresh coverage data.
-- Honors `-S` / `--raise-on-stale` to raise if coverage data is out of date.
+- Honors `-S true` / `--raise-on-stale true` to raise if coverage data is out of date.
 
 ## Global Options
 
-These options work with all subcommands.
+These options can be used with every subcommand, though some affect only certain subcommands (for example, `-o` affects only `list` and the default report, and `-s`/`-n` only the per-file commands noted below).
 
 Global options must come before the subcommand:
 
@@ -447,11 +465,15 @@ clp -fJ summary lib/api/client.rb  # Correct
 clp summary lib/api/client.rb -fJ  # Incorrect
 ```
 
+The exception is `-v`/`--version`, which prints the version wherever it appears.
+
 ### `-c, --coverage-file PATH`
 
 Path to a SimpleCov `coverage.json` file, or to a directory containing one. With no `-c` argument at all, `coverage/coverage.json` relative to the project root is used.
 
-For a detailed explanation of how to configure the coverage file location, including the default search path, environment variables, and MCP configuration, see the [Configuring the Coverage File](../index.md#configuring-the-coverage-file) section in the main README.
+A relative path is resolved against both the current directory and the project root (`-R`). If it names a valid location under both and the two differ (they are the same when you run from the project root), cov-loupe exits with an ambiguity error; pass an absolute path instead.
+
+For a detailed explanation of how to configure the coverage file location, including the default search path, environment variables, and MCP configuration, see the [Configuring the Coverage File](../../README.md#configuring-the-coverage-file) section in the main README.
 
 ### `-R, --root PATH`
 
@@ -466,6 +488,7 @@ clp -R /path/to/project  # -R = --root
 Print a canonical resource path or URL to stdout and exit immediately.
 
 Supported names:
+
 - `repo` - public GitHub repository URL
 - `docs` - public documentation site URL
 - `docs-local` - absolute path to local `README.md`
@@ -504,15 +527,17 @@ clp -fj summary lib/api/client.rb   # single-line JSON
 ```
 
 JSON output (`-fj` / `-fJ`) is useful for:
+
 - Parsing in scripts
 - Integration with other tools
 - Machine consumption
 
 ### `-o, --sort-order ORDER`
 
-Sort order for `list` subcommand.
+Sort order for `list`, including the default report when no subcommand is given.
 
 **Values:**
+
 - `descending`, `d` - Highest coverage first (default)
 - `ascending`, `a` - Lowest coverage first
 
@@ -523,7 +548,7 @@ clp -o a list  # a = ascending
 
 ### `-s, --source MODE`
 
-Include source code in output.
+Include source code in output (default: no source). Applies to `summary`, `uncovered`, and `detailed`; `raw` ignores it.
 
 **Modes:**
 
@@ -545,6 +570,8 @@ clp -s u uncovered lib/api/client.rb       # u = uncovered
 clp -s n summary lib/api/client.rb        # n = none
 clp -s f -s n summary lib/api/client.rb   # later -s n disables earlier -s f
 ```
+
+With a structured format (`-fJ`, `-f yaml`, etc.), the source is returned as a `source` array instead of annotated text; each entry has `line`, `code`, `hits`, and `covered` (`hits` and `covered` are `null` for non-executable lines).
 
 ### `-n, --context-lines N`
 
@@ -577,7 +604,7 @@ clp --raise-on-stale yes    # enforce stale coverage failures
 
 ### `-C, --color BOOLEAN`
 
-Enable or disable ANSI color codes in source output. Requires an explicit boolean value.
+Enable or disable ANSI colors for the coverage markers in source output. Requires an explicit boolean value.
 
 ```sh
 clp -s uncovered --color true uncovered lib/api/client.rb
@@ -588,7 +615,7 @@ clp -s uncovered -C false uncovered lib/api/client.rb
 
 ### `-S, --raise-on-stale BOOLEAN`
 
-Raise error if coverage is stale. Requires an explicit boolean value. Default is `false` (only report staleness in output).
+Raise error if coverage is stale, or if any coverage row is skipped because its data is invalid. Requires an explicit boolean value. Default is `false` (only report staleness and skipped rows in output).
 
 ```sh
 # Enable raising an error if coverage is stale
@@ -600,11 +627,12 @@ clp --raise-on-stale false
 ```
 
 **Staleness conditions:**
+
 - **"deleted"** (Deleted): Source file no longer exists on disk
 - **"newer"** (Timestamp): Source file modified after coverage was generated
 - **"length_mismatch"** (Length): Source file line count differs from coverage data
 - **"unreadable"** (Unreadable): Source file could not be read (permission or I/O errors), or its staleness check failed
-- Tracked files missing from coverage (with --tracked-globs)
+- Tracked files missing from coverage (with `--tracked-globs`; checked only by `list`, `totals`, and the default report, since the per-file commands ignore `-g`)
 
 <a id="tracked-globs"></a>
 
@@ -612,30 +640,33 @@ clp --raise-on-stale false
 
 Comma-separated glob patterns for files that should be tracked.
 
+- Put all patterns in one `-g` value; a repeated `-g` replaces the earlier one.
+- The value is split on every comma, including commas inside braces, so a brace pattern such as `lib/{models,controllers}/**/*.rb` matches nothing. List the alternatives separately instead (see [Advanced Filtering](ADVANCED_USAGE.md#advanced-filtering-glob-patterns)).
+
 **Default:** `[]` (empty - shows all files in the coverage file)
 
 **Why no default patterns?**
+
 1. **Transparency** - Shows all coverage data without hiding files that don't match assumptions
 2. **Avoids false positives** - Broad patterns like `**/*.rb` flag migrations, bin scripts, etc. as "missing"
 3. **Project variety** - Coverage patterns vary by project structure (lib/, app/, src/, config/, etc.)
 
-**Important:** Files lacking any coverage at all (not loaded during tests) will not appear in the coverage file and therefore won't be visible with the default empty array. To detect such files, you must set `--tracked-globs` to match the files you expect to have coverage.
+**Important:** Files never loaded during tests appear in the coverage file only if SimpleCov's `cover` globs include them (SimpleCov then records them at 0%). Otherwise they won't be visible with the default empty array; to detect them, set `--tracked-globs` to match the files you expect to have coverage.
 
 **Best practice:** Match your SimpleCov configuration by setting `COV_LOUPE_OPTS`:
 
 ```ruby
 # In spec_helper.rb or similar
 SimpleCov.start do
-  add_filter '/spec/'
-  add_filter '/test/'
-  track_files 'lib/**/*.rb'
-  track_files 'app/**/*.rb'
+  skip '/spec/'
+  skip '/test/'
+  cover 'lib/**/*.rb', 'app/**/*.rb'
 end
 ```
 
 ```sh
 # In your shell config (.bashrc, .zshrc, etc.)
-# Match the track_files patterns above
+# Match the cover patterns above
 export COV_LOUPE_OPTS="--tracked-globs lib/**/*.rb,app/**/*.rb"
 ```
 
@@ -653,15 +684,17 @@ clp -g "lib/api/**/*.rb" list
 clp -g "lib/**/*.rb,app/models/**/*.rb" list
 
 # Export for CI (with globs to match SimpleCov)
-clp -g "lib/**/*.rb,app/**/*.rb" -fJ list > coverage.json
+clp -g "lib/**/*.rb,app/**/*.rb" -fJ list > coverage-report.json
 ```
 
 **Use cases:**
+
 - **Exclude unwanted results** - Narrow focus to a subsystem or layer
 - **Include files without coverage** - Report files that should be tracked but aren't in the coverage file
-- **CI validation** - Use with `-S`/`--raise-on-stale` to catch coverage gaps
+- **CI validation** - Use with `-S true`/`--raise-on-stale true` to catch coverage gaps
 
 **Important:** The `missing_tracked_files` array (in `list` output) only includes files that:
+
 1. Match the tracked globs
 2. Exist in the filesystem
 3. Are NOT in the coverage file
@@ -671,9 +704,10 @@ Without globs, this array is empty (no expectations = no violations).
 ### `-l, --log-file PATH`
 
 Log target. The default is `stderr`; use a file path for persistent logging.
-Use 'stderr' to log to a standard stream.
-Use 'off' to disable logging entirely (cross-platform alternative to /dev/null).
+Use 'stderr' to log to standard error.
+Use 'off' to disable logging entirely (cross-platform alternative to /dev/null); use './off' for a file named `off`.
 Logging to 'stdout' is not permitted because it would corrupt command output.
+A relative log file path is resolved against the current directory, not `--root`.
 
 With the default `stderr` target, the CLI does not log its parameters or errors there;
 an error appears there once, as the user-facing message (followed by its stack trace
@@ -685,7 +719,7 @@ before logging is set up, so they appear only on stderr; other usage errors, suc
 unknown subcommand or misplaced global options, are logged to the file.
 
 ```sh
-clp -l /var/log/simplecov.log  # -l = --log-file
+clp -l /tmp/cov-loupe.log  # -l = --log-file
 clp -l stderr                   # Log to standard error
 clp -l off                      # Disable logging entirely
 ```
@@ -728,7 +762,7 @@ Choose how cov-loupe draws its own decoration (table borders and the covered-lin
 
 | Short | Long        | Description                                       |
 |-------|-------------|---------------------------------------------------|
-| `d`   | `default`   | Auto-detect terminal UTF-8 support (default)      |
+| `d`   | `default`   | UTF-8 output encoding → Unicode, else ASCII (default) |
 | `f`   | `fancy`     | Draw tables and markers with Unicode characters   |
 | `a`   | `ascii`     | Draw tables and markers with ASCII characters     |
 
@@ -746,12 +780,14 @@ clp -O f list  # f = fancy
 ```
 
 **What changes in ASCII mode:**
+
 - Table borders (│ ─ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼ become | - + + + + + + + + +)
 - The covered-line marker in source output (✓ becomes +; the uncovered marker is always `X`)
 - JSON output (`-f json`, `-f pretty_json`) escapes non-ASCII characters as `\uXXXX`. This
   encodes the data without changing it: parsing the JSON gives back the original text.
 
 **What never changes:**
+
 - Your data: file paths, source lines, error messages, backtraces, and YAML or other text
   formats are shown exactly as they are, so output in ASCII mode can still contain non-ASCII
   characters such as accented letters, curly quotes, or Japanese
@@ -766,19 +802,20 @@ set to a non-UTF-8 encoding, for example with `RUBYOPT=-E:US-ASCII`; then the ot
 can fail to write non-ASCII characters at all).
 
 **Use cases:**
+
 - **CI/CD systems** whose logs or terminals cannot draw box-drawing characters: `clp -O ascii list`
 - **Windows** with a legacy code page, so table borders render: `clp -O ascii summary lib/api/client.rb`
 - **Piped output** to files that should not contain box-drawing characters: `clp -O ascii list > coverage.txt`
-- **Force Unicode** even if terminal detection fails: `clp -O fancy list`
+- **Force Unicode** when the locale is not UTF-8 but the terminal can draw it: `clp -O fancy list`
 
-**Note:** The default mode auto-detects whether your terminal supports UTF-8. If table borders or the ✓ marker appear garbled, try `clp -O ascii`. Non-ASCII characters in your data are shown as your terminal renders them in every mode.
+**Note:** The default mode checks the output encoding, which normally follows your locale (e.g., `LANG`): UTF-8 gives Unicode, anything else ASCII. It cannot see what your terminal can actually draw. If table borders or the ✓ marker appear garbled, try `clp -O ascii`. Non-ASCII characters in your data are shown as your terminal renders them in every mode.
 
 **Limitation:** Table column widths are measured in characters, so wide (for example CJK) characters can leave the right border misaligned.
 
 ### `-m, --mode MODE`
 
-Specify execution mode: `cli` or `mcp` (default: `cli`). Use `--mode mcp` to run as an MCP server.
-In v4.0.0+, automatic mode detection was removed; you must explicitly specify `--mode mcp` to run the MCP server.
+Specify execution mode: `cli` or `mcp` (or `c`/`m`; default: `cli`). Use `--mode mcp` to run as an MCP server.
+cov-loupe never switches to MCP mode on its own; without `--mode mcp` it runs in CLI mode.
 
 ```sh
 clp -m mcp               # MCP server mode (required for MCP), short option form
@@ -795,7 +832,7 @@ clp -m mcp --allow-code-predicates     # enable project_validate
 clp -m mcp --no-allow-code-predicates  # disable it, overriding COV_LOUPE_OPTS
 ```
 
-### `validate <file> | -i <code>`, `v <file> | -i <code>`
+### `validate <file> | -i <code>`, `v <file> | -i <code>` (`-i` = `--inline`)
 
 Validate coverage against custom policies for CI/CD enforcement.
 
@@ -807,12 +844,13 @@ Validate coverage against custom policies for CI/CD enforcement.
 > **Only use predicate files from trusted sources.**
 > Review predicates before use, especially in CI/CD environments.
 
-The predicate must be a callable (lambda, proc, or object with `#call` method) that receives a `CoverageModel` and returns `true` or `false`.
+The predicate must be a callable (lambda, proc, or object with `#call` method) that receives a `CoverageModel` and returns a truthy or falsy value; this applies to `-i` code too, so `-i 'true'` is an error. A predicate file path is resolved against the current directory, not `--root`.
 
 **Predicate return values:**
-- `true` - Coverage meets your criteria (CLI exits with code 0)
-- `false` - Coverage fails your criteria (CLI exits with code 3)
-- Error in the predicate itself (syntax error, not callable, or an exception raised by its own code) - Predicate error (CLI exits with code 4). Coverage-data errors triggered while the predicate queries the model, such as a missing file or stale data with `--raise-on-stale`, exit with code 1 like any other command.
+
+- Truthy (e.g., `true`) - Coverage meets your criteria (CLI exits with code 0)
+- Falsy (`false` or `nil`) - Coverage fails your criteria (CLI exits with code 3)
+- Error in the predicate itself (syntax error, not callable, or an exception raised by its own code) - Predicate error (CLI exits with code 4). Coverage-data errors triggered while the predicate queries the model, such as a missing file or stale data with `--raise-on-stale true`, exit with code 1 like any other command.
 
 **File mode (most common):**
 ```sh
@@ -831,9 +869,9 @@ cov-loupe v coverage_policy.rb
 clp validate -i '->(m) { m.list["files"].all? { |f| f["percentage"].nil? || f["percentage"] >= 80 } }'
 clp v -i '->(m) { m.list["files"].all? { |f| f["percentage"].nil? || f["percentage"] >= 80 } }'
 
-# With global options
-clp -c coverage validate -i '->(m) { m.list["files"].size > 0 }'
-clp -c coverage v -i '->(m) { m.list["files"].size > 0 }'
+# Long form of -i, with a global option before the subcommand
+clp -S true validate --inline '->(m) { m.list["files"].size > 0 }'
+clp -S true v --inline '->(m) { m.list["files"].size > 0 }'
 ```
 
 **Example predicate file:**
@@ -844,13 +882,13 @@ clp -c coverage v -i '->(m) { m.list["files"].size > 0 }'
 end
 ```
 
-See [examples/success_predicates/](../examples/success_predicates.md) for more examples.
+See [examples/success_predicates/](../../examples/success_predicates/README.md) for more examples.
 
 ## Output Formats
 
 ### Table Format
 
-Default for `list` subcommand. Uses Unicode box-drawing characters.
+The default format. Uses Unicode box-drawing characters, or ASCII when the output encoding is not UTF-8 or with `-O ascii` (see [`--output-chars`](#output-chars)).
 
 ```
 ┌──────────────────────────────────┬──────────┬───────────┬─────────┬───────┐
@@ -862,8 +900,8 @@ Default for `list` subcommand. Uses Unicode box-drawing characters.
 
 ### JSON Format
 
-Machine-readable output. Paths are relative to project root.
-Every structured CLI format and library coverage hash begins with integer `schema_version`. The [shipped JSON Schemas](../../lib/cov_loupe/schemas/v1/) define these shapes; see [Schema Version](LIBRARY_API.md#schema-version) for schema lookup and compatibility rules.
+Machine-readable output. Paths of files under the project root are relative to it; files outside the root keep absolute paths.
+Every structured CLI format and library coverage hash has integer `schema_version` as its first key. The [shipped JSON Schemas](https://github.com/keithrbennett/cov-loupe/tree/main/lib/cov_loupe/schemas/v1) define these shapes; see [Schema Version](LIBRARY_API.md#schema-version) for schema lookup and compatibility rules.
 
 ```json
 {
@@ -879,23 +917,12 @@ Every structured CLI format and library coverage hash begins with integer `schem
 ```
 
 **Staleness values:**
+
 - `"ok"` - Coverage data is current
 - `"deleted"` - Source file deleted (no longer exists on disk)
 - `"newer"` - Timestamp mismatch (file modified after coverage)
 - `"length_mismatch"` - Length mismatch (line count differs)
 - `"unreadable"` - Source file could not be read, or its staleness check failed
-
-### Source Display
-
-With `--source` flag, shows annotated source code:
-
-```
-  Line     | Source
-  ------+-----------------------------------------------------------
-     1  ✓ | class User
-     2  X |   def initialize  # Not covered
-     3  ✓ |     # ...
-```
 
 ## Environment Variables
 
@@ -906,7 +933,7 @@ Default command-line options applied to all invocations.
 **Format:** Shell-style string containing any valid CLI options
 
 ```sh
-export COV_LOUPE_OPTS="--coverage-file coverage -fJ"
+export COV_LOUPE_OPTS="--raise-on-stale true -fJ"
 clp summary lib/api/client.rb  # Automatically uses options above
 ```
 
@@ -931,7 +958,7 @@ export COV_LOUPE_OPTS="--error-mode debug"
 export COV_LOUPE_OPTS='-c "/path with spaces/coverage"'
 
 # Multiple options
-export COV_LOUPE_OPTS="-c coverage -S true -fJ"
+export COV_LOUPE_OPTS="-S true -fJ --error-mode debug"
 ```
 
 
@@ -944,7 +971,7 @@ export COV_LOUPE_OPTS="-c coverage -S true -fJ"
 # Show all files sorted by highest coverage first (default)
 clp
 
-# Find the 5 files with worst coverage (account for header/footer)
+# Find the 5 files with worst coverage (the last 2 lines are the bottom border and the Files: summary)
 clp list | tail -7
 ```
 
@@ -966,9 +993,11 @@ clp detailed lib/payments/refund_service.rb
 
 ### JSON Output for Scripts
 
+The rexe examples use [rexe](https://github.com/keithrbennett/rexe) (`gem install rexe`), whose `-ij -mb` options parse JSON input into `self`.
+
 ```sh
 # Get JSON for parsing
-clp -fJ list > coverage.json
+clp -fJ list > coverage-report.json
 
 # Extract files below threshold
 clp -fJ list | jq '.files[] | select(.percentage != null and .percentage < 80)'
@@ -1004,6 +1033,9 @@ clp -g "lib/**/*.rb" list
 # Show files sorted by highest coverage
 clp -o d list
 
+# Show the worst-covered files first
+clp -o a list
+
 # Check specific directory
 clp -g "lib/payments/**/*.rb" list
 ```
@@ -1016,7 +1048,8 @@ clp -g "lib/payments/**/*.rb" list
 # Check if coverage is stale (for CI/CD)
 clp -S true
 
-# Check with specific file patterns
+# Check with specific file patterns. On the demo fixture this exits 1: two files
+# these globs match are missing from coverage, which -S true also treats as stale
 clp -S true -g "lib/payments/**/*.rb,lib/ops/jobs/**/*.rb" list
 
 # See which files are stale (don't error)
@@ -1046,6 +1079,7 @@ clp -s full --color false uncovered lib/api/client.rb
 clp -S true || exit 1
 
 # Generate JSON report for artifact
+mkdir -p artifacts
 clp -fJ list > artifacts/coverage-report.json
 
 # Check specific directory in monorepo
@@ -1059,16 +1093,13 @@ clp -R services/api -c services/api/coverage  # -R = --root, -c = --coverage-fil
 clp --error-mode debug summary lib/api/client.rb
 
 # Custom log file (--log-file or -l)
-clp -l /tmp/simplecov-debug.log summary lib/api/client.rb
-
-# Check which coverage file is being used
-clp --error-mode debug 2>&1 | grep coverage
+clp -l /tmp/cov-loupe-debug.log summary lib/api/client.rb
 ```
 
 ## Exit Codes
 
 - `0` - Success
-- `1` - Error (file not found, coverage data missing, stale coverage with `-S` / `--raise-on-stale`, etc.)
+- `1` - Error (file not found, coverage data missing, stale coverage with `-S true` / `--raise-on-stale true`, etc.)
 - `2` - Usage error (invalid option, option value, or subcommand arguments; invalid configuration such as `--log-file stdout`)
 - `3` - Validation failed: the `validate` predicate ran and returned a falsy value
 - `4` - Predicate error: the `validate` predicate itself could not be loaded or raised an error (coverage-data errors it triggers exit `1`)

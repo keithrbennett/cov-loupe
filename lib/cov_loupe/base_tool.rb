@@ -36,35 +36,35 @@ module CovLoupe
       root:           {
         type:        'string',
         description: 'Project root used to resolve relative paths ' \
-                     '(defaults to current workspace).',
-        default:     '.',
+                     "(defaults to the server's --root, '.' unless set).",
       },
       coverage_file:  {
         type:        'string',
         description: 'Path to the SimpleCov coverage.json file, or to a directory ' \
-                     'containing one (absolute or relative to root).',
+                     'containing one. A relative path is tried against both the server working ' \
+                     'directory and root; it is an error if it names different existing files in each.',
       },
       raise_on_stale: {
         type:        'boolean',
         description: 'If true, raise error if coverage data is stale (deleted or unreadable ' \
-          'source files, timestamp or line-count mismatch). Defaults to false.',
-        default:     false,
+          "source files, timestamp or line-count mismatch). Defaults to the server's " \
+          '--raise-on-stale (false unless set).',
       },
       error_mode:     {
         type:        'string',
         description: "Error handling mode: 'off' (silent), 'log' (log errors), " \
-                     "'debug' (verbose with backtraces).",
+                     "'debug' (verbose with backtraces). Defaults to the server's --error-mode " \
+                     "('log' unless set).",
         enum:        %w[off log debug],
-        default:     'log',
       },
       output_chars:   {
         type:        'string',
         description: "Output character mode: 'default' (UTF-8 encoding uses fancy, else ascii), " \
                      "'fancy' (Unicode table borders), " \
                      "'ascii' (ASCII table borders; JSON escapes non-ASCII). " \
-                     'Accepts: d[efault], f[ancy], a[scii].',
+                     'Accepts: d[efault], f[ancy], a[scii]. ' \
+                     "Defaults to the server's --output-chars ('default' unless set).",
         enum:        %w[default fancy ascii d f a],
-        default:     'default',
       },
     }.freeze
 
@@ -91,7 +91,7 @@ module CovLoupe
     PATH_PROPERTY = {
       type:        'string',
       description: 'Repo-relative or absolute path to the file whose coverage data you need.',
-      examples:    ['lib/cov_loupe/model/model.rb'],
+      examples:    ['lib/my_app/order.rb'],
     }.freeze
 
     def self.coverage_schema(additional_properties: {}, required: [])
@@ -123,11 +123,14 @@ module CovLoupe
     # This eliminates duplicate rescue blocks across all tools.
     #
     # @param tool_name [String] Name of the tool for error reporting
-    # @param error_mode [Symbol, String] Error handling mode (:off, :log, :debug)
-    def self.with_error_handling(tool_name, error_mode:)
+    # @param error_mode [Symbol, String, nil] Error handling mode (:off, :log, :debug);
+    #   nil falls back to the server's configured error mode
+    # @param server_context [AppContext, nil] Server context with app_config
+    def self.with_error_handling(tool_name, error_mode:, server_context: nil)
       CovLoupe.logger.raise_if_initialization_failed!
       yield
     rescue => e
+      error_mode ||= server_context&.app_config&.error_mode || :log
       handle_mcp_error(e, tool_name, error_mode: error_mode)
     end
 
@@ -303,7 +306,7 @@ module CovLoupe
 
     # Runs a file-based tool request by deriving the payload method from the tool class.
     # @param path [String] File path to analyze
-    # @param error_mode [String] Error handling mode
+    # @param error_mode [String, nil] Error handling mode (nil uses the server's)
     # @param output_chars [String, Symbol, nil] Output character mode
     # @param server_context [AppContext] Server context
     # @param model_option_overrides [Hash] Tool call parameters that override model defaults
@@ -313,7 +316,7 @@ module CovLoupe
       tool_name = name.split('::').last
       output_chars_sym = resolve_output_chars(output_chars, server_context)
 
-      with_error_handling(tool_name, error_mode: error_mode) do
+      with_error_handling(tool_name, error_mode: error_mode, server_context: server_context) do
         model, config = create_configured_model(server_context: server_context,
           **model_option_overrides)
         presenter = Presenters::CoveragePayloadPresenter.new(

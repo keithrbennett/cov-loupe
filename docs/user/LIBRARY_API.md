@@ -1,6 +1,6 @@
 # Library API Guide
 
-[Back to main README](../index.md)
+[Back to main README](../../README.md)
 
 Use this gem programmatically to inspect coverage without running the CLI or MCP server. The primary entry point is `CovLoupe::CoverageModel`.
 
@@ -13,6 +13,8 @@ Use this gem programmatically to inspect coverage without running the CLI or MCP
 - [Return Types](#return-types)
 - [Error Handling](#error-handling)
 - [Advanced Recipes](#advanced-recipes)
+- [Staleness Detection](#staleness-detection)
+- [Related Documentation](#related-documentation)
 
 ## Public API and Versioning
 
@@ -24,7 +26,7 @@ Starting with 7.0, cov-loupe follows [Semantic Versioning](https://semver.org/) 
 
 The public API is:
 
-- **Ruby library**: the classes, modules, methods, and constants tagged `@api public` in the source. The tags, not a list in these docs, define it. In outline, it is the `CovLoupe` entry methods (such as `run`, `create_context`, and `with_context`), the classes and modules `CoverageModel`, `CoverageReporter`, `PayloadSchema`, and `ExitCodes`, the [exception classes](#exception-types), and the context objects returned by `create_context`; the tags give the exact members. Of a public method's arguments, only those documented in these guides or in its doc comment are public. To see the tags without reading the source, run `yard doc --api public` for a reference containing only the public API, or browse the gem on [RubyDoc.info](https://www.rubydoc.info/gems/cov-loupe), which marks internal items as part of a private API.
+- **Ruby library**: the classes, modules, methods, and constants tagged `@api public` in the source. The tags, not a list in these docs, define it. In outline, it is the `CovLoupe` entry methods (such as `run`, `create_context`, and `with_context`), the classes and modules `CoverageModel`, `CoverageReporter`, `PayloadSchema`, and `ExitCodes`, the [exception classes](#exception-types), and the context objects returned by `create_context`; the tags give the exact members. Of a public method's arguments, only those documented in these guides or in its doc comment are public. To see the tags without reading the source, run `yard doc --api public` (YARD is not a cov-loupe dependency; install it with `gem install yard`) for a reference containing only the public API, or browse the gem on [RubyDoc.info](https://www.rubydoc.info/gems/cov-loupe), which marks internal items as part of a private API.
 - **Structured output**, **CLI**, and **MCP server** behavior, as described below.
 - **`validate` predicates**: a predicate is any object responding to `call`; it receives a `CoverageModel` and returns truthy to pass.
 
@@ -76,7 +78,7 @@ model = CovLoupe::CoverageModel.new(
   root: File.join(Dir.home, 'project'),          # non-default project root
   coverage_file: "build/coverage",                # coverage.json file, or its directory
   raise_on_stale: true,                          # enable strict staleness checks (raise on stale)
-  tracked_globs: ["lib/cov_loupe/tools/**/*.rb"] # for 'list' staleness: flag new/missing files
+  tracked_globs: ["lib/my_app/**/*.rb"]          # for 'list' staleness: flag new/missing files
 )
 
 # List all files with coverage summary
@@ -85,7 +87,7 @@ list_result = model.list
 files = list_result['files']
 # Per-file queries
 
-target = 'lib/cov_loupe/base_tool.rb'
+target = 'lib/my_app/order.rb'
 summary = model.summary_for(target)
 uncovered = model.uncovered_for(target)
 detailed = model.detailed_for(target)
@@ -111,7 +113,7 @@ the `:default` output character mode draw Unicode table borders.)
 
 The hash returned by each public coverage query (`list`, `summary_for`, `uncovered_for`, `detailed_for`, `raw_for`, and `project_totals`) starts with `'schema_version' => CovLoupe::SCHEMA_VERSION`. The value is currently `1`. The key stays with the hash when you serialize it to JSON, YAML, or Marshal. It is independent of the gem's `CovLoupe::VERSION` and of SimpleCov's `schema_version` in the input `coverage.json` file. Methods returning text or status values do not add the key.
 
-The shipped [JSON Schema files](../../lib/cov_loupe/schemas/v1/) define the eight v1 payload shapes: `summary`, `raw`, `uncovered`, `detailed`, `list`, `totals`, `validate_result`, and `help`. Each file uses JSON Schema draft 2020-12. `CovLoupe::PayloadSchema.schema_path('list', version: 1)` returns the installed file path; an unknown name or version raises `ArgumentError`. Library `list` and CLI/MCP project coverage share `list.json`: presentation-only `counts` and `warnings` are optional. The schema IDs use URNs until stable public schema URLs are available.
+The shipped [JSON Schema files](https://github.com/keithrbennett/cov-loupe/tree/main/lib/cov_loupe/schemas/v1) define the eight v1 payload shapes: `summary`, `raw`, `uncovered`, `detailed`, `list`, `totals`, `validate_result`, and `help`. Each file uses JSON Schema draft 2020-12. `CovLoupe::PayloadSchema.schema_path('list', version: 1)` returns the installed file path; an unknown name or version raises `ArgumentError`. Library `list` and CLI/MCP project coverage share `list.json`: presentation-only `counts` and `warnings` are optional. The schema IDs use URNs until stable public schema URLs are available.
 
 For a previously saved JSON result, load the schema matching the result's own version before using its coverage fields. Add `json_schemer` to your application's dependencies for this example:
 
@@ -145,6 +147,7 @@ Paths and glob patterns you pass in (query `path` arguments and `tracked_globs`)
 Returns coverage summary for all files in the coverage file.
 
 **Parameters:**
+
 - `sort_order` (Symbol, optional): `:descending` (default) or `:ascending` by coverage percentage
 - `raise_on_stale` (Boolean, optional): Whether to raise error if project is stale. Defaults to model setting.
 - `tracked_globs` (Array<String>, optional): Patterns to filter files (also used for staleness checks). Defaults to model setting.
@@ -165,16 +168,18 @@ worst_files = model.list(sort_order: :ascending)['files'].first(10)
 model.list(raise_on_stale: true)
 ```
 
-### `summary_for(path)`
+### `summary_for(path, raise_on_stale: model default)`
 
 Returns coverage summary for a specific file.
 
 **Parameters:**
+
 - `path` (String): File path (absolute or relative to root)
+- `raise_on_stale` (Boolean, optional): Whether to raise `CovLoupe::CoverageDataStaleError` if the file is stale. Defaults to model setting.
 
 **Returns:** `Hash` - See [summary_for return type](#summary_for)
 
-**Raises:** `CovLoupe::FileError` if file not in coverage data
+**Raises:** `CovLoupe::FileError` if file not in coverage data; when `raise_on_stale` is true, `CovLoupe::CoverageDataStaleError` if stale, `CovLoupe::FileNotFoundError` if the file was deleted, and `CovLoupe::FileError` if it is unreadable
 
 **Example:**
 ```ruby
@@ -184,16 +189,18 @@ summary = model.summary_for(target)
 
 **Note:** `CoverageModel#summary_for` returns the schema version, file path, and summary. The CLI and MCP tools add a `stale` field via `CoveragePayloadPresenter`; if you need staleness in library code, call `model.staleness_for(path)` separately.
 
-### `uncovered_for(path)`
+### `uncovered_for(path, raise_on_stale: model default)`
 
 Returns list of uncovered line numbers for a specific file.
 
 **Parameters:**
+
 - `path` (String): File path (absolute or relative to root)
+- `raise_on_stale` (Boolean, optional): Whether to raise `CovLoupe::CoverageDataStaleError` if the file is stale. Defaults to model setting.
 
 **Returns:** `Hash` - See [uncovered_for return type](#uncovered_for)
 
-**Raises:** `CovLoupe::FileError` if file not in coverage data
+**Raises:** `CovLoupe::FileError` if file not in coverage data; when `raise_on_stale` is true, `CovLoupe::CoverageDataStaleError` if stale, `CovLoupe::FileNotFoundError` if the file was deleted, and `CovLoupe::FileError` if it is unreadable
 
 **Example:**
 ```ruby
@@ -201,16 +208,18 @@ uncovered = model.uncovered_for("lib/foo.rb")
 # => { 'schema_version' => 1, 'file' => 'lib/foo.rb', 'uncovered' => [5, 9, 12], 'summary' => { ... } }
 ```
 
-### `detailed_for(path)`
+### `detailed_for(path, raise_on_stale: model default)`
 
 Returns per-line coverage details with hit counts.
 
 **Parameters:**
+
 - `path` (String): File path (absolute or relative to root)
+- `raise_on_stale` (Boolean, optional): Whether to raise `CovLoupe::CoverageDataStaleError` if the file is stale. Defaults to model setting.
 
 **Returns:** `Hash` - See [detailed_for return type](#detailed_for)
 
-**Raises:** `CovLoupe::FileError` if file not in coverage data
+**Raises:** `CovLoupe::FileError` if file not in coverage data; when `raise_on_stale` is true, `CovLoupe::CoverageDataStaleError` if stale, `CovLoupe::FileNotFoundError` if the file was deleted, and `CovLoupe::FileError` if it is unreadable
 
 **Example:**
 ```ruby
@@ -218,16 +227,18 @@ detailed = model.detailed_for("lib/foo.rb")
 # => { 'schema_version' => 1, 'file' => 'lib/foo.rb', 'lines' => [{'line' => 1, 'hits' => 1, 'covered' => true}, ...], 'summary' => { ... } }
 ```
 
-### `raw_for(path)`
+### `raw_for(path, raise_on_stale: model default)`
 
-Returns raw SimpleCov lines array for a specific file.
+Returns raw SimpleCov lines array for a specific file. Lines SimpleCov marked `"ignored"` (excluded with `nocov` blocks or directive comments) are returned as `null` and, like other `null` lines, are not counted in covered or total lines or in percentages.
 
 **Parameters:**
+
 - `path` (String): File path (absolute or relative to root)
+- `raise_on_stale` (Boolean, optional): Whether to raise `CovLoupe::CoverageDataStaleError` if the file is stale. Defaults to model setting.
 
 **Returns:** `Hash` - See [raw_for return type](#raw_for)
 
-**Raises:** `CovLoupe::FileError` if file not in coverage data
+**Raises:** `CovLoupe::FileError` if file not in coverage data; when `raise_on_stale` is true, `CovLoupe::CoverageDataStaleError` if stale, `CovLoupe::FileNotFoundError` if the file was deleted, and `CovLoupe::FileError` if it is unreadable
 
 **Example:**
 ```ruby
@@ -240,9 +251,10 @@ raw = model.raw_for("lib/foo.rb")
 Generates a formatted table string.
 
 **Parameters:**
+
 - `rows` (Array<Hash>, optional): Custom row data, such as `list['files']`; `file` values may be relative to the project root or absolute. Defaults to `list`
 - `sort_order` (Symbol, optional): `:descending` (default) or `:ascending`
-- `raise_on_stale` (Boolean, optional): Whether to raise error if project is stale. Defaults to model setting.
+- `raise_on_stale` (Boolean, optional): Whether to raise error if project is stale. Defaults to model setting. Used only when `rows` is omitted, since supplied rows are not rechecked.
 - `tracked_globs` (Array<String>, optional): Patterns to filter files. Defaults to model setting.
 - `output_chars` (Symbol, optional): Character mode for table borders and symbols (`:default`, `:fancy`, or `:ascii`).
 
@@ -265,6 +277,7 @@ puts lib_table
 Returns aggregated coverage totals across all files.
 
 **Parameters:**
+
 - `tracked_globs` (Array<String> or String, optional): Glob patterns to filter files. Defaults to model setting.
 - `raise_on_stale` (Boolean, optional): Whether to raise error if project is stale. Defaults to model setting.
 
@@ -276,7 +289,7 @@ totals = model.project_totals
 # => {
 #      'schema_version' => 1,
 #      'lines' => { 'total' => 123, 'covered' => 100, 'uncovered' => 23, 'percentage' => 81.3 },
-#      'tracking' => { 'enabled' => true, 'globs' => ['lib/**/*.rb'] },
+#      'tracking' => { 'enabled' => false, 'globs' => [] },
 #      'files' => { 'total' => 4, 'with_coverage' => { 'total' => 4, 'ok' => 4, 'stale' => { ... } } }
 #    }
 
@@ -293,6 +306,7 @@ Note: The `without_coverage` hash will only be present if `tracked_globs` were s
 Returns the staleness of one file without raising.
 
 **Parameters:**
+
 - `path` (String): File path (absolute or relative to root)
 
 **Returns:** `String` - One of `"ok"`, `"deleted"`, `"newer"`, `"length_mismatch"`, or `"unreadable"`. `"unreadable"` also covers a check that could not be completed, including for a path with no coverage entry; this method does not raise `CovLoupe::FileError`.
@@ -328,6 +342,10 @@ model.root
 File.expand_path(model.summary_for('lib/foo.rb')['file'], model.root)
 # => "/path/to/project/lib/foo.rb"
 ```
+
+### `CoverageReporter.report(threshold: 80, count: 5, model: nil, root: nil, coverage_file: nil)`
+
+Returns a short text report of the lowest-covered files below `threshold`, or `nil` if there are none. A module method on `CovLoupe::CoverageReporter`, meant for a SimpleCov `at_exit` hook; it uses SimpleCov's root and coverage directory when SimpleCov is loaded. See [Test Run Integration](examples/test-run-integration.md) for the parameters and an example.
 
 ## Return Types
 
@@ -465,7 +483,7 @@ Returns `Hash`:
       }
     },
     'without_coverage' => {
-      'total' => Integer,        # Tracked files missing coverage entries
+      'total' => Integer,        # Tracked files missing, unreadable, or skipped
       'by_type' => {
         'missing_from_coverage' => Integer,
         'unreadable' => Integer,
@@ -541,7 +559,7 @@ end
 begin
   model = CovLoupe::CoverageModel.new(raise_on_stale: true)
   files = model.list['files']
-rescue CovLoupe::CoverageDataStaleError => e
+rescue CovLoupe::CoverageDataStaleError, CovLoupe::CoverageDataProjectStaleError => e
   puts "Stale coverage detected: #{e.message}"
   puts "Re-run tests: bundle exec rspec"
   exit 1
@@ -685,7 +703,7 @@ require "cov_loupe"
 model = CovLoupe::CoverageModel.new
 
 # Calculate coverage by directory using the totals API
-patterns = %w[lib/cov_loupe/tools/**/*.rb lib/cov_loupe/commands/**/*.rb lib/cov_loupe/presenters/**/*.rb]
+patterns = %w[app/models/**/*.rb app/controllers/**/*.rb lib/**/*.rb]
 
 directory_stats = patterns.map do |pattern|
   totals = model.project_totals(tracked_globs: pattern)
@@ -791,7 +809,7 @@ tracker.compare        # See what changed
 ```ruby
 require "cov_loupe"
 
-class CoverageReporter
+class MarkdownCoverageReport
   def initialize(model)
     @model = model
   end
@@ -861,7 +879,7 @@ class CoverageReporter
 end
 
 model = CovLoupe::CoverageModel.new
-reporter = CoverageReporter.new(model)
+reporter = MarkdownCoverageReport.new(model)
 reporter.generate_markdown_report("coverage_report.md")
 ```
 
@@ -898,6 +916,7 @@ end
 ```
 
 **When to use custom contexts:**
+
 - Managing coverage for multiple projects in one script
 - Separate log files for different data sources
 - Testing scenarios requiring isolated configurations
@@ -923,11 +942,10 @@ The `list` method returns a `'stale'` field for each file with one of these valu
 
 **Note:** Per-file methods (`summary_for`, `uncovered_for`, `detailed_for`, `raw_for`) do not include staleness information in their return values. To check staleness for an individual file, call `model.staleness_for(path)`.
 
-When `raise_on_stale: true` is enabled in `CoverageModel.new`, the model will raise `CovLoupe::CoverageDataStaleError` exceptions when stale files are detected during method calls.
+When `raise_on_stale: true` is enabled in `CoverageModel.new`, the model raises `CovLoupe::CoverageDataStaleError` from per-file methods and `CovLoupe::CoverageDataProjectStaleError` from project-level methods (`list`, `project_totals`) when stale files are detected. A per-file method raises `CovLoupe::FileNotFoundError` instead for a deleted file and `CovLoupe::FileError` for an unreadable one.
 
 ## Related Documentation
 
-- [Ruby Library Examples](examples/ruby-library-examples.md) - Practical cookbook-style examples
 - [CLI Usage](CLI_USAGE.md) - Command-line interface reference
 - [Error Handling](ERROR_HANDLING.md) - Detailed error handling documentation
 - [MCP Integration](MCP_INTEGRATION.md) - AI assistant integration

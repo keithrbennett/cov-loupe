@@ -1,12 +1,13 @@
 # CLI Fallback for LLMs
 
-[Back to main README](../index.md)
+[Back to main README](../../README.md)
 
 When the MCP server integration isn't working or available, LLMs can use the `cov-loupe` CLI directly with the `-fJ` flag to get the same coverage data that the MCP tools provide.
 
 ## Overview
 
 The `cov-loupe` CLI provides all the same functionality as the MCP tools:
+
 - JSON output via `-fJ` flag for machine-readable responses
 - Same coverage data: summaries, uncovered lines, detailed per-line data, project-wide tables
 - Same configuration options: custom coverage file paths, staleness checking, etc.
@@ -22,7 +23,8 @@ instead with the -fJ flag for multi-line, indented JSON output.
 To discover available commands and options:
   cov-loupe --help
 
-All commands support -fJ for structured, multi-line, indented output.
+The data commands (list, summary, raw, uncovered, detailed, totals) support -fJ for structured,
+multi-line, indented output. validate prints no result of its own; read its exit code.
 
 For detailed documentation, see:
 - README.md in the gem root

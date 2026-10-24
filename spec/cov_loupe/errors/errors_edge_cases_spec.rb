@@ -189,33 +189,24 @@ RSpec.describe CovLoupe do
 
   describe CovLoupe::CoverageDataProjectStaleError do
     describe 'default message generation' do
-      # These tests exercise the private default_message method
-      it 'includes project stale info when message is nil' do
+      it 'uses the default message, not the class name, when message is nil' do
         error = described_class.new(
-          nil, # StandardError sets message to class name when nil
+          nil,
           nil,
           cov_timestamp: 1000,
           newer_files:   %w[file1.rb file2.rb]
         )
 
-        message = error.user_friendly_message
-        # user_friendly_message prefixes with "Coverage data stale (project):"
-        expect(message).to include('Coverage data stale (project)', 'Newer files')
+        expect(error.message).to eq('Coverage data appears stale for project')
+        expect(error.user_friendly_message).to include(
+          'Coverage data stale (project): Coverage data appears stale for project',
+          "Newer files (2):\n  - file1.rb\n  - file2.rb"
+        )
       end
 
-      it 'exercises default_message directly via send' do
-        # Directly test the private default_message method for coverage
-        # This is necessary because user_friendly_message uses `message || default_message`
-        # and StandardError sets message to class name when initialized with nil
-        error = described_class.new(
-          'explicit message',
-          nil,
-          cov_timestamp: 1000
-        )
-
-        # Call the private default_message method directly
-        result = error.send(:default_message)
-        expect(result).to eq('Coverage data appears stale for project')
+      it 'keeps an explicit message' do
+        error = described_class.new('explicit message', nil, cov_timestamp: 1000)
+        expect(error.message).to eq('explicit message')
       end
     end
 

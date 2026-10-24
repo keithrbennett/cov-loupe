@@ -151,4 +151,20 @@ RSpec.describe CovLoupe::CoverageReporter do
       end
     end
   end
+
+  describe 'with SimpleCov defaults' do
+    let(:custom_root) { File.expand_path('spec/fixtures/project_custom_coverage') }
+
+    [
+      ['a relative coverage_dir', 'custom_coverage'],
+      ['an absolute coverage_dir', File.expand_path('spec/fixtures/project_custom_coverage/custom_coverage')],
+    ].each do |description, coverage_dir|
+      it "finds coverage.json under #{description}" do
+        stub_const('SimpleCov', Module.new)
+        allow(SimpleCov).to receive_messages(root: custom_root, coverage_dir: coverage_dir)
+
+        expect(described_class.report(threshold: 80, count: 5)).to include('lib/bar.rb')
+      end
+    end
+  end
 end

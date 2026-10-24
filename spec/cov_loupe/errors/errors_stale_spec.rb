@@ -5,7 +5,7 @@ require 'spec_helper'
 RSpec.describe CovLoupe::CoverageDataStaleError do
   it 'formats a detailed, user-friendly message with UTC/local, delta, and coverage_file' do
     file_time = Time.at(TEST_FILE_TIMESTAMP) # 1970-01-01T00:16:40Z
-    cov_epoch = VERY_OLD_TIMESTAMP           # 1970-01-01T00:00:00Z
+    cov_epoch = VERY_OLD_TIMESTAMP           # 1970-01-01T00:00:01Z
     err = described_class.new(
       'Coverage data appears stale for foo.rb',
       nil,

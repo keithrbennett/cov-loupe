@@ -1,10 +1,10 @@
 ## MCP JSON Inputs
 
-[Back to main README](../../docs/index.md)
+[Back to main README](../../README.md)
 
 This directory contains example JSON-RPC requests that can be sent to the MCP server over stdio.
 
-Each file contains a single line of JSON (NDJSON-ready), so you can pipe it directly to the executable.
+The inputs are `coverage_summary.json`, `coverage_detailed.json`, `coverage_raw.json`, `uncovered_lines.json`, and `list.json`. Each file contains a single line of JSON (NDJSON-ready), so you can pipe it directly to the executable.
 
 **Target Project:** These inputs are designed to work with the demo project located at `docs/fixtures/demo_project`.
 

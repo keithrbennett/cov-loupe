@@ -32,7 +32,6 @@ Run all command examples found in:
 
 Do NOT test examples in:
 - `docs/dev/arch-decisions/**/*.md`
-- `docs/dev/presentations/**/*.md`
 
 ## Process
 
@@ -151,12 +150,12 @@ Error: unknown option '--format'
 ```
 
 **Issue:**
-The `--format` flag has been replaced with `-f` or `--output-format`
+Use `-f` / `--format`, placed before the subcommand
 
 **Suggested Fix:**
 Update documentation to use:
 \`\`\`bash
-cov-loupe list --output-format json
+cov-loupe --format json list
 \`\`\`
 
 ---

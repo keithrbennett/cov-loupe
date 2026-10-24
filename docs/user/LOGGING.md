@@ -1,5 +1,7 @@
 # Logging
 
+[Back to main README](../../README.md)
+
 cov-loupe writes diagnostics to the logger of the active context. CLI and MCP sessions use
 `stderr` by default; library sessions have logging disabled by default. Use
 `--log-file`/`-l`, `CovLoupe.default_log_file`, or `CovLoupe.active_log_file` to
@@ -10,7 +12,8 @@ because it would corrupt CLI output or the MCP JSON-RPC stream.
 In the CLI, the `CLI parameters` line is written only to a log file, never to
 `stderr`. An error is printed to stderr once as the user-facing message rather
 than also being logged there; with `--error-mode debug`, the CLI follows it with
-the full stack trace. Warnings and diagnostics about the coverage data can still
+the full stack trace (only its first 5 lines when logging to a file, which gets the
+full trace). Warnings and diagnostics about the coverage data can still
 appear on stderr. With a file target, the file receives the
 parameters line (for each run that gets past option parsing, including the
 default report) and the logged error (unless `--error-mode off` is used), and

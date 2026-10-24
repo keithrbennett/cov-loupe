@@ -31,6 +31,16 @@ project root.
 - **Question answered:** "Did I do this right?"
 - **Time:** 10-30 minutes
 
+**[Review Documentation](review/review-documentation.md)**
+- **When:** Before a release or after large doc changes
+- **Output:** Report of inaccurate, unclear, missing, or inconsistent documentation (no changes made)
+- **Question answered:** "Are the docs right?"
+
+**[Pull Request Review](review/pull-request-review-prompt.md)**
+- **When:** Reviewing a pull request
+- **Output:** Assessment of correctness, scope, and test coverage
+- **Question answered:** "Is this PR ready to merge?"
+
 **[Release Review](review/release-review.md)**
 - **When:** Any time before a release, with or without having run `rake release:bump` first
 - **Output:** Checklist of what is needed to release (target version, release notes gaps, schema version, major-release docs, cleanup, remaining steps)

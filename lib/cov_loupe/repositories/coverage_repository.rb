@@ -141,7 +141,7 @@ module CovLoupe
         end
         details = "{\n#{json_lines.join(",\n")}\n}"
 
-        raise CoverageDataError, 'Duplicate paths detected after normalization.' \
+        raise CoverageDataError, 'Duplicate paths detected after normalization. ' \
           "The following keys normalize to the same path:\n#{details}"
       end
     end

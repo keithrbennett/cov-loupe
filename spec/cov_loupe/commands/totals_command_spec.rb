@@ -154,16 +154,20 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
           .and_return(presenter_double)
       end
 
-      it "#{should_warn ? 'displays' : 'does not display'} a warning about missing timestamps" do
-        _result, _out, stderr_output = capture_io { command.execute([]) }
+      %i[table json].each do |format|
+        it "#{should_warn ? 'displays' : 'does not display'} a warning about missing timestamps " \
+          "in #{format} format" do
+          cli_context.config.format = format
+          _result, _out, stderr_output = capture_io { command.execute([]) }
 
-        if should_warn
-          expect(stderr_output).to include(
-            'WARNING: Coverage timestamps are missing',
-            'Time-based staleness checks were skipped'
-          )
-        else
-          expect(stderr_output).not_to include('WARNING: Coverage timestamps are missing')
+          if should_warn
+            expect(stderr_output).to include(
+              'WARNING: Coverage timestamps are missing',
+              'Time-based staleness checks were skipped'
+            )
+          else
+            expect(stderr_output).not_to include('WARNING: Coverage timestamps are missing')
+          end
         end
       end
     end

@@ -51,7 +51,7 @@ module CovLoupe
     )
       # Default to empty array (show all files in the coverage file and don't look for
       # files lacking coverage data)
-      # Users should set COV_LOUPE_OPTS to match SimpleCov track_files patterns
+      # Users should set COV_LOUPE_OPTS to match SimpleCov cover globs
       tracked_globs = [] if tracked_globs.nil?
       super
     end

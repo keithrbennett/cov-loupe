@@ -108,21 +108,23 @@ module CovLoupe
       @volume_case_sensitive = PathUtils.volume_case_sensitive?(@root)
     end
 
-    # Returns { 'file' => <relative_path>, 'lines' => [hits|nil,...] }
+    # Returns { 'schema_version' => 1, 'file' => <relative_path>, 'lines' => [hits|nil,...] }
     def raw_for(path, raise_on_stale: @default_raise_on_stale)
       file_abs, coverage_lines = coverage_data_for(path, raise_on_stale: raise_on_stale)
       # relative_paths returns a deep copy, so callers can't mutate the cached lines array
       relative_paths(PayloadSchema.add('file' => file_abs, 'lines' => coverage_lines))
     end
 
-    # Returns { 'file' => <relative_path>, 'summary' => {'covered'=>, 'total'=>, 'percentage'=>} }
+    # Returns { 'schema_version' => 1, 'file' => <relative_path>,
+    #           'summary' => {'covered'=>, 'total'=>, 'percentage'=>} }
     def summary_for(path, raise_on_stale: @default_raise_on_stale)
       file_abs, coverage_lines = coverage_data_for(path, raise_on_stale: raise_on_stale)
       relative_paths(PayloadSchema.add('file' => file_abs,
         'summary' => CoverageCalculator.summary(coverage_lines)))
     end
 
-    # Returns { 'file' => <relative_path>, 'uncovered' => [line,...], 'summary' => {...} }
+    # Returns { 'schema_version' => 1, 'file' => <relative_path>, 'uncovered' => [line,...],
+    #           'summary' => {...} }
     def uncovered_for(path, raise_on_stale: @default_raise_on_stale)
       file_abs, coverage_lines = coverage_data_for(path, raise_on_stale: raise_on_stale)
       relative_paths(PayloadSchema.add({
@@ -132,7 +134,8 @@ module CovLoupe
       }))
     end
 
-    # Returns { 'file' => <relative_path>, 'lines' => [{'line'=>,'hits'=>,'covered'=>},...], 'summary' => {...} }
+    # Returns { 'schema_version' => 1, 'file' => <relative_path>,
+    #           'lines' => [{'line'=>,'hits'=>,'covered'=>},...], 'summary' => {...} }
     def detailed_for(path, raise_on_stale: @default_raise_on_stale)
       file_abs, coverage_lines = coverage_data_for(path, raise_on_stale: raise_on_stale)
       relative_paths(PayloadSchema.add({
@@ -148,6 +151,7 @@ module CovLoupe
     # @param raise_on_stale [Boolean] When true, raises errors if sources are newer than coverage
     # @param tracked_globs [Array<String>] Glob patterns to filter tracked files
     # @return [Hash] Hash containing:
+    #   - 'schema_version': Payload schema version (Integer)
     #   - 'files': Array of file coverage data sorted by percentage
     #   - 'skipped_files': Files that could not be processed
     #   - 'missing_tracked_files': Tracked files not in coverage data
@@ -155,7 +159,7 @@ module CovLoupe
     #   - 'deleted_files': Source files removed since coverage run
     #   - 'length_mismatch_files': Files with line count mismatches
     #   - 'unreadable_files': Files that could not be read
-    #   - 'timestamp_status': Overall staleness status
+    #   - 'timestamp_status': 'ok', or 'missing' when coverage has no timestamp
     #
     # @note Complexity: O(n log n) where n is the number of tracked files due to sorting.
     #   File I/O for staleness checks adds O(m) where m is the number of tracked source files.

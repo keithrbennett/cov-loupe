@@ -1,6 +1,6 @@
 # Output Character Mode
 
-[Back to main README](../../index.md)
+[Back to main README](../../../README.md)
 
 This document describes the architectural decision for implementing a global output character mode that controls how cov-loupe draws its own decoration (Unicode or ASCII) across CLI and MCP interfaces.
 
@@ -72,7 +72,8 @@ decoration.
 ### Mode Options
 
 Three modes are available:
-- `default`: Auto-detects terminal UTF-8 support at runtime → fancy if supported, otherwise ASCII
+
+- `default`: Checks the output encoding at runtime → fancy if UTF-8, otherwise ASCII
 - `fancy`: Draws tables with box-drawing characters and marks covered lines with ✓
 - `ascii`: Draws tables with `+ - |` and marks covered lines with `+`; JSON output escapes
   non-ASCII as `\uXXXX`. Data is never changed. (Originally: transliteration of all output with a
@@ -82,7 +83,7 @@ Three modes are available:
 
 - **CLI**: `-O/--output-chars MODE` flag (case-insensitive, short forms `d|f|a`)
 - **MCP**: Optional `output_chars` parameter in tool requests (overrides server default)
-- **No environment variable**: Intentionally omitted to keep configuration simple and explicit
+- **No dedicated environment variable**: `COV_LOUPE_OPTS='-O ascii'` works like any other flag; a dedicated variable was intentionally omitted to keep configuration simple and explicit
 
 ### Core Implementation
 
@@ -96,7 +97,7 @@ module OutputChars
   def self.resolve_mode(mode)
     return :fancy if mode == :fancy
     return :ascii if mode == :ascii
-    # default: detect terminal UTF-8 support
+    # default: check the output encoding for UTF-8
     stdout_utf8? ? :fancy : :ascii
   end
 

@@ -40,7 +40,7 @@ FIXTURE_PROJECT1_COVERAGE_PATH = (FIXTURES_DIR / 'project1' / 'coverage' / 'cove
 
 # Test timestamp constants for consistent and documented test data
 # Timestamp used by the mocked coverage.json documents (see CoverageFileMockHelpers):
-# 1720000000 = 2024-07-03 16:26:40 UTC
+# 1720000000 = 2024-07-03 09:46:40 UTC
 FIXTURE_COVERAGE_TIMESTAMP = 1_720_000_000
 
 # Very old timestamp: 1 = 1970-01-01 00:00:01 UTC (Unix epoch + 1s)

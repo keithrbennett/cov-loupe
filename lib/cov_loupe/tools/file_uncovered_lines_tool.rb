@@ -12,14 +12,14 @@ module CovLoupe
       description <<~DESC
         Use this when the user wants to know which lines in a file still lack coverage.
         Do not use this for overall percentages; file_coverage_summary is faster when counts are enough.
-        Inputs: file path (required) plus optional root/coverage_file/raise_on_stale flag inherited from BaseTool.
-        Output: JSON object with keys "file", "uncovered" (array of integers), "summary" {"covered","total","percentage"} (percentage is null if the file has no coverable lines), and "stale": "ok" | "deleted" | "newer" | "length_mismatch" | "unreadable".
-        Example: "List uncovered lines for lib/cov_loupe/tools/file_coverage_summary_tool.rb".
+        Inputs: file path (required) plus optional root/coverage_file/raise_on_stale/error_mode/output_chars.
+        Output: JSON object with keys "schema_version" (Integer), "file", "uncovered" (array of integers), "summary" {"covered","total","percentage"} (percentage is null if the file has no coverable lines), and "stale": "ok" | "deleted" | "newer" | "length_mismatch" | "unreadable".
+        Example: "List uncovered lines for lib/my_app/order.rb".
       DESC
       input_schema(**input_schema_def)
       class << self
         def call(path:, root: nil, coverage_file: nil, raise_on_stale: nil,
-          error_mode: 'log', output_chars: nil, server_context:)
+          error_mode: nil, output_chars: nil, server_context:)
           call_with_file_payload(
             path:           path,
             error_mode:     error_mode,

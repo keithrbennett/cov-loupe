@@ -12,7 +12,15 @@ on:
     # documentation validation for pull requests and pushes to main only.
     paths: &docs_paths
       - 'docs/**'
+      # Root and example files the docs pages include with include-markdown
+      - 'README.md'
+      - 'RELEASE_NOTES.md'
+      - 'CONTRIBUTING.md'
+      - 'CODE_OF_CONDUCT.md'
+      - 'LICENSE'
+      - 'examples/**/README.md'
       - 'mkdocs.yml'
+      - 'dev/mkdocs_hooks/**'
       - '.github/workflows/pages.yml'
       - 'Rakefile'
       - 'Gemfile'

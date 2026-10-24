@@ -1,9 +1,8 @@
 # MCP Integration Guide
 
-[Back to main README](../index.md)
+[Back to main README](../../README.md)
 
-> **⚠️ BREAKING CHANGE (v4.0.0+):** The `-m/--mode mcp` flag is now **required** to run cov-loupe as an MCP server. 
-> Automatic mode detection based on TTY/stdin has been removed. If you're upgrading from an earlier version, you **must** update your MCP server configuration to include `-m mcp` or `--mode mcp` or the server will run in CLI mode and hang. See [Migration Guide](migrations/MIGRATING_TO_V4.md) for details.
+> **⚠️ Important:** The `-m/--mode mcp` flag is **required** to run cov-loupe as an MCP server. Without it, cov-loupe runs in CLI mode, prints a CLI report and exits, so the client never completes its MCP handshake. Configurations written for versions before 4.0 must add it; see [Migrating to v4](migrations/MIGRATING_TO_V4.md).
 
 ## Table of Contents
 
@@ -18,12 +17,14 @@
     - [OpenCode](#opencode)
     - [Pi](#pi)
     - [Kilo](#kilo)
-- [Stdout Must Stay Clean During MCP Startup](#stdout-must-stay-clean-during-mcp-startup)
+- [Stdout Must Stay Clean](#stdout-must-stay-clean)
 - [Available MCP Tools](#available-mcp-tools-functions)
     - [JSON Response Format](#json-response-format)
     - [Error Responses](#error-responses)
 - [Testing Your Setup](#testing-your-setup)
 - [Troubleshooting](#troubleshooting)
+- [Advanced Configuration](#advanced-configuration)
+- [Next Steps](#next-steps)
 
 ## Setup by Client
 
@@ -250,13 +251,14 @@ To remove the server, delete the `cov-loupe` entry from `mcp` (or set `"enabled"
 
 ### Pi
 
-Pi does not include built-in MCP support. To use cov-loupe with Pi, install the community [`pi-mcp-adapter`](https://github.com/nicobailon/pi-mcp-adapter) extension and restart Pi:
+Pi 0.99.0 and later include built-in MCP support. Add the server with:
 
 ```sh
-pi install npm:pi-mcp-adapter
+pi mcp add cov-loupe -- cov-loupe -m mcp
+pi mcp list   # verify the connection
 ```
 
-The adapter reads standard `mcp.json` files: `.mcp.json` in the project root (project-specific), or `~/.config/mcp/mcp.json` (all projects). Add the server to either one:
+This writes the user-level `~/.pi/agent/mcp.json`. Add `-l` (`pi mcp add -l cov-loupe -- cov-loupe -m mcp`) to write the project's `.pi/mcp.json` instead; Pi reads project configuration only after you trust the project. Either file uses the standard format:
 
 ```json
 {
@@ -269,11 +271,9 @@ The adapter reads standard `mcp.json` files: `.mcp.json` in the project root (pr
 }
 ```
 
-By default `pi install` is user-wide; add `-l` (`pi install npm:pi-mcp-adapter -l`) to install it for the current project only. In non-interactive runs (`pi -p`), Pi ignores project-local extensions (including a `-l` install) unless you pass `--approve` to trust project-local files for that run.
+Inside Pi, `/mcp` shows connection status, and `/reload` picks up servers added or changed outside the session. To remove the server, run `pi mcp remove cov-loupe` (add `-l` for the project file).
 
-The adapter exposes MCP tools through a single `mcp` proxy tool and connects to servers lazily, so ask Pi to search for or call the cov-loupe tools (for example, "Using the cov-loupe MCP server, show me the version"). Inside Pi, `/mcp` shows the adapter's status and `/mcp setup` walks through configuration.
-
-To remove the server, delete the `cov-loupe` entry from the `mcp.json` file where you added it and run `/reload` (or restart Pi). To remove the adapter itself, run `pi remove npm:pi-mcp-adapter`. See the adapter's README for its other config locations and precedence rules.
+Older Pi versions need the community [`pi-mcp-adapter`](https://github.com/nicobailon/pi-mcp-adapter) extension instead (`pi install npm:pi-mcp-adapter`); see its README for configuration.
 
 ### Kilo
 
@@ -295,9 +295,11 @@ For global configuration, create or edit `~/.config/kilo/kilo.json`. For project
 
 **Note:** Ensure `cov-loupe` is in your `PATH`, or use the [launch wrapper](#step-by-step-the-launch-wrapper).
 
-## Stdout Must Stay Clean During MCP Startup
+## Stdout Must Stay Clean
 
 MCP over stdio is strict: the server must not print anything to `stdout` before the MCP handshake begins. Any banner, warning, dependency-resolution message, or debug output written before that point can cause the client to reject startup or report a handshake failure.
+
+The rule holds for the server's whole lifetime: stdout carries only JSON-RPC messages. A `project_validate` predicate that prints with `puts` writes to stdout and can break the connection; have predicates write diagnostics to `$stderr`.
 
 When `cov-loupe -m mcp` is launched through a RubyGems-installed stub, wrapper layers can inspect the current directory's `Gemfile` before `cov-loupe` itself starts. In projects with no lockfile, missing gems, or an otherwise unsettled bundle, that can print text such as `Resolving dependencies...` and corrupt MCP startup.
 
@@ -372,13 +374,13 @@ cov-loupe exposes 8 MCP tools by default, and 9 when started with `--allow-code-
 | `project_coverage` | Project-wide coverage (JSON, table, YAML, etc.) | `sort_order`, `tracked_globs`, `format` |
 | `project_coverage_totals` | Aggregated line totals | `tracked_globs` |
 | `project_validate` | Validate coverage policies (only with `--allow-code-predicates`) | `code` or `file` |
-| `help` | Tool discovery | (none) |
-| `version` | Version information | (none) |
+| `help` | Tool discovery | (no tool-specific parameters) |
+| `version` | Version information | (no tool-specific parameters) |
 
 ### JSON Response Format
 
-For tools that return structured data, `cov-loupe` serializes the data as a JSON string and returns it inside a `text` part of the MCP response.
-Successful structured payloads begin with integer `schema_version`. Library coverage hashes carry the same field. The [shipped JSON Schemas](../../lib/cov_loupe/schemas/v1/) define the payloads; see [Schema Version](LIBRARY_API.md#schema-version) for schema lookup and compatibility rules. Check `result.isError` before parsing the content.
+For tools that return structured data, `cov-loupe` serializes the data as a JSON string and returns it inside a `text` part of the MCP response. The exception is `project_coverage` with a `format` other than `json` or `pretty_json`, which returns YAML, a table, or Ruby-rendered text instead.
+Successful structured payloads begin with integer `schema_version`. Library coverage hashes carry the same field. The [shipped JSON Schemas](https://github.com/keithrbennett/cov-loupe/tree/main/lib/cov_loupe/schemas/v1) define the payloads; see [Schema Version](LIBRARY_API.md#schema-version) for schema lookup and compatibility rules. Check `result.isError` before parsing the content.
 
 **Example:**
 ```json
@@ -388,6 +390,8 @@ Successful structured payloads begin with integer `schema_version`. Library cove
 }
 ```
 
+Whitespace varies by tool: the file tools, `project_coverage_totals`, and `project_validate` return indented JSON, while `help` and `project_coverage` with the default `format: json` return it on one line (other `project_coverage` formats are not JSON; see above). Parse the JSON rather than relying on its layout.
+
 **Reasoning:**
 While returning JSON in a `resource` part with `mimeType: "application/json"` is more semantically correct, major MCP clients (including Google's Gemini and Anthropic's Claude) were found to not support this format, causing validation errors. They expect a `resource` part to contain a `uri`.
 
@@ -395,6 +399,7 @@ To ensure maximum compatibility, the decision was made to use a simple `text` pa
 
 **Further Reading:**
 This decision was informed by discussions with multiple AI models. For more details, see these conversations:
+
 - [Perplexity AI Discussion](https://www.perplexity.ai/search/title-resolving-a-model-contex-IfpFWU1FR5WQXQ8HcQctyg#0)
 - [ChatGPT Discussion](https://chatgpt.com/share/68e4d7e1-cad4-800f-80c2-58b33bfc31cb)
 
@@ -415,7 +420,7 @@ JSON-RPC `error` responses are reserved for protocol- and dispatch-level failure
     "content": [
       {
         "type": "text",
-        "text": "{\"tools\":[{\"tool\":\"file_coverage_summary\",...}]}"
+        "text": "{\"schema_version\":1,\"tools\":[{\"tool\":\"file_coverage_summary\",...}]}"
       }
     ]
   }
@@ -433,7 +438,7 @@ JSON-RPC `error` responses are reserved for protocol- and dispatch-level failure
     "content": [
       {
         "type": "text",
-        "text": "Error: file not found in coverage data: nonexistent.rb"
+        "text": "Error: File error: No coverage entry found for /path/to/project/nonexistent.rb"
       }
     ]
   }
@@ -468,10 +473,11 @@ When the MCP server starts, you can pass CLI options via the startup command. Th
 |------------|-------------------|----------------|-------|
 | `-R`, `--root` | ✅ Default | `root` | Request param overrides; CLI sets default |
 | `-c`, `--coverage-file` | ✅ Default | `coverage_file` | Request param overrides; CLI sets default |
-| `-S`, `--raise-on-stale` | ✅ Default | `raise_on_stale` | Request param overrides; CLI sets default (`false` or `true`) |
-| `-g`, `--tracked-globs` | ✅ Default | `tracked_globs` | Request param overrides; CLI sets default (array) |
+| `-S`, `--raise-on-stale BOOLEAN` | ✅ Default | `raise_on_stale` | Request param overrides; CLI sets default (`false` or `true`) |
+| `-g`, `--tracked-globs` | ✅ Default | `tracked_globs` | Request param overrides; CLI sets default (array). Accepted only by `project_coverage` and `project_coverage_totals` |
 | `--error-mode` | ✅ Yes | `error_mode` | Sets server-wide error handling; can override per tool |
 | `-l`, `--log-file` | ✅ Yes | N/A | Sets server log location (cannot override per tool) |
+| `-O`, `--output-chars` | ✅ Default | `output_chars` | Request param overrides; CLI sets default (`default`, `fancy`, or `ascii`) |
 | `-f`, `--format` | ❌ No | N/A | CLI-only presentation flag (not used by MCP) |
 | `-o`, `--sort-order` | ❌ No | N/A | CLI flag ignored in MCP; pass `sort_order` per `project_coverage` tool call |
 | `-s`, `--source` | ❌ No | N/A | CLI-only presentation flag (not used by MCP) |
@@ -481,28 +487,29 @@ When the MCP server starts, you can pass CLI options via the startup command. Th
 | `--[no-]allow-code-predicates` | ✅ Yes | N/A | Registers `project_validate`, which runs client-supplied Ruby (see [Policy Validation Tools](#policy-validation-tools)). Default: off; `--no-allow-code-predicates` overrides a `COV_LOUPE_OPTS` setting. |
 
 **Key Takeaways:**
-- **Server-level options** (`--error-mode`, `--log-file`, `--allow-code-predicates`): Set once when server starts, apply to all tool calls
-- **Tool-level options** (`root`, `coverage_file`, `raise_on_stale`, `tracked_globs`): CLI args provide defaults; per-tool JSON params override when provided
+
+- **Server-level options** (`--error-mode`, `--log-file`, `--allow-code-predicates`): Set once when server starts, apply to all tool calls (a call's `error_mode` overrides `--error-mode` for that call)
+- **Tool-level options** (`root`, `coverage_file`, `raise_on_stale`, `tracked_globs`, `output_chars`): CLI args provide defaults; per-tool JSON params override when provided (`tracked_globs` only on the two project coverage tools)
 - **CLI-only options** (`--format`, `--source`, etc.): Not applicable to MCP mode
 
 **Precedence for MCP tool config:** `JSON request param` > `CLI args used to start MCP` (including `COV_LOUPE_OPTS`) > built-in defaults (`root: '.'`, `raise_on_stale: false`, `coverage_file: nil`, `tracked_globs: []` - no filtering, no tracking).
 
 CLI-only presentation flags (`-f/--format`, `-s/--source`, `-n/--context-lines`, `-C/--color`, and `-o/--sort-order`) never flow into MCP. Pass `sort_order` explicitly in each `project_coverage` tool request when you need non-default ordering.
 
-**Data caching:** Coverage data is cached in a global singleton (`ModelDataCache`) and shared across all `CoverageModel` instances. When the coverage file changes (based on file signature and MD5 digest), the cache automatically reloads fresh data. Model instances themselves are lightweight and created fresh for each tool request.
+**Data caching:** Coverage data is cached in a global singleton (`ModelDataCache`) and shared by all `CoverageModel` instances that use the same coverage file and root. When the coverage file changes (based on file signature and MD5 digest), the cache automatically reloads fresh data. Model instances themselves are lightweight and created fresh for each tool request.
 
 ### Common Parameters
 
-All file-specific tools accept these parameters in the JSON request:
+The file tools and the project tools (`project_coverage`, `project_coverage_totals`, `project_validate`) accept these parameters in the JSON request (`help` and `version` take only `error_mode` and `output_chars`):
 
-- `path` (required for file tools) - File path (relative or absolute)
-- `root` (optional) - Project root directory (default: `.`)
-- `coverage_file` (optional) - Path to the `coverage.json` file, or to a directory containing one. See [Configuring the Coverage File](../index.md#configuring-the-coverage-file) for details.
-- `raise_on_stale` (optional) - Raise error on staleness: `false` (default) or `true`
-- `error_mode` (optional) - Error handling: `"off"`, `"log"` (default), `"debug"` (overrides server-level setting)
-- `output_chars` (optional) - Output character mode: `"default"`, `"fancy"`, or `"ascii"`. `"ascii"` draws table borders with ASCII characters and escapes non-ASCII as `\uXXXX` in successful JSON payloads. Data is never changed, so error results and non-JSON formats can contain non-ASCII characters. See [`--output-chars`](CLI_USAGE.md#output-chars).
+- `path` (file tools only, where it is required) - File path (relative or absolute); the project tools reject it
+- `root` (optional) - Project root directory (default: the server's `--root`, which is `.` unless set)
+- `coverage_file` (optional) - Path to the `coverage.json` file, or to a directory containing one. See [Configuring the Coverage File](../../README.md#configuring-the-coverage-file) for details.
+- `raise_on_stale` (optional) - Raise error on staleness: `false` or `true` (default: the server's `--raise-on-stale`, which is `false` unless set)
+- `error_mode` (optional) - Error handling: `"off"`, `"log"`, `"debug"` (defaults to the server's `--error-mode`, which is `log` unless set)
+- `output_chars` (optional) - Output character mode: `"default"`, `"fancy"`, or `"ascii"` (short codes: `d`, `f`, `a`). `"ascii"` draws table borders with ASCII characters and escapes non-ASCII as `\uXXXX` in successful JSON payloads. Data is never changed, so error results and non-JSON formats can contain non-ASCII characters. See [`--output-chars`](CLI_USAGE.md#output-chars).
 
-`project_coverage` additionally accepts `sort_order` (`"ascending"` or `"descending"`) and `format` (`"json"`, `"pretty_json"`, `"yaml"`, `"amazing_print"`, `"inspect"`, `"puts"`, `"pretty_print"`, `"table"`; short codes: `j`, `J`, `y`, `a`, `i`, `p`, `P`, `t`).
+`project_coverage` and `project_coverage_totals` also accept `tracked_globs` (an array of glob patterns; `project_validate` does not). `project_coverage` additionally accepts `sort_order` (`"ascending"` or `"descending"`; short codes: `a`, `d`) and `format` (`"json"`, `"pretty_json"`, `"yaml"`, `"amazing_print"`, `"inspect"`, `"puts"`, `"pretty_print"`, `"table"`; short codes: `j`, `J`, `y`, `a`, `i`, `p`, `P`, `t`).
 
 ### Tool Details
 
@@ -531,21 +538,24 @@ when a file has no coverable lines (for example, a file containing only comments
 ```json
 {"schema_version": 1, "file": "...", "lines": [1, 0, null, 5, 2, null, 1], "stale": "ok"}
 ```
+Lines SimpleCov marked `"ignored"` (excluded with `nocov` blocks or directive comments) are returned as `null` and, like other `null` lines, are not counted in covered or total lines or in percentages.
 
 **Staleness values:** `"ok"` (fresh), `"deleted"` (source deleted), `"newer"` (timestamp), `"length_mismatch"` (length), `"unreadable"` (source could not be read, or its staleness check failed)
 
 #### Project-Wide Tools
 
 **`project_coverage`** - Coverage for all files in various formats
-- Parameters: `sort_order` (`ascending`|`descending`), `tracked_globs` (array), `format` (`json`|`pretty_json`|`yaml`|`amazing_print`|`inspect`|`puts`|`pretty_print`|`table`)
+
+- Parameters: the [common parameters](#common-parameters), plus `sort_order` (`ascending`|`descending`, default `descending`), `tracked_globs` (array), `format` (`json`|`pretty_json`|`yaml`|`amazing_print`|`inspect`|`puts`|`pretty_print`|`table`)
 - Default format: `json`
-- Returns: JSON object (format dependent):
-  - JSON/pretty_json/yaml/amazing_print/inspect/puts/pretty_print: `{"schema_version": 1, "files": [...], "counts": {"total": N, "ok": N, "stale": N}, "skipped_files": [...], "missing_tracked_files": [...], "newer_files": [...], "deleted_files": [...], "length_mismatch_files": [...], "unreadable_files": [...], "timestamp_status": "ok|missing", "warnings": [...]}`
-  - Table: Plain text table with box-drawing characters
+- Returns (format dependent):
+  - `json`/`pretty_json`: a JSON object; `yaml`/`amazing_print`/`inspect`/`puts`/`pretty_print`: the same data rendered in that format, not JSON. The data is `{"schema_version": 1, "files": [...], "counts": {"total": N, "ok": N, "stale": N}, "skipped_files": [...], "missing_tracked_files": [...], "newer_files": [...], "deleted_files": [...], "length_mismatch_files": [...], "unreadable_files": [...], "timestamp_status": "ok|missing", "warnings": [...]}` (`warnings` is present only when `timestamp_status` is `"missing"`)
+  - Table: Plain text table with box-drawing characters (ASCII with `output_chars: "ascii"`)
   - Each entry in `files` has a `percentage` that is `null` when the file has no coverable lines (shown as `n/a` in the table).
 
 **`project_coverage_totals`** - Aggregated line totals
-- Parameters: `tracked_globs` (array), `raise_on_stale`
+
+- Parameters: the [common parameters](#common-parameters), plus `tracked_globs` (array)
 - Returns: `{"schema_version":1,"lines":{"total":N,"covered":N,"uncovered":N,"percentage":Float|null,"included_files":N,"excluded_files":N},"tracking":{"enabled":Boolean,"globs":[String]},"files":{"total":N,"with_coverage":{"total":N,"ok":N,"stale":{"total":N,"by_type":{"deleted":N,"newer":N,"length_mismatch":N,"unreadable":N}}},"without_coverage":{"total":N,"by_type":{"missing_from_coverage":N,"unreadable":N,"skipped":N}}},"timestamp_status":"ok|missing","warnings":[String]}`
 - `without_coverage` is only present when tracking is enabled (tracked globs provided).
 - `warnings` is present when `timestamp_status` is `"missing"`.
@@ -558,12 +568,12 @@ The server registers `project_validate` only when started with `--allow-code-pre
 
 It is off by default because the predicate is Ruby written by the MCP client, usually an LLM, and the user may never see it. The server runs as its own process, outside any shell sandbox or command-approval prompts the client applies, so a client steered by prompt injection could run arbitrary code with your privileges. Enable it only if you accept that risk, for example on a large project where a predicate's single Boolean is far smaller than the `project_coverage` output an LLM would otherwise have to read. Clients that have a shell can run `cov-loupe validate` instead, which goes through the client's usual command controls.
 
-- Parameters: Either `code` (Ruby string) OR `file` (path to Ruby file), plus optional `root`, `coverage_file`, `raise_on_stale`, `error_mode`
+- Parameters: Either `code` (Ruby string) OR `file` (path to Ruby file; a relative path is resolved against `root`, unlike the CLI's `validate`, which resolves it against the current directory), plus optional `root`, `coverage_file`, `raise_on_stale`, `error_mode`, `output_chars`. A predicate must not print to stdout, which carries the MCP protocol; use `$stderr`
 - Returns: `{"schema_version": 1, "result": Boolean}`. The predicate's return value is coerced by truthiness (as in the CLI exit code), so `result` is always a Boolean; a false result still has `isError: false` because the tool call succeeded.
 - Execution errors (syntax error in the predicate, missing predicate file, etc.) return `isError: true` with the friendly error message in `content`
 - Security Warning: Predicates execute as arbitrary Ruby code with full system privileges. Only use predicate files from trusted sources.
 - Examples:
-    - Check if all files have at least 80% coverage: `{"code": "->(m) { m.list[\"files\"].all? { |f| f['percentage'].nil? || f['percentage'] >= 80 } }"}`
+    - Check if all files have at least 80% coverage: `{"code": "->(m) { m.list['files'].all? { |f| f['percentage'].nil? || f['percentage'] >= 80 } }"}`
     - Run coverage policy from file: `{"file": "coverage_policy.rb"}`
 
 #### Utility Tools
@@ -572,7 +582,8 @@ It is off by default because the predicate is Ruby written by the MCP client, us
 **`version`** - Version information
 
 `help` returns:
-- `tools` - guidance for each MCP tool (`use_when`, `avoid_when`, `inputs`)
+
+- `tools` - guidance for each available MCP tool other than `help` itself (`use_when`, `avoid_when`, `inputs`)
 - `resources` - canonical shared resource values:
     - `repo` (public GitHub URL)
     - `docs` (public docs URL)
@@ -606,8 +617,8 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"version","
 # Test help tool (no parameters needed)
 echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"help","arguments":{}}}' | cov-loupe -m mcp
 
-# Test summary tool (use root param if needed)
-echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"lib/cov_loupe/model/model.rb","root":"."}}}' | cov-loupe -m mcp
+# Test summary tool: run from your project root, replacing lib/my_app/order.rb with a file in your coverage
+echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"lib/my_app/order.rb","root":"."}}}' | cov-loupe -m mcp
 
 # Optional error sanity check: the response should contain a `result` with `isError: true`
 echo '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"nonexistent.rb","root":"."}}}' | cov-loupe -m mcp
@@ -620,11 +631,12 @@ echo '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"file_cover
 ```
 
 **Important Notes:**
+
 - JSON-RPC messages must be on a single line. Multi-line JSON will cause parse errors.
 - CLI flags like `-R` set server defaults, but per-request JSON parameters still win.
-- The `root` parameter is optional and defaults to `.` (current directory).
-- The `docs/fixtures/demo_project` example above uses a committed fixture whose coverage timestamp is deliberately set far in the future, so its responses are reproducible on a fresh clone.
-- If you see text such as `Resolving dependencies...` before the JSON-RPC response, your launcher polluted `stdout` before MCP startup. See [Stdout Must Stay Clean During MCP Startup](#stdout-must-stay-clean-during-mcp-startup).
+- The `root` parameter is optional and defaults to the server's `--root` (`.` unless set).
+- The `docs/fixtures/demo_project` example above must run from the root of a cov-loupe checkout. It uses a committed fixture whose coverage timestamp is deliberately set far in the future, so its responses are reproducible on a fresh clone.
+- If you see text such as `Resolving dependencies...` before the JSON-RPC response, your launcher polluted `stdout` before MCP startup. See [Stdout Must Stay Clean](#stdout-must-stay-clean).
 
 ### Testing in AI Assistant
 
@@ -649,7 +661,7 @@ If these work, your setup is correct!
 
 #### Confirm the server actually starts
 
-A server can be registered and still fail to start, and most `list` commands only read the configuration. `claude mcp list` (shows `✔ Connected`), `opencode mcp list` (shows `connected`), and `cursor-agent mcp list` (shows `ready`, once approved) do try to start it; `codex mcp list`, `agy mcp list`, and Kimi's config do not, so `enabled` there proves nothing. Use a real request to be sure. These non-interactive versions each call the `version` tool once (run them from a project directory, and compare the answer with `cov-loupe --version`):
+A server can be registered and still fail to start, and most `list` commands only read the configuration. `claude mcp list` (shows `✔ Connected`), `opencode mcp list` (shows `connected`), and `cursor-agent mcp list` (shows `ready`, once approved) do try to start it; `codex mcp list`, `agy mcp list`, and Kimi's config do not, so `enabled` there proves nothing. Use a real request to be sure. Run these non-interactive checks from a project directory. Most call the `version` tool once; compare the answer with `cov-loupe --version`. The Copilot and Cursor rows instead check the connection log or the tool list:
 
 | Client | Command |
 |--------|---------|
@@ -690,6 +702,7 @@ To use a persistent log file, specify the `--log-file` (or `-l`) argument wherev
 **Important:** If the MCP server doesn't work, you can use the CLI directly with the `-fJ` (output in JSON format) flag.
 
 See the **[CLI Fallback for LLMs Guide](CLI_FALLBACK_FOR_LLMS.md)** for:
+
 - Complete command reference and MCP tool mappings
 - Sample prompt to give your LLM
 - JSON output examples
@@ -706,15 +719,17 @@ cov-loupe --version   # Test basic functionality
 
 **Server fails only in some project directories**
 
-If `cov-loupe -m mcp` works in one repo but fails in another, especially with text like `Resolving dependencies...` appearing before the MCP handshake, see [Stdout Must Stay Clean During MCP Startup](#stdout-must-stay-clean-during-mcp-startup). This usually means the RubyGems launcher consulted the current directory's `Gemfile` and Bundler printed to `stdout` before the MCP server started. The first fix to try is `bundle install` in that repo, followed by another normal startup attempt.
+If `cov-loupe -m mcp` works in one repo but fails in another, especially with text like `Resolving dependencies...` appearing before the MCP handshake, see [Stdout Must Stay Clean](#stdout-must-stay-clean). This usually means the RubyGems launcher consulted the current directory's `Gemfile` and Bundler printed to `stdout` before the MCP server started. The first fix to try is `bundle install` in that repo, followed by another normal startup attempt.
 
 **Tools Not Appearing**
+
 1. Restart AI assistant after config changes
 2. Check the MCP host's captured stderr, or the explicitly configured log file.
 3. Try explicit tool names in prompts
 4. Verify MCP server status in assistant
 
 **JSON-RPC Parse Errors**
+
 - Ensure JSON is on a single line (no newlines)
 - Test manually: `echo '{"jsonrpc":"2.0",...}' | cov-loupe -m mcp`
 

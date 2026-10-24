@@ -1,6 +1,6 @@
 # Demo project fixture
 
-[Back to docs index](../../index.md)
+[Back to the main README](../../../README.md)
 
 This small demo project powers the documentation examples that rely on partial coverage and tracked globs.
 
@@ -19,5 +19,6 @@ This small demo project powers the documentation examples that rely on partial c
 Files include controllers, models, payments services, background jobs, and an API client. A few files are intentionally missing from the coverage file so the `--tracked-globs` examples surface gaps.
 
 Related guides:
+
 - [CLI Usage](../../user/CLI_USAGE.md)
 - [Examples](../../user/EXAMPLES.md)

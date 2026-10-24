@@ -1,6 +1,6 @@
 # Architecture Decision Records
 
-[Back to main README](../../index.md) | [Architecture Overview](../ARCHITECTURE.md)
+[Back to main README](../../../README.md) | [Architecture Overview](../ARCHITECTURE.md)
 
 ## What is an ADR?
 
@@ -27,6 +27,7 @@ The architectural choice that was made.
 
 ### Consequences
 The implications of this decision, both positive and negative. This includes:
+
 - Benefits gained
 - Trade-offs accepted
 - Complexity introduced
@@ -45,11 +46,12 @@ ADRs are organized by topic area rather than chronologically:
 - [Output Character Mode](output-character-mode.md) - Unicode or ASCII table borders and markers; data is never changed
 - [Path Resolution](path-resolution.md) - Path matching strategy and cross-OS coverage support
 - [Policy Validation](policy-validation.md) - Validation predicates using Ruby `instance_eval`
-- [SimpleCov Integration](simplecov-integration.md) - Dependency strategy and data loading (replaced)
+- [SimpleCov Integration](simplecov-integration.md) - Dependency strategy and data loading (`coverage.json` only since v7)
 
 ## When to Create an ADR
 
 Create an ADR when:
+
 - Making a decision that affects the structure or behavior of the system
 - Choosing between multiple viable approaches
 - Accepting significant trade-offs
@@ -58,6 +60,7 @@ Create an ADR when:
 ## Contributing
 
 When adding a new ADR:
+
 1. Add it to the appropriate topic-based file, or create a new file if it covers a new area
 2. Follow the format outlined above
 3. Update this README's index

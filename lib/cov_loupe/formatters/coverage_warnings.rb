@@ -41,7 +41,7 @@ module CovLoupe
           output.concat(skipped_row_lines(skipped))
         end
 
-        output << "\nRun with --raise-on-stale to exit when files are excluded."
+        output << "\nRun with --raise-on-stale true to exit when files are excluded."
         output.join("\n")
       end
 
@@ -58,7 +58,7 @@ module CovLoupe
         count = skipped.length
         output = ['', "WARNING: #{count} coverage row#{count == 1 ? '' : 's'} skipped due to errors:"]
         output.concat(skipped_row_lines(skipped))
-        output << 'Run again with --raise-on-stale to exit when rows are skipped.'
+        output << 'Run again with --raise-on-stale true to exit when rows are skipped.'
         output.join("\n")
       end
 

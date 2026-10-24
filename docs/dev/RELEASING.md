@@ -1,6 +1,6 @@
 # Release Process
 
-[Back to main README](../index.md)
+[Back to main README](../../README.md)
 
 This document provides a checklist for releasing new versions of cov-loupe.
 
@@ -127,9 +127,8 @@ bin/pre-release-check
 gem install ./cov-loupe-$VERSION.gem
 cov-loupe --version
 cov-loupe --help
-# Test on actual project
-cd /path/to/test/project
-cov-loupe list
+# Test on actual project (subshell, so later steps still run in this repo)
+(cd /path/to/test/project && cov-loupe list)
 ```
     - Uninstall or use a sandbox environment to avoid shadowing your development setup
 
@@ -155,7 +154,7 @@ git push origin main --follow-tags
       `gem build` again after tagging
     - Optionally confirm the file hash before pushing:
 ```bash
-sha256sum "cov-loupe-$VERSION.gem"
+sha256sum "cov-loupe-$VERSION.gem"   # macOS: shasum -a 256 "cov-loupe-$VERSION.gem"
 ```
     - Compare against the SHA256 printed by the script
 
@@ -198,8 +197,8 @@ gem push "cov-loupe-$VERSION.gem"
 Follow [Semantic Versioning](https://semver.org/):
 
 - **Major (X.0.0)**: Breaking changes
-- **Minor (0.X.0)**: New features, backward compatible
-- **Patch (0.0.X)**: Bug fixes, backward compatible
+- **Minor (x.Y.0)**: New features, backward compatible
+- **Patch (x.y.Z)**: Bug fixes, backward compatible
 - **Pre-release (X.Y.Z.pre.N)**: Development versions
 
 ## Rollback Procedure
@@ -219,5 +218,5 @@ gem yank cov-loupe -v "$VERSION"
 
 ## Notes
 
-- GitHub Actions CI runs tests and Rubocop on every push and pull request
+- GitHub Actions CI runs tests and Rubocop on every push to `main` and every pull request against `main`
 - Local pre-commit hooks run checks before commits (enable with `bin/setup-hooks`)

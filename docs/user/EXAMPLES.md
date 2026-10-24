@@ -1,6 +1,6 @@
 # Examples and Recipes
 
-[Back to main README](../index.md)
+[Back to main README](../../README.md)
 
 Practical examples for common tasks with cov-loupe, one page per topic.
 
@@ -10,23 +10,17 @@ Practical examples for common tasks with cov-loupe, one page per topic.
 
 ## From the Command Line and Ruby
 
-- **[Quick Start Examples](examples/quick-start-examples.md)** – View all coverage, check one file, and find gaps in a few commands.
-- **[CLI Examples](examples/cli-examples.md)** – Detailed coverage analysis, and working with JSON output using `jq`, Ruby, and rexe.
-- **[Ruby Library Examples](examples/ruby-library-examples.md)** – Using cov-loupe from Ruby: basic usage, filtering and analysis, and custom formatting.
+- **[CLI Usage Examples](CLI_USAGE.md#examples)** – Coverage checks, file investigation, and JSON processing with `jq`, Ruby, and rexe.
+- **[Library API Guide](LIBRARY_API.md#advanced-recipes)** – Ruby recipes: batch analysis, threshold checks, directory-level aggregation, delta tracking, and custom reports.
 
 ## In Your Test Runs and CI
 
 - **[Test Run Integration](examples/test-run-integration.md)** – Report the lowest-coverage files at the end of every test run.
 - **[CI/CD Integration](examples/ci-cd-integration.md)** – Coverage thresholds in GitHub Actions and GitLab CI, stale-coverage checks, and custom success predicates.
-- **[Advanced Usage Examples](examples/advanced-usage-examples.md)** – Directory-level coverage analysis, and coverage checks for the files changed in a code review.
 
 ## Example Scripts
 
-The `examples/` directory contains runnable scripts:
-
-- **[filter_and_table_demo.rb](https://github.com/keithrbennett/cov-loupe/blob/main/examples/filter_and_table_demo.rb)** - Filter and format coverage data ([sample output](https://github.com/keithrbennett/cov-loupe/blob/main/examples/filter_and_table_demo-output.md))
-- **[success_predicates](../examples/success_predicates.md)** - Custom coverage policy examples
-- **[Coverage Delta Tracking recipe in the Library API Guide](LIBRARY_API.md#coverage-delta-tracking)**
+- **[Success Predicates](../../examples/success_predicates/README.md)** - Custom coverage policy examples, from the repository's `examples/success_predicates/` directory
 
 ## Related Documentation
 

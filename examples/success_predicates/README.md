@@ -1,6 +1,6 @@
 # Coverage Validation Predicate Examples
 
-[Back to main README](../../docs/index.md)
+[Back to main README](../../README.md)
 
 This directory contains example coverage validation predicates for use with the `validate` subcommand.
 
@@ -31,6 +31,7 @@ cov-loupe validate -i '->(model) { model.list["files"].all? { |f| f["percentage"
 ```
 
 The predicate receives a `CoverageModel` instance and returns:
+
 - **Truthy value** → Exit code 0 (success)
 - **Falsy value** → Exit code 3 (validation failed)
 - **Error in the predicate itself** (syntax error, not callable, or an exception from its own code) → Exit code 4 (predicate error)
@@ -38,7 +39,7 @@ The predicate receives a `CoverageModel` instance and returns:
 ## Available Examples
 
 ### `all_files_above_threshold_predicate.rb`
-All files must have >= 80% coverage.
+Every file in the coverage data must have >= 80% coverage. A file with no coverage entry at all is not in `list['files']`; to catch those, set tracked globs and check `missing_tracked_files`.
 
 ```sh
 cov-loupe validate examples/success_predicates/all_files_above_threshold_predicate.rb
@@ -53,6 +54,7 @@ cov-loupe validate examples/success_predicates/project_coverage_minimum_predicat
 
 ### `directory_specific_thresholds_predicate.rb`
 Different thresholds for different directories:
+
 - `lib/api/` - 85% required
 - `lib/payments/` - 60% required
 - `lib/ops/jobs/` - 80% required
@@ -63,7 +65,9 @@ cov-loupe validate examples/success_predicates/directory_specific_thresholds_pre
 
 ## Creating Custom Predicates
 
-A predicate must be a callable object (lambda, proc, or class with `#call` method).
+A predicate is any object that responds to `call`: a lambda, a proc, an instance of a class
+that defines `#call` (such as `MyPolicy.new`), or a class that defines `self.call`. A class
+that defines only an instance `#call` does not work by itself; return an instance of it.
 
 A file with no coverable lines (for example, one containing only comments) has a `nil`
 `percentage`. Comparing `nil` raises an error, so check for it first. These examples treat such
@@ -133,6 +137,7 @@ See [docs/user/LIBRARY_API.md](../../docs/user/LIBRARY_API.md) for the complete 
 For more complex scenarios, you may prefer writing a standalone Ruby script that uses the `cov-loupe` library directly instead of using the `validate` subcommand.
 
 **Use a standalone script when:**
+
 - **External dependencies needed** - Your policy requires other gems or libraries
 - **Complex setup required** - You need custom logging, database connections, or API calls
 - **Easier testing desired** - Standalone scripts can be tested like any Ruby code
@@ -140,6 +145,7 @@ For more complex scenarios, you may prefer writing a standalone Ruby script that
 - **Sophisticated logic** - Multi-step analysis, data aggregation, or integration with other tools
 
 **Predicate approach is better when:**
+
 - Policy is simple and self-contained (most common use case)
 - You want the tool to handle option parsing (--coverage-file, --raise-on-stale, etc.)
 - Consistent error handling and exit codes are desired
@@ -177,6 +183,8 @@ Both approaches execute arbitrary code with full system privileges, so the secur
 
 ## CI/CD Integration
 
+These examples use `bundle exec`, so cov-loupe must be in your Gemfile; drop `bundle exec` if it is installed globally.
+
 **GitHub Actions:**
 ```yaml
 - name: Enforce Coverage Policy
@@ -207,6 +215,6 @@ stage('Coverage Policy') {
 - **3** - Predicate returned falsy (validation failed)
 - **4** - Error in the predicate itself (could not be loaded, not callable, or raised an exception)
 
-Coverage-data errors triggered while the predicate queries the model (for example a missing file, or stale data with `--raise-on-stale`) exit 1, as they do for other commands.
+Coverage-data errors triggered while the predicate queries the model (for example a missing file, or stale data with `--raise-on-stale true`) exit 1, as they do for other commands.
 
 Any non-zero code fails a CI/CD build. Use exit code 3 to tell a coverage-policy failure apart from a tooling or predicate problem.

@@ -1,6 +1,6 @@
 # Release Notes
 
-[Back to main README](docs/index.md)
+[Back to main README](README.md)
 
 
 ## Unreleased
@@ -219,6 +219,18 @@
   command keeps options given before the subcommand and quotes arguments that need it.
 - **Improved guidance for misplaced short global options.** `-e`/`--error-mode` and `-C`/`--color` used after a subcommand (for example `list -e debug`) now get the "must come BEFORE the subcommand" message instead of a generic "Unexpected argument(s)" error; previously only their long forms were recognized.
 - **Fixed `uncovered` and `detailed` crashing on files with no coverable lines.** Their text output raised `TypeError` when a file's coverage percentage was `nil` (for example, a file containing only comments); it now shows `n/a`, as `summary` and `totals` already did. `detailed` and `uncovered` print `No coverable lines.` for such files. The `project_validate` tool description and the code examples in the README, docs and `examples/` now handle `nil` percentages, and the Library API docs, the MCP integration docs and the descriptions of every MCP tool that returns a `percentage` show it as nullable. In the `validate` predicate examples, per-file checks skip files with no coverable lines, and project-total checks treat a `nil` total (nothing measurable, including when every file is stale) as failing.
+- **Fixed the MCP server ignoring `--error-mode`.** Tools always used `log` unless a call passed `error_mode`, so starting the server with `--error-mode off` still logged errors and `--error-mode debug` logged no backtraces. A call without `error_mode` now uses the server's mode, and the tools' input schemas no longer advertise `log` as the default. Likewise, they no longer advertise static defaults for `root`, `raise_on_stale`, and `output_chars`, which come from the server's `--root`, `--raise-on-stale`, and `--output-chars`.
+- **Fixed misaligned source output without color.** With `-C false` (or when stdout is not a terminal), `--source` rows were one column to the right of the header.
+- **The gem now includes `docs/QUICKSTART.md`**, which the README links to.
+- **Fixed the stale-coverage hint in `list` warnings.** The "files excluded" and "rows skipped" warnings told you to run with `--raise-on-stale`, which fails without a value; they now say `--raise-on-stale true`.
+- **Fixed project-level stale-coverage messages.** `CoverageDataProjectStaleError` (raised by `list`/`totals` with `--raise-on-stale true`) reported its class name instead of "Coverage data appears stale for project", and each file list was run together on one line; files are now listed one per line.
+- **Fixed the ambiguous `--coverage-file` hint.** When a relative path resolved under both the current directory and the project root, the error suggested `./`, which does not disambiguate; it now suggests an absolute path. The duplicate-path error also gained a missing space between its sentences.
+- **`totals` now warns about missing coverage timestamps in every format.** With `-f json` and the other structured formats it reported `timestamp_status: "missing"` but omitted the stderr warning that `list` prints; it now prints it, as the table format already did.
+- **Valid-value hints for every enumerated option.** An invalid `--format`/`-f` or `--output-chars`/`-O` value, or an invalid `-e` (short for `--error-mode`), now gets the "Valid values for ..." hint that `--source`, `--sort-order`, and `--error-mode` already got.
+- **The MCP `help` and `version` tools describe the common arguments.** `help` now lists `error_mode`/`output_chars` among every tool's inputs, and the `version` tool no longer says it takes no arguments.
+- **Fixed `CoverageReporter.report` with an absolute `SimpleCov.coverage_dir`.** The default coverage location joined the directory onto `SimpleCov.root` even when it was absolute; it is now expanded against the root, as SimpleCov does.
+- **Documentation links work in the installed gem and on GitHub.** Links now point to real files (`README.md`, `LICENSE`, `examples/*/README.md`, ...) rather than to the documentation site's wrapper pages, and the gem now includes the developer docs (`docs/dev/`) they link to. The gem no longer includes `AGENTS.md` or `CLAUDE.md`, which are instructions for agents working in the repository.
+- **Fixed the `--tracked-globs` help text.** It now points to SimpleCov's `cover` globs; `track_files` is deprecated in SimpleCov 1.x.
 - **Fixed `NoMethodError` message rewriting on Ruby 3.4+.** Ruby 3.4 quotes the method name in `NoMethodError#message` as `'name'` instead of the pre-3.4 `` `name' ``, so the friendly "missing method '...' on ..." rewrite silently failed to apply on 3.4+. Both quote styles are now recognized.
 
 ## v6.1.0
@@ -287,10 +299,9 @@
         - `CovLoupe::Formatters.format(obj, :amazing_print)` is the new API method.
 - **Internal Logger API changed**: `CovLoupe::Logger.new` now requires `mode:` (symbol) instead of `mcp_mode:` (boolean).
     - Use `CovLoupe::Logger.new(target: t, mode: :cli|:mcp|:library)` instead of `mcp_mode: true/false`.
-- **Deleted files now raise `FileNotFoundError`**: Previously, querying a file that was deleted after coverage was generated would incorrectly return stale coverage data. This was misleading for metrics and violated the documented API contract. Now properly raises `FileNotFoundError` for missing files, regardless of whether coverage data exists in the resultset.
-    - **Old**: `model.summary_for('deleted_file.rb')` would return coverage data with exit 0
-    - **New**: `model.summary_for('deleted_file.rb')` raises `CovLoupe::FileNotFoundError`
-    - **Rationale**: Deleted files represent stale data that pollutes metrics. The API documentation already promised `FileNotFoundError` for missing files; the implementation now matches the contract.
+- **Deleted files now raise `FileNotFoundError`**: With `raise_on_stale` enabled, querying a file that was deleted after coverage was generated now raises `FileNotFoundError`, as the API documentation promised, instead of `CoverageDataStaleError`. With `raise_on_stale` off (the default), the stale coverage data is still returned.
+    - **Old**: `CoverageModel.new(raise_on_stale: true).summary_for('deleted_file.rb')` raised `CovLoupe::CoverageDataStaleError`
+    - **New**: it raises `CovLoupe::FileNotFoundError`
 - **Staleness check errors now return `"error"` marker**: Previously, when staleness checking itself failed (e.g., file permission errors, resolver failures, unexpected exceptions), the `stale` field returned `false`, making errors indistinguishable from fresh files. Now returns `"error"` to explicitly indicate a failed staleness check.
     - **Old**: `{ "file": "...", "stale": false }` (error silently treated as fresh)
     - **New**: `{ "file": "...", "stale": "error" }` (error explicitly flagged)
@@ -525,16 +536,19 @@ This release represents a complete maturation of simplecov-mcp from experimental
 All documentation moved under audience-specific directories (`docs/user` for usage guides, `docs/dev` for contributor content):
 
 **Getting Started:**
+
 - `docs/user/INSTALLATION.md` - Installation for all environments (gem, Bundler, source, RVM, rbenv, etc.)
 - `docs/user/CLI_USAGE.md` - Complete command-line reference with examples
 - `docs/user/EXAMPLES.md` - Common use cases and workflows
 
 **Advanced Usage:**
+
 - `docs/user/ADVANCED_USAGE.md` - Success predicates, multi-suite merging, resultset configuration
 - `docs/user/MCP_INTEGRATION.md` - AI assistant setup (Claude Code, Cursor, Zed, etc.)
 - `docs/user/LIBRARY_API.md` - Complete Ruby API documentation with recipes
 
 **Reference:**
+
 - `docs/user/ERROR_HANDLING.md` - Error modes, exception types, logging
 - `docs/user/TROUBLESHOOTING.md` - Common issues and solutions
 - `docs/dev/ARCHITECTURE.md` - System design and component overview
@@ -542,10 +556,12 @@ All documentation moved under audience-specific directories (`docs/user` for usa
 - `docs/dev/BRANCH_ONLY_COVERAGE.md` - Branch coverage support and limitations
 
 **Architectural Decisions:**
+
 - `docs/dev/arch-decisions/*.md` - 5 detailed ADRs documenting major design decisions
 - `docs/dev/arch-decisions/README.md` - Index and overview
 
 **Additional Resources:**
+
 - `docs/dev/presentations/simplecov-mcp-presentation.md` - Slide deck for talks/demos
 - `examples/success_predicates/README.md` - Success predicate examples and patterns
 - `prompts/*.md` - AI prompt templates for coverage analysis
@@ -694,7 +710,7 @@ See `CLAUDE.md`, `AGENTS.md`, and `GEMINI.md` for AI agent integration notes.
 
 ### 🔗 Links
 
-- **Changelog:** [RELEASE_NOTES.md](docs/release_notes.md)
+- **Changelog:** [RELEASE_NOTES.md](RELEASE_NOTES.md)
 - **GitHub:** https://github.com/keithrbennett/simplecov-mcp
 - **RubyGems:** https://rubygems.org/gems/simplecov-mcp
 - **Issues:** https://github.com/keithrbennett/simplecov-mcp/issues

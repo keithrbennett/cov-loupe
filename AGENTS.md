@@ -30,10 +30,7 @@ Prefer project‑local tools and scripts (for example, bin/ scripts, package.jso
 ## Ruby Guidelines
 - Use the project's Ruby version.
 - Prefer `bundle exec` for project tools.
-- Prefer binstubs when present:
-  - `bin/rake`
-  - `bin/rspec`
-  - `bin/rubocop`
+- Run `bundle exec rake`, `bundle exec rspec`, and `bundle exec rubocop`; this repo has no binstubs for them (`bin/` holds project scripts).
 - Before editing, inspect:
   - `Gemfile`
   - `Gemfile.lock`
@@ -63,7 +60,7 @@ You can also run the default Rake task:
 rake
 ```
 Use `bundle exec rspec spec/path_spec.rb` to target specific specs when needed.
-`bundle exec rspec` is currently not working in Codex for macOS.
+`bundle exec rspec` does not work in Codex's macOS sandbox with an RVM-managed Ruby; see [Troubleshooting](docs/user/TROUBLESHOOTING.md#running-the-test-suite-with-rvm-codex-macos).
 
 ### Manual Testing
 - Run the CLI locally during development:
@@ -87,7 +84,7 @@ Use `bundle exec rspec spec/path_spec.rb` to target specific specs when needed.
 
 ## CLI Usage
 
-Run `bundle exec exe/cov-loupe` for up-to-date usage information.
+Run `bundle exec exe/cov-loupe --help` for up-to-date usage information.
 
 ## MCP Server Usage
 Run `cov-loupe` in MCP mode with `-m mcp`/`--mode mcp`. You can issue JSON-RPC requests over stdio, for example:
@@ -110,14 +107,14 @@ Always prefer these tools over free-form reasoning to keep responses grounded in
 - Available tools: `file_coverage_summary`, `file_coverage_detailed`, `file_uncovered_lines`, `file_coverage_raw`, `project_coverage`, `project_coverage_totals`, `project_validate`, `help`, and `version`. `project_validate` runs client-supplied Ruby and is registered only when the server is started with `--allow-code-predicates`.
 - Check `result.isError` before parsing tool response content. `isError: false` means the tool succeeded; `isError: true` means the call failed (bad path, invalid predicate, stale coverage, missing required argument, invalid enum, etc.) and the `content` carries a friendly error message. A top-level JSON-RPC `error` object (not a `result`) indicates a protocol- or dispatch-level failure, such as an unknown tool.
 - Successful library coverage hashes and structured CLI and MCP tool payloads start with integer `schema_version`; use it to detect incompatible payload shapes. Error responses have no such field. See [Schema Version](docs/user/LIBRARY_API.md#schema-version) for compatibility rules.
-- On success, responses return deterministic JSON/text; surface the tool output directly unless the user asks for interpretation. Note that `project_coverage` now includes `skipped_files`, `missing_tracked_files`, `newer_files`, `deleted_files`, `length_mismatch_files`, and `unreadable_files` arrays in its output to report any files that could not be processed due to errors or staleness.
+- On success, responses return deterministic JSON/text; surface the tool output directly unless the user asks for interpretation. Note that `project_coverage` includes `skipped_files`, `missing_tracked_files`, `newer_files`, `deleted_files`, `length_mismatch_files`, and `unreadable_files` arrays in its output to report any files that could not be processed due to errors or staleness.
 
 ## Development Conventions
 - Target Ruby >= 3.3; use two-space indentation and `# frozen_string_literal: true` in Ruby files.
 - Match existing style and patterns (see `CoverageModel` and `CoverageCalculator` helpers). Comments should clarify non-obvious logic only.
 - Never undo or overwrite user changes outside your scope; integrate with them instead. However, if the new changes would be better implemented by modifying other sections, e.g., extracting now-duplicated behavior into a special method, then do that.
 - When adding behavior, couple it with tests; keep or raise coverage. Specs belong in `spec/**/*_spec.rb` mirroring the lib path.
-- The YARD `@api public` tags define the Ruby public API (see [Public API and Versioning](docs/user/LIBRARY_API.md#public-api-and-versioning)); the docs deliberately do not list public methods. Give every new class and module directly under `CovLoupe` or one of its namespace modules an `@api public` or `@api private` tag, so a missing tag stands out in review. Nested classes and members inherit their enclosing tag, except `Struct`/`Data`-generated readers, which need `@!attribute` directives (see `AppContext`); tag internal members of a public class `@api private`. Removing a public item, changing its tag from public to private, or removing a documented argument is a breaking change. Public CLI, MCP, and payload changes still belong in the docs that section links to. Use `private_constant` for an internal constant only when every reference to it is unqualified and inside its defining class or module; a qualified reference such as `CoverageModel::DEFAULT_SORT_ORDER` from another class raises `NameError` once the constant is private.
+- The YARD `@api public` tags define the Ruby public API (see [Public API and Versioning](docs/user/LIBRARY_API.md#public-api-and-versioning)); the docs deliberately do not try to list every public item. Give every new class and module directly under `CovLoupe` or one of its namespace modules an `@api public` or `@api private` tag, so a missing tag stands out in review. Nested classes and members inherit their enclosing tag, except `Struct`/`Data`-generated readers, which need `@!attribute` directives (see `AppContext`); tag internal members of a public class `@api private`. Removing a public item, changing its tag from public to private, or removing a documented argument is a breaking change. Public CLI, MCP, and payload changes still belong in the docs that section links to. Use `private_constant` for an internal constant only when every reference to it is unqualified and inside its defining class or module; a qualified reference such as `CoverageModel::DEFAULT_SORT_ORDER` from another class raises `NameError` once the constant is private.
 - Validate meaningful changes with `bundle exec rspec` when feasible; note skipped verification in your summary if you cannot run it.
 - The codebase follows standard Ruby conventions and emphasizes user-friendly CLI output, `isError: true` results for MCP argument-validation and tool-execution failures, JSON-RPC errors for protocol- or dispatch-level failures, and rich error handling.
 

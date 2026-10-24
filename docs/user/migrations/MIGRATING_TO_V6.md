@@ -163,4 +163,4 @@ This contract requires `mcp` 0.15 or newer, so cov-loupe now declares that minim
 }
 ```
 
-**Further reading:** [MCP Integration — Error Responses](../MCP_INTEGRATION.md#error-responses), [Release Notes](../../release_notes.md).
+**Further reading:** [MCP Integration — Error Responses](../MCP_INTEGRATION.md#error-responses), [Release Notes](../../../RELEASE_NOTES.md).

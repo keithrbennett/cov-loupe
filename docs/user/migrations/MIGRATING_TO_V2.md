@@ -1,6 +1,6 @@
 # V2.0 Breaking Changes and Migration Guide
 
-[Back to main README](../../index.md)
+[Back to main README](../../../README.md)
 
 This document describes all breaking changes introduced in version 2.0.0 of simplecov-mcp. These changes improve consistency, clarity, and alignment with Ruby conventions.
 
@@ -131,6 +131,7 @@ simplecov-mcp -f J list                  # Short form for pretty-json
 ```
 
 **Available formats:**
+
 - `table` (default) - Human-readable table format
 - `json` or `j` - Single-line JSON
 - `pretty-json` or `J` - Pretty-printed JSON
@@ -144,6 +145,7 @@ simplecov-mcp -f J list                  # Short form for pretty-json
 ### Error Mode Values Changed
 
 **Change:** Error mode enum values have been renamed for clarity:
+
 - `on` → `log`
 - `trace` → `debug`
 
@@ -167,6 +169,7 @@ simplecov-mcp --error-mode d list
 ```
 
 **Error modes:**
+
 - `off` (or `o`) - Silent, no error logging
 - `log` (or `l`) - Log errors to file (default)
 - `debug` (or `d`) - Verbose logging with backtraces
@@ -340,6 +343,7 @@ config = CovLoupe::AppConfig.new(root: '.', format: :json)
 | (new)                 | `show_version`   | New field for `-v`/`--version`       |
 
 **Default value changes:**
+
 - `sort_order`: Changed from `:ascending` to `:descending`
 - `error_mode`: Changed from `:on` to `:log`
 
@@ -457,6 +461,7 @@ If you encounter issues migrating to v2.0:
 ---
 
 **See also:**
-- [RELEASE_NOTES.md](../../release_notes.md) - Full release notes with new features
+
+- [RELEASE_NOTES.md](../../../RELEASE_NOTES.md) - Full release notes with new features
 - [CLI Usage](../CLI_USAGE.md) - Complete CLI reference
 - [MCP Integration](../MCP_INTEGRATION.md) - MCP tool reference

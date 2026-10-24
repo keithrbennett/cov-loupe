@@ -9,7 +9,7 @@ module CovLoupe
       tool_name 'version'
       description <<~DESC
         Use this when the user or client needs to confirm which version of cov-loupe is running.
-        This tool takes no arguments and only returns the version string; avoid it for coverage data.
+        This tool takes only the optional error_mode and output_chars and returns only the version string; avoid it for coverage data.
         Output: plain text line "CovLoupe version: x.y.z".
         Example: "What version of cov-loupe is installed?".
       DESC
@@ -24,9 +24,10 @@ module CovLoupe
       class << self
         # NOTE: output_chars is accepted for consistency with the other tools; the version string
         # has no decoration, so it has no effect beyond being validated.
-        def call(error_mode: 'log', output_chars: nil, server_context: nil, **_args)
+        def call(error_mode: nil, output_chars: nil, server_context: nil, **_args)
           resolve_output_chars(output_chars, server_context) # validates the value
-          with_error_handling('VersionTool', error_mode: error_mode) do
+          with_error_handling('VersionTool', error_mode: error_mode,
+            server_context: server_context) do
             ::MCP::Tool::Response.new([
               { 'type' => 'text', 'text' => "CovLoupe version: #{CovLoupe::VERSION}" },
             ])

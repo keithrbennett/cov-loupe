@@ -1,6 +1,8 @@
 # CI/CD Integration
 
-[Back to Examples](../EXAMPLES.md) | [Back to main README](../../index.md)
+[Back to Examples](../EXAMPLES.md) | [Back to main README](../../../README.md)
+
+These examples assume your test suite runs SimpleCov 1.x, whose default HTML formatter (or its JSONFormatter) writes `coverage/coverage.json` for cov-loupe to read. See [Quick Start](../../QUICKSTART.md) to set it up.
 
 ## GitHub Actions
 
@@ -38,12 +40,12 @@ jobs:
         shell: bash
         run: |
           # Generate JSON report using the full command (aliases like 'clp' are not available here)
-          cov-loupe -fJ list > coverage.json
+          cov-loupe -fJ list > coverage-report.json
 
           # Verify coverage using Ruby for cross-platform compatibility
           # (Tools like jq and rexe are not guaranteed to be installed on all runners)
           ruby -r json -e '
-            data = JSON.parse(File.read("coverage.json"))
+            data = JSON.parse(File.read("coverage-report.json"))
             files = data["files"]
             low_cov_files = files.select { |f| f["percentage"] && f["percentage"] < 80 }
 
@@ -64,7 +66,7 @@ jobs:
         if: always()
         with:
           name: coverage-report-${{ matrix.os }}
-          path: coverage.json
+          path: coverage-report.json
 ```
 
 **Check for stale coverage:**
@@ -80,6 +82,7 @@ jobs:
 test:
   image: ruby:3.4
   before_script:
+    - bundle install
     - gem install cov-loupe
   script:
     - bundle exec rspec
@@ -87,10 +90,12 @@ test:
   artifacts:
     paths:
       - coverage/
+    # GitLab's coverage_report accepts only Cobertura or JaCoCo, not coverage.json.
+    # Add the simplecov-cobertura formatter to produce coverage/coverage.xml.
     reports:
       coverage_report:
-        coverage_format: simplecov
-        path: coverage/coverage.json
+        coverage_format: cobertura
+        path: coverage/coverage.xml
 ```
 
 ## Custom Success Predicate

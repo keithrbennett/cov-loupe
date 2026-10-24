@@ -129,8 +129,9 @@ totals['lines']['percentage']  # => 81.3
 ```
 
 **Migration:**
+
 - Replace `totals['lines']['percent_covered']` with `totals['lines']['percentage']`.
 - Update `jq` snippets: `.lines.percent_covered` → `.lines.percentage`.
-- Update inline predicates passed to `validate -i`: replace `"lines"]["percent_covered"]` with `"lines"]["percentage"]`.
+- Update inline predicates passed to `validate -i`: replace `["lines"]["percent_covered"]` with `["lines"]["percentage"]`.
 
 No alias key is provided. The value and rounding are unchanged; only the key name differs.

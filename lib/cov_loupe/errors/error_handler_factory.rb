@@ -6,7 +6,8 @@ module CovLoupe
   # Factory methods for creating ErrorHandler instances tuned to each operating mode.
   #
   # The factory pattern ensures each mode gets consistent defaults:
-  #   - CLI:       :log mode (errors logged, no stack traces unless requested)
+  #   - CLI:       :log mode (errors logged to a log file, no stack traces unless requested;
+  #                not logged when the target is stderr, where they are already printed)
   #   - Library:   :off mode (no logging side effects, let consumers handle errors)
   #   - MCP Server: :log mode (errors logged for server debugging)
   #

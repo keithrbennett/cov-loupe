@@ -1,6 +1,6 @@
 # SimpleCov Integration
 
-[Back to main README](../../index.md)
+[Back to main README](../../../README.md)
 
 This document describes how cov-loupe integrates with SimpleCov: which of SimpleCov's output files it reads, and why it validates that file's format on load instead of declaring SimpleCov as a dependency.
 
@@ -78,7 +78,7 @@ A gem dependency (`>= 1.0`) was considered as a guard against SimpleCov 0.x, whi
 - No SimpleCov code runs inside cov-loupe; JSON parsing uses the standard library.
 - Installing cov-loupe does not install SimpleCov or constrain a project's SimpleCov version.
 - An incompatible file fails at load time with an actionable message instead of being misread.
-- cov-loupe's own test suite declares `simplecov` (`>= 1.0, < 2.0`) in the `Gemfile`. The `compat` CI job pins it to `1.0.0` and to the newest release so a SimpleCov point release that changes `coverage.json` fails there rather than for users.
+- cov-loupe's own test suite declares `simplecov` (`>= 1.0, < 2.0`) in the `Gemfile`. The `compat` CI job runs it at `1.0.0` and at the newest release (left unpinned, so Bundler resolves the current version) so a SimpleCov point release that changes `coverage.json` fails there rather than for users.
 
 ### References
 

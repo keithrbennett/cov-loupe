@@ -28,4 +28,5 @@ def mkdocs_command
 end
 
 mkdocs = mkdocs_command
-run(mkdocs, 'build', '--strict')
+# mkdocs reads mkdocs.yml from the current directory
+Dir.chdir(SCRIPT_DIR) { run(mkdocs, 'build', '--strict') }

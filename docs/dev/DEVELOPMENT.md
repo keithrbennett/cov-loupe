@@ -1,6 +1,6 @@
 # Development Guide
 
-[Back to main README](../index.md)
+[Back to main README](../../README.md)
 
 > **Note:** Commands like `cov-loupe` assume the gem is installed globally. If not, substitute `bundle exec exe/cov-loupe`.
 
@@ -58,22 +58,27 @@ rescue JSON::ParserError => e
 
 **MCP tools extend `BaseTool` and follow this pattern:**
 ```ruby
-module CovLoupe::Tools
-  class MyTool < BaseTool
-    description 'What this tool does'
-    input_schema(**input_schema_def)
+module CovLoupe
+  module Tools
+    class MyTool < BaseTool
+      tool_name 'my_tool'
+      description 'What this tool does'
+      input_schema(**input_schema_def)
 
-    def self.call(path:, root: nil, coverage_file: nil, raise_on_stale: nil,
-      error_mode: 'log', server_context:)
-      with_error_handling('MyTool', error_mode: error_mode) do
-        model = create_model(
-          server_context: server_context,
-          root: root,
-          coverage_file: coverage_file,
-          raise_on_stale: raise_on_stale
-        )
-        data = model.my_method_for(path)
-        respond_json(data)
+      def self.call(path:, root: nil, coverage_file: nil, raise_on_stale: nil,
+        error_mode: nil, output_chars: nil, server_context:)
+        output_chars_sym = resolve_output_chars(output_chars, server_context)
+        # A nil error_mode falls back to the server's --error-mode.
+        with_error_handling('MyTool', error_mode: error_mode, server_context: server_context) do
+          model = create_model(
+            server_context: server_context,
+            root: root,
+            coverage_file: coverage_file,
+            raise_on_stale: raise_on_stale
+          )
+          data = model.my_method_for(path)
+          respond_json(data, output_chars: output_chars_sym)
+        end
       end
     end
   end
@@ -88,15 +93,15 @@ let(:coverage_dir) { File.join(project_root, 'coverage') }
 
 **MCP tool tests need setup:**
 ```ruby
-let(:server_context) { instance_double('ServerContext').as_null_object }
+let(:server_context) { null_server_context } # from spec/support/mcp_helpers.rb
 before { setup_mcp_response_stub }
 ```
 
 ## Adding Features
 
-**CLI commands:** Add a command class under `lib/cov_loupe/commands/`, register it in `CovLoupe::Commands::CommandFactory::COMMAND_MAP`, and add tests.
+**CLI commands:** Add a command class under `lib/cov_loupe/commands/`, require it and register it in `CovLoupe::Commands::CommandFactory::COMMAND_MAP` (`command_factory.rb`), add its name to `CovLoupe::SUBCOMMANDS` (`lib/cov_loupe/subcommands.rb`; the CLI rejects names not listed there), optionally add an abbreviation to `CoverageCLI::SUBCOMMAND_ABBREVIATIONS`, describe it in the subcommand help in `OptionParserBuilder`, and add tests.
 
-**MCP tools:** Create `*_tool.rb` in `lib/cov_loupe/tools/`, register in `mcp_server.rb`. A tool that runs client-supplied code must override `executes_code?` to return true, so that it is registered only with `--allow-code-predicates`.
+**MCP tools:** Create `*_tool.rb` in `lib/cov_loupe/tools/`, require it in `lib/cov_loupe/loaders/all_mcp.rb`, add it to `MCPServer::TOOLSET` in `mcp_server.rb`, and add an entry to `HelpTool::TOOL_GUIDE` (`spec/cov_loupe/mcp_server_spec.rb` checks that the two match). A tool that runs client-supplied code must override `executes_code?` to return true, so that it is registered only with `--allow-code-predicates`.
 
 **Coverage features:** Add core data operations to `CoverageModel` in `lib/cov_loupe/model/model.rb` or pure line-counting logic to `CoverageCalculator` in `lib/cov_loupe/coverage/coverage_calculator.rb`.
 
@@ -122,7 +127,7 @@ For the local docs server, dependency updates and audits, and publishing, see [D
 
 ## Troubleshooting
 
-**RVM + Codex macOS:** Currently not possible for Codex to run rspec when running on macOS with rvm-managed rubies - see [Troubleshooting](../user/TROUBLESHOOTING.md)
+**RVM + Codex macOS:** `bundle exec rspec` fails in Codex's macOS sandbox with an RVM-managed Ruby; see [Troubleshooting](../user/TROUBLESHOOTING.md#running-the-test-suite-with-rvm-codex-macos) for workarounds.
 
 **MCP server smoke test:**
 ```sh

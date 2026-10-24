@@ -1,14 +1,16 @@
 # Troubleshooting Guide
 
-[Back to main README](../index.md)
+[Back to main README](../../README.md)
 
 ## Table of Contents
 
 - [Running Issues](#running-issues)
 - [Coverage Data Issues](#coverage-data-issues)
-- [MCP Server Issues](#mcp-server-issues)
 - [Logging Target Issues](#logging-target-issues)
+- [MCP Server Issues](#mcp-server-issues)
 - [Diagnostic Commands](#diagnostic-commands)
+- [Getting More Help](#getting-more-help)
+- [Related Documentation](#related-documentation)
 
 ## Running Issues
 
@@ -37,7 +39,7 @@ which SimpleCov 1.0.0 and later write alongside the HTML report. SimpleCov 0.x w
 only `.resultset.json` by default, which cov-loupe no longer reads; upgrade SimpleCov to
 1.0 or later. If you see "Could not find coverage.json":
 
-1. Run the test suite with SimpleCov enabled (default project setup already enables it).
+1. Run the test suite with SimpleCov enabled (see [Quick Start](../QUICKSTART.md) to set it up).
    ```bash
    bundle exec rspec
    ls coverage/coverage.json
@@ -53,10 +55,10 @@ only `.resultset.json` by default, which cov-loupe no longer reads; upgrade Simp
 
 cov-loupe checks `meta.schema_version` in `coverage.json` (the file format version, not the
 SimpleCov gem version) and accepts any 1.x. If the value is missing or has another major
-version, loading fails with:
+version, loading fails with (the CLI adds the `Coverage data error:` prefix):
 
 ```
-Unsupported coverage.json format (meta.schema_version: nil; meta.simplecov_version: "0.22.0") in <path>; cov-loupe requires format 1.x (written by SimpleCov 1.0 and later)
+Coverage data error: Unsupported coverage.json format (meta.schema_version: nil; meta.simplecov_version: "0.22.0") in <path>; cov-loupe requires format 1.x (written by SimpleCov 1.0 and later)
 ```
 
 The `meta.simplecov_version` part appears only when the file records it.
@@ -71,7 +73,7 @@ The `meta.simplecov_version` part appears only when the file records it.
 
 ### Stale Coverage Errors
 
-`--raise-on-stale` (or `-S`, or `raise_on_stale: true`) compares file mtimes and line counts
+`--raise-on-stale true` (or `-S true`, or `raise_on_stale: true`) compares file mtimes and line counts
 to the coverage snapshot and raises if stale. When it fails:
 
 - Regenerate coverage (`bundle exec rspec`) so the snapshot matches current sources.
@@ -83,13 +85,14 @@ If you only care about a subset of files, supply `-g` / `--tracked-globs` (CLI) 
 **Note:** If you see warnings about missing timestamps, time-based staleness checks may be skipped.
 See [Timestamp Warnings](ADVANCED_USAGE.md#timestamp-warnings) for details.
 
-### "No coverage data found for file"
+### "No coverage entry found for ..."
 
 The model looks up files by absolute path, then by relative path (stripping the project root). If you still hit this error:
 
 1. Verify the file is listed in the coverage table (`cov-loupe list | grep model.rb` or `cov-loupe l | grep model.rb`).
 2. Use the exact project-relative path that SimpleCov recorded (no symlinks; case-sensitivity
 depends on your volume - see note below).
+
 3. If the file truly never executes under tests, add coverage or exclude it from your workflow.
 
 **Note on case-sensitivity:** `cov-loupe` auto-detects volume case-sensitivity at startup. 
@@ -100,8 +103,9 @@ as the same file. On case-sensitive volumes (most Linux, some macOS), they are d
 
 When SimpleCov merges results from multiple suites or environments, it can record the same file
 under different path forms (for example, absolute vs relative, or with different roots). This is a
-SimpleCov output issue, not a cov-loupe issue. Downstream tools will normalize paths and may treat
-one entry as overriding another if two keys map to the same file.
+SimpleCov output issue, not a cov-loupe issue. cov-loupe normalizes paths, and if two keys map to
+the same file it fails with a `CoverageDataError` naming the colliding keys, rather than silently
+using one of them.
 
 **Recommendation:** Keep `SimpleCov.root` consistent across suites and avoid manual path rewriting
 when merging results.
@@ -130,6 +134,7 @@ Check the following when you see an `Unable to use log target` message:
 ### MCP Integration Not Working
 
 **Symptoms:**
+
 - AI assistant reports "Could not connect to MCP server"
 - AI says "I don't have access to cov-loupe tools"
 
@@ -155,6 +160,7 @@ Check the following when you see an `Unable to use log target` message:
    claude mcp list  # For Claude Code
    codex mcp list   # For Codex
    gemini mcp list  # For Gemini
+   agy mcp list     # For Antigravity
    # MCP hosts capture the server's stderr by default.
    # For a persistent file, configure --log-file PATH and inspect that path.
    ```
@@ -182,6 +188,7 @@ Check the following when you see an `Unable to use log target` message:
 ### RubyGems Wrapper Prints to Stdout Before MCP Startup
 
 **Symptoms:**
+
 - `cov-loupe -m mcp` prints `Resolving dependencies...` or similar text before any MCP response
 - MCP clients fail with handshake/startup errors such as `connection closed` or `initialize response`
 - The same `cov-loupe` install works in one project directory but not another
@@ -198,7 +205,7 @@ Gem.activate_and_load_bin_path('cov-loupe', 'cov-loupe', version)
 
 That `Gem.use_gemdeps` call can make the launcher inspect the current working directory for a `Gemfile` (via RubyGems/Bundler integration) before `cov-loupe` itself starts. On setups that also use `ruby_executable_hooks` and the `rubygems-bundler` plugin, the wrapper stack can do even more work up front by walking the current directory tree, loading Bundler, and trying to match the executable against the local bundle. If the current directory has a `Gemfile` but the bundle is unresolved, incomplete, or missing a lockfile, Bundler may resolve dependencies and emit progress text such as `Resolving dependencies...`.
 
-For normal CLI use, that extra output is usually harmless. For MCP over stdio, it is fatal because the server must keep `stdout` clean until the protocol handshake begins.
+For normal CLI use, that extra output is usually harmless. For MCP over stdio, it is fatal because `stdout` must carry only protocol messages, from startup until the server exits.
 
 Upstream tracking issue: [rvm/rvm#5649](https://github.com/rvm/rvm/issues/5649).
 
@@ -235,9 +242,9 @@ This does not change MCP itself. It only changes whether the RubyGems wrapper st
    ```
 4. Test MCP manually:
    ```bash
-   echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"version","arguments":{}}}' | cov-loupe -m mcp 2>&1
+   echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"version","arguments":{}}}' | cov-loupe -m mcp 2>/dev/null
    ```
-   Any output before the JSON-RPC payload is a problem for MCP startup.
+   Any stdout output before the JSON-RPC payload is a problem for MCP startup (stderr is discarded here, since log lines there are harmless).
 
 **Recommended workarounds:**
 
@@ -279,17 +286,14 @@ which cov-loupe
 # Example output: /home/username/.rbenv/shims/cov-loupe
 # Use this exact path in your MCP config
 
-# For RVM you may need to create a wrapper and specify its absolute path
-# (Replace ruby-3.3.8 with your rvm Ruby label) 
-rvm wrapper ruby-3.3.8 cov-loupe cov-loupe
-
-# Get the full path (expands ~ to your home directory)
-realpath ~/.rvm/wrappers/ruby-3.3.8/cov-loupe
-# Example output: /home/username/.rvm/wrappers/ruby-3.3.8/cov-loupe
+# For RVM, use the wrapper RVM generates when the gem is installed; it sets up
+# the Ruby environment. Print its absolute path (for the current Ruby):
+rvm wrapper show cov-loupe
+# Example output: /home/username/.rvm/gems/ruby-3.3.8/wrappers/cov-loupe
 
 # Use the FULL path in MCP config (NOT the ~ version):
-# Good: /home/username/.rvm/wrappers/ruby-3.3.8/cov-loupe
-# Bad:  ~/.rvm/wrappers/ruby-3.3.8/cov-loupe  (~ may not expand)
+# Good: /home/username/.rvm/gems/ruby-3.3.8/wrappers/cov-loupe
+# Bad:  ~/.rvm/gems/ruby-3.3.8/wrappers/cov-loupe  (~ may not expand)
 ```
 
 ## Diagnostic Commands
@@ -325,7 +329,7 @@ If the above doesn't solve your problem:
 
 1. **Check error mode** - Run with `--error-mode debug` for full stack traces:
    ```bash
-   cov-loupe --error-mode debug summary lib/cov_loupe/cli.rb
+   cov-loupe --error-mode debug summary lib/my_app/order.rb
    ```
 
 2. **Check diagnostics:**
@@ -334,7 +338,7 @@ If the above doesn't solve your problem:
    # For a persistent file, configure --log-file PATH and inspect that path.
 
    # Or specify custom log location (--log-file or -l)
-   cov-loupe -l /tmp/debug.log summary lib/cov_loupe/cli.rb
+   cov-loupe -l /tmp/debug.log summary lib/my_app/order.rb
    ```
 
 3. **Search existing issues:**

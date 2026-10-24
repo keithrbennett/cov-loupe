@@ -15,7 +15,7 @@ The `file_based_mcp_tools.rb` shared example provides parameterized testing for 
 Instead of creating separate spec files for each similar tool, add your tool to the `FILE_BASED_TOOL_CONFIGS` hash:
 
 ```ruby
-# In spec/shared_examples/file_based_mcp_tools.rb
+# In spec/cov_loupe/shared_examples/file_based_mcp_tools.rb
 your_tool: {
   tool_class: CovLoupe::Tools::YourTool,
   model_method: :your_method,
@@ -92,7 +92,7 @@ your_tool: {
 ### When NOT to Use This
 
 Don't use the parameterized approach for tools that:
-- Don't follow the file-based pattern (e.g., `ListTool`, `VersionTool`)
+- Don't follow the file-based pattern (e.g., `ProjectCoverageTool`, `VersionTool`)
 - Have significantly different parameter signatures
 - Need extensive tool-specific testing that doesn't fit the pattern
 - Are prototypes or experimental tools
@@ -106,4 +106,4 @@ For these cases, create individual spec files as needed.
 - ✅ `FileUncoveredLinesTool` - Uncovered line numbers
 - ✅ `FileCoverageDetailedTool` - Line-by-line coverage details
 
-All tested with 13 shared tests plus 6 tool-specific tests = 19 total tests for 4 tools.
+All four tools run the shared examples plus their tool-specific tests.

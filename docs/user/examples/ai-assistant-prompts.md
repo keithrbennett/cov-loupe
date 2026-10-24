@@ -1,14 +1,14 @@
 # AI Assistant Prompts
 
-[Back to Examples](../EXAMPLES.md) | [Back to main README](../../index.md)
+[Back to Examples](../EXAMPLES.md) | [Back to main README](../../../README.md)
 
-A coverage table tells you *which* lines ran. An assistant connected through the MCP server can combine that with the source code, the tests, and the git history to tell you what the gaps *mean*: what behavior is untested, who would notice if it broke, and where a healthy-looking percentage is misleading. The prompts below are written for that. For plain tables and counts, the [CLI examples](cli-examples.md) are enough. For a long, paste-in prompt that produces a complete written report, see the [Prompt Library](../prompts/README.md).
+A coverage table tells you *which* lines ran. An assistant connected through the MCP server can combine that with the source code, the tests, and the git history to tell you what the gaps *mean*: what behavior is untested, who would notice if it broke, and where a healthy-looking percentage is misleading. The prompts below are written for that. For plain tables and counts, the [CLI examples](../CLI_USAGE.md#examples) are enough. For a long, paste-in prompt that produces a complete written report, see the [Prompt Library](../prompts/README.md).
 
 The prompts use paths from the demo project (`lib/payments/`, `app/controllers/`); substitute your own.
 
 ## Before You Start
 
-**Run the full test suite first.** cov-loupe's staleness checks compare the coverage file with your source files, so they can't tell that a *partial* run (for example, one spec file) produced it. A partial run makes most of your code look untested, and the analysis will be confidently wrong. If you regenerate coverage during a session, use the full suite: running a subset of specs overwrites `coverage.json` with the subset's numbers.
+**Run the full test suite first.** cov-loupe's staleness checks compare the coverage file with your source files, so they can't tell that a *partial* run (for example, one spec file) produced it. A partial run makes most of your code look untested, and the analysis will be confidently wrong. If you regenerate coverage during a session, use the full suite: a subset run replaces the full-suite numbers in `coverage.json`. SimpleCov merges only runs with different command names, such as RSpec and Minitest results written within its merge timeout (10 minutes by default); a second run of the same suite replaces the first.
 
 ## Explain What Is Not Tested
 
@@ -18,7 +18,7 @@ The prompts use paths from the demo project (`lib/payments/`, `app/controllers/`
 
 > No test ever reaches the branch that makes a "missing method 'x' on object" message readable. This one is probably already broken. The regex expects the old message format with a backtick (``undefined method `foo' for …``). Ruby 3.4 and later print ``undefined method 'foo' for an instance of Foo``, … The pattern would then never match, and users would get the raw Ruby message instead of the tidy one.
 
-That was correct, and it is the kind of finding a percentage can never give you.
+That was correct (the regex has since been fixed), and it is the kind of finding a percentage can never give you.
 
 ## Rank by Risk, Not Percentage
 

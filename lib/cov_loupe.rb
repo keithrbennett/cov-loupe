@@ -101,8 +101,9 @@ module CovLoupe
       end
     end
 
-    # Temporarily sets a thread-local context for the duration of the block,
-    # restoring the previous context afterward. Used to scope logging and
+    # Temporarily sets the current thread's context for the duration of the block,
+    # restoring the previous context afterward. The context is stored in Thread.current,
+    # so it is fiber-local: a new Fiber does not see it. Used to scope logging and
     # error handling to a specific mode (CLI, MCP, library).
     #
     # @api public

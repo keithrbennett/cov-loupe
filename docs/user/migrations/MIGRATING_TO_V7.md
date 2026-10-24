@@ -8,11 +8,11 @@ This document describes the breaking changes introduced in version 7.0.0.
 
 - [Ruby 3.3 or Later Required](#ruby-33-or-later-required)
 - [Structured Output Has a Schema Version](#structured-output-has-a-schema-version)
+- [Logging Defaults, Target Probing, and Lazy File Creation](#logging-defaults-target-probing-and-lazy-file-creation)
 - [Only `coverage.json` Is Read; SimpleCov 1.x Output Is Required](#only-coveragejson-is-read-simplecov-10-is-required)
 - [`resultset` Names Removed from the CLI, MCP Tools, and Library API](#resultset-names-removed-from-the-cli-mcp-tools-and-library-api)
 - [Short Options `-c` and `-n` Reassigned](#short-options--c-and--n-reassigned)
 - [Only `coverage/coverage.json` Is Searched by Default](#only-coveragecoveragejson-is-searched-by-default)
-- [Logging Defaults, Target Probing, and Lazy File Creation](#logging-defaults-target-probing-and-lazy-file-creation)
 - [CLI Exit Codes Remapped](#cli-exit-codes-remapped)
 - [Percentages Truncated, Not Rounded](#percentages-truncated-not-rounded)
 - [Staleness Values Renamed](#staleness-values-renamed)
@@ -172,8 +172,11 @@ cov-loupe --resultset coverage list      # worked
 ```
 
 ```ruby
-model = CovLoupe::CoverageModel.new(resultset: 'coverage')
+begin
+  model = CovLoupe::CoverageModel.new(resultset: 'coverage')
 rescue CovLoupe::ResultsetNotFoundError
+  # ...
+end
 ```
 
 **After (v7.0):**
@@ -183,8 +186,11 @@ cov-loupe --coverage-file coverage list  # or: cov-loupe -c coverage list
 ```
 
 ```ruby
-model = CovLoupe::CoverageModel.new(coverage_file: 'coverage')
+begin
+  model = CovLoupe::CoverageModel.new(coverage_file: 'coverage')
 rescue CovLoupe::CoverageFileNotFoundError
+  # ...
+end
 ```
 
 **Migration:**
@@ -251,7 +257,7 @@ cov-loupe -c ./coverage.json list
 
 **Migration:** if your `coverage.json` lives anywhere other than `coverage/`, pass `--coverage-file` (`-c`) on the command line, set it in `COV_LOUPE_OPTS`, add it to your MCP server `args`, or pass `coverage_file:` to `CoverageModel.new`.
 
-**Further reading:** [Configuring the Coverage File](../../index.md#configuring-the-coverage-file), [SimpleCov Integration](../../dev/arch-decisions/simplecov-integration.md), [Release Notes](../../release_notes.md).
+**Further reading:** [Configuring the Coverage File](../../../README.md#configuring-the-coverage-file), [SimpleCov Integration](../../dev/arch-decisions/simplecov-integration.md), [Release Notes](../../../RELEASE_NOTES.md).
 
 ## CLI Exit Codes Remapped {#cli-exit-codes-remapped}
 
@@ -271,7 +277,7 @@ Usage errors raised inside a subcommand (for example a global option placed afte
 
 **Migration:** update CI scripts that test `validate` for exit 1 to test 3 (policy failed) and, if you distinguish them, 4 (predicate error). Scripts that treated exit 2 from `validate` as "stale or missing coverage" should test for 1 instead. A script that only checks for non-zero needs no change.
 
-**Further reading:** [Exit Codes](../CLI_USAGE.md#exit-codes), [Release Notes](../../release_notes.md).
+**Further reading:** [Exit Codes](../CLI_USAGE.md#exit-codes), [Release Notes](../../../RELEASE_NOTES.md).
 
 ---
 
@@ -314,7 +320,7 @@ This applies to library hashes, CLI output in all formats, and MCP tool payloads
 
 ## Library Results Use Project-Relative Paths {#library-results-use-project-relative-paths}
 
-In 6.x, `CoverageModel#list`, `#summary_for`, `#uncovered_for`, `#detailed_for`, and `#raw_for` returned absolute file paths, while the CLI and MCP server reported project-relative ones; `CoverageModel#relativize` converted library results to the relative form. In 7.0 the library returns the same paths as the CLI and MCP server, so every payload has one shape. A path inside the project root is relative to the root; a path outside it stays absolute. This applies to every `file` value, including the `list` `files` and `skipped_files` rows. The other `list` path arrays (`missing_tracked_files`, `newer_files`, `deleted_files`, `length_mismatch_files`, and `unreadable_files`) were already relative for files inside the root, but showed files outside it as `../` paths; they now show those as absolute paths, in the library, CLI, and MCP output alike. Staleness errors change the same way: `CoverageDataStaleError#file_path`, the `CoverageDataProjectStaleError` path arrays, and the error messages report files outside the root as absolute paths. A relative path whose first directory starts with `~` is reported with a `./` prefix (for example `./~vendor/a.rb`) in all modes, so `File.expand_path` does not treat it as a home directory. On input, relative `coverage.json` keys and `format_table` row paths starting with `~` resolve to a directory under the root. In 6.x, such relative `.resultset.json` keys were expanded as home directories (or raised for an unknown user), and such row paths were used as written, so no `tracked_globs` pattern matched them and the row was dropped; query path arguments and `tracked_globs` still follow `File.expand_path`, so write `./~vendor/a.rb` to name such a directory there. `CoverageModel#relativize` is removed. `CoverageModel#format_table` called without rows now shows relative paths too (it showed absolute paths in 6.x). `validate` predicates receive library results, so a predicate that prints `f['file']` now prints relative paths. Table rows with equal coverage are ordered by absolute path, as in `list`; in 6.x the CLI and MCP tables ordered them by the displayed path, so ties involving files outside the root may order differently. Otherwise CLI and MCP output is unchanged, and `CoverageReporter.report` prints the same text apart from the `./~` prefix.
+In 6.x, `CoverageModel#list`, `#summary_for`, `#uncovered_for`, `#detailed_for`, and `#raw_for` returned absolute file paths, while the CLI and MCP server reported project-relative ones; `CoverageModel#relativize` converted library results to the relative form. In 7.0 the library returns the same paths as the CLI and MCP server, so every payload has one shape. A path inside the project root is relative to the root; a path outside it stays absolute. This applies to every `file` value, including the `list` `files` and `skipped_files` rows. The other `list` path arrays (`missing_tracked_files`, `newer_files`, `deleted_files`, `length_mismatch_files`, and `unreadable_files`) were already relative for files inside the root, but showed files outside it as `../` paths; they now show those as absolute paths, in the library, CLI, and MCP output alike. Staleness errors change the same way: `CoverageDataStaleError#file_path`, the `CoverageDataProjectStaleError` path arrays, and the error messages report files outside the root as absolute paths. A relative path whose first directory starts with `~` is reported with a `./` prefix (for example `./~vendor/a.rb`) in all modes, so `File.expand_path` does not treat it as a home directory. On input, relative `coverage.json` keys and `format_table` row paths starting with `~` resolve to a directory under the root. In 6.x, such relative `.resultset.json` keys were expanded as home directories (or raised for an unknown user), and such row paths were used as written, so no `tracked_globs` pattern matched them and the row was dropped; query path arguments and `tracked_globs` still follow `File.expand_path`, so write `./~vendor/a.rb` to name such a directory there. `CoverageModel#relativize` is removed. `CoverageModel#format_table` called without rows now shows relative paths too (it showed absolute paths in 6.x). `validate` predicates receive library results, so a predicate that prints `f['file']` now prints relative paths. Table rows with equal coverage are ordered by absolute path, as in `list`; in 6.x the CLI and MCP tables ordered them by the displayed path, so ties involving files outside the root may order differently. Otherwise CLI and MCP output is unchanged, and `CoverageReporter.report` prints the same text apart from the `./~` prefix and the two-decimal percentages described in [Percentages Truncated, Not Rounded](#percentages-truncated-not-rounded).
 
 The path arguments the methods accept are unchanged: absolute paths and paths relative to the root both work, so a `file` value from one result can be passed straight to another query.
 
@@ -339,7 +345,7 @@ model.summary_for('lib/foo.rb')['file']
 
 The MCP server no longer registers `project_validate` by default. It runs Ruby predicates that the MCP client writes, with the server's full privileges, outside any sandbox or approval prompt the client applies to shell commands. In 7.0 the server registers it only when started with `--allow-code-predicates`. Without the flag, `project_validate` is absent from `tools/list` and the `help` tool's listing, and calling it returns a JSON-RPC `-32602` ("Invalid params") error whose `data` is `"Tool not found: project_validate"`, instead of a result.
 
-The CLI `validate` subcommand is unchanged and needs no flag.
+The CLI `validate` subcommand needs no such flag.
 
 **Migration:** if you use `project_validate` and accept the risk, add `--allow-code-predicates` to the server's arguments, e.g. `"args": ["-m", "mcp", "--allow-code-predicates"]`. Otherwise, run `cov-loupe validate` from a shell, or ask the client to apply your criteria to `project_coverage` output.
 

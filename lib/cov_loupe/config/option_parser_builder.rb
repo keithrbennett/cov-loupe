@@ -53,7 +53,7 @@ module CovLoupe
           totals, t                Show aggregated line totals and overall %
           uncovered, u <path>      Show uncovered lines and a summary
           validate, v <file>       Evaluate coverage policy from file (exit 0=pass, 3=fail, 4=bad predicate)
-          validate, v -i <code>    Evaluate coverage policy from code string
+          validate, v -i <code>    Evaluate coverage policy from a lambda/proc code string (-i = --inline)
 
         SUBCOMMANDS
     end
@@ -101,7 +101,7 @@ module CovLoupe
       parser.on('-g', '--tracked-globs x,y,z', Array,
         'Used to exclude unwanted results and/or include files with or without coverage data',
         'Default: [] (shows all files in the coverage file)',
-        'Best practice: match your SimpleCov track_files patterns',
+        'Best practice: match your SimpleCov cover globs',
         'Example: --tracked-globs lib/**/*.rb,app/**/*.rb') do |value|
         config.tracked_globs = value
       end
@@ -114,7 +114,7 @@ module CovLoupe
         config.log_file = value
       end
       parser.on('-m', '--mode MODE', String,
-        'Execution mode: cli|mcp (default: cli)') do |value|
+        'Execution mode: c[li]|m[cp] (default: cli)') do |value|
         config.mode = normalize_mode(value)
       end
       parser.on('--[no-]allow-code-predicates',

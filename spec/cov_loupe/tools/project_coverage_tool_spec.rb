@@ -446,7 +446,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
 
         expect(output).to include('Files excluded from coverage:', heading)
         files.each { |file| expect(output).to include("  - #{file}") }
-        expect(output).to include('Run with --raise-on-stale to exit when files are excluded.')
+        expect(output).to include('Run with --raise-on-stale true to exit when files are excluded.')
       end
     end
 
@@ -481,7 +481,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
 
         expect(output).to include(
           'WARNING: 2 coverage rows skipped due to errors:',
-          'Run again with --raise-on-stale to exit when rows are skipped.'
+          'Run again with --raise-on-stale true to exit when rows are skipped.'
         )
       end
 

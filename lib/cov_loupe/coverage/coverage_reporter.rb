@@ -39,7 +39,7 @@ module CovLoupe
 
       # Determine the default coverage directory from SimpleCov if available
       default_coverage_file = if defined?(SimpleCov)
-        File.join(SimpleCov.root, SimpleCov.coverage_dir)
+        File.expand_path(SimpleCov.coverage_dir, SimpleCov.root)
       end
 
       model ||= CoverageModel.new(

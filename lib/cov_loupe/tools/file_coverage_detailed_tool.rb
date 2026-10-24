@@ -12,14 +12,14 @@ module CovLoupe
       description <<~DESC
         Use this when the user needs per-line coverage data for a single file.
         Do not use this for high-level counts; file_coverage_summary is cheaper for aggregate numbers.
-        Inputs: file path (required) plus optional root/coverage_file/raise_on_stale flag inherited from BaseTool.
-        Output: JSON object with "file", "lines" => [{"line": 12, "hits": 0, "covered": false}], plus "summary" with totals {"covered","total","percentage"} (percentage is null if the file has no coverable lines) and "stale": "ok" | "deleted" | "newer" | "length_mismatch" | "unreadable".
-        Example: "Show detailed coverage for lib/cov_loupe/model/model.rb".
+        Inputs: file path (required) plus optional root/coverage_file/raise_on_stale/error_mode/output_chars.
+        Output: JSON object with "schema_version" (Integer), "file", "lines" => [{"line": 12, "hits": 0, "covered": false}], plus "summary" with totals {"covered","total","percentage"} (percentage is null if the file has no coverable lines) and "stale": "ok" | "deleted" | "newer" | "length_mismatch" | "unreadable".
+        Example: "Show detailed coverage for lib/my_app/order.rb".
       DESC
       input_schema(**input_schema_def)
       class << self
         def call(path:, root: nil, coverage_file: nil, raise_on_stale: nil,
-          error_mode: 'log', output_chars: nil, server_context:)
+          error_mode: nil, output_chars: nil, server_context:)
           call_with_file_payload(
             path:           path,
             error_mode:     error_mode,

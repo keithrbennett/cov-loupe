@@ -17,7 +17,10 @@ module CovLoupe
           tracked_globs:  config.tracked_globs
         )
         payload = presenter.payload
-        return if maybe_output_structured_format?(payload)
+        if maybe_output_structured_format?(payload)
+          warn_timestamp_status(presenter)
+          return
+        end
 
         lines = payload['lines']
         files = payload['files']
@@ -50,6 +53,10 @@ module CovLoupe
           #{without_breakdown_line}
         BREAKDOWN
 
+        warn_timestamp_status(presenter)
+      end
+
+      private def warn_timestamp_status(presenter)
         text = Formatters::CoverageWarnings.timestamp_warning(presenter)
         warn text unless text.empty?
       end

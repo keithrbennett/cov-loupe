@@ -1,6 +1,6 @@
 # Dependency Locking and Vulnerability Alert Coverage
 
-[Back to main README](../../index.md)
+[Back to main README](../../../README.md)
 
 This document covers whether `Gemfile.lock` is committed, and how that choice interacts with GitHub Dependabot alert coverage.
 
@@ -19,7 +19,7 @@ This document covers whether `Gemfile.lock` is committed, and how that choice in
 
 `28e2cff` untracked the lock so each matrix cell resolves independently via `bundle install` (`ruby/setup-ruby`'s `bundler-cache: true`), keeping the simplecov compat job and its `SIMPLECOV_VERSION` pin.
 
-This was revisited after enabling Dependabot alerts (2026-09-23): GitHub's dependency graph, without a committed lockfile, falls back to parsing `Gemfile`/`cov-loupe.gemspec` directly. Confirmed via `gh api repos/keithrbennett/cov-loupe/dependency-graph/sbom` — it sees exactly the 12 gems declared by name in `Gemfile`/gemspec, each as a version *range* (e.g. `rubocop ~> 1.88.0`), with **no transitive dependencies at all**. Recommitting the lock would give Dependabot the full resolved tree, which raised the question of reversing `28e2cff`.
+This was revisited after enabling Dependabot alerts (2026-09-23): GitHub's dependency graph, without a committed lockfile, falls back to parsing `Gemfile`/`cov-loupe.gemspec` directly. Confirmed via `gh api repos/keithrbennett/cov-loupe/dependency-graph/sbom` — it saw exactly the 12 gems then declared by name in `Gemfile`/gemspec, each as a version *range* (e.g. `rubocop ~> 1.88.0`), with **no transitive dependencies at all**. Recommitting the lock would give Dependabot the full resolved tree, which raised the question of reversing `28e2cff`.
 
 ### Decision
 
@@ -29,9 +29,9 @@ The gap is narrower than "no transitive-dependency vulnerability detection": `.g
 
 ### Consequences
 
-- Dependabot alerts cover only the 12 gems named directly in `Gemfile`/`cov-loupe.gemspec`, matched against declared version ranges rather than exact resolved versions. Transitive dependencies of those gems (mostly dev tooling — rubocop, rspec, etc.) generate no Dependabot alert.
+- Dependabot alerts cover only the gems named directly in `Gemfile`/`cov-loupe.gemspec`, matched against declared version ranges rather than exact resolved versions. Transitive dependencies of those gems (mostly dev tooling — rubocop, rspec, etc.) generate no Dependabot alert.
 - `bundle-audit` (`security` CI job) catches transitive-dependency vulnerabilities today, but only at push/PR time, not continuously between pushes.
-- The CI matrix (Ruby 3.3–4.0 + JRuby, Linux/macOS/Windows) keeps resolving independently per job, avoiding the version/platform conflicts `28e2cff` fixed.
+- The CI matrix (Ruby 3.3–4.0 + JRuby on Linux, Ruby 4.0 on macOS and Windows) keeps resolving independently per job, avoiding the version/platform conflicts `28e2cff` fixed.
 - `.github/dependabot.yml`'s `bundler` entry drives scheduled version-update PRs; confirmed (via a second SBOM pull after it was already in place) that this does *not* feed transitive dependencies into the alert graph — version updates and the dependency graph are separate GitHub features.
 - If continuous transitive-dependency coverage is wanted later, the correct mechanism is the [Dependency Submission API](https://docs.github.com/en/rest/dependency-graph/dependency-submission) — a CI step that resolves a snapshot and submits it directly, without committing the lock. No ready-made Ruby/Bundler action exists for this today (unlike Maven/Gradle/sbt), so it would be a custom implementation, scoped separately rather than folded into this decision.
 

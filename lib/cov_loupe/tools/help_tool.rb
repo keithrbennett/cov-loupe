@@ -21,6 +21,9 @@ module CovLoupe
         }
       )
 
+      # Every tool accepts these, so they are added to each entry's inputs.
+      COMMON_INPUTS = ['error_mode/output_chars (optional)'].freeze
+
       TOOL_GUIDE = [
         {
           tool:       FileCoverageSummaryTool,
@@ -77,15 +80,16 @@ module CovLoupe
           label:      'cov-loupe --version',
           use_when:   'User needs to confirm the running gem version.',
           avoid_when: 'User is asking for coverage information.',
-          inputs:     ['(no arguments)'],
+          inputs:     [],
         },
       ].freeze
 
       class << self
-        def call(error_mode: 'log', output_chars: nil, server_context:, **_unused)
+        def call(error_mode: nil, output_chars: nil, server_context:, **_unused)
           # Resolve (and validate) output_chars for formatting the successful result
           output_chars_sym = resolve_output_chars(output_chars, server_context)
-          with_error_handling('HelpTool', error_mode: error_mode) do
+          with_error_handling('HelpTool', error_mode: error_mode,
+            server_context: server_context) do
             entries = TOOL_GUIDE
               .select { |guide| guide[:tool].available_in?(server_context) }
               .map { |guide| format_entry(guide) }
@@ -101,7 +105,7 @@ module CovLoupe
             'label'      => guide[:label],
             'use_when'   => guide[:use_when],
             'avoid_when' => guide[:avoid_when],
-            'inputs'     => guide[:inputs],
+            'inputs'     => guide[:inputs] + COMMON_INPUTS,
           }
         end
       end
