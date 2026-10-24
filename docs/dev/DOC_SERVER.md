@@ -5,8 +5,8 @@
 This project uses MkDocs to serve the Markdown documentation locally. The repository keeps the Python
 documentation dependencies separate from the Ruby gem dependencies in `.docs-venv`.
 
-Run `bin/set-up-python-for-doc-server`, `bin/start-doc-server`, and the `docs:setup` and `docs:serve` Rake
-tasks from the repository root; they use `.docs-venv` relative to the current directory. `bin/build-docs`,
+Source `bin/set-up-python-for-doc-server` (`source bin/set-up-python-for-doc-server`), and run `bin/start-doc-server` and the
+`docs:setup` and `docs:serve` Rake tasks, from the repository root; they use `.docs-venv` relative to the current directory. `bin/build-docs`,
 `bin/audit-docs-deps`, and `bin/update-docs-deps` resolve the repository paths themselves and work from any
 directory. The docs dependency set requires Python 3.11 or newer.
 
@@ -47,7 +47,8 @@ bin/start-doc-server
 ```
 
 `bin/start-doc-server` also checks `.docs-venv/bin/mkdocs` first, so it can usually find the project-local
-MkDocs executable even if the virtual environment is not currently active. It falls back to `mkdocs` on your
+MkDocs executable even if the virtual environment is not currently active; when it uses `.docs-venv`, it
+first reinstalls `requirements-lock.txt` into it, as `bin/build-docs` does. It falls back to `mkdocs` on your
 `PATH`, and if neither exists it creates `.docs-venv` first.
 
 The helper script does not forward extra flags. To pass MkDocs options, run MkDocs directly, for example
@@ -103,8 +104,8 @@ bundle exec rake docs:build
 ```
 
 This runs `mkdocs build --strict`, using `.docs-venv` if it exists and otherwise `mkdocs` from your `PATH`
-(it creates `.docs-venv` if there is neither), and writes the site to `site/`. The command fails on strict MkDocs errors. Git ignores both
-`.docs-venv/` and `site/`.
+(it creates `.docs-venv` if there is neither), and writes the site to `site/`. The command fails on strict MkDocs errors. The root `.gitignore`
+ignores both `site/` and `.docs-venv/`.
 
 ## Publishing Documentation
 

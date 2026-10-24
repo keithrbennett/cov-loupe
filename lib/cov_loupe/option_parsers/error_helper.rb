@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative '../exit_codes'
+require_relative '../config/option_normalizers'
 
 module CovLoupe
   module OptionParsers
@@ -96,10 +97,15 @@ module CovLoupe
         [
           { switches: ['-s', '--source'], values: %w[full f uncovered u none n],
             display: 'f[ull]|u[ncovered]|n[one]' },
-          { switches: ['--error-mode'], values: %w[off o log l debug d],
+          { switches: ['-e', '--error-mode'], values: %w[off o log l debug d],
             display: 'o[ff]|l[og]|d[ebug]' },
           { switches: ['-o', '--sort-order'], values: %w[a d ascending descending],
             display: 'a[scending]|d[escending]' },
+          { switches: ['-O', '--output-chars'], values: OptionNormalizers::OUTPUT_CHARS_MAP.keys,
+            display: 'd[efault]|f[ancy]|a[scii]' },
+          { switches: ['-f', '--format'],
+            values:   OptionNormalizers::FORMAT_LONG_NAMES.to_a.flatten,
+            display:  OptionNormalizers.available_format_choices.join('|') },
         ]
       end
 

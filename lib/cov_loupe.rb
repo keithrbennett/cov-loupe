@@ -40,18 +40,18 @@ module CovLoupe
     #
     # CovLoupe manages configuration (logging, error handling) via `AppContext` objects.
     # The resolution strategy is:
-    # 1. Thread-local: Use `Thread.current[:cov_loupe_context]` if set.
+    # 1. Fiber-local: Use `Thread.current[:cov_loupe_context]` if set.
     # 2. Global default: Fall back to `@internal_default_context`.
     #
     # This design supports both simple CLI usage (one global context) and multi-threaded
-    # library usage (per-thread contexts).
+    # library usage (per-thread contexts; a new Fiber starts with none).
     #
     # Thread Safety:
     # - `mutex` protects all reads/writes to `@internal_default_context`.
     # - `default_log_file=` atomically updates the global default. Threads using the
-    #   default (nil thread-local context) will immediately see the new value.
-    # - `active_log_file=` creates or updates a *thread-local* context, isolating
-    #   changes to the current thread.
+    #   default (no fiber-local context) will immediately see the new value.
+    # - `active_log_file=` creates or updates a *fiber-local* context, isolating
+    #   changes to the current fiber.
     #
     # This separation ensures that changing the global default is safe and predictable,
     # while allowing threads to diverge when necessary without race conditions.
@@ -101,8 +101,9 @@ module CovLoupe
       end
     end
 
-    # Temporarily sets a thread-local context for the duration of the block,
-    # restoring the previous context afterward. Used to scope logging and
+    # Temporarily sets the current thread's context for the duration of the block,
+    # restoring the previous context afterward. The context is stored in Thread.current,
+    # so it is fiber-local: a new Fiber does not see it. Used to scope logging and
     # error handling to a specific mode (CLI, MCP, library).
     #
     # @api public

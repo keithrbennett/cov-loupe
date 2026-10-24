@@ -1,16 +1,20 @@
 # Logging
 
+[Back to main README](../../README.md)
+
 cov-loupe writes diagnostics to the logger of the active context. CLI and MCP sessions use
 `stderr` by default; library sessions have logging disabled by default. Use
 `--log-file`/`-l`, `CovLoupe.default_log_file`, or `CovLoupe.active_log_file` to
-choose another target. A file path enables persistent logging, `stderr` is
+choose another target. A `CoverageModel` keeps the logger of the context it was created in, so
+create the model after changing the target (or inside `CovLoupe.with_context`). A file path enables persistent logging, `stderr` is
 supported explicitly, `off` disables logging (use `./off` for a file literally named `off`), and `stdout` is not permitted
 because it would corrupt CLI output or the MCP JSON-RPC stream.
 
 In the CLI, the `CLI parameters` line is written only to a log file, never to
 `stderr`. An error is printed to stderr once as the user-facing message rather
 than also being logged there; with `--error-mode debug`, the CLI follows it with
-the full stack trace. Warnings and diagnostics about the coverage data can still
+the full stack trace (only its first 5 lines when logging to a file, which gets the
+full trace). Warnings and diagnostics about the coverage data can still
 appear on stderr. With a file target, the file receives the
 parameters line (for each run that gets past option parsing, including the
 default report) and the logged error (unless `--error-mode off` is used), and
@@ -35,9 +39,11 @@ are still running.
 
 Use a distinct log target for each concurrent worker, for example
 `logs/cov-loupe-agent-1.log` and `logs/cov-loupe-agent-2.log`. For CLI and MCP,
-pass each process a different `--log-file` value. For library usage, configure a
-different `CovLoupe.default_log_file` or `CovLoupe.active_log_file` for each
-independent worker. Calls sharing one logger within a single process remain
+pass each process a different `--log-file` value. For library usage, set a
+different `CovLoupe.default_log_file` in each worker process; `default_log_file=`
+is process-wide, so workers that are threads or fibers in one process should
+instead set `CovLoupe.active_log_file` (fiber-local) or run their work inside
+`CovLoupe.with_context(CovLoupe.create_context(log_target: ...))`. Calls sharing one logger within a single process remain
 serialized by the underlying Ruby logger.
 
 ## Log file initialization and target testing

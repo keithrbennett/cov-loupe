@@ -35,15 +35,14 @@ module CovLoupe
   module CoverageReporter
     module_function def report(threshold: 80, count: 5, model: nil, root: nil, coverage_file: nil)
       # Determine default root from SimpleCov if available
-      default_root = defined?(SimpleCov) ? SimpleCov.root : '.'
+      root ||= defined?(SimpleCov) ? SimpleCov.root : '.'
 
-      # Determine the default coverage directory from SimpleCov if available
-      default_coverage_file = if defined?(SimpleCov)
-        File.join(SimpleCov.root, SimpleCov.coverage_dir)
-      end
+      # Determine the default coverage directory from SimpleCov if available, under the
+      # effective root so that an explicit root: also moves the coverage location
+      default_coverage_file = (File.expand_path(SimpleCov.coverage_dir, root) if defined?(SimpleCov))
 
       model ||= CoverageModel.new(
-        root:          root || default_root,
+        root:          root,
         coverage_file: coverage_file || default_coverage_file
       )
       list_result = model.list(sort_order: :ascending)

@@ -13,13 +13,14 @@ Upgrade guides for major version changes in cov-loupe.
 
 ## General Migration Tips
 
-1. Always review the [Release Notes](../../release_notes.md) for your target version
+1. Always review the [Release Notes](../../../RELEASE_NOTES.md) for your target version
 2. Run your test suite after upgrading to catch any breaking changes
 3. Check the [Troubleshooting Guide](../TROUBLESHOOTING.md) if you encounter issues
 
 ## Need Help?
 
 If you encounter issues during migration, please:
+
 - Check the relevant migration guide above for your version
 - Review the [Troubleshooting Guide](../TROUBLESHOOTING.md)
 - Search or open an issue on [GitHub](https://github.com/keithrbennett/cov-loupe/issues)

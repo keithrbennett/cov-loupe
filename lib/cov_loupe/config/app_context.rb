@@ -6,7 +6,7 @@ module CovLoupe
   # Immutable configuration context for a CovLoupe session.
   #
   # Bundles error handling, logging, and mode into a single object that can be
-  # scoped to a thread (via CovLoupe.with_context) or used globally.
+  # scoped to the current fiber (via CovLoupe.with_context) or used globally.
   #
   # Implemented as a Data class (introduced in Ruby 3.2) for immutability and structural equality.
   # The custom #with method ensures the derived `logger` field is regenerated when

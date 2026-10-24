@@ -12,11 +12,12 @@ module CovLoupe
       description <<~DESC
         Use this when you want aggregated coverage counts for the entire project.
         It reports covered/total lines, uncovered line counts, and the overall percentage (covered lines / coverable lines across included, non-stale files).
-        Inputs: optional project root, alternate coverage file path, raise_on_stale flag, tracked_globs, and error mode.
-        Output: JSON {"lines":{"total","covered","uncovered","percentage","included_files","excluded_files"},"tracking":{"enabled","globs"},"files":{"total","with_coverage","without_coverage"},"timestamp_status":"ok"|"missing","warnings":[string,...]}.
+        Inputs: optional project root, alternate coverage file path, raise_on_stale flag, tracked_globs, error mode, and output_chars.
+        Output: JSON {"schema_version":Integer,"lines":{"total","covered","uncovered","percentage","included_files","excluded_files"},"tracking":{"enabled","globs"},"files":{"total","with_coverage","without_coverage"?},"timestamp_status":"ok"|"missing","warnings"?:[string,...]}.
+        "without_coverage" is present only when tracked_globs are set; "warnings" only when timestamp_status is "missing".
         "percentage" is a number, or null when no lines are measurable (no coverable lines, or every file stale).
         When raise_on_stale is enabled, the tool will raise an error immediately if any files have coverage data errors or staleness issues.
-        "timestamp_status" indicates whether coverage timestamps are available for time-based staleness checks. "warnings" array is present when timestamp_status is "missing".
+        "timestamp_status" indicates whether coverage timestamps are available for time-based staleness checks.
         Example: "Give me total/covered/uncovered line counts and the overall coverage percent."
       DESC
 
@@ -28,10 +29,10 @@ module CovLoupe
 
       class << self
         def call(root: nil, coverage_file: nil, raise_on_stale: nil,
-          tracked_globs: nil, error_mode: 'log', output_chars: nil, server_context:)
+          tracked_globs: nil, error_mode: nil, output_chars: nil, server_context:)
           output_chars_sym = resolve_output_chars(output_chars, server_context)
-          with_error_handling('ProjectCoverageTotalsTool',
-            error_mode: error_mode) do
+          with_error_handling('ProjectCoverageTotalsTool', error_mode: error_mode,
+            server_context: server_context) do
             model, config = create_configured_model(
               server_context: server_context,
               root:           root,

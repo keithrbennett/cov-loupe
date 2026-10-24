@@ -38,7 +38,7 @@ module CovLoupe
         direct_match = find_direct_match(normalized_path)
         return direct_match if direct_match
 
-        # Then try without current working directory prefix
+        # Then try without the project root prefix
         stripped_match = find_stripped_match(normalized_path)
         return stripped_match if stripped_match
 

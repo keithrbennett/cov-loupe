@@ -29,7 +29,7 @@ module CovLoupe
         payload['files']
       end
 
-      # Returns the coverage counts with relative file paths.
+      # Returns the file counts: total, ok, and stale.
       def relative_counts
         payload['counts']
       end

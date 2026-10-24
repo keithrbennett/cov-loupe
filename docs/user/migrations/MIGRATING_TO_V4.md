@@ -1,6 +1,6 @@
 # V4.0 Breaking Changes Guide
 
-[Back to main README](../../index.md)
+[Back to main README](../../../README.md)
 
 This document describes the breaking changes introduced in version 4.0.0. These changes affect the CLI flags for mode selection and staleness checks, as well as a method rename in the Ruby API.
 
@@ -11,7 +11,7 @@ This document describes the breaking changes introduced in version 4.0.0. These 
     - [Unified Stale Coverage Enforcement](#unified-stale-coverage-enforcement)
     - [`--raise-on-stale` / `-S` - Explicit Value Required](#raise-on-stale-s-explicit-value-required)
     - [`--color` / `-C` - Explicit Value Required](#color-c-explicit-value-required)
-    - [`--tracked-globs` Default Changed to Empty Array](#tracked-globs-default-changed-to-empty-array)
+    - [`--tracked-globs` Defaults to an Empty Array](#tracked-globs-default-changed-to-empty-array)
 - [Ruby API Changes](#ruby-api-changes)
     - [CoverageLineResolver Now Requires `root:` and `volume_case_sensitive:`](#coveragelineresolver-now-requires-root-and-volume_case_sensitive)
     - [Method Renamed](#method-renamed)
@@ -27,7 +27,9 @@ This document describes the breaking changes introduced in version 4.0.0. These 
 
 ## CLI Changes
 
-### ⚠️ MCP Mode Now Requires Explicit `-m/--mode mcp` Flag {#mcp-mode-now-requires-explicit-m-mode-mcp-flag}
+<a id="mcp-mode-now-requires-explicit-m-mode-mcp-flag"></a>
+
+### ⚠️ MCP Mode Now Requires Explicit `-m/--mode mcp` Flag
 
 **BREAKING**: Automatic mode detection has been removed. 
 The `-m/--mode mcp` flag is now **required** to run cov-loupe as an MCP server.
@@ -47,6 +49,7 @@ The `-m/--mode mcp` flag is now **required** to run cov-loupe as an MCP server.
 
 1. **Remove the old entry** (see [MCP Integration Guide - Setup by Client](../MCP_INTEGRATION.md#setup-by-client)
 for removal commands with proper `--scope` options)
+
 2. **Add the new entry with `-m mcp` flag:**
 
 ```sh
@@ -54,17 +57,18 @@ for removal commands with proper `--scope` options)
 claude mcp add cov-loupe cov-loupe -- -m mcp
 
 # Codex
-codex mcp add cov-loupe cov-loupe -m mcp
+codex mcp add cov-loupe -- cov-loupe -m mcp
 
 # Gemini
 gemini mcp add cov-loupe cov-loupe -- -m mcp
 ```
 
-**Without `-m mcp` or `--mode mcp`, the server will run in CLI mode and hang waiting for subcommands.**
+**Without `-m mcp` or `--mode mcp`, cov-loupe runs in CLI mode, prints the default coverage report and exits, so the client never completes its MCP handshake.**
 
 #### Migration for CLI Users
 
 CLI users are unaffected. The default mode is `cli`, so no changes are needed. However:
+
 - `--force-cli` removed → use `-m cli` or `--mode cli` if you need to be explicit (rare)
 - `--force-mode` removed → use `-m/--mode` instead
 
@@ -84,93 +88,37 @@ The staleness checking logic has been unified into a single flag that raises an 
 
 **IMPORTANT:** As of v4.0.0, boolean flags now require explicit values for consistency.
 
-### `--raise-on-stale` / `-S` - Explicit Value Required {#raise-on-stale-s-explicit-value-required}
+<a id="raise-on-stale-s-explicit-value-required"></a>
+
+### `--raise-on-stale` / `-S` - Explicit Value Required
 *   **Old (no longer works)**: `--raise-on-stale`, `-S`
 *   **New (required)**: `--raise-on-stale true`, `-S true`, `--raise-on-stale=yes`, etc.
 
-### `--color` / `-C` - Explicit Value Required {#color-c-explicit-value-required}
+<a id="color-c-explicit-value-required"></a>
+
+### `--color` / `-C` - Explicit Value Required
 *   **Old (no longer works)**: `--color`, `-C`
 *   **New (required)**: `--color true`, `-C true`, `--color=on`, etc.
 
 These changes improve consistency between short and long flag forms and eliminate ambiguous behavior where long-form bare flags would fail but short-form bare flags would succeed.
 
-### ⚠️ --tracked-globs Default Changed to Empty Array {#tracked-globs-default-changed-to-empty-array}
+<a id="tracked-globs-default-changed-to-empty-array"></a>
 
-**BREAKING**: The `--tracked-globs` CLI option now defaults to `[]` (empty) instead of `lib/**/*.rb,app/**/*.rb,src/**/*.rb`. The Ruby API (`CoverageModel`) now also defaults `tracked_globs:` to `[]` (previously `nil`, which behaved the same).
+### --tracked-globs Defaults to an Empty Array
 
-This affects:
-- **CLI**: `cov-loupe list` (without `--tracked-globs`)
-- **Ruby API**: `CoverageModel.new` (for consistency, though behavior is unchanged)
+**Not a change from v3.0.0:** `--tracked-globs` still defaults to no globs, so `cov-loupe list` shows every file in the resultset and flags no files as missing. A default of `lib/**/*.rb,app/**/*.rb,src/**/*.rb` existed briefly during v4 development but was never released. In v4 the CLI default is `[]` instead of `nil`, and the Ruby API (`CoverageModel`) also defaults `tracked_globs:` to `[]` (previously `nil`). Both behave the same, so no action is needed.
 
-#### Previous Behavior (v4.x early versions)
-- `--tracked-globs` CLI option defaulted to `lib/**/*.rb,app/**/*.rb,src/**/*.rb`
-- Files outside these patterns were silently excluded from CLI output
-- `missing_tracked_files` (in `list`) included any tracked files not in coverage
-
-#### New Behavior (v4.x current)
-- `--tracked-globs` defaults to `[]` (empty)
-- Shows all files in the resultset without filtering
-- No files are flagged as missing unless you explicitly set globs
-
-#### Rationale
-
-The previous default caused three problems:
-1. **Silent exclusions**: Coverage results for files not matching the default patterns (e.g., `config/`, custom directories) were hidden
-2. **False positives**: Files like migrations, bin scripts, etc. were incorrectly flagged as "missing"
-3. **Wrong assumptions**: Not all projects use `lib/` and `app/` - some use `src/`, others have custom structures
-
-The new default shows all coverage data transparently without making assumptions about your project structure.
-
-#### Migration Steps
-
-**For CLI usage** (if you want the old filtering behavior with `lib/**/*.rb,app/**/*.rb,src/**/*.rb`):
-
-Set `COV_LOUPE_OPTS` to match your SimpleCov `track_files` configuration:
-
-```ruby
-# In spec_helper.rb or similar
-SimpleCov.start do
-  add_filter '/spec/'
-  track_files 'lib/**/*.rb'
-  track_files 'app/**/*.rb'
-end
-```
+**Files lacking any coverage at all** (not loaded during tests) are not in the resultset, so they are not visible without globs. To detect them, set `--tracked-globs` to match the files you expect to have coverage, for example to match your SimpleCov `track_files` configuration:
 
 ```sh
-# In your shell config (.bashrc, .zshrc, etc.)
 export COV_LOUPE_OPTS="--tracked-globs lib/**/*.rb,app/**/*.rb"
 ```
-
-**For Ruby API usage**:
-
-No functional changes needed, but the default signature has changed for consistency. The Ruby API now defaults `tracked_globs: []` (previously `nil`). Both behave identically, so existing code works unchanged:
-
-```ruby
-# Default behavior (behavior unchanged, signature updated for consistency)
-model = CovLoupe::CoverageModel.new(root: '.')
-result = model.list  # tracked_globs: [] → no filtering
-
-# Explicit globs for filtering and tracking
-model = CovLoupe::CoverageModel.new(
-  root: '.',
-  tracked_globs: ['lib/**/*.rb', 'app/**/*.rb']
-)
-result = model.list  # Uses explicit globs
-```
-
-**If you're fine with seeing all files in the resultset (and _only_ files in the resultset)** (no action needed for CLI or Ruby API):
-- The new default shows all files that have coverage data
-- No filtering applied, but also no detection of files lacking coverage data
-
-#### Important Note
-
-**Files lacking any coverage at all** (not loaded during tests) will not appear in the resultset and therefore won't be visible with the default empty array. To detect such files, you must set `--tracked-globs` to match the files you expect to have coverage.
 
 [↑ Back to top](#table-of-contents)
 
 ## Ruby API Changes
 
-### CoverageLineResolver Now Requires `root:` and `volume_case_sensitive:` {#coveragelineresolver-now-requires-root-and-volume_case_sensitive}
+### CoverageLineResolver Now Requires `root:` and `volume_case_sensitive:`
 
 **Breaking Change**: `CovLoupe::Resolvers::CoverageLineResolver` now requires `root:` and `volume_case_sensitive:` keyword arguments, and `CovLoupe::Resolvers::ResolverHelpers.lookup_lines` / `create_coverage_resolver` now require these parameters as well.
 
@@ -276,7 +224,7 @@ result = model.list
 table = model.format_table(result)  # This will fail
 ```
 
-### Return Type Changed: `project_totals` Schema Updated {#return-type-changed-project_totals-schema-updated}
+### Return Type Changed: `project_totals` Schema Updated
 
 **Breaking Change**: `CoverageModel#project_totals` now returns a structured hash with
 explicit `lines`, `tracking`, and `files` sections. The top-level `percentage` and
@@ -346,69 +294,56 @@ logger = CovLoupe::Logger.new(target: 'cov_loupe.log', mode: :cli)     # or :lib
 
 ## Deleted Files Now Raise `FileNotFoundError`
 
-**Breaking Change**: Querying a file that has been deleted (but still exists in the coverage resultset) now raises `FileNotFoundError` instead of returning stale coverage data.
+**Breaking Change**: With `raise_on_stale` enabled, querying a file that has been deleted (but still exists in the coverage resultset) now raises `FileNotFoundError` instead of `CoverageDataStaleError`. With `raise_on_stale` off (the default), the stale coverage data is still returned, as in v3.x.
 
 ### Previous Behavior (v3.x)
 ```ruby
 # File lib/foo.rb was deleted after running tests
-model = CovLoupe::CoverageModel.new(root: '.')
-result = model.summary_for('lib/foo.rb')
-# => { 'file' => '/path/to/lib/foo.rb', 'summary' => { 'covered' => 4, 'total' => 6, 'percentage' => 66.67 } }
-# Returns stale coverage data with no error
-```
-
-```sh
-# CLI would return coverage percentage and exit 0
-$ cov-loupe summary lib/foo.rb
-lib/foo.rb: 66.67% (4/6)
-$ echo $?
-0
+model = CovLoupe::CoverageModel.new(root: '.', raise_on_stale: true)
+model.summary_for('lib/foo.rb')
+# => raises CovLoupe::CoverageDataStaleError
 ```
 
 ### New Behavior (v4.x)
 ```ruby
 # File lib/foo.rb was deleted after running tests
-model = CovLoupe::CoverageModel.new(root: '.')
-result = model.summary_for('lib/foo.rb')
+model = CovLoupe::CoverageModel.new(root: '.', raise_on_stale: true)
+model.summary_for('lib/foo.rb')
 # => raises CovLoupe::FileNotFoundError: "File not found: lib/foo.rb"
+
+# Without raise_on_stale, the stale data is still returned
+CovLoupe::CoverageModel.new(root: '.').summary_for('lib/foo.rb')
+# => { 'file' => 'lib/foo.rb', 'summary' => { 'covered' => 4, 'total' => 6, 'percentage' => 66.67 }, ... }
 ```
 
 ```sh
-# CLI raises error and exits 1
-$ cov-loupe summary lib/foo.rb
-Error: File not found: lib/foo.rb
+# CLI with --raise-on-stale true reports the missing file and exits 1
+$ cov-loupe -S true summary lib/foo.rb
+File error: File not found: lib/foo.rb
 $ echo $?
 1
 ```
 
 ### Rationale
 
-Deleted files represent **stale data** that:
-1. Misleads coverage metrics and statistics
-2. Violates the API contract (docstring already promised `FileNotFoundError`)
-3. Should be treated the same as other staleness issues
-
-If a file no longer exists, its coverage data is no longer meaningful. The new behavior ensures you don't accidentally include deleted file coverage in your metrics.
+A deleted file is a missing file, not just stale data, and the API documentation already promised `FileNotFoundError` for it. Raising that class lets callers distinguish a deleted file from one whose source changed.
 
 ### Impact
 
-This affects:
+This affects, when `raise_on_stale` is enabled:
+
 - `model.summary_for(path)` - All single-file query methods
 - `model.raw_for(path)`
 - `model.uncovered_for(path)`
 - `model.detailed_for(path)`
 - CLI commands: `summary`, `raw`, `uncovered`, `detailed`
-- MCP tools: `file_coverage_summary`, `file_coverage_raw`, etc.
+- MCP tools: `coverage_summary_tool`, `coverage_raw_tool`, etc.
 
 ### Migration
 
-**If you expect deleted files to raise errors** (recommended):
-- No action needed. This is the correct behavior.
+**If you rescue `CoverageDataStaleError` to detect deleted files**, also rescue `FileNotFoundError` (or their common ancestor, `CovLoupe::Error`).
 
-**If you relied on getting coverage for deleted files**:
-- This was incorrect behavior. Update your workflow to:
-  1. Re-run tests after file deletions to get fresh coverage, OR
-  2. Use the `list` command to see deleted files in the `deleted_files` array without querying them directly
+**To find deleted files without querying them**, use `list` and its `deleted_files` array:
 
 **Example: Checking for deleted files**
 ```ruby
@@ -462,6 +397,7 @@ Readable strings make staleness statuses self-documenting in CLI tables, JSON ou
 ### Impact
 
 This affects code that:
+
 - **Checks equality with single-character literals**: `stale == 'M'` will no longer match
 - **Uses single-character pattern matching**: Case statements with `'M'`, `'T'`, etc. need updating
 - **Checks for `false` to mean fresh**: Fresh files now report `"ok"`

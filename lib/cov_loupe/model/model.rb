@@ -71,9 +71,11 @@ module CovLoupe
     # - root: project root directory (default '.')
     # - coverage_file: path to a SimpleCov coverage.json file, or to a directory
     #   containing one
-    # - raise_on_stale: boolean (default false). When true, raises
-    #   stale errors if sources are newer than coverage or line counts mismatch.
-    # - tracked_globs: array of glob patterns (default []). Used for filtering and tracking.
+    # - raise_on_stale: boolean (default false). When true, raises if a source file is newer
+    #   than the coverage, deleted, unreadable, or has a different line count; if a tracked
+    #   file is missing from the coverage (project queries); or if a coverage row is skipped.
+    # - tracked_globs: array of glob patterns, or one pattern string (default []). Used for
+    #   filtering and tracking.
     # - logger: internal (@api private); a CovLoupe::Logger, defaulting to CovLoupe.logger.
     #   Library callers configure logging through the context instead.
     def initialize(root: '.', coverage_file: nil, raise_on_stale: false, tracked_globs: [],
@@ -103,26 +105,28 @@ module CovLoupe
       end
 
       # Compute volume case sensitivity based on this model's root directory
-      # This is not cached because different models may use the same coverage file
-      # with different root directories on different volumes
+      # Computed per model, since models sharing a coverage file may have roots on different
+      # volumes; PathUtils caches the result per root path
       @volume_case_sensitive = PathUtils.volume_case_sensitive?(@root)
     end
 
-    # Returns { 'file' => <relative_path>, 'lines' => [hits|nil,...] }
+    # Returns { 'schema_version' => 1, 'file' => <relative_path>, 'lines' => [hits|nil,...] }
     def raw_for(path, raise_on_stale: @default_raise_on_stale)
       file_abs, coverage_lines = coverage_data_for(path, raise_on_stale: raise_on_stale)
       # relative_paths returns a deep copy, so callers can't mutate the cached lines array
       relative_paths(PayloadSchema.add('file' => file_abs, 'lines' => coverage_lines))
     end
 
-    # Returns { 'file' => <relative_path>, 'summary' => {'covered'=>, 'total'=>, 'percentage'=>} }
+    # Returns { 'schema_version' => 1, 'file' => <relative_path>,
+    #           'summary' => {'covered'=>, 'total'=>, 'percentage'=>} }
     def summary_for(path, raise_on_stale: @default_raise_on_stale)
       file_abs, coverage_lines = coverage_data_for(path, raise_on_stale: raise_on_stale)
       relative_paths(PayloadSchema.add('file' => file_abs,
         'summary' => CoverageCalculator.summary(coverage_lines)))
     end
 
-    # Returns { 'file' => <relative_path>, 'uncovered' => [line,...], 'summary' => {...} }
+    # Returns { 'schema_version' => 1, 'file' => <relative_path>, 'uncovered' => [line,...],
+    #           'summary' => {...} }
     def uncovered_for(path, raise_on_stale: @default_raise_on_stale)
       file_abs, coverage_lines = coverage_data_for(path, raise_on_stale: raise_on_stale)
       relative_paths(PayloadSchema.add({
@@ -132,7 +136,8 @@ module CovLoupe
       }))
     end
 
-    # Returns { 'file' => <relative_path>, 'lines' => [{'line'=>,'hits'=>,'covered'=>},...], 'summary' => {...} }
+    # Returns { 'schema_version' => 1, 'file' => <relative_path>,
+    #           'lines' => [{'line'=>,'hits'=>,'covered'=>},...], 'summary' => {...} }
     def detailed_for(path, raise_on_stale: @default_raise_on_stale)
       file_abs, coverage_lines = coverage_data_for(path, raise_on_stale: raise_on_stale)
       relative_paths(PayloadSchema.add({
@@ -145,9 +150,11 @@ module CovLoupe
     # Returns a list of coverage data for all tracked files.
     #
     # @param sort_order [Symbol] :descending (default) or :ascending for sorting by percentage
-    # @param raise_on_stale [Boolean] When true, raises errors if sources are newer than coverage
-    # @param tracked_globs [Array<String>] Glob patterns to filter tracked files
+    # @param raise_on_stale [Boolean] When true, raises if any file is stale, a tracked file is
+    #   missing from coverage, or a coverage row is skipped
+    # @param tracked_globs [Array<String>, String] Glob patterns to filter tracked files
     # @return [Hash] Hash containing:
+    #   - 'schema_version': Payload schema version (Integer)
     #   - 'files': Array of file coverage data sorted by percentage
     #   - 'skipped_files': Files that could not be processed
     #   - 'missing_tracked_files': Tracked files not in coverage data
@@ -155,7 +162,7 @@ module CovLoupe
     #   - 'deleted_files': Source files removed since coverage run
     #   - 'length_mismatch_files': Files with line count mismatches
     #   - 'unreadable_files': Files that could not be read
-    #   - 'timestamp_status': Overall staleness status
+    #   - 'timestamp_status': 'ok', or 'missing' when coverage has no timestamp
     #
     # @note Complexity: O(n log n) where n is the number of tracked files due to sorting.
     #   File I/O for staleness checks adds O(m) where m is the number of tracked source files.
@@ -256,8 +263,9 @@ module CovLoupe
     # @param rows [Array<Hash>, nil] Pre-computed rows (e.g. list['files']), or nil to compute
     #   from coverage data
     # @param sort_order [Symbol] Sort order (:ascending or :descending)
-    # @param raise_on_stale [Boolean] Whether to raise on stale coverage data
-    # @param tracked_globs [Array<String>, nil] Glob patterns for tracked files
+    # @param raise_on_stale [Boolean] Whether to raise on stale coverage data; used only when
+    #   rows is nil, since supplied rows are not rechecked
+    # @param tracked_globs [Array<String>, String, nil] Glob patterns for tracked files
     # @param output_chars [Symbol] Output character mode (:default, :fancy, :ascii)
     # @return [String] Formatted table
     def format_table(rows = nil, sort_order: DEFAULT_SORT_ORDER,

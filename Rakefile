@@ -74,7 +74,7 @@ require_relative 'lib/cov_loupe/scripts/setup_doc_server'
 require_relative 'lib/cov_loupe/scripts/start_doc_server'
 
 namespace :release do
-  desc 'Set the gem version and rename the Unreleased notes heading'
+  desc 'Set the gem version and add its heading below Unreleased in the release notes'
   task :bump, [:version] do |_task, args|
     CovLoupe::Scripts::ReleaseBump.new(args[:version]).call
   end

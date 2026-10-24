@@ -12,7 +12,7 @@ This document describes the breaking changes introduced in version 6.0.0, includ
 
 ---
 
-## Stdout Logging Is No Longer Permitted {#stdout-logging-is-no-longer-permitted}
+## Stdout Logging Is No Longer Permitted
 
 Logging to `stdout` is no longer allowed. The `--log-file` / `-l` option rejects `stdout` in all modes (CLI, MCP, and library use). Logs are diagnostics and must not be written to the same stream as command output.
 
@@ -57,7 +57,7 @@ Logging to stdout is not permitted because it corrupts command output. Use 'stde
 
 Note: `--help`, `--version`, and `--path-for` exit before configuration validation runs, so an invalid `--log-file stdout` on those flags alone will not surface this error.
 
-## Format Short Codes and Long Names Normalized {#format-short-codes-and-long-names-normalized}
+## Format Short Codes and Long Names Normalized
 
 The `--format` / `-f` option (CLI) and the `format` parameter (MCP `project_coverage` tool) now use exactly one canonical short code and one canonical long name per format. Noncanonical aliases are no longer accepted, and three formats were added.
 
@@ -109,7 +109,7 @@ cov-loupe -f P list                   # pretty_print: Ruby stdlib PP.pp output
 - Any script or `COV_LOUPE_OPTS` value relying on `-fp` producing multi-line, indented JSON must be updated, since `-fp` now means `puts`.
 - MCP clients passing `"format": "p"` or `"format": "pretty-json"` to `project_coverage` must switch to `"format": "J"` or `"format": "pretty_json"`.
 
-## MCP Tool-call Failures Now Consistently Return `isError: true` {#mcp-tool-call-failures-now-consistently-return-iserror-true}
+## MCP Tool-call Failures Now Consistently Return `isError: true`
 
 **Breaking change:** MCP clients must handle `isError: true` for both argument-validation and tool-execution failures.
 
@@ -163,4 +163,4 @@ This contract requires `mcp` 0.15 or newer, so cov-loupe now declares that minim
 }
 ```
 
-**Further reading:** [MCP Integration — Error Responses](../MCP_INTEGRATION.md#error-responses), [Release Notes](../../release_notes.md).
+**Further reading:** [MCP Integration — Error Responses](../MCP_INTEGRATION.md#error-responses), [Release Notes](../../../RELEASE_NOTES.md).

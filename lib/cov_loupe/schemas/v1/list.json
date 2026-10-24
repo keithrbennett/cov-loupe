@@ -47,7 +47,7 @@
       "type": "object",
       "required": ["total", "ok", "stale"],
       "properties": {
-        "total": {"type": "integer", "minimum": 0, "description": "Number of coverage rows."},
+        "total": {"type": "integer", "minimum": 0, "description": "Number of rows in files; skipped rows are not counted."},
         "ok": {"type": "integer", "minimum": 0, "description": "Fresh rows."},
         "stale": {"type": "integer", "minimum": 0, "description": "Stale rows."}
       }

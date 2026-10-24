@@ -20,8 +20,10 @@ Gem::Specification.new do |spec|
     `git ls-files -z`.split("\x0").reject do |f|
       f.start_with?('spec/', 'test/')
     end.select do |f|
-      f.start_with?('lib/', 'exe/', 'docs/user/', 'docs/fixtures/', 'examples/') ||
-        (!f.include?('/') && f.end_with?('.md')) ||
+      f.start_with?('lib/', 'exe/', 'docs/user/', 'docs/dev/', 'docs/fixtures/', 'examples/') ||
+        f == 'docs/QUICKSTART.md' ||
+        # AGENTS.md and CLAUDE.md are instructions for agents working in this repository.
+        (!f.include?('/') && f.end_with?('.md') && !%w[AGENTS.md CLAUDE.md].include?(f)) ||
         f.start_with?('LICENSE')
     end
   end

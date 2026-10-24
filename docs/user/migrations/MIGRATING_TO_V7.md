@@ -8,12 +8,13 @@ This document describes the breaking changes introduced in version 7.0.0.
 
 - [Ruby 3.3 or Later Required](#ruby-33-or-later-required)
 - [Structured Output Has a Schema Version](#structured-output-has-a-schema-version)
+- [Logging Defaults, Target Probing, and Lazy File Creation](#logging-defaults-target-probing-and-lazy-file-creation)
 - [Only `coverage.json` Is Read; SimpleCov 1.x Output Is Required](#only-coveragejson-is-read-simplecov-10-is-required)
 - [`resultset` Names Removed from the CLI, MCP Tools, and Library API](#resultset-names-removed-from-the-cli-mcp-tools-and-library-api)
 - [Short Options `-c` and `-n` Reassigned](#short-options--c-and--n-reassigned)
 - [Only `coverage/coverage.json` Is Searched by Default](#only-coveragecoveragejson-is-searched-by-default)
-- [Logging Defaults, Target Probing, and Lazy File Creation](#logging-defaults-target-probing-and-lazy-file-creation)
 - [CLI Exit Codes Remapped](#cli-exit-codes-remapped)
+- [Predicate and Unexpected Errors Reported Differently](#predicate-and-unexpected-errors-reported-differently)
 - [Percentages Truncated, Not Rounded](#percentages-truncated-not-rounded)
 - [Staleness Values Renamed](#staleness-values-renamed)
 - [Library Results Use Project-Relative Paths](#library-results-use-project-relative-paths)
@@ -24,13 +25,13 @@ This document describes the breaking changes introduced in version 7.0.0.
 
 ---
 
-## Ruby 3.3 or Later Required {#ruby-33-or-later-required}
+## Ruby 3.3 or Later Required
 
 cov-loupe 7.0 requires Ruby 3.3 or later; 6.x supported Ruby 3.2, which has reached end of life. The gemspec's `required_ruby_version` is now `>= 3.3`, so Bundler and RubyGems will not install 7.0 on Ruby 3.2, and the `cov-loupe` executable exits with an error if run under an older Ruby (only `-v`/`--version` still works).
 
 **Migration:** upgrade to Ruby 3.3 or later before upgrading cov-loupe, or stay on 6.x while you remain on Ruby 3.2.
 
-## Structured Output Has a Schema Version {#structured-output-has-a-schema-version}
+## Structured Output Has a Schema Version
 
 Every hash returned by a public `CoverageModel` coverage method, successful structured CLI payload (`-f json`, `pretty_json`, `yaml`, and the other non-table formats), and structured MCP tool payload now starts with top-level integer `"schema_version": 1`. The existing payload keys remain at the top level; there is no wrapper. For example, a file summary begins `{"schema_version":1,"file":"lib/foo.rb",...}`. MCP clients should check `result.isError` before parsing the tool content.
 
@@ -38,7 +39,7 @@ Library methods such as `CoverageModel#summary_for`, `#list`, and `#project_tota
 
 **Migration:** If a consumer compares exact top-level key sets or iterates every top-level key, account for `schema_version` before processing the coverage fields. Check that its value is `1` when reading saved payloads, and ignore other unknown keys.
 
-## Logging Defaults, Target Probing, and Lazy File Creation {#logging-defaults-target-probing-and-lazy-file-creation}
+## Logging Defaults, Target Probing, and Lazy File Creation
 
 v7 changes the default logging policy and validates explicit file-based logging
 targets when a logger is initialized. CLI and MCP sessions now log to `stderr`
@@ -71,7 +72,7 @@ an unusable explicit target; CLI mode reports a warning; and MCP mode returns
 diagnostics and do not replace the original MCP tool error.
 
 The `stderr` target is also normalized consistently with `stdout` and `off`, so
-case differences, surrounding whitespace, and symbol values such as `:stderr`
+case differences, surrounding whitespace, and (in the library) the symbol `:stderr`
 select the standard-error stream rather than a file path.
 
 **Migration:**
@@ -91,7 +92,9 @@ select the standard-error stream rather than a file path.
 - If you relied on `COV-LOUPE-LOG-ERROR.log` as an implicit emergency log,
   configure an explicit file target and arrange any desired external rotation.
 
-## Only `coverage.json` Is Read; SimpleCov 1.x Output Is Required {#only-coveragejson-is-read-simplecov-10-is-required}
+<a id="only-coveragejson-is-read-simplecov-10-is-required"></a>
+
+## Only `coverage.json` Is Read; SimpleCov 1.x Output Is Required
 
 cov-loupe now reads a single input: `coverage.json`, the output of SimpleCov's JSON formatter. SimpleCov 1.0.0 and later write it alongside the HTML report by default, and its shape is fixed by a versioned JSON schema in the SimpleCov repository.
 
@@ -142,7 +145,7 @@ cov-loupe --coverage-file coverage list                   # directory containing
 
 **Staleness output change:** the file line in stale-coverage errors now reads `Coverage file - <path>` instead of `Resultset - <path>`.
 
-## `resultset` Names Removed from the CLI, MCP Tools, and Library API {#resultset-names-removed-from-the-cli-mcp-tools-and-library-api}
+## `resultset` Names Removed from the CLI, MCP Tools, and Library API
 
 v7.0 replaces every `resultset` name in the CLI, MCP tools, and library API with a `coverage_file` name. This is a single clean break: the old names are removed outright, with no deprecation period and no aliases.
 
@@ -160,8 +163,8 @@ v7.0 replaces every `resultset` name in the CLI, MCP tools, and library API with
 | `ResolverHelpers.create_resultset_resolver` (and its `candidates:` keyword) | `Resolvers::CoverageFilePathResolver.new(root:)` |
 | `AppConfig#resultset`, `#resultset=` | `#coverage_file`, `#coverage_file=` |
 | `CovLoupe::ResultsetLoader` | `CovLoupe::CoverageJsonLoader` |
-| `CoverageRepository.new(coverage_file_path:)` | `CoverageRepository.new(coverage_file:)` |
-| `CoverageRepository#coverage_file_path` | `#resolved_coverage_file` |
+| `CoverageRepository.new(resultset_path:)` | `CoverageRepository.new(coverage_file:)` |
+| `CoverageRepository#resultset_path` | `#resolved_coverage_file` |
 
 Of these, only the CLI option, the MCP argument, the `CoverageModel` names, `CoverageReporter.report(coverage_file:)`, and the error classes and readers are public in 7.0. The resolver, loader, repository, and `AppConfig` names are internal, so they may change again in any release; see [Public API Declared](#public-api-declared).
 
@@ -172,8 +175,11 @@ cov-loupe --resultset coverage list      # worked
 ```
 
 ```ruby
-model = CovLoupe::CoverageModel.new(resultset: 'coverage')
+begin
+  model = CovLoupe::CoverageModel.new(resultset: 'coverage')
 rescue CovLoupe::ResultsetNotFoundError
+  # ...
+end
 ```
 
 **After (v7.0):**
@@ -183,16 +189,21 @@ cov-loupe --coverage-file coverage list  # or: cov-loupe -c coverage list
 ```
 
 ```ruby
-model = CovLoupe::CoverageModel.new(coverage_file: 'coverage')
+begin
+  model = CovLoupe::CoverageModel.new(coverage_file: 'coverage')
 rescue CovLoupe::CoverageFileNotFoundError
+  # ...
+end
 ```
 
 **Migration:**
 
 - Replace every name in the left column with the one on the right. `--resultset` on the command line (including in `COV_LOUPE_OPTS` and MCP server `args`) now fails as an unknown option; the `resultset` MCP tool argument is rejected as an unexpected argument.
-- `CoverageJsonLoader.load(path:)` and `CoverageJsonLoader.new(path:, logger:)` become `load(resolved_coverage_file:)` and `new(resolved_coverage_file:, logger:)`. They return a `Result` with `coverage_map` and `timestamp` only. The `suite_names` member of the old `ResultsetLoader::Result` is gone, since `coverage.json` is a single merged result.
+- `ResultsetLoader.load(resultset_path:)` and `ResultsetLoader.new(resultset_path:, logger:)` become `CoverageJsonLoader.load(resolved_coverage_file:)` and `CoverageJsonLoader.new(resolved_coverage_file:, logger:)`. They return a `Result` with `coverage_map` and `timestamp` only. The `suite_names` member of the old `ResultsetLoader::Result` is gone, since `coverage.json` is a single merged result.
 
-## Short Options `-c` and `-n` Reassigned {#short-options--c-and--n-reassigned}
+<a id="short-options--c-and--n-reassigned"></a>
+
+## Short Options `-c` and `-n` Reassigned
 
 The coverage file option, `-r`/`--resultset` in 6.x, is `-c`/`--coverage-file` in 7.0. `-c` previously belonged to `--context-lines`, whose short form is now `-n`. The `--context-lines` long form is unchanged.
 
@@ -223,7 +234,7 @@ export COV_LOUPE_OPTS="-c build/coverage"
 - Replace `-c N` with `-n N` wherever it sets context lines. This is the one silent change: an old `-c 3` is now parsed as `--coverage-file 3` and fails with `Specified coverage file not found` rather than an unknown-option error.
 - The not-found tip in CLI mode now reads `Specify a coverage file: cov-loupe -c PATH`.
 
-## Only `coverage/coverage.json` Is Searched by Default {#only-coveragecoveragejson-is-searched-by-default}
+## Only `coverage/coverage.json` Is Searched by Default
 
 With no `--coverage-file` argument, cov-loupe now looks in exactly one place: `coverage/coverage.json` under the project root, which is where SimpleCov writes it by default. 6.x searched three locations for `.resultset.json`: the project root itself, `coverage/`, and `tmp/`.
 
@@ -251,9 +262,9 @@ cov-loupe -c ./coverage.json list
 
 **Migration:** if your `coverage.json` lives anywhere other than `coverage/`, pass `--coverage-file` (`-c`) on the command line, set it in `COV_LOUPE_OPTS`, add it to your MCP server `args`, or pass `coverage_file:` to `CoverageModel.new`.
 
-**Further reading:** [Configuring the Coverage File](../../index.md#configuring-the-coverage-file), [SimpleCov Integration](../../dev/arch-decisions/simplecov-integration.md), [Release Notes](../../release_notes.md).
+**Further reading:** [Configuring the Coverage File](../../../README.md#configuring-the-coverage-file), [SimpleCov Integration](../../dev/arch-decisions/simplecov-integration.md), [Release Notes](../../../RELEASE_NOTES.md).
 
-## CLI Exit Codes Remapped {#cli-exit-codes-remapped}
+## CLI Exit Codes Remapped
 
 Each failure kind now has its own exit code, defined in `CovLoupe::ExitCodes`.
 
@@ -271,11 +282,19 @@ Usage errors raised inside a subcommand (for example a global option placed afte
 
 **Migration:** update CI scripts that test `validate` for exit 1 to test 3 (policy failed) and, if you distinguish them, 4 (predicate error). Scripts that treated exit 2 from `validate` as "stale or missing coverage" should test for 1 instead. A script that only checks for non-zero needs no change.
 
-**Further reading:** [Exit Codes](../CLI_USAGE.md#exit-codes), [Release Notes](../../release_notes.md).
+**Further reading:** [Exit Codes](../CLI_USAGE.md#exit-codes), [Release Notes](../../../RELEASE_NOTES.md).
+
+## Predicate and Unexpected Errors Reported Differently
+
+While a predicate runs, only `PredicateError`, `CoverageDataError` and `FileError` now pass through unchanged. Any other error, including a `UsageError` or `ConfigurationError` that the predicate raises itself, becomes a `PredicateError` with the original attached. In the CLI such a predicate now exits 4 rather than 2; library callers rescue `PredicateError`; and the MCP `project_validate` tool reports `Predicate error: ...`.
+
+An unexpected `ArgumentError` that reaches the error handler outside coverage loading is now an `UnknownError` ("An unexpected error occurred: ...", exit 1 in the CLI) instead of a `ConfigurationError` or `UsageError` ("Invalid configuration: ...", exit 2). Validation of user input still raises `UsageError` or `ConfigurationError` directly and is unaffected.
+
+**Migration:** code that rescued `UsageError` or `ConfigurationError` from a predicate should rescue `PredicateError` (its `original_error` is the error the predicate raised). Scripts that matched "Invalid configuration" for an internal `ArgumentError` should treat exit 1 as the unexpected-error case.
 
 ---
 
-## Percentages Truncated, Not Rounded {#percentages-truncated-not-rounded}
+## Percentages Truncated, Not Rounded
 
 Coverage percentages are truncated to two decimals instead of rounded, so incomplete coverage can never report `100.0`. In 6.x, 99,999 of 100,000 covered lines reported `100.0`. It now reports `99.99`.
 
@@ -293,7 +312,7 @@ This applies to every `percentage` value: library hashes, CLI output in all form
 
 ---
 
-## Staleness Values Renamed {#staleness-values-renamed}
+## Staleness Values Renamed
 
 Staleness states now have one name everywhere. The per-file `stale` value and the `project_totals` `stale.by_type` keys use the same names as the `list` arrays (`deleted_files`, `newer_files`, `length_mismatch_files`, `unreadable_files`):
 
@@ -312,9 +331,9 @@ This applies to library hashes, CLI output in all formats, and MCP tool payloads
 
 **Migration:** replace `stale == "missing"` checks with `"deleted"` and `stale == "error"` with `"unreadable"`, and read `by_type["deleted"]` instead of `by_type["missing_from_disk"]`. Replace `StaleStatus::MISSING_FROM_DISK` with the string `"deleted"` rather than `StaleStatus::DELETED`, since `StaleStatus` is internal as of 7.0 (see [Public API Declared](#public-api-declared)). Update `validate` predicates and scripts that parse the `totals` or `list` text output the same way.
 
-## Library Results Use Project-Relative Paths {#library-results-use-project-relative-paths}
+## Library Results Use Project-Relative Paths
 
-In 6.x, `CoverageModel#list`, `#summary_for`, `#uncovered_for`, `#detailed_for`, and `#raw_for` returned absolute file paths, while the CLI and MCP server reported project-relative ones; `CoverageModel#relativize` converted library results to the relative form. In 7.0 the library returns the same paths as the CLI and MCP server, so every payload has one shape. A path inside the project root is relative to the root; a path outside it stays absolute. This applies to every `file` value, including the `list` `files` and `skipped_files` rows. The other `list` path arrays (`missing_tracked_files`, `newer_files`, `deleted_files`, `length_mismatch_files`, and `unreadable_files`) were already relative for files inside the root, but showed files outside it as `../` paths; they now show those as absolute paths, in the library, CLI, and MCP output alike. Staleness errors change the same way: `CoverageDataStaleError#file_path`, the `CoverageDataProjectStaleError` path arrays, and the error messages report files outside the root as absolute paths. A relative path whose first directory starts with `~` is reported with a `./` prefix (for example `./~vendor/a.rb`) in all modes, so `File.expand_path` does not treat it as a home directory. On input, relative `coverage.json` keys and `format_table` row paths starting with `~` resolve to a directory under the root. In 6.x, such relative `.resultset.json` keys were expanded as home directories (or raised for an unknown user), and such row paths were used as written, so no `tracked_globs` pattern matched them and the row was dropped; query path arguments and `tracked_globs` still follow `File.expand_path`, so write `./~vendor/a.rb` to name such a directory there. `CoverageModel#relativize` is removed. `CoverageModel#format_table` called without rows now shows relative paths too (it showed absolute paths in 6.x). `validate` predicates receive library results, so a predicate that prints `f['file']` now prints relative paths. Table rows with equal coverage are ordered by absolute path, as in `list`; in 6.x the CLI and MCP tables ordered them by the displayed path, so ties involving files outside the root may order differently. Otherwise CLI and MCP output is unchanged, and `CoverageReporter.report` prints the same text apart from the `./~` prefix.
+In 6.x, `CoverageModel#list`, `#summary_for`, `#uncovered_for`, `#detailed_for`, and `#raw_for` returned absolute file paths, while the CLI and MCP server reported project-relative ones; `CoverageModel#relativize` converted library results to the relative form. In 7.0 the library returns the same paths as the CLI and MCP server, so every payload has one shape. A path inside the project root is relative to the root; a path outside it stays absolute. This applies to every `file` value, including the `list` `files` and `skipped_files` rows. The other `list` path arrays (`missing_tracked_files`, `newer_files`, `deleted_files`, `length_mismatch_files`, and `unreadable_files`) were already relative for files inside the root, but showed files outside it as `../` paths; they now show those as absolute paths, in the library, CLI, and MCP output alike. Staleness errors change the same way: `CoverageDataStaleError#file_path`, the `CoverageDataProjectStaleError` path arrays, and the error messages report files outside the root as absolute paths. A relative path whose first directory starts with `~` is reported with a `./` prefix (for example `./~vendor/a.rb`) in all modes, so `File.expand_path` does not treat it as a home directory. On input, relative `coverage.json` keys and `format_table` row paths starting with `~` resolve to a directory under the root. In 6.x, such relative `.resultset.json` keys were expanded as home directories (or raised for an unknown user), and such row paths were used as written, so no `tracked_globs` pattern matched them and the row was dropped; query path arguments and `tracked_globs` still follow `File.expand_path`, so write `./~vendor/a.rb` to name such a directory there. `CoverageModel#relativize` is removed. `CoverageModel#format_table` called without rows now shows relative paths too (it showed absolute paths in 6.x). `validate` predicates receive library results, so a predicate that prints `f['file']` now prints relative paths. Table rows with equal coverage are ordered by absolute path, as in `list`; in 6.x the CLI and MCP tables ordered them by the displayed path, so ties involving files outside the root may order differently. Otherwise CLI and MCP output is unchanged, and `CoverageReporter.report` prints the same text apart from the `./~` prefix and the two-decimal percentages described in [Percentages Truncated, Not Rounded](#percentages-truncated-not-rounded).
 
 The path arguments the methods accept are unchanged: absolute paths and paths relative to the root both work, so a `file` value from one result can be passed straight to another query.
 
@@ -335,15 +354,17 @@ model.summary_for('lib/foo.rb')['file']
 
 **Migration:** remove `model.relativize(...)` calls and use the results directly. Use `File.expand_path(path, model.root)` if you need absolute paths; `CoverageModel#root` is public in 7.0 and returns the absolute project root the model resolved. Code that matched paths by an absolute prefix (for example `f['file'].start_with?(File.expand_path('lib', root))`) should match the relative form instead (`f['file'].start_with?('lib/')`).
 
-## `project_validate` Requires `--allow-code-predicates` {#project_validate-requires---allow-code-predicates}
+<a id="project_validate-requires---allow-code-predicates"></a>
+
+## `project_validate` Requires `--allow-code-predicates`
 
 The MCP server no longer registers `project_validate` by default. It runs Ruby predicates that the MCP client writes, with the server's full privileges, outside any sandbox or approval prompt the client applies to shell commands. In 7.0 the server registers it only when started with `--allow-code-predicates`. Without the flag, `project_validate` is absent from `tools/list` and the `help` tool's listing, and calling it returns a JSON-RPC `-32602` ("Invalid params") error whose `data` is `"Tool not found: project_validate"`, instead of a result.
 
-The CLI `validate` subcommand is unchanged and needs no flag.
+The CLI `validate` subcommand needs no such flag.
 
 **Migration:** if you use `project_validate` and accept the risk, add `--allow-code-predicates` to the server's arguments, e.g. `"args": ["-m", "mcp", "--allow-code-predicates"]`. Otherwise, run `cov-loupe validate` from a shell, or ask the client to apply your criteria to `project_coverage` output.
 
-## Public API Declared {#public-api-declared}
+## Public API Declared
 
 In 6.x, the Library API guide's "API Boundary and Compatibility" section named `CovLoupe.run`, `CoverageModel`, and eight `CoverageModel` methods as supported, and promised to keep them compatible "as practical" across minor and patch releases. Other guides and migration notes, though, used many more classes, including internal ones renamed earlier in this guide. 7.0 replaces that section with [Public API and Versioning](../LIBRARY_API.md#public-api-and-versioning), which defines the public surface across the library, structured output, CLI, and MCP server, and commits to Semantic Versioning for it.
 
@@ -355,7 +376,9 @@ Error handlers (`ErrorHandler`, `ErrorHandlerFactory`, `CovLoupe.error_handler`,
 
 **Migration:** if you call anything tagged `@api private`, or otherwise outside [Public API and Versioning](../LIBRARY_API.md#public-api-and-versioning), move to a public equivalent (for example, compare staleness strings such as `"deleted"` instead of `StaleStatus::DELETED`, and use `CovLoupe.run` instead of instantiating `CoverageCLI`), or pin cov-loupe to an exact version. If the public API doesn't cover your use, open an issue.
 
-## `--output-chars ascii` No Longer Changes Data {#output-chars-ascii-no-longer-changes-data}
+<a id="output-chars-ascii-no-longer-changes-data"></a>
+
+## `--output-chars ascii` No Longer Changes Data
 
 In 6.x, ASCII mode (`-O ascii`, the MCP `output_chars: "ascii"` argument, the library's `output_chars: :ascii`, or `default` when it picks ASCII mode for a terminal that does not use UTF-8) produced ASCII-only output by rewriting the text: accented Latin letters and some symbols were transliterated (`é` became `e`, `€` became `EUR`, `→` became `->`), and every other non-ASCII character became `?`. That altered user data such as file paths, source lines and error messages.
 
@@ -363,7 +386,7 @@ In 7.0, ASCII mode changes only what cov-loupe draws itself: table borders use `
 
 **Migration:** if you relied on ASCII mode to guarantee ASCII-only text output, for example for a consumer that rejects other bytes, use JSON output in ASCII mode (`-O ascii -f json` in the CLI; `output_chars: "ascii"` with a JSON format for MCP tools), or transliterate the output yourself. Only successful JSON payloads are escaped, and only in ASCII mode: error messages (CLI stderr and MCP `Error: ...` results) and non-JSON formats such as tables and YAML are not. Otherwise no change is needed.
 
-## Source and Predicate Files Are Read as UTF-8 {#source-and-predicate-files-are-read-as-utf-8}
+## Source and Predicate Files Are Read as UTF-8
 
 In 6.x, source files (for source display with `--source`) and `validate` predicate files were read in the locale's encoding. A file in a non-UTF-8 encoding such as ISO-8859-1 therefore worked under a matching locale, while under the C locale (`LANG=C`) predicate files with non-ASCII string literals and JSON source output with non-ASCII characters failed.
 

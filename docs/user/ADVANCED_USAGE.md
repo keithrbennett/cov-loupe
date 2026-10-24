@@ -1,27 +1,27 @@
 # Advanced Usage Guide
 
-[Back to main README](../index.md)
+[Back to main README](../../README.md)
 
 > Examples use `clp`, an alias pointed at the demo fixture with partial coverage:
 >
 > `alias clp='cov-loupe -R docs/fixtures/demo_project'`  # -R = --root
+> Run the examples from the root of a cov-loupe checkout, since the alias's path is relative. Without the gem
+> installed, use `alias clp='bundle exec exe/cov-loupe -R docs/fixtures/demo_project'` instead.
 >
 > Replace `clp` with `cov-loupe` if you want to target your own project/coverage file.
 >
-> The fixture's coverage timestamp is deliberately set far in the future, so the outputs below — including `--raise-on-stale` / `-S` runs — are reproducible on a fresh clone.
+> The fixture's coverage timestamp is deliberately set far in the future, so the outputs below keep working on a fresh clone: `--raise-on-stale` / `-S` runs do not fail on timestamps, though those that also pass `-g` with globs matching the fixture's missing tracked files fail by design. Timestamps and absolute paths in some messages still vary by machine and time zone.
 
 ## Table of Contents
 
 - [Advanced MCP Integration](#advanced-mcp-integration)
+- [Sorting Coverage Lists with n/a Entries](#sorting-coverage-lists-with-na-entries)
 - [Staleness Detection & Validation](#staleness-detection-validation)
 - [Advanced Path Resolution](#advanced-path-resolution)
 - [Error Handling Strategies](#error-handling-strategies)
 - [Custom Ruby Integration](#custom-ruby-integration)
 - [CI/CD Integration](#cicd-integration)
 - [Advanced Filtering & Glob Patterns](#advanced-filtering-glob-patterns)
-- [Performance Optimization](#performance-optimization)
-- [Custom Output Processing](#custom-output-processing)
-- [Multiple Test Suites](#multiple-test-suites)
 
 ---
 
@@ -39,7 +39,7 @@ The MCP server signals tool-call failures by returning a `tools/call` **result**
     "content": [
       {
         "type": "text",
-        "text": "Error: Coverage data not found at coverage/coverage.json"
+        "text": "Error: File error: Could not find coverage.json under \"/path/to/project\"; run tests or set --coverage-file option"
       }
     ],
     "isError": true
@@ -49,37 +49,9 @@ The MCP server signals tool-call failures by returning a `tools/call` **result**
 
 This lets MCP clients programmatically distinguish a failed tool call from a successful one. Argument-validation failures also return `isError: true`; a JSON-RPC `error` response is reserved for protocol- and dispatch-level failures such as an unknown tool.
 
-### MCP Server Logging
+### MCP Server Logging and Manual Testing
 
-The MCP server logs tool-execution errors and other cov-loupe diagnostics to `stderr` by default. See the [logging initialization and target testing guide](LOGGING.md#log-file-initialization-and-target-testing) for details about startup probing, append-mode checks, cached failures, and explicit file targets. Argument-validation failures emitted by the MCP SDK before cov-loupe runs do not reach this logger.
-
-To use a persistent log file, specify the `--log-file` (or `-l`) argument wherever and however you configure your MCP server. For example, include `-l /path/to/logfile.log` in your server configuration. To use standard error explicitly, use `-l stderr`. To disable logging entirely, use `-l off` (cross-platform alternative to `/dev/null`).
-
-**Warning:** Explicit log files may grow unbounded in long-running or CI usage. cov-loupe does not rotate them; use external rotation or periodically clean them up.
-
-**Note:** Logging to `stdout` is not permitted in any mode, because it would corrupt command output or the MCP JSON-RPC protocol.
-
-### Testing MCP Server Manually
-
-Use these JSON-RPC commands as smoke tests to confirm that the MCP server launches and responds over stdin with your configuration. They are not exhaustive error-contract tests; see [Testing Your Setup](MCP_INTEGRATION.md#testing-your-setup) for installation checks and [Error Responses](MCP_INTEGRATION.md#error-responses) for the full MCP failure model.
-
-**Note:** CLI flags set defaults for MCP tool calls, but per-request JSON parameters still win. Use `-R`/`-c` when you want server-wide defaults, or pass `root`/`coverage_file` per request.
-
-```sh
-# Get version (no parameters needed)
-echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"version","arguments":{}}}' | cov-loupe -m mcp
-
-# Get file summary (include root parameter in JSON)
-echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"app/models/order.rb","root":"docs/fixtures/demo_project"}}}' | cov-loupe -m mcp
-
-# List all files with sorting (include root parameter)
-echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"project_coverage","arguments":{"sort_order":"ascending","root":"docs/fixtures/demo_project"}}}' | cov-loupe -m mcp
-
-# Get uncovered lines (include root parameter)
-echo '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"file_uncovered_lines","arguments":{"path":"app/controllers/orders_controller.rb","root":"docs/fixtures/demo_project"}}}' | cov-loupe -m mcp
-```
-
-**Why not use `clp` alias here?** `clp` is useful for CLI subcommands, but MCP calls run a long-lived server process. You can pass `-R` at startup to set defaults, or set `root` explicitly in each JSON request when you want to be explicit or override the defaults.
+The MCP server logs to `stderr` by default; [Checking Logs](MCP_INTEGRATION.md#checking-logs) covers log files, `-l off`, and rotation. To confirm that the server launches and answers JSON-RPC over stdio, use the smoke tests in [Manual Testing via Command Line](MCP_INTEGRATION.md#manual-testing-via-command-line).
 
 ---
 
@@ -87,9 +59,11 @@ echo '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"file_uncov
 
 When a file has no executable lines, its coverage percentage is reported as `n/a`. In list outputs, `n/a` entries are grouped separately from numeric percentages. The default descending sort order places `n/a` entries above `100%` coverage so they appear earlier in the list, while still keeping low numeric percentages toward the bottom for attention.
 
-If you need to treat `n/a` differently, post-process the JSON output from `list` or `project_coverage` and apply your own sort or filtering rules.
+If you need to treat `n/a` differently, post-process the JSON output of the CLI `list` command or the MCP `project_coverage` tool and apply your own sort or filtering rules.
 
 ---
+
+<a id="staleness-detection-validation"></a>
 
 ## Staleness Detection & Validation
 
@@ -98,20 +72,24 @@ If you need to treat `n/a` differently, post-process the JSON output from `list`
 Staleness checking prevents using outdated coverage data. The behavior is controlled by the boolean `raise_on_stale` setting:
 
 **`raise_on_stale: false` (default)**
+
 - Coverage data is returned even if stale
 - Stale indicators are still computed
 - Best for exploratory reporting
 
 **`raise_on_stale: true`**
+
 - Raises errors when stale coverage is detected
 - Recommended for CI/CD enforcement
 
 ### File-Level Staleness
 
 A file is considered stale when any of the following are true:
+
 1. Source file modified after coverage generation (requires timestamps - see [Timestamp Warnings](#timestamp-warnings))
 2. Line count differs from coverage array length
 3. File exists in coverage but deleted from filesystem
+4. Source file could not be read, or its staleness check failed (`unreadable`)
 
 **CLI Usage:**
 ```sh
@@ -137,6 +115,8 @@ rescue CovLoupe::CoverageDataStaleError => e
   puts "Coverage timestamp: #{e.cov_timestamp}"
   puts "File mtime: #{e.file_mtime}"
   puts "Source lines: #{e.src_len}, Coverage lines: #{e.cov_len}"
+rescue CovLoupe::FileError => e # the file was deleted or could not be read
+  puts e.user_friendly_message
 end
 ```
 
@@ -145,21 +125,27 @@ end
 Detects system-wide staleness issues:
 
 **Conditions Checked:**
-1. **Newer files** - Any tracked file modified after coverage (requires timestamps - see [Timestamp Warnings](#timestamp-warnings))
-2. **Missing files** - Tracked files with no coverage data
+
+1. **Newer files** - A file in the coverage data that was modified after coverage (requires timestamps - see [Timestamp Warnings](#timestamp-warnings))
+2. **Missing files** - Files matching `--tracked-globs` with no coverage data (checked only when globs are set)
 3. **Deleted files** - Coverage exists for non-existent files
+4. **Line count mismatches** - Source line count differs from the coverage array length
+5. **Unreadable files** - Source could not be read, or its staleness check failed
+
+With `raise_on_stale` true, a project query also raises if a coverage row is skipped because its data is invalid.
 
 **CLI Usage:**
 
 You can see if _any_ files in the project are stale by running the (implicit here) `list` command
-with `--raise-on-stale` and checking the exit code. The transcript below is illustrative —
+with `--raise-on-stale true` and checking the exit code. The transcript below is illustrative —
 captured from a project with files newer than its coverage, not from the demo fixture:
 
 ```sh
 $ cov-loupe -S true list
-Coverage data stale (project): CovLoupe::CoverageDataProjectStaleError
+Coverage data stale (project): Coverage data appears stale for project
 Coverage  - time: 2025-12-10T18:23:00Z (local 2025-12-11T02:23:00+08:00)
-Newer files (1):  - lib/cov_loupe/version.rb
+Newer files (1):
+  - lib/cov_loupe/version.rb
 Coverage file - /path/to/project/coverage/coverage.json
 $ echo $?
 1
@@ -175,12 +161,14 @@ rescue CovLoupe::CoverageDataProjectStaleError => e
   puts "Newer files: #{e.newer_files.join(', ')}"
   puts "Missing from coverage: #{e.missing_files.join(', ')}"
   puts "Deleted but in coverage: #{e.deleted_files.join(', ')}"
+  puts "Line count mismatches: #{e.length_mismatch_files.join(', ')}"
+  puts "Unreadable: #{e.unreadable_files.join(', ')}"
 end
 ```
 
 ### Timestamp Warnings
 
-When coverage data lacks timestamps (e.g., a hand-written or third-party `coverage.json` without `meta.timestamp`), cov-loupe displays a warning in both CLI and MCP modes:
+When coverage data lacks timestamps (e.g., a hand-written or third-party `coverage.json` that passes the `meta.schema_version` check but has no `meta.timestamp`), the project-level commands and tools (CLI `list` and `totals`, MCP `project_coverage` and `project_coverage_totals`) display a warning:
 
 ```
 WARNING: Coverage timestamps are missing. Time-based staleness checks were skipped.
@@ -189,16 +177,19 @@ Check your coverage tool configuration to ensure timestamps are recorded.
 ```
 
 **What this means:**
+
 - Time-based staleness checks (the `"newer"` indicator) cannot run without timestamps
 - Files modified after coverage collection won't be flagged as stale
-- Only line count mismatches and deleted or unreadable files will be detected
-- The `timestamp_status` field in JSON output will show `"missing"` instead of `"ok"`
+- Only line count mismatches, deleted or unreadable files, and (with tracked globs) tracked files missing from coverage will be detected
+- The `timestamp_status` field in project-level JSON output will show `"missing"` instead of `"ok"`
+- Per-file commands and tools show no warning and have no `timestamp_status` field; in the CLI and MCP server, any command or tool that loads coverage without a timestamp logs an INFO line (on stderr by default; library logging is off by default)
 
 **Where it appears:**
-- **CLI table format:** After the coverage table in `list` output
-- **CLI JSON format:** After JSON output, and in the `timestamp_status` field
+
+- **CLI table format:** On stderr, written after the `list` or `totals` output (when stdout and stderr share a file or pipe, buffering can make it appear first)
+- **CLI JSON and other structured formats:** On stderr, and in the `timestamp_status` field
 - **MCP mode:** In `project_coverage` output with format=table after the exclusions summary
-- **MCP JSON:** In the `timestamp_status` field of `project_coverage` responses
+- **MCP structured formats:** In the `timestamp_status` field of `project_coverage` (every non-table format) and `project_coverage_totals` responses, plus a `warnings` array holding the warning lines
 
 **How to fix:**
 
@@ -272,7 +263,7 @@ coverage_b = model_b.list
 
 **Library Mode:** typed exceptions with full details
 
-**MCP Server Mode:** argument-validation and tool-execution failures return a `tools/call` result with `isError: true` (execution failures are logged to file); JSON-RPC errors are reserved for protocol- or dispatch-level failures such as malformed JSON-RPC requests, unknown methods, and unknown tools
+**MCP Server Mode:** argument-validation and tool-execution failures return a `tools/call` result with `isError: true` (execution failures are logged to the configured log target, `stderr` by default); JSON-RPC errors are reserved for protocol- or dispatch-level failures such as malformed JSON-RPC requests, unknown methods, and unknown tools
 
 ### Error Modes
 
@@ -281,10 +272,11 @@ coverage_b = model_b.list
 # No error logging (the error message is still printed)
 clp --error-mode off summary app/models/order.rb
 
-# Standard mode - user-friendly errors, logged when --log-file is a file (default)
+# Standard mode (the default) - user-friendly errors, also logged when --log-file names a file
 clp --error-mode log summary app/models/order.rb
 
-# Verbose mode - full stack traces
+# Verbose mode - stack traces (only the first 5 lines on stderr when --log-file names a file,
+# which gets the full trace)
 clp --error-mode debug summary app/models/order.rb
 ```
 
@@ -312,7 +304,8 @@ To run the CLI from Ruby, call `CovLoupe.run` with the same arguments you would 
 command line. Control error logging and stack traces with `--error-mode` and `--log-file`
 in those arguments or in `COV_LOUPE_OPTS`. `CovLoupe.run` may call `exit`. Unlike the
 `cov-loupe` executable, it does not install `INT`/`TERM` handlers, check the Ruby version,
-treat `-v`/`--version` anywhere in the arguments as a version request, or set
+treat `-v`/`--version` anywhere in the arguments as a version request (as a global option,
+before any subcommand, it still prints the version), or set
 `Encoding.default_external` to UTF-8 under the C locale (see
 [Library API](LIBRARY_API.md#quick-start) for why that matters for non-ASCII paths).
 
@@ -333,11 +326,11 @@ errors in your own code, use the library API and rescue the
 ### Building Custom Coverage Policies
 
 Use the `validate` subcommand to enforce custom coverage policies in CI/CD.
-Example predicates are in [`examples/success_predicates/`](../examples/success_predicates.md).
+Example predicates are in [`examples/success_predicates/`](../../examples/success_predicates/README.md).
 
 The predicate can be any Ruby object that responds to `call` and accepts a `CoverageModel`
-as its argument. This is usually a lambda (proc), but it can also be a nonlambda proc, a class,
-or an instance with a `call` method. The predicate should return a truthy value for success 
+as its argument. This is usually a lambda (proc), but it can also be a nonlambda proc, a class with a
+`self.call` method, or an instance of a class with a `call` method. The predicate should return a truthy value for success 
 or `false`/`nil` for failure.
 
 > **⚠️ SECURITY WARNING**
@@ -356,7 +349,10 @@ or `false`/`nil` for failure.
 
 **Quick Usage:**
 ```sh
-# All files must be >= 80%
+# validate prints no result (only what the predicate itself prints); check the exit code
+# with `echo $?` (0 = pass, 3 = fail, 4 = error in the predicate)
+
+# Every file in the coverage data must be >= 80%
 clp validate examples/success_predicates/all_files_above_threshold_predicate.rb
 
 # Total project coverage >= 85%
@@ -388,7 +384,7 @@ class CoveragePolicy
     low_files = model.list['files'].select { |f| f['percentage'] && f['percentage'] < threshold }
 
     if low_files.empty?
-      puts "✓ All files have >= #{threshold}% coverage"
+      warn "✓ All files have >= #{threshold}% coverage"
       true
     else
       warn "✗ Files below #{threshold}%:"
@@ -403,7 +399,7 @@ CoveragePolicy.new
 
 **Exit codes:** `0` pass, `3` predicate returned falsy (validation failed), `4` error in the predicate itself. See the full list under [Exit Codes](CLI_USAGE.md#exit-codes).
 
-See [examples/success_predicates/README.md](../examples/success_predicates.md) for more examples.
+See [examples/success_predicates/README.md](../../examples/success_predicates/README.md) for more examples.
 
 ### Absolute Paths
 
@@ -438,11 +434,12 @@ The CLI is designed for CI/CD use with features that integrate naturally into pi
 # 1. Run tests to generate coverage
 bundle exec rspec
 
-# 2. Validate coverage freshness (fails with exit code 1 if stale)
+# 2. Validate coverage freshness (fails with exit code 1 if any tracked file is stale
+#    or missing from coverage; on the demo fixture it fails, since two lib files are missing)
 clp -S true -g "lib/**/*.rb"
 
 # 3. Export data for CI artifacts or further processing
-clp -fJ list > coverage.json
+clp -fJ list > coverage-report.json
 ```
 
 ### Using Coverage Validation
@@ -458,17 +455,20 @@ clp validate coverage_policy.rb
 ```
 
 Exit codes:
+
 - `0` - Success (coverage meets requirements)
-- `1` - Runtime error (e.g., missing or stale coverage data with `--raise-on-stale`)
+- `1` - Runtime error (e.g., missing or stale coverage data with `--raise-on-stale true`)
 - `2` - Usage error (invalid options or arguments)
 - `3` - Validation failed (coverage policy not met)
 - `4` - Predicate error (invalid predicate or an error raised by its own code; coverage-data errors it triggers exit 1)
 
 ### Platform-Specific Examples
 
-For platform-specific integration examples (GitHub Actions, GitLab CI, Jenkins, CircleCI, etc.), see community contributions in the [GitHub Discussions](https://github.com/keithrbennett/cov-loupe/discussions).
+For GitHub Actions and GitLab CI examples, see [CI/CD Integration](examples/ci-cd-integration.md). For other platforms (Jenkins, CircleCI, etc.), see community contributions in the [GitHub Discussions](https://github.com/keithrbennett/cov-loupe/discussions).
 
 ---
+
+<a id="advanced-filtering-glob-patterns"></a>
 
 ## Advanced Filtering & Glob Patterns
 
@@ -477,17 +477,19 @@ For platform-specific integration examples (GitHub Actions, GitLab CI, Jenkins, 
 **Default behavior:** By default, `--tracked-globs` is empty (`[]`), which means all files in the coverage file are shown. This ensures transparency—you see exactly what SimpleCov measured without any filtering.
 
 **Why opt-in filtering?**
+
 - **Coverage results are not hidden** - Results are not excluded because their filespecs did not match default tracked globs
 - **Meaningful validation** - `missing_tracked_files` only flags files you explicitly expect to have coverage
 - **Project flexibility** - Different projects use different directory structures
 
-**Important:** Files lacking any coverage at all (not loaded during tests) will not appear in the coverage file and therefore won't be visible with the default empty array. To detect such files, you must set `--tracked-globs` to match the files you expect to have coverage.
+**Important:** Files never loaded during tests appear in the coverage file only if SimpleCov's `cover` globs include them (SimpleCov then records them at 0%). Otherwise they won't be visible with the default empty array; to detect them, set `--tracked-globs` to match the files you expect to have coverage.
 
 **Two purposes of tracked globs:**
+
 1. **Exclude unwanted results** - Only show files from the coverage file that match the patterns
 2. **Include files with or without coverage** - Report files that match the patterns but aren't in the coverage file (reported in `missing_tracked_files` for `list`, `missing_from_coverage` for `totals`)
 
-**Best practice:** Set `COV_LOUPE_OPTS` to match your SimpleCov `track_files` configuration so `list`, `totals`, and missing-file reports use the same scope. See [`--tracked-globs`](CLI_USAGE.md#tracked-globs) for the canonical setup example.
+**Best practice:** Set `COV_LOUPE_OPTS` to match your SimpleCov `cover` globs so `list`, `totals`, and missing-file reports use the same scope. See [`--tracked-globs`](CLI_USAGE.md#tracked-globs) for the canonical setup example.
 
 ### Pattern Syntax
 
@@ -497,10 +499,10 @@ Uses Ruby's `File.fnmatch` with extended glob support:
 # Single directory, recursive
 -g "lib/**/*.rb"
 
-# Multiple patterns
--g "lib/payments/**/*.rb" -g "lib/ops/jobs/**/*.rb"
+# Multiple patterns (comma-separated; a repeated -g replaces the earlier one)
+-g "lib/payments/**/*.rb,lib/ops/jobs/**/*.rb"
 
-# Exclude patterns (use CLI filtering to exclude ops jobs)
+# Exclude patterns: -g has no negation syntax, so filter the output instead
 clp -fJ list | jq '.files[] | select(.file | test("ops") | not)'
 
 # Ruby alternative:
@@ -514,9 +516,11 @@ clp -fJ list | ruby -r json -e '
 clp -fJ list | rexe -ij -mb -oJ 'self["files"].reject { |f| f["file"].include?("ops") }'
 
 # Complex patterns
--g "lib/{models,controllers}/**/*.rb"
+-g "app/models/**/*.rb,app/controllers/**/*.rb"
 -g "app/**/concerns/*.rb"
 ```
+
+**Note:** The CLI splits `--tracked-globs` on every comma, including commas inside braces, so a brace pattern such as `lib/{models,controllers}/**/*.rb` breaks into two invalid globs that match nothing. On the CLI, list the alternatives separately (`-g "lib/models/**/*.rb,lib/controllers/**/*.rb"`). The Ruby API and MCP `tracked_globs` take arrays, so brace patterns work there.
 
 ### Use Cases
 
@@ -574,280 +578,3 @@ rescue CovLoupe::CoverageDataProjectStaleError => e
 end
 ```
 
----
-
-## Performance Optimization
-
-### Reusing Coverage Models
-
-`CoverageModel` reads the coverage file through a shared cache. The cache automatically reloads when that file changes, and reusing one model for related queries avoids repeated model setup:
-
-```ruby
-# Good: Single model for related queries
-model = CovLoupe::CoverageModel.new
-files = model.list['files']
-file1 = model.summary_for('lib/a.rb')
-file2 = model.summary_for('lib/b.rb')
-
-# Works, but creates extra model instances
-model1 = CovLoupe::CoverageModel.new
-files = model1.list['files']
-
-model2 = CovLoupe::CoverageModel.new
-file1 = model2.summary_for('lib/a.rb')
-```
-
-### Batch Processing
-
-```ruby
-# Process multiple files in one pass
-files_to_analyze = ['lib/a.rb', 'lib/b.rb', 'lib/c.rb']
-model = CovLoupe::CoverageModel.new
-
-results = files_to_analyze.each_with_object({}) do |file, hash|
-  hash[file] = {
-    summary: model.summary_for(file),
-    uncovered: model.uncovered_for(file)
-  }
-rescue CovLoupe::FileError
-  hash[file] = { error: 'No coverage' }
-end
-```
-
-### Filtering Early
-
-Use `tracked_globs` to reduce data processing:
-
-```ruby
-# Bad: Filter after loading all data
-list = model.list['files']
-api_files = list.select { |f| f['file'].include?('api') }
-
-# Good: Filter during query
-api_files = model.list(
-  tracked_globs: ['lib/api/**/*.rb']
-)['files']
-```
-
-### Caching Coverage Models
-
-For long-running processes:
-
-```ruby
-class CoverageCache
-  def initialize(ttl: 300) # 5 minute cache
-    @cache = {}
-    @ttl = ttl
-  end
-
-  def model_for(root)
-    key = root.to_s
-    now = Time.now
-
-    if @cache[key] && (now - @cache[key][:time] < @ttl)
-      @cache[key][:model]
-    else
-      @cache[key] = {
-        model: CovLoupe::CoverageModel.new(root: root),
-        time: now
-      }
-      @cache[key][:model]
-    end
-  end
-end
-
-cache = CoverageCache.new
-model = cache.model_for('/path/to/project')
-```
-
----
-
-## Custom Output Processing
-
-### Format Conversion
-
-**CSV Export:**
-```ruby
-require 'csv'
-
-model = CovLoupe::CoverageModel.new
-files = model.list['files']
-
-CSV.open('coverage.csv', 'w') do |csv|
-  csv << ['File', 'Coverage %', 'Lines Covered', 'Total Lines', 'Stale']
-  files.each do |f|
-    csv << [
-      f['file'],
-      f['percentage'],
-      f['covered'],
-      f['total'],
-      f['stale']
-    ]
-  end
-end
-```
-
-**HTML Report:**
-```ruby
-require 'erb'
-
-template = ERB.new(<<~HTML)
-  <html>
-    <head><title>Coverage Report</title></head>
-    <body>
-      <h1>Coverage Report</h1>
-      <table>
-        <tr>
-          <th>File</th><th>Coverage</th><th>Covered</th><th>Total</th>
-        </tr>
-        <% files.each do |f| %>
-          <tr class="<%= f['percentage'] && f['percentage'] < 80 ? 'low' : 'ok' %>">
-            <td><%= f['file'] %></td>
-            <td><%= f['percentage'] ? format('%.2f%%', f['percentage']) : 'n/a' %></td>
-            <td><%= f['covered'] %></td>
-            <td><%= f['total'] %></td>
-          </tr>
-        <% end %>
-      </table>
-    </body>
-  </html>
-HTML
-
-model = CovLoupe::CoverageModel.new
-files = model.list['files']
-File.write('coverage.html', template.result(binding))
-```
-
-### Annotated Source Output
-
-The CLI supports annotated source viewing:
-
-```sh
-# Show uncovered lines with context
-clp uncovered app/models/order.rb \
-  -s uncovered \
-  -n 3  # -s = --source, -n = --context-lines
-
-# Show full file with coverage annotations
-clp uncovered app/models/order.rb \
-  -s full \
-  -n 0
-```
-
-**Programmatic Source Annotation:**
-```ruby
-def annotate_source(file_path)
-  model = CovLoupe::CoverageModel.new
-  details = model.detailed_for(file_path)
-  source_lines = File.readlines(file_path)
-
-  output = []
-  details['lines'].each do |line_data|
-    line_num = line_data['line']
-    hits = line_data['hits']
-    source = source_lines[line_num - 1]
-
-    marker = case hits
-             when nil then '     '
-             when 0   then '  X  '
-             else          "  #{hits}  "
-             end
-
-    output << "#{marker}#{line_num.to_s.rjust(4)}: #{source}"
-  end
-
-  output.join
-end
-
-puts annotate_source('app/models/order.rb')
-```
-
-### Integration with Coverage Trackers
-
-**Send to Codecov:**
-```sh
-#!/bin/bash
-bundle exec rspec
-clp -fJ list > coverage.json
-
-# Transform to Codecov format (example)
-jq '{
-  coverage: [
-    .files[] | {
-      name: .file,
-      coverage: .percentage
-    }
-  ]
-}' coverage.json | curl -X POST \
-  -H "Authorization: token $CODECOV_TOKEN" \
-  -d @- https://codecov.io/upload
-
-# Ruby alternative:
-ruby -r json -e '
-  data = JSON.parse(File.read("coverage.json"))
-  transformed = {
-    coverage: data["files"].map { |f|
-      {name: f["file"], coverage: f["percentage"]}
-    }
-  }
-  puts JSON.pretty_generate(transformed)
-' | curl -X POST \
-  -H "Authorization: token $CODECOV_TOKEN" \
-  -d @- https://codecov.io/upload
-
-# Rexe alternative:
-rexe -f coverage.json -oJ '
-  {
-    coverage: self["files"].map { |f|
-      {name: f["file"], coverage: f["percentage"]}
-    }
-  }
-' | curl -X POST \
-  -H "Authorization: token $CODECOV_TOKEN" \
-  -d @- https://codecov.io/upload
-```
-
-**Send to Coveralls:**
-```ruby
-require 'cov_loupe'
-require 'net/http'
-require 'json'
-
-model = CovLoupe::CoverageModel.new
-files = model.list['files']
-
-coveralls_data = {
-  repo_token: ENV['COVERALLS_REPO_TOKEN'],
-  source_files: files.map { |f|
-    {
-      name: f['file'],
-      coverage: model.raw_for(f['file'])['lines']
-    }
-  }
-}
-
-uri = URI('https://coveralls.io/api/v1/jobs')
-Net::HTTP.post(uri, coveralls_data.to_json, {
-  'Content-Type' => 'application/json'
-})
-```
-
----
-
-## Multiple Test Suites
-
-SimpleCov merges the results of every suite that ran (e.g., RSpec + Cucumber) before writing `coverage.json`, so `cov-loupe` sees one combined coverage map and needs no merging of its own. All covered files from every suite are available to the CLI, library, and MCP tools.
-
-**Staleness checks:** `coverage.json` carries a single `meta.timestamp` for the merged result. If only some suites were re-run after a change, staleness may be under-reported for files the other suites cover. Use `--raise-on-stale` (or `-S`) on the CLI, `raise_on_stale: true` via the Ruby API, or the MCP tool parameter to turn these warnings into hard failures, and treat multi-suite staleness flags as advisory rather than definitive.
-
-**Separate coverage files:** If your project produces separate coverage files (e.g., different CI jobs each writing their own `coverage.json`), merge them with SimpleCov's collation (`SimpleCov.collate`) before pointing `cov-loupe` at the combined output.
-
----
-
-## Additional Resources
-
-- [CLI Usage Guide](CLI_USAGE.md)
-- [Library API Reference](LIBRARY_API.md)
-- [MCP Integration Guide](MCP_INTEGRATION.md)
-- [Error Handling Details](ERROR_HANDLING.md)
-- [Troubleshooting](TROUBLESHOOTING.md)

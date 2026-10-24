@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Validation predicate: All files must have >= 80% coverage, illustrates use of a class `call` method
+# Validation predicate: Every file in the coverage data must have >= 80% coverage, illustrates use of a class `call` method
 # Usage: cov-loupe validate examples/success_predicates/all_files_above_threshold_predicate.rb
 # Files with no coverable lines (nil percentage) have nothing to cover and are skipped.
 class AllFilesAboveThreshold

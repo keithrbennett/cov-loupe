@@ -33,6 +33,7 @@
 mise.toml
 
 # Python virtual environments
+/.docs-venv/
 /.venv/
 /.venv-*/
 /venv/

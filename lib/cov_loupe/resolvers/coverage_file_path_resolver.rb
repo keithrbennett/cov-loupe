@@ -14,8 +14,8 @@ module CovLoupe
     #    SimpleCov writes it by default.
     #
     # When a relative path is given, it is expanded against both the current working directory
-    # and the project root. If both expansions point to valid locations, an ambiguity error
-    # is raised to prevent silently using the wrong file.
+    # and the project root. If both expansions point to different valid locations, an ambiguity
+    # error is raised to prevent silently using the wrong file.
     #
     # @api private
     class CoverageFilePathResolver
@@ -60,7 +60,7 @@ module CovLoupe
       #
       # A relative argument is ambiguous: it could be relative to the working directory
       # or to the project root. The method expands against both and applies these rules:
-      #   1. If both expansions point to valid locations, raise an ambiguity error.
+      #   1. If both expansions point to different valid locations, raise an ambiguity error.
       #   2. Return whichever single valid location exists (preferring pwd-expanded).
       #   3. If neither exists, prefer the pwd-expanded path when it falls inside the root,
       #      otherwise return the root-expanded path as the canonical form.
@@ -97,7 +97,7 @@ module CovLoupe
       private def raise_ambiguous_coverage_file_error(expanded_pwd, expanded_root)
         raise ConfigurationError,
           "Ambiguous coverage file location specified. Both #{expanded_pwd} and #{expanded_root} exist. " \
-          'Use `./` or an absolute filespec to disambiguate.'
+          'Use an absolute path to disambiguate.'
       end
 
       # Not logged here: callers report this error. The CLI prints it (and logs it when the log

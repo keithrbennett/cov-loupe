@@ -1,10 +1,12 @@
 # Quick Start
 
-[Back to main README](index.md)
+[Back to main README](../README.md)
 
 Get up and running with cov-loupe in 3 steps.
 
 ## 1. Install
+
+cov-loupe requires Ruby 3.3 or later.
 
 ```sh
 gem install cov-loupe
@@ -12,21 +14,36 @@ gem install cov-loupe
 
 ## 2. Generate Coverage
 
-Run your test suite with SimpleCov enabled:
+If your project doesn't use SimpleCov yet, add it to your `Gemfile` and install it:
+
+```sh
+bundle add simplecov --group test --require false
+```
+
+Then start it at the very top of `spec/spec_helper.rb` (or `test/test_helper.rb`), before your application code loads:
+
+```ruby
+require 'simplecov'
+SimpleCov.start
+```
+
+Then run your test suite:
 
 ```sh
 bundle exec rspec  # or your test command
 ```
 
-This creates `coverage/coverage.json`. cov-loupe reads the format written by SimpleCov 1.0 and later; SimpleCov is not installed with cov-loupe, so add it to your own project.
+With SimpleCov 1.0 or later, this creates `coverage/coverage.json` (its default formatter writes it; 0.x does not, and a `coverage.json` from 0.x's separate `simplecov_json_formatter` gem lacks `meta.schema_version` and is rejected). cov-loupe reads the format written by SimpleCov 1.0 and later; SimpleCov is not installed with cov-loupe, so add it to your own project.
 
 ## 3. View Coverage
+
+Run it from your project root (or pass `-R path/to/project`):
 
 ```sh
 cov-loupe
 ```
 
-You'll see a table showing coverage for each file, sorted by highest coverage first (lowest at the bottom).
+You'll see a table showing coverage for each file, sorted by highest coverage first (lowest at the bottom; files with no coverable lines, shown as `n/a`, come before 100%).
 
 ## Common Commands
 
@@ -49,18 +66,18 @@ cov-loupe --help
 
 ## Next Steps
 
-- **[Installation Guide](user/INSTALLATION.md)** - Platform-specific setup, environment variables
+- **[Installation Guide](user/INSTALLATION.md)** - Platform-specific setup and troubleshooting
 - **[CLI Usage](user/CLI_USAGE.md)** - Complete command reference
 - **[Examples](user/EXAMPLES.md)** - Common workflows and recipes
-- **[MCP Integration](user/MCP_INTEGRATION.md)** - Connect to AI assistants (Claude, ChatGPT)
+- **[MCP Integration](user/MCP_INTEGRATION.md)** - Connect to AI assistants (Claude Code, Codex, Cursor, and others)
 - **[Troubleshooting](user/TROUBLESHOOTING.md)** - Common issues and solutions
 
 ## Integration with AI Assistants
 
-If you're using Claude Code, ChatGPT, or another MCP-compatible assistant:
+If you're using Claude Code, Codex, or another MCP-compatible assistant:
 
-1. Install the MCP server (see [MCP Integration Guide](user/MCP_INTEGRATION.md))
+1. Configure your assistant to run `cov-loupe -m mcp` (see [MCP Integration Guide](user/MCP_INTEGRATION.md))
 2. Use ready-made prompts from [Prompt Library](user/prompts/README.md)
 3. Let AI analyze your coverage and suggest improvements
 
-[Back to main README](index.md)
+[Back to main README](../README.md)

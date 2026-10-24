@@ -10,6 +10,7 @@
 ### Context
 
 SimpleCov's coverage files contain file paths as keys in the coverage data hash. Depending on the SimpleCov version these are project-relative or absolute paths from the machine where tests were run. Different operating systems use different path separators:
+
 - Unix/Linux/macOS: `/`
 - Windows: `\` (backslash)
 
@@ -33,9 +34,9 @@ Upon closer examination, this cross-OS scenario is unrealistic for several reaso
 **Do not support analyzing coverage files across different operating systems.**
 
 Specifically:
+
 - Normalize backslashes to forward slashes on Windows only
-- Apply case-insensitive path matching on Windows (filesystem is case-insensitive)
-- Apply case-sensitive path matching on Unix (filesystem is case-sensitive)
+- Match paths case-insensitively or case-sensitively according to the project root's volume, detected at runtime rather than inferred from the OS (macOS and Windows volumes are usually case-insensitive, Linux volumes usually case-sensitive)
 - Keep path resolution focused on same-OS scenarios:
     - Exact absolute path matching
     - Relative path matching (stripping project root)
@@ -44,17 +45,20 @@ Specifically:
 ### Consequences
 
 **Benefits:**
+
 - **Simpler code** – No need for path separator normalization logic
 - **Clearer semantics** – Path matching behavior is more predictable
 - **Fewer edge cases** – No ambiguity around mixed separator styles
 - **Honest API** – We don't promise cross-OS compatibility we can't fully deliver
 
 **Trade-offs:**
+
 - Users cannot analyze Windows coverage files on Linux/macOS or vice versa
     - This is acceptable because this scenario is impractical anyway
     - Users who encounter this should re-run tests in their current environment
 
 **No impact on:**
+
 - Same-OS path resolution (absolute, relative)
 - Normal development workflows
 - CI/CD integration
@@ -63,6 +67,7 @@ Specifically:
 ### Implementation
 
 Path normalization is centralized in the `PathUtils` module (`lib/cov_loupe/paths/path_utils.rb`). It handles:
+
 - Normalizing path separators (backslashes to forward slashes on Windows)
 - Case normalization for case-insensitive volumes (autodetected or explicit)
 - Path cleaning
@@ -78,13 +83,14 @@ Path comparison uses a **normalize-for-comparison-only** approach rather than no
 - **Boundary checking** - Prevents false matches where a path starts with a prefix string but isn't actually within that directory (e.g., `/home/user/project` should not match `/home/user/project-backup/file.rb`)
 
 This approach ensures:
+
 1. User-visible paths maintain original casing for better UX
 2. Path matching works correctly on case-insensitive volumes (Windows, most macOS)
-3. Mixed path separators (forward slash vs backslash) are handled transparently
+3. On Windows, backslash separators are converted to forward slashes before matching
 4. Directory boundary checking prevents incorrect prefix matches
 
 ### References
 
 - Implementation: `lib/cov_loupe/resolvers/coverage_line_resolver.rb` (delegates to `PathUtils`)
 - Central Logic: `lib/cov_loupe/paths/path_utils.rb`
-- Related tests removed: `spec/cov_loupe/resolvers/coverage_line_resolver_spec.rb` (cross-OS separator normalization context)
+- Related tests: the cross-OS separator normalization context was removed from `spec/cov_loupe/resolvers/coverage_line_resolver_spec.rb`

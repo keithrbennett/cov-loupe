@@ -17,14 +17,15 @@ Do not report issues that are already listed in `docs/dev/FUTURE_ENHANCEMENTS.md
   - [Case-Sensitivity Detection Race Conditions](#case-sensitivity-detection-race-conditions)
   - [Unbounded ModelDataCache Growth](#unbounded-modeldatacache-growth)
 - [Known Issue: Inefficient Staleness Checks and Timestamp Handling](#known-issue-inefficient-staleness-checks-and-timestamp-handling)
-- [Performance & Scalability](#performance-scalability)
+- [Performance & Scalability](#performance--scalability)
   - [Memory-Based Coverage Data](#memory-based-coverage-data)
-- [Code Quality & Style](#code-quality-style)
+  - [Model Cache Digest Reads](#model-cache-digest-reads)
+- [Code Quality & Style](#code-quality--style)
   - [RuboCop Metrics Cops Disabled](#rubocop-metrics-cops-disabled)
   - [Method Length and Complexity](#method-length-and-complexity)
   - [RuboCop Cache and Sandboxed Environments](#rubocop-cache-and-sandboxed-environments)
   - [Duplicate-Looking Error and Skipped-Row Output](#duplicate-looking-error-and-skipped-row-output)
-- [Testing & CI](#testing-ci)
+- [Testing & CI](#testing--ci)
   - [No Coverage Floor or CI Gate](#no-coverage-floor-or-ci-gate)
   - [Getting Project Coverage Data](#getting-project-coverage-data)
 - [Dependency Management](#dependency-management)
@@ -69,7 +70,7 @@ Automated security analysis tools may flag potential race conditions between sta
 
 3. **Acceptable failure mode** - If a source file is modified between the staleness check and display, the worst outcome is showing slightly stale data. This is an acceptable tradeoff for a coverage inspection tool.
 
-4. **No security impact** - The tool never writes to files, executes code from analyzed files, or makes security decisions based on coverage data.
+4. **No security impact** - The tool writes only a configured log file and a short-lived probe file for case-sensitivity detection; it never executes code from analyzed files or makes security decisions based on coverage data.
 
 For a production system handling untrusted input or making security-critical decisions, race condition handling would be essential. For a development tool analyzing static coverage snapshots, the complexity of atomic file operations is not justified.
 
@@ -117,10 +118,10 @@ Automated reviews may flag `PathUtils.volume_case_sensitive?` for a potential Ti
 
 ### Unbounded ModelDataCache Growth
 
-The `ModelDataCache` singleton stores coverage data (`ModelData` instances) keyed by coverage file path without a size cap. In theory, a long-lived MCP server analyzing many different projects could accumulate entries. In practice:
+The `ModelDataCache` singleton stores coverage data (`ModelData` instances) keyed by coverage file path and project root without a size cap. In theory, a long-lived MCP server analyzing many different projects could accumulate entries. In practice:
 
-1. The cache is keyed by coverage file path, not by project or model configuration
-2. Multiple models using the same coverage file share a single cache entry
+1. The cache is keyed by coverage file path and root, not by other model configuration
+2. Multiple models using the same coverage file and root share a single cache entry
 3. MCP servers are typically short-lived and used for a small set of projects
 4. The cache automatically evicts stale data when coverage files change
 
@@ -168,7 +169,7 @@ The MCP model cache computes an MD5 digest of the coverage file on each fetch. T
 
 1. **Correctness over metadata shortcuts** – mtime/size/inode can miss changes (e.g., clock skew, restored files, or filesystem quirks). Hashing is the only reliable way to guarantee the content is unchanged.
 2. **Cheaper than parsing** – reading and hashing the file is far faster than parsing JSON into memory, so the cache still provides meaningful savings.
-3. **Scoped to MCP usage** – this path is used for repeated MCP tool calls where avoiding full parsing is the main goal.
+3. **Shared by every mode** – the CLI, the library, and the MCP server all read through `ModelDataCache`; avoiding a full parse matters most for repeated MCP tool calls.
 
 **Guidance:** Do not flag this as a performance defect; it is a deliberate tradeoff for correctness.
 
@@ -178,11 +179,11 @@ The MCP model cache computes an MD5 digest of the coverage file on each fetch. T
 
 ### RuboCop Metrics Cops Disabled
 
-All RuboCop Metrics cops (AbcSize, BlockLength, ClassLength, CyclomaticComplexity, MethodLength, ModuleLength, ParameterLists, PerceivedComplexity, BlockNesting) are intentionally disabled in `.rubocop.yml`.
+All RuboCop Metrics cops (AbcSize, BlockLength, ClassLength, CyclomaticComplexity, MethodLength, ModuleLength, ParameterLists, PerceivedComplexity, BlockNesting) are intentionally disabled in `.rubocop-shared.yml`, which `.rubocop.yml` inherits.
 
 **Why this is acceptable:**
 
-1. **Arbitrary thresholds don't account for domain complexity** – Some problems are inherently complex. SimpleCov coverage analysis involves edge cases (staleness checking, path resolution, multi-suite merging) that require comprehensive logic. Artificial method splitting can scatter cohesive logic and reduce clarity.
+1. **Arbitrary thresholds don't account for domain complexity** – Some problems are inherently complex. SimpleCov coverage analysis involves edge cases (staleness checking, path resolution, coverage-file validation) that require comprehensive logic. Artificial method splitting can scatter cohesive logic and reduce clarity.
 
 2. **Comprehensive error handling adds necessary lines** – This project prioritizes reliability through extensive error handling with context-rich messages. Error handling code is inherently verbose but critical for user experience across three modes (CLI, library, MCP).
 
@@ -291,7 +292,7 @@ Reviewers may flag two places where the same information appears to be printed t
 
 ### No Coverage Floor or CI Gate
 
-Neither `spec/spec_helper.rb` nor `.github/workflows/test.yml` enforces a hard minimum-coverage gate: `SimpleCov.minimum_coverage` is never called, and the Codecov upload step (`.github/workflows/test.yml:56`) sets `fail_ci_if_error: false`. AI reviewers may flag this as a missing safeguard against coverage regressions.
+Neither `spec/spec_helper.rb` nor `.github/workflows/test.yml` enforces a hard minimum-coverage gate: `SimpleCov.minimum_coverage` is never called, and the Codecov upload step (`.github/workflows/test.yml`) sets `fail_ci_if_error: false`. AI reviewers may flag this as a missing safeguard against coverage regressions.
 
 **Why this is intentional:**
 
@@ -311,7 +312,7 @@ Neither `spec/spec_helper.rb` nor `.github/workflows/test.yml` enforces a hard m
 
 ### Getting Project Coverage Data
 
-The `coverage.json` files tracked in git (`spec/fixtures/**`, `docs/fixtures/**`, `examples/mcp-inputs/`) are test fixtures and say nothing about this project's own coverage. The project's real data is `coverage/coverage.json`, which is gitignored and generated by running the suite.
+The `coverage.json` files tracked in git (`spec/fixtures/**`, `docs/fixtures/**`) are test fixtures and say nothing about this project's own coverage. The project's real data is `coverage/coverage.json`, which is gitignored and generated by running the suite.
 
 **Guidance:** To report this project's coverage, run `bundle exec rspec` and then query `coverage/coverage.json` with cov-loupe (for example `bundle exec exe/cov-loupe totals`). Do not decline to report coverage on the grounds that the only tracked coverage files are fixtures. If the suite cannot be run in your environment, say so explicitly instead of reporting fixture data as project coverage.
 
@@ -341,8 +342,8 @@ The project uses **both** `requirements.txt` (version ranges) and `requirements-
 
 **How it works:**
 
-- Contributors run `pip install -r requirements.txt` locally (flexible)
-- CI runs `pip install -r requirements-lock.txt` (reproducible)
+- `bin/set-up-python-for-doc-server` and CI install `requirements-lock.txt` (reproducible)
+- `bin/update-docs-deps` resolves the ranges in `requirements.txt` and regenerates the lock file (flexible)
 - Users of the gem/MCP server are unaffected (these are Python-only doc dependencies)
 
 This dual-file approach is intentional and follows Python packaging best practices for applications with optional documentation tooling.
@@ -353,7 +354,7 @@ This dual-file approach is intentional and follows Python packaging best practic
 
 ### MkDocs Include-Markdown Stubs
 
-The files `docs/contributing.md` and `docs/code_of_conduct.md` appear to be minimal 46-byte stubs when examined directly. AI code analysis tools often flag these as missing or incomplete documentation.
+Several files under `docs/` (such as `docs/contributing.md`, `docs/code_of_conduct.md`, `docs/license.md`, `docs/release_notes.md`, and `docs/index.md`) appear to be stubs of a few dozen bytes when examined directly. AI code analysis tools often flag these as missing or incomplete documentation.
 
 **Why this is not an issue:**
 
@@ -361,6 +362,7 @@ These files use MkDocs' `include-markdown` plugin to pull in comprehensive docum
 
 - `docs/contributing.md` → `{% include-markdown "../CONTRIBUTING.md" %}`
 - `docs/code_of_conduct.md` → `{% include-markdown "../CODE_OF_CONDUCT.md" %}`
+- `docs/license.md`, `docs/release_notes.md`, `docs/index.md`, and the two `docs/examples/` pages include `LICENSE`, `RELEASE_NOTES.md`, `README.md`, and the example READMEs the same way
 
 The actual comprehensive documentation exists at:
 - `CONTRIBUTING.md` - Full contributing guide with PR workflow, development setup, testing requirements, and release process

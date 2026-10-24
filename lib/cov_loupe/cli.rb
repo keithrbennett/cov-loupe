@@ -312,8 +312,9 @@ module CovLoupe
       log_user_facing_error(log_error, log_context)
       warn error.user_friendly_message
       if config.error_mode == :debug && (backtrace = error.diagnostic_backtrace)
-        # A log file gets the full trace; with a stderr target there is no log entry, so show it all.
-        backtrace = backtrace.first(5) unless CovLoupe.logger.stderr?
+        # A log file gets the full trace; with a stderr or off target nothing else records it,
+        # so show it all.
+        backtrace = backtrace.first(5) if CovLoupe.logger.file_target?
         warn backtrace.join("\n")
       end
       exit(exit_code_for(error))

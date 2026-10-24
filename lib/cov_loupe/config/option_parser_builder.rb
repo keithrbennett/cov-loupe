@@ -52,8 +52,8 @@ module CovLoupe
           summary, s <path>        Show covered/total/% for a file
           totals, t                Show aggregated line totals and overall %
           uncovered, u <path>      Show uncovered lines and a summary
-          validate, v <file>       Evaluate coverage policy from file (exit 0=pass, 3=fail, 4=bad predicate)
-          validate, v -i <code>    Evaluate coverage policy from code string
+          validate, v <file>       Evaluate coverage policy from file (exit 0=pass, 1=data error, 3=fail, 4=bad predicate)
+          validate, v -i <code>    Evaluate coverage policy from Ruby code that returns a callable (-i = --inline)
 
         SUBCOMMANDS
     end
@@ -79,7 +79,7 @@ module CovLoupe
         config.sort_order = normalize_sort_order(value)
       end
       parser.on('-s', '--source MODE', String,
-        'Source display: f[ull]|u[ncovered]|n[one] (use none to disable)') do |value|
+        'Source display: f[ull]|u[ncovered]|n[one] (default: none)') do |value|
         config.source_mode = normalize_source_mode(value)
       end
       parser.on('-n', '--context-lines N', Integer,
@@ -94,15 +94,16 @@ module CovLoupe
         config.color = BooleanType.parse(value)
       end
       parser.on('-S', '--raise-on-stale BOOLEAN', BooleanType::IS_BOOLEAN_STRING_VALUE,
-        'Raise error if coverage is stale (default: false). ' \
+        'Raise error if coverage is stale; for project queries, also if a tracked file is ' \
+          'missing or a row is skipped (default: false). ' \
           "Accepts: #{BooleanType::BOOLEAN_VALUES_DISPLAY_STRING}") do |value|
         config.raise_on_stale = BooleanType.parse(value)
       end
       parser.on('-g', '--tracked-globs x,y,z', Array,
         'Used to exclude unwanted results and/or include files with or without coverage data',
         'Default: [] (shows all files in the coverage file)',
-        'Best practice: match your SimpleCov track_files patterns',
-        'Example: --tracked-globs lib/**/*.rb,app/**/*.rb') do |value|
+        'Best practice: match your SimpleCov cover globs',
+        "Example: --tracked-globs 'lib/**/*.rb,app/**/*.rb'") do |value|
         config.tracked_globs = value
       end
       parser.on('-h', '--help', 'Show help') do
@@ -114,7 +115,7 @@ module CovLoupe
         config.log_file = value
       end
       parser.on('-m', '--mode MODE', String,
-        'Execution mode: cli|mcp (default: cli)') do |value|
+        'Execution mode: c[li]|m[cp] (default: cli)') do |value|
         config.mode = normalize_mode(value)
       end
       parser.on('--[no-]allow-code-predicates',

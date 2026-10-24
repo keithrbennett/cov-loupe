@@ -1,16 +1,17 @@
 # V2.0 Breaking Changes and Migration Guide
 
-[Back to main README](../../index.md)
+[Back to main README](../../../README.md)
 
 This document describes all breaking changes introduced in version 2.0.0 of simplecov-mcp. These changes improve consistency, clarity, and alignment with Ruby conventions.
 
-> Note: Current versions use the boolean `--raise-on-stale` / `raise_on_stale` flag (short form `-S`) for staleness enforcement. The `--staleness` and `stale` names referenced below are kept for historical context about the v1→v2 transition.
+> Note: Current versions use `--raise-on-stale BOOLEAN` (short form `-S`, for example `-S true`) and the `raise_on_stale` parameter for staleness enforcement. The `--staleness` and `stale` names referenced below are kept for historical context about the v1→v2 transition.
 
 ---
 
 ## Table of Contents
 
 - [Command Line Interface Changes](#command-line-interface-changes)
+    - [Options Must Precede Subcommands](#options-must-precede-subcommands)
     - [Error Mode Values Changed](#error-mode-values-changed)
     - [Default Sort Order Changed](#default-sort-order-changed)
 - [MCP Tool Changes](#mcp-tool-changes)
@@ -27,15 +28,31 @@ This document describes all breaking changes introduced in version 2.0.0 of simp
 
 ## Command Line Interface Changes
 
+### Options Must Precede Subcommands
 
+**Change:** Global options must now appear *before* the subcommand, not after.
+
+**Rationale:** This aligns with standard Unix command conventions (e.g., `git`, `docker`) and simplifies argument parsing.
+
+**Before (v1.x):**
+```bash
+simplecov-mcp list --resultset coverage --format json
+simplecov-mcp summary lib/foo.rb --json
+```
+
+**After (v2.x):**
+```bash
+simplecov-mcp --resultset coverage --format json list
+simplecov-mcp --format json summary lib/foo.rb
+```
 
 **Migration:** Move all global options before the subcommand name. These options are:
 
-`-r`, `-R`, `-f`, `-o`, `-s`, `-c`, `-C`, `-S`, `-g`, `-l`, `-F`, `-e`, and `-p`
+`-r`, `-R`, `-f`, `-o`, `-s`, `-c`, `-S`, `-g`, `-l`, `--color`/`--no-color`, `--error-mode`, and `--force-cli`
 
 **Exception:** The `validate` subcommand has its own subcommand-specific option `-i/--inline` that must appear *after* the subcommand:
 ```bash
-cov-loupe validate -i '->(m) { m.list["files"].all? { |f| f["percentage"] >= 80 } }'
+simplecov-mcp validate -i '->(m) { m.all_files.all? { |f| f["percentage"] >= 80 } }'
 ```
 
 
@@ -131,6 +148,7 @@ simplecov-mcp -f J list                  # Short form for pretty-json
 ```
 
 **Available formats:**
+
 - `table` (default) - Human-readable table format
 - `json` or `j` - Single-line JSON
 - `pretty-json` or `J` - Pretty-printed JSON
@@ -144,6 +162,7 @@ simplecov-mcp -f J list                  # Short form for pretty-json
 ### Error Mode Values Changed
 
 **Change:** Error mode enum values have been renamed for clarity:
+
 - `on` → `log`
 - `trace` → `debug`
 
@@ -167,6 +186,7 @@ simplecov-mcp --error-mode d list
 ```
 
 **Error modes:**
+
 - `off` (or `o`) - Silent, no error logging
 - `log` (or `l`) - Log errors to file (default)
 - `debug` (or `d`) - Verbose logging with backtraces
@@ -240,7 +260,7 @@ simplecov-mcp -o a list  # Short form
   "jsonrpc": "2.0",
   "method": "tools/call",
   "params": {
-    "name": "file_coverage_summary",
+    "name": "coverage_summary_tool",
     "arguments": {
       "path": "lib/foo.rb",
       "stale": "error"
@@ -255,7 +275,7 @@ simplecov-mcp -o a list  # Short form
   "jsonrpc": "2.0",
   "method": "tools/call",
   "params": {
-    "name": "file_coverage_summary",
+    "name": "coverage_summary_tool",
     "arguments": {
       "path": "lib/foo.rb",
       "staleness": "error"
@@ -264,7 +284,7 @@ simplecov-mcp -o a list  # Short form
 }
 ```
 
-**Affected tools:** All file-based tools (`file_coverage_summary`, `file_coverage_detailed`, `file_coverage_raw`, `file_uncovered_lines`) and aggregate tools (`project_coverage_list`, `project_coverage_totals`).
+**Affected tools:** All file-based tools (`coverage_summary_tool`, `coverage_detailed_tool`, `coverage_raw_tool`, `uncovered_lines_tool`) and aggregate tools (`all_files_coverage_tool`, `coverage_totals_tool`).
 
 **Migration:** Replace `"stale"` with `"staleness"` in all MCP tool calls.
 
@@ -314,17 +334,17 @@ simplecov-mcp -o a list  # Short form
 
 **Before (v1.x):**
 ```ruby
-require 'cov_loupe/cli_config'
-config = CovLoupe::CLIConfig.new(root: '.', json: true)
+require 'simplecov_mcp/cli_config'
+config = SimpleCovMcp::CLIConfig.new(root: '.', json: true)
 ```
 
 **After (v2.x):**
 ```ruby
-require 'cov_loupe/app_config'
-config = CovLoupe::AppConfig.new(root: '.', format: :json)
+require 'simplecov_mcp/app_config'
+config = SimpleCovMcp::AppConfig.new(root: '.', format: :json)
 ```
 
-**Migration:** Replace `CLIConfig` with `AppConfig` in your code. Update require statements from `'cov_loupe/cli_config'` to `'cov_loupe/app_config'`.
+**Migration:** Replace `CLIConfig` with `AppConfig` in your code. Update require statements from `'simplecov_mcp/cli_config'` to `'simplecov_mcp/app_config'`.
 
 ---
 
@@ -340,12 +360,13 @@ config = CovLoupe::AppConfig.new(root: '.', format: :json)
 | (new)                 | `show_version`   | New field for `-v`/`--version`       |
 
 **Default value changes:**
+
 - `sort_order`: Changed from `:ascending` to `:descending`
 - `error_mode`: Changed from `:on` to `:log`
 
 **Before (v1.x):**
 ```ruby
-config = CovLoupe::CLIConfig.new(
+config = SimpleCovMcp::CLIConfig.new(
   json: true,
   stale_mode: :error,
   error_mode: :on,
@@ -355,7 +376,7 @@ config = CovLoupe::CLIConfig.new(
 
 **After (v2.x):**
 ```ruby
-config = CovLoupe::AppConfig.new(
+config = SimpleCovMcp::AppConfig.new(
   format: :json,
   staleness: :error,
   error_mode: :log,
@@ -371,7 +392,7 @@ config = CovLoupe::AppConfig.new(
 
 ### Context Lines Validation
 
-**Change:** The `--context-lines` option (formerly `--source-context`) now raises an `ArgumentError` if given a negative value. Previously, negative values were silently clamped to zero.
+**Change:** The `--context-lines` option (formerly `--source-context`) now raises an `ArgumentError` for a negative value when source output is rendered (with `--source`). Previously, negative values were silently clamped to zero.
 
 **Rationale:** Fail fast and provide clear feedback for invalid input.
 
@@ -383,9 +404,8 @@ simplecov-mcp --source-context -5 uncovered lib/foo.rb
 
 **After (v2.x):**
 ```bash
-# Raises ArgumentError
-simplecov-mcp --context-lines -5 uncovered lib/foo.rb
-# Error: Context lines must be non-negative (got: -5)
+# Raises ArgumentError: Context lines cannot be negative
+simplecov-mcp --source uncovered --context-lines -5 uncovered lib/foo.rb
 ```
 
 **Migration:** Ensure `--context-lines` values are non-negative (>= 0).
@@ -457,6 +477,7 @@ If you encounter issues migrating to v2.0:
 ---
 
 **See also:**
-- [RELEASE_NOTES.md](../../release_notes.md) - Full release notes with new features
+
+- [RELEASE_NOTES.md](../../../RELEASE_NOTES.md) - Full release notes with new features
 - [CLI Usage](../CLI_USAGE.md) - Complete CLI reference
 - [MCP Integration](../MCP_INTEGRATION.md) - MCP tool reference

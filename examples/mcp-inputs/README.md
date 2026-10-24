@@ -1,10 +1,10 @@
 ## MCP JSON Inputs
 
-[Back to main README](../../docs/index.md)
+[Back to main README](../../README.md)
 
 This directory contains example JSON-RPC requests that can be sent to the MCP server over stdio.
 
-Each file contains a single line of JSON (NDJSON-ready), so you can pipe it directly to the executable.
+The inputs are `coverage_summary.json`, `coverage_detailed.json`, `coverage_raw.json`, `uncovered_lines.json`, and `list.json`. Each file contains a single line of JSON (NDJSON-ready), so you can pipe it directly to the executable.
 
 **Target Project:** These inputs are designed to work with the demo project located at `docs/fixtures/demo_project`.
 
@@ -19,7 +19,7 @@ exe/cov-loupe -m mcp < examples/mcp-inputs/coverage_summary.json
 exe/cov-loupe -m mcp < examples/mcp-inputs/uncovered_lines.json
 ```
 
-If `cov-loupe` is installed globally and available on your `PATH`:
+If `cov-loupe` is installed globally and available on your `PATH`, run it from the repository root too, since the inputs use paths relative to it:
 
 ```sh
 cov-loupe -m mcp < examples/mcp-inputs/coverage_summary.json

@@ -4,17 +4,17 @@ module CovLoupe
   # A pluggable boolean type converter for OptionParser.
   # Accepts various string representations of true/false and converts them to boolean values.
   #
-  # Usage with OptionParser:
-  #   parser.accept(BooleanType) { |v| BooleanType.parse(v) }
-  #   parser.on('--flag [BOOLEAN]', BooleanType) { |v| config.flag = v }
+  # Usage with OptionParser (cov-loupe's boolean options require a value):
+  #   parser.on('--flag BOOLEAN', BooleanType::IS_BOOLEAN_STRING_VALUE) do |v|
+  #     config.flag = BooleanType.parse(v)
+  #   end
   #
   # Supported values (case-insensitive):
   #   true:  yes, y, true, t, on, +, 1
   #   false: no, n, false, f, off, -, 0
-  #   nil:   treated as true (for bare flags like --flag)
+  #   nil:   parsed as true, for an option declared with an optional value ('--flag [BOOLEAN]')
   #
   # Examples:
-  #   --flag         → true
   #   --flag=yes     → true
   #   --flag=no      → false
   #   --flag yes     → true

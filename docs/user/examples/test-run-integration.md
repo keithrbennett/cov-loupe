@@ -1,16 +1,16 @@
 # Test Run Integration
 
-[Back to Examples](../EXAMPLES.md) | [Back to main README](../../index.md)
+[Back to Examples](../EXAMPLES.md) | [Back to main README](../../../README.md)
 
 ## Display Low Coverage Files
 
-Add this to your `spec/spec_helper.rb` to automatically report files below a coverage threshold after each test run:
+Add this to your `spec/spec_helper.rb` to automatically report files below a coverage threshold after each test run (cov-loupe must be in your Gemfile, e.g. its `:test` group, for `require 'cov_loupe'` to load under Bundler):
 
 ```ruby
 require 'simplecov'
 SimpleCov.start do
-  add_filter %r{^/spec/}
-  track_files 'lib/**/*.rb'  # Ensures new/untested files show up with 0%
+  skip %r{^spec/}
+  cover 'lib/**/*.rb'  # Ensures new/untested files show up with 0%
 end
 
 # Report lowest coverage files at the end of the test run
@@ -34,10 +34,11 @@ Lowest coverage files (< 80%):
 ```
 
 **Parameters:**
+
 - `threshold:` - Coverage percentage below which files are included (default: 80)
 - `count:` - Maximum number of files to show (default: 5)
 - `root:` - Project root directory (defaults to `SimpleCov.root` when SimpleCov is loaded, otherwise `'.'`)
-- `coverage_file:` - Path to `coverage.json` or its directory (defaults to `SimpleCov.coverage_dir` when SimpleCov is loaded)
+- `coverage_file:` - Path to `coverage.json` or its directory (defaults to `SimpleCov.coverage_dir` under the effective root when SimpleCov is loaded, so passing `root:` alone moves it too)
 - `model:` - Pre-configured `CoverageModel` instance (optional, overrides `root:`/`coverage_file:`)
 
 **Returns:** Formatted string, or `nil` if no files are below the threshold.
@@ -51,9 +52,9 @@ If your project uses a custom coverage directory:
 ```ruby
 require 'simplecov'
 SimpleCov.start do
-  add_filter %r{^/spec/}
+  skip %r{^spec/}
   coverage_dir 'reports/coverage'  # Custom coverage directory
-  track_files 'lib/**/*.rb'
+  cover 'lib/**/*.rb'
 end
 
 SimpleCov.at_exit do

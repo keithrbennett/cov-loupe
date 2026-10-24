@@ -1,6 +1,6 @@
 # Contributing to cov-loupe
 
-[Back to main README](docs/index.md)
+[Back to main README](README.md)
 
 Thank you for your interest in contributing.
 
@@ -41,7 +41,7 @@ Before opening an issue:
 - Include clear reproduction steps when reporting a problem.
 - Describe the expected and actual behavior.
 - Include your Ruby version (`ruby -v`), operating system, and any other relevant environment information.
-- Keep discussion technical and respectful. See the [Code of Conduct](docs/code_of_conduct.md).
+- Keep discussion technical and respectful. See the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ---
 
@@ -105,7 +105,7 @@ Useful commands and entry points include:
 
 - `bundle exec rspec` — run the test suite
 - `bundle exec rubocop` — run static analysis and style checks
-- `bundle exec rake` — run the default Rake tasks
+- `bundle exec rake` — run the default Rake task (the test suite); `bundle exec rake test` also runs RuboCop and the docs build
 - `exe/cov-loupe` — run the CLI or MCP entry point for end-to-end testing
 
 ---
@@ -129,6 +129,6 @@ For setup details, dependency updates, publishing, and troubleshooting, see [Doc
 
 ## Code of Conduct
 
-Please review and follow the [Code of Conduct](docs/code_of_conduct.md).
+Please review and follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 Instances of unacceptable behavior may be reported through GitHub's [Report Abuse form](https://github.com/contact/report-abuse).

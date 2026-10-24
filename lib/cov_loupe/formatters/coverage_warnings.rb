@@ -4,8 +4,8 @@ module CovLoupe
   module Formatters
     # Text renderings of project-coverage exclusions and warnings, shared by the CLI
     # (written to stderr) and the MCP project_coverage tool (appended to table output).
-    # Each method takes a ProjectCoveragePresenter and returns a String ('' when there is
-    # nothing to report).
+    # Each method takes a ProjectCoveragePresenter (skipped_row_lines takes the skipped rows)
+    # and returns a String ('' when there is nothing to report).
     #
     # @api private
     module CoverageWarnings
@@ -41,7 +41,7 @@ module CovLoupe
           output.concat(skipped_row_lines(skipped))
         end
 
-        output << "\nRun with --raise-on-stale to exit when files are excluded."
+        output << "\nRun with --raise-on-stale true to exit when files are excluded."
         output.join("\n")
       end
 
@@ -58,7 +58,7 @@ module CovLoupe
         count = skipped.length
         output = ['', "WARNING: #{count} coverage row#{count == 1 ? '' : 's'} skipped due to errors:"]
         output.concat(skipped_row_lines(skipped))
-        output << 'Run again with --raise-on-stale to exit when rows are skipped.'
+        output << 'Run again with --raise-on-stale true to exit when rows are skipped.'
         output.join("\n")
       end
 

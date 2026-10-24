@@ -4,6 +4,14 @@ require 'spec_helper'
 require 'tmpdir'
 
 RSpec.describe CovLoupe::PredicateEvaluator do
+  describe '.evaluate_code' do
+    [['42', true], ['nil', false], ['false', false]].each do |value, expected|
+      it "returns #{expected} when the predicate returns #{value}" do
+        expect(described_class.evaluate_code("->(_model) { #{value} }", nil)).to be(expected)
+      end
+    end
+  end
+
   describe '.evaluate_file' do
     let(:model) { instance_double(CovLoupe::CoverageModel) }
 

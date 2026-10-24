@@ -41,7 +41,7 @@ RSpec.describe CovLoupe::Formatters::SourceFormatter do
       it 'marks covered lines with + and leaves the source text unchanged' do
         lines = formatter.format_source_for(model, path, mode: :full).lines(chomp: true)
 
-        expect(lines).to include("     1     | # caf\u00e9 \u2192 \u2018x\u2019", '     2   + | class Foo')
+        expect(lines).to include("     1    | # caf\u00e9 \u2192 \u2018x\u2019", '     2  + | class Foo')
       end
     end
 
@@ -56,11 +56,11 @@ RSpec.describe CovLoupe::Formatters::SourceFormatter do
             '----------+-------------------------------------------------------------',
             '  Line    | Source',
             '----------+-------------------------------------------------------------',
-            '     1   ✓ | class Foo',
-            '     2   ✓ |   def bar',
-            "     3   X |     puts 'bar'",
-            '     4     |   end',
-            '     5     | end',
+            '     1  ✓ | class Foo',
+            '     2  ✓ |   def bar',
+            "     3  X |     puts 'bar'",
+            '     4    |   end',
+            '     5    | end',
           ]
         )
       end

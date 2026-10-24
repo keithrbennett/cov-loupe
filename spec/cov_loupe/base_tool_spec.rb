@@ -29,6 +29,13 @@ RSpec.describe CovLoupe::BaseTool do
     CovLoupe.error_handler = orig_handler if orig_handler
   end
 
+  it 'advertises no static defaults for parameters that default to server settings' do
+    defaults = described_class::COMMON_PROPERTIES.slice(:root, :raise_on_stale, :error_mode, :output_chars)
+      .transform_values { |property| property[:default] }
+
+    expect(defaults.values).to all(be_nil)
+  end
+
   shared_examples 'friendly response and logged' do
     it 'returns friendly text' do
       resp = described_class.handle_mcp_error(error, tool, error_mode: :log)
@@ -74,6 +81,25 @@ RSpec.describe CovLoupe::BaseTool do
     let(:log_fragment) { 'File not found' }
 
     it_behaves_like 'friendly response and logged'
+  end
+
+  describe '.with_error_handling error mode resolution' do
+    [
+      ['an explicit error_mode', :off, :debug, :off],
+      ["the server's error mode when none is given", nil, :debug, :debug],
+      ["'log' when neither is set", nil, nil, :log],
+    ].each do |label, explicit_mode, server_mode, expected_mode|
+      it "uses #{label}" do
+        app_config = server_mode && CovLoupe::AppConfig.new(error_mode: server_mode)
+        allow(described_class).to receive(:handle_mcp_error)
+
+        described_class.with_error_handling('test_tool', error_mode: explicit_mode,
+          server_context: mcp_server_context(app_config: app_config)) { raise 'boom' }
+
+        expect(described_class).to have_received(:handle_mcp_error)
+          .with(instance_of(RuntimeError), 'test_tool', error_mode: expected_mode)
+      end
+    end
   end
 
   describe '.coverage_schema' do

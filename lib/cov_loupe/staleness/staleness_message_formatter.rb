@@ -56,8 +56,8 @@ module CovLoupe
       desc = description ? " (#{description}, #{files.size}):" : " (#{files.size}):"
       [
         "\n#{label}#{desc}",
-        *files.first(10).map { |f| "  - #{f}" },
-        *(files.size > 10 ? ['  ...'] : []),
+        *files.first(10).map { |f| "\n  - #{f}" },
+        *(files.size > 10 ? ["\n  ..."] : []),
       ]
     end
 

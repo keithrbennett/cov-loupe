@@ -21,7 +21,7 @@
 **cov-loupe** makes SimpleCov coverage data queryable and actionable through three interfaces:
 
 - **CLI** - command-line execution of single reports or queries
-- **MCP server** - stdio (localhost nonnetwork) server assists AI analysis of your coverage
+- **MCP server** - stdio (local, no network) server assists AI analysis of your coverage
 - **Ruby library** - Programmatic API for custom tooling
 
 Reads SimpleCov's `coverage.json`, the documented JSON formatter output that SimpleCov 1.0.0 and later write alongside the HTML report—no runtime dependency on your test suite.
@@ -29,8 +29,8 @@ Reads SimpleCov's `coverage.json`, the documented JSON formatter output that Sim
 ### Key Features
 
 - ✅ **Multiple interfaces** - CLI, MCP server, and Ruby API
-- **Annotated source code** - `-s full|uncovered|none` / `--source full|uncovered|none` with `-n N` / `--context-lines N` for context lines
-- ✅ **Staleness detection** - Identify outdated coverage (deleted files, timestamp mismatches, line count changes)
+- ✅ **Annotated source code** - `-s full|uncovered|none` / `--source full|uncovered|none` (in `summary`, `uncovered`, and `detailed`), with `-n N` / `--context-lines N` setting the context lines around uncovered code with `-s uncovered`
+- ✅ **Staleness detection** - Identify outdated coverage (deleted, newer, line count mismatched, or unreadable files)
 - ✅ **Multi-suite aware** - Reads SimpleCov's already-merged `coverage.json`, so RSpec + Cucumber (etc.) appear as one coverage map
 - ✅ **Flexible path resolution** - Works with absolute or relative paths
 - ✅ **Comprehensive error handling** - Context-aware messages for each mode
@@ -63,6 +63,21 @@ If you are upgrading from a previous version, please refer to the [Migration Gui
 
 ### Generate Coverage Data
 
+If your project doesn't use SimpleCov yet, add it to your `Gemfile` and install it:
+
+```sh
+bundle add simplecov --group test --require false
+```
+
+Then start it at the very top of `spec/spec_helper.rb` (or `test/test_helper.rb`), before your application code loads:
+
+```ruby
+require 'simplecov'
+SimpleCov.start
+```
+
+Then run your test suite:
+
 ```sh
 # Generate your SimpleCov test coverage data with your test suite run command, e.g.:
 bundle exec rspec
@@ -70,6 +85,8 @@ bundle exec rspec
 # Verify coverage was generated
 ls -l coverage/coverage.json
 ```
+
+This needs SimpleCov 1.0 or later; a `coverage.json` from 0.x is rejected (see [Quick Start](docs/QUICKSTART.md#2-generate-coverage)).
 
 ### Basic Usage
 
@@ -82,23 +99,24 @@ cov-loupe list
 
 **CLI - Check Specific File:**
 ```sh
-cov-loupe summary lib/cov_loupe/model/model.rb
+cov-loupe summary lib/my_app/order.rb
 # or use abbreviations: s (summary), u (uncovered)
-cov-loupe s lib/cov_loupe/model/model.rb
-cov-loupe u lib/cov_loupe/cli.rb
+cov-loupe s lib/my_app/order.rb
+cov-loupe u lib/my_app/cli.rb
 ```
 
 **CLI - Find Project Resources:**
 
-The repo URL, doc server URL, and local gem filespec are output in the header of the online help, e.g.:
+The repo URL, documentation site URL, and path to the installed README are output in the header of the online help, e.g. (excerpt):
 
 ```
 Repository:            https://github.com/keithrbennett/cov-loupe
 Documentation (Web):   https://keithrbennett.github.io/cov-loupe/
-Documentation (Local): /Users/kbennett/.local/share/mise/installs/ruby/4.0.5/lib/ruby/gems/4.0.0/gems/cov-loupe-VERSION/README.md
+Documentation (Local): /path/to/gems/cov-loupe-VERSION/README.md
+Screencast:            https://www.bbs-software.com/screencasts/cov-loupe
 ```
 
-There is a p/--path-for option that will get an individual value for each of these:
+The `-p`/`--path-for` option prints the repository and documentation paths individually:
 
 ```
 cov-loupe -p repo
@@ -120,10 +138,10 @@ model = CovLoupe::CoverageModel.new
 list_result = model.list
 # => { "schema_version" => 1, "files" => [...], ... }
 files = list_result["files"]
-# => [{ "file" => "lib/cov_loupe/model/model.rb", "covered" => 114, "total" => 118, "percentage" => 96.61, "stale" => "ok" }, ...]
+# => [{ "file" => "lib/my_app/order.rb", "covered" => 114, "total" => 118, "percentage" => 96.61, "stale" => "ok" }, ...]
 
-summary = model.summary_for("lib/cov_loupe/model/model.rb")
-# => { "schema_version" => 1, "file" => "lib/cov_loupe/model/model.rb", "summary" => { "covered" => 114, "total" => 118, "percentage" => 96.61 } }
+summary = model.summary_for("lib/my_app/order.rb")
+# => { "schema_version" => 1, "file" => "lib/my_app/order.rb", "summary" => { "covered" => 114, "total" => 118, "percentage" => 96.61 } }
 ```
 
 Library payloads report file paths relative to the project root, like the CLI and MCP output; files outside the root keep absolute paths. See [Library API](docs/user/LIBRARY_API.md#schema-version) for the payload compatibility rules.
@@ -133,11 +151,11 @@ Only the public API defined under [Public API and Versioning](docs/user/LIBRARY_
 **MCP Server:**
 See [MCP Integration Guide](docs/user/MCP_INTEGRATION.md) for AI assistant setup.
 
-**Important for MCP users:** MCP servers must keep `stdout` clean until the protocol handshake begins. If `cov-loupe -m mcp` prints text such as `Resolving dependencies...` before responding, see [Troubleshooting](docs/user/TROUBLESHOOTING.md#rubygems-wrapper-prints-to-stdout-before-mcp-startup) and [MCP Integration](docs/user/MCP_INTEGRATION.md#stdout-must-stay-clean-during-mcp-startup) for wrapper and RubyGems launcher guidance.
+**Important for MCP users:** An MCP server's `stdout` must carry only protocol messages, from startup until it exits, so `project_validate` predicates must not print to it. If `cov-loupe -m mcp` prints text such as `Resolving dependencies...` before responding, see [Troubleshooting](docs/user/TROUBLESHOOTING.md#rubygems-wrapper-prints-to-stdout-before-mcp-startup) and [MCP Integration](docs/user/MCP_INTEGRATION.md#stdout-must-stay-clean) for wrapper and RubyGems launcher guidance.
 
 ## Multi-Suite Coverage
 
-SimpleCov merges the results of every suite that ran (RSpec + Cucumber, etc.) before writing `coverage.json`, so cov-loupe sees one combined coverage map and does no merging of its own. See [Multiple Test Suites](docs/user/ADVANCED_USAGE.md#multiple-test-suites) for staleness caveats and how to combine separately produced coverage files.
+SimpleCov merges the results of the suites that ran (RSpec + Cucumber, etc.) before writing `coverage.json`, dropping results older than its merge timeout (10 minutes by default), so cov-loupe sees one combined coverage map and does no merging of its own. `coverage.json` has one timestamp for the merged result, so if only some suites were re-run after a change, staleness may be under-reported. To combine coverage from separate CI jobs, keep each job's `coverage/.resultset.json` and merge them with `SimpleCov.collate` (for example, `SimpleCov.collate Dir['coverage-*/.resultset.json']`), which ignores the merge timeout by default and writes a combined `coverage.json` through the configured formatters, as a test run does; `SimpleCov.collate` reads `.resultset.json` files, not `coverage.json`.
 
 ## Documentation Index
 
@@ -148,6 +166,7 @@ Full documentation is available at **[https://keithrbennett.github.io/cov-loupe/
 - [Quick Start](docs/QUICKSTART.md) - Get up and running in 3 steps
 - [User Docs Overview](docs/user/README.md) - Map of all end-user guides
 - [Installation](docs/user/INSTALLATION.md) - Setup for different environments
+- [Installing a Prerelease](docs/user/installing-a-prerelease-version-of-covloupe.md) - Trying an unreleased version
 - [CLI Usage](docs/user/CLI_USAGE.md) - Command-line reference
 - [Examples](docs/user/EXAMPLES.md) - AI assistant prompts, CLI and Ruby recipes, CI/CD integration
 - [Advanced Usage](docs/user/ADVANCED_USAGE.md) - Staleness detection, error modes, path resolution
@@ -174,18 +193,19 @@ Full documentation is available at **[https://keithrbennett.github.io/cov-loupe/
 - [Developer Docs Overview](docs/dev/README.md) - Entry point for contributors
 - [Architecture](docs/dev/ARCHITECTURE.md) - Design and internals
 - [Development Guide](docs/dev/DEVELOPMENT.md) - Local dev workflow
+- [Documentation Server](docs/dev/DOC_SERVER.md) - Local docs server and publishing
 - [Releasing](docs/dev/RELEASING.md) - Release checklist
 - [Future Enhancements](docs/dev/FUTURE_ENHANCEMENTS.md) - Planned improvements
 - [Architecture Decision Records](docs/dev/arch-decisions/README.md) - Design history
 
 **Project Docs & Examples:**
 
-- [Contributing](docs/contributing.md)
-- [Code of Conduct](docs/code_of_conduct.md)
-- [Release Notes](docs/release_notes.md)
-- [License](docs/license.md)
-- [MCP Input Examples](docs/examples/mcp-inputs.md)
-- [Predicate Examples](docs/examples/success_predicates.md)
+- [Contributing](CONTRIBUTING.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Release Notes](RELEASE_NOTES.md)
+- [License](LICENSE)
+- [MCP Input Examples](examples/mcp-inputs/README.md)
+- [Predicate Examples](examples/success_predicates/README.md)
 
 ## Requirements
 
@@ -193,11 +213,13 @@ Full documentation is available at **[https://keithrbennett.github.io/cov-loupe/
 - `mcp` gem >= 0.15 and < 2.0
 - A `coverage.json` written by SimpleCov 1.x (SimpleCov itself is not a cov-loupe dependency)
 
-Applications pinned to an older `mcp` version must upgrade it before installing cov-loupe v6, and projects on SimpleCov 0.x must upgrade SimpleCov to produce the `coverage.json` cov-loupe v7 reads. See [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md).
+`gem install` installs `mcp` and the other runtime dependencies (`amazing_print` and `logger`) automatically.
+
+Applications pinned to an `mcp` version older than 0.15 must upgrade it (required since cov-loupe v6), and projects on SimpleCov 0.x must upgrade SimpleCov to produce the `coverage.json` cov-loupe v7 reads. See [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md).
 
 ### JRuby Compatibility
 
-The test suite passes on JRuby, and to the best of our knowledge the project is fully JRuby-compatible.
+The test suite passes on JRuby, and to the best of our knowledge the project is JRuby-compatible, except that non-ASCII paths under `LANG=C` are unsupported because the JVM cannot open them in that locale.
 If you encounter any JRuby-specific issues, please open a GitHub issue, including as much detail as possible.
 
 ## Configuring the Coverage File
@@ -208,7 +230,7 @@ SimpleCov's `.resultset.json` is not read. It is SimpleCov's internal merge cach
 
 **Discovery.** With no `--coverage-file` argument, `coverage/coverage.json` under the project root is used. That is where SimpleCov writes it by default; for any other location, pass `--coverage-file` (`-c`).
 
-When `--coverage-file` names a **directory**, `coverage.json` inside it is used. When it names a **file**, that file is used as given.
+When `--coverage-file` names a **directory**, `coverage.json` inside it is used. When it names a **file**, that file is used as given. A relative path is tried against both the current directory and the project root; if both resolve to different valid coverage locations, it is an ambiguity error, so use an absolute path.
 
 For non-standard locations:
 
@@ -221,181 +243,14 @@ export COV_LOUPE_OPTS="-c /path/to/your/coverage"
 
 # MCP server configuration
 # Add to your MCP client config (used as defaults for MCP tools):
-# "args": ["-c", "/path/to/your/coverage"]
+# "args": ["-m", "mcp", "-c", "/path/to/your/coverage"]
 ```
 
-**MCP precedence:** For MCP tool calls, per-request JSON parameters win over the CLI args used to start the server (including `COV_LOUPE_OPTS`). If neither is provided, built-in defaults are used (`root: '.'`, `raise_on_stale: false`, etc.). Coverage data is cached globally and automatically reloaded when the coverage file changes.
+**MCP precedence:** For MCP tool calls, per-request JSON parameters win over the CLI args used to start the server (including `COV_LOUPE_OPTS`). Presentation flags such as `-f` and `-o` don't apply to MCP, though `-O` sets the default `output_chars`; see the [option table](docs/user/MCP_INTEGRATION.md#cli-options-in-mcp-mode). If neither is provided, built-in defaults are used (`root: '.'`, `raise_on_stale: false`, etc.). Coverage data is cached globally and automatically reloaded when the coverage file changes.
 
 See [CLI Usage Guide](docs/user/CLI_USAGE.md) for complete details.
 
 
-
-## Common Workflows
-
-### Find Coverage Gaps
-
-```sh
-# Files with worst coverage
-cov-loupe -o d list           # -o = --sort-order, d = descending (worst at end)
-cov-loupe list | less         # display table in pager, best files first (worst at end)
-cov-loupe list | head -10     # truncate the table
-
-# Filter to specific patterns (see COV_LOUPE_OPTS best practice below)
-cov-loupe -g "lib/cov_loupe/tools/**/*.rb" list  # -g = --tracked-globs
-
-# Export for analysis
-cov-loupe -fJ list > coverage-report.json
-```
-
-### Best Practice: Match SimpleCov Configuration
-
-For accurate coverage tracking and validation, set `COV_LOUPE_OPTS` to match your SimpleCov `track_files` patterns. See [`--tracked-globs`](docs/user/CLI_USAGE.md#tracked-globs) for the canonical setup example and default behavior.
-
-### Working with JSON Output
-
-The `-fJ` flag enables programmatic processing of coverage data using command-line JSON tools.
-
-**Using jq:**
-```sh
-# Filter files below 80% coverage
-cov-loupe -fJ list | jq '.files[] | select(.percentage != null and .percentage < 80)'
-```
-
-**Using Ruby one-liners:**
-```sh
-# Count files below threshold
-cov-loupe -fJ list | ruby -r json -e '
-  puts JSON.parse($stdin.read)["files"].count { |f| f["percentage"] && f["percentage"] < 80 }
-'
-```
-
-**Using rexe:**
-
-[rexe](https://github.com/keithrbennett/rexe) is a Ruby gem that enables shorter Ruby command lines by providing command-line options for input and output formats, plus other conveniences. It eliminates the need for explicit JSON parsing and formatting code.
-
-Install: `gem install rexe`
-
-```sh
-# Filter files below 80% coverage with pretty-printed JSON output
-cov-loupe -fJ list | rexe -ij -mb -oJ 'self["files"].select { |f| f["percentage"] && f["percentage"] < 80 }'
-
-# Count files below threshold
-cov-loupe -fJ list | rexe -ij -mb -op 'self["files"].count { |f| f["percentage"] && f["percentage"] < 80 }'
-
-# Human-readable output with AmazingPrint
-cov-loupe -fJ list | rexe -ij -mb -oa 'self["files"].first(3)'
-```
-
-With rexe's `-ij -mb` options, `self` automatically becomes the parsed JSON object. The same holds true for JSON output -- using `-oJ` produces pretty-printed JSON without explicit formatting calls. Rexe also supports YAML input/output (`-iy`, `-oy`) and AmazingPrint output (`-oa`) for human consumption.
-
-### When Coverage Rows Are Skipped
-
-If a coverage row has corrupt or malformed data, the CLI now logs and *warns* after rendering the report.
-This lets operators immediately see that totals may be incomplete. Example table output:
-
-```text
-$ cov-loupe list
-┌─────────────────────────────┬──────────┬─────────┬───────┬───────┐
-│ File                        │        % │ Covered │ Total │ Stale │
-├─────────────────────────────┼──────────┼─────────┼───────┼───────┤
-│ lib/foo.rb                  │   66.66% │       2 │     3 │       │
-│ lib/bar.rb                  │   33.33% │       1 │     3 │       │
-└─────────────────────────────┴──────────┴─────────┴───────┴───────┘
-Files: total 2, ok 2, stale 0
-
-WARNING: 1 coverage row skipped due to errors:
-  - lib/corrupt.rb: Invalid coverage line array: contains non-integer elements: ["bad"]
-Run again with --raise-on-stale to exit when rows are skipped.
-```
-
-Multi-line, indented JSON (`-fJ`) reports still emit valid JSON to `stdout`; the warning continues to be printed on `stderr`:
-
-```text
-$ cov-loupe -fJ list
-{
-  "schema_version": 1,
-  "files": [
-    { "file": "lib/foo.rb", "covered": 2, "total": 3, "percentage": 66.66, "stale": "ok" },
-    { "file": "lib/bar.rb", "covered": 1, "total": 3, "percentage": 33.33, "stale": "ok" }
-  ],
-  "skipped_files": [
-    {
-      "file": "lib/corrupt.rb",
-      "error": "Invalid coverage line array: contains non-integer elements: [\"bad\"]",
-      "error_class": "CovLoupe::CoverageDataError"
-    }
-  ],
-  "missing_tracked_files": [],
-  "newer_files": [],
-  "deleted_files": [],
-  "length_mismatch_files": [],
-  "unreadable_files": [],
-  "timestamp_status": "ok",
-  "counts": { "total": 2, "ok": 2, "stale": 0 }
-}
-
-WARNING: 1 coverage row skipped due to errors:
-  - lib/corrupt.rb: Invalid coverage line array: contains non-integer elements: ["bad"]
-Run again with --raise-on-stale to exit when rows are skipped.
-```
-
-Use `--raise-on-stale true` (or `-S true`) to turn these warnings into hard failures for CI pipelines.
-
-Run `rexe -h` to see all available options, or visit the [rexe project page](https://github.com/keithrbennett/rexe) for more examples.
-
-For comprehensive JSON processing examples, see [CLI Examples](docs/user/examples/cli-examples.md#working-with-json-output).
-
-### CI/CD Integration
-
-```sh
-# Fail build if coverage is stale (--raise-on-stale or -S)
-cov-loupe --raise-on-stale true list || exit 1
-
-# Generate coverage report artifact
-cov-loupe -fJ list > artifacts/coverage.json
-```
-
-### Investigate Specific Files
-
-```sh
-# Quick summary
-cov-loupe summary lib/cov_loupe/model/model.rb
-
-# See uncovered lines
-cov-loupe uncovered lib/cov_loupe/cli.rb
-
-# View in context
-cov-loupe -s u -n 3 uncovered lib/cov_loupe/cli.rb  # -s = --source (u = uncovered, n = none to disable), -n = --context-lines
-
-# Detailed hit counts
-cov-loupe detailed lib/cov_loupe/coverage/coverage_calculator.rb
-
-# Project totals
-cov-loupe totals
-cov-loupe -fJ totals
-```
-
-### Boolean CLI Options
-
-Boolean flags such as `--color` (short: `-C`) and `--raise-on-stale` (short: `-S`) require explicit boolean arguments. Recognized literals:
-
-|        |        |
-|--------|--------|
-| `yes`  | `no`   |
-| `y`    | `n`    |
-| `true` | `false`|
-| `t`    | `f`    |
-| `on`   | `off`  |
-| `+`    | `-`    |
-| `1`    | `0`    |
-
-Each row lists the equivalent `true` token (left) and `false` token (right).
-
-```sh
-cov-loupe --color false        # disable ANSI colors explicitly
-cov-loupe -C false             # short form
-cov-loupe --raise-on-stale yes # enforce stale coverage failures
-```
 
 ## Commands and Tools
 
@@ -404,6 +259,7 @@ cov-loupe --raise-on-stale yes # enforce stale coverage failures
 **MCP Tools:** `file_coverage_summary`, `file_coverage_detailed`, `file_coverage_raw`, `file_uncovered_lines`, `project_coverage`, `project_coverage_totals`, `project_validate` (only when the server is started with `--allow-code-predicates`), `help`, `version`
 
 📖 **See also:**
+
 - [CLI Usage Guide](docs/user/CLI_USAGE.md) - Complete command-line reference
 - [MCP Integration Guide](docs/user/MCP_INTEGRATION.md#available-mcp-tools-functions) - MCP tools documentation
 
@@ -436,7 +292,7 @@ gem build cov-loupe.gemspec
 gem install cov-loupe-*.gem
 ```
 
-See [dev/DEVELOPMENT.md](docs/dev/DEVELOPMENT.md) for more.
+See [docs/dev/DEVELOPMENT.md](docs/dev/DEVELOPMENT.md) for more.
 
 ## SimpleCov Compatibility
 
@@ -444,24 +300,25 @@ See [dev/DEVELOPMENT.md](docs/dev/DEVELOPMENT.md) for more.
 
 ## Contributing
 
-Contributions are welcome! Please:
+Contributions are welcome! Please open an issue first and wait for explicit approval before submitting a pull request. Then:
 
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Ensure all tests pass (`bundle exec rspec`)
-5. Submit a pull request
+1. Fork the repository and create a feature branch
+2. Add tests for new functionality
+3. Ensure RuboCop and the tests pass (`bundle exec rubocop` and `bundle exec rspec`)
+4. Submit a pull request
+
+See the [Contributing Guide](CONTRIBUTING.md) for details.
 
 ## License
 
-MIT License - see [LICENSE](docs/license.md) file for details.
+MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Links
 
 - **GitHub:** https://github.com/keithrbennett/cov-loupe
 - **RubyGems:** https://rubygems.org/gems/cov-loupe
 - **Issues:** https://github.com/keithrbennett/cov-loupe/issues
-- **Changelog:** [RELEASE_NOTES.md](docs/release_notes.md)
+- **Changelog:** [RELEASE_NOTES.md](RELEASE_NOTES.md)
 
 ---
 

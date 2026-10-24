@@ -26,7 +26,7 @@ module CovLoupe
   #           ├── CoverageDataStaleError      — single-file staleness
   #           └── CoverageDataProjectStaleError — project-wide staleness
   #
-  # Base error class for all SimpleCov MCP errors
+  # Base error class for all cov-loupe errors
   #
   # @api public
   class Error < StandardError
@@ -213,7 +213,7 @@ module CovLoupe
     def initialize(message = nil, original_error = nil, cov_timestamp: nil, newer_files: [],
       missing_files: [], deleted_files: [], length_mismatch_files: [], unreadable_files: [],
       coverage_file_path: nil)
-      super(message, original_error)
+      super(message || default_message, original_error)
       @cov_timestamp = cov_timestamp
       @newer_files = Array(newer_files)
       @missing_files = Array(missing_files)
@@ -224,7 +224,7 @@ module CovLoupe
     end
 
     def user_friendly_message
-      base = "Coverage data stale (project): #{message || default_message}"
+      base = "Coverage data stale (project): #{message}"
       base + formatter.format_project_details(
         newer_files:           @newer_files,
         missing_files:         @missing_files,

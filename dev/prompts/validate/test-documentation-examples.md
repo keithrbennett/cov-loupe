@@ -32,7 +32,7 @@ Run all command examples found in:
 
 Do NOT test examples in:
 - `docs/dev/arch-decisions/**/*.md`
-- `docs/dev/presentations/**/*.md`
+- `docs/user/migrations/**/*.md` (they describe older versions on purpose)
 
 ## Process
 
@@ -147,21 +147,23 @@ JSON output with coverage data
 
 **Actual:**
 ```
-Error: unknown option '--format'
+Global option(s) must come BEFORE the subcommand.
+You used: cov-loupe list --format json
+Correct: cov-loupe --format json list
 ```
 
 **Issue:**
-The `--format` flag has been replaced with `-f` or `--output-format`
+Use `-f` / `--format`, placed before the subcommand
 
 **Suggested Fix:**
 Update documentation to use:
 \`\`\`bash
-cov-loupe list --output-format json
+cov-loupe --format json list
 \`\`\`
 
 ---
 
-### docs/user/getting-started.md
+### docs/QUICKSTART.md
 
 #### Line 78: Running with custom coverage file
 
@@ -170,8 +172,8 @@ cov-loupe list --output-format json
 ## Summary
 
 - Update format flag in README.md line 42
-- Add missing setup step in getting-started.md before line 78
-- Fix output example in advanced-usage.md line 156 (JSON structure changed)
+- Add missing setup step in QUICKSTART.md before line 78
+- Fix output example in ADVANCED_USAGE.md line 156 (JSON structure changed)
 ```
 
 ## Notes

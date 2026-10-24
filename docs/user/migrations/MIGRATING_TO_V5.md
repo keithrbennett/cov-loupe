@@ -9,6 +9,7 @@ This document describes the breaking changes introduced in version 5.0.0.
 - [MCP Tool Names Renamed](#mcp-tool-names-renamed)
 - [Removed `version` Subcommand](#removed-version-subcommand)
 - [Simplified `--version` Output](#simplified-version-output)
+- [`--resource` Renamed to `--path-for`](#resource-renamed-to-path-for)
 - [Single-Letter Subcommand Abbreviations](#single-letter-subcommand-abbreviations)
 - [Totals Key Renamed: `percent_covered` → `percentage`](#totals-key-renamed)
 
@@ -55,7 +56,9 @@ cov-loupe --version   # or: cov-loupe -v
 
 ---
 
-## Simplified `--version` Output {#simplified-version-output}
+<a id="simplified-version-output"></a>
+
+## Simplified `--version` Output
 
 `-v`/`--version` now prints only the bare version string and exits immediately.
  The former table output (with `Gem Root` and `Documentation` fields) and JSON format option are gone.
@@ -78,19 +81,29 @@ If you need the gem root path, use `cov-loupe --path-for docs-local` to locate t
 
 ---
 
-## Single-Letter Subcommand Abbreviations
+<a id="resource-renamed-to-path-for"></a>
 
-All CLI subcommands can now be abbreviated to their first letter for convenience.
+## `--resource` Renamed to `--path-for`
 
-**Before (v4.x):**
+The `--resource NAME` option (added in 4.1.0) is now `--path-for NAME`, with the short form `-p`. The names are unchanged: `repo`, `docs`, and `docs-local`. `--resource` is no longer accepted.
+
+**Before (v4.1):**
 ```sh
-cov-loupe list
-cov-loupe summary lib/foo.rb
-cov-loupe uncovered lib/foo.rb
-cov-loupe validate -i '->(m) { m.list["files"].all? { |f| f["percentage"] >= 80 } }'
+cov-loupe --resource docs
 ```
 
 **After (v5.0):**
+```sh
+cov-loupe --path-for docs
+cov-loupe -p docs
+```
+
+---
+
+## Single-Letter Subcommand Abbreviations
+
+All CLI subcommands can be abbreviated to their first letter. This is not a change in 5.0: the abbreviations were added in 4.1.0, which had no release notes, so they are described here.
+
 ```sh
 cov-loupe l
 cov-loupe s lib/foo.rb
@@ -102,7 +115,9 @@ Available abbreviations: `l` (list), `s` (summary), `r` (raw), `u` (uncovered), 
 
 ---
 
-## Totals Key Renamed: `percent_covered` → `percentage` {#totals-key-renamed}
+<a id="totals-key-renamed"></a>
+
+## Totals Key Renamed: `percent_covered` → `percentage`
 
 The `lines` hash returned by `project_totals`
  (and all outputs that delegate to it: the `totals`
@@ -129,8 +144,9 @@ totals['lines']['percentage']  # => 81.3
 ```
 
 **Migration:**
+
 - Replace `totals['lines']['percent_covered']` with `totals['lines']['percentage']`.
 - Update `jq` snippets: `.lines.percent_covered` → `.lines.percentage`.
-- Update inline predicates passed to `validate -i`: replace `"lines"]["percent_covered"]` with `"lines"]["percentage"]`.
+- Update inline predicates passed to `validate -i`: replace `["lines"]["percent_covered"]` with `["lines"]["percentage"]`.
 
 No alias key is provided. The value and rounding are unchanged; only the key name differs.

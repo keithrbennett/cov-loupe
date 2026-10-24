@@ -3,20 +3,31 @@
 require 'spec_helper'
 
 OPTION_TESTS = {
-  source:     {
+  source:       {
     long:  '--source',
     short: '-s',
     text:  'Valid values for --source: f[ull]|u[ncovered]|n[one]',
   },
-  error_mode: {
+  error_mode:   {
     long:  '--error-mode',
-    short: nil,
+    short: '-e',
     text:  'Valid values for --error-mode: o[ff]|l[og]|d[ebug]',
   },
-  sort_order: {
+  sort_order:   {
     long:  '--sort-order',
     short: '-o',
     text:  'Valid values for --sort-order: a[scending]|d[escending]',
+  },
+  output_chars: {
+    long:  '--output-chars',
+    short: '-O',
+    text:  'Valid values for --output-chars: d[efault]|f[ancy]|a[scii]',
+  },
+  format:       {
+    long:  '--format',
+    short: '-f',
+    text:  'Valid values for --format: a/amazing_print|i/inspect|j/json|J/pretty_json|p/puts|' \
+           'P/pretty_print|t/table|y/yaml',
   },
 }.freeze
 

@@ -1,6 +1,6 @@
 # V3.0 Breaking Changes Guide
 
-[Back to main README](../../index.md)
+[Back to main README](../../../README.md)
 
 This document describes the breaking changes introduced in version 3.0.0, which primarily involve the renaming of the gem from `simplecov-mcp` to `cov-loupe`. These changes affect the gem name, executable, Ruby API, and configuration.
 

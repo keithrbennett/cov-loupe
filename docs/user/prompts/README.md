@@ -1,6 +1,6 @@
 # Prompt Library
 
-[Back to main README](../../index.md)
+[Back to main README](../../../README.md)
 
 Starter prompts you can paste into MCP-compatible assistants when you need cov-loupe to run targeted reports or fall back to CLI execution.
 

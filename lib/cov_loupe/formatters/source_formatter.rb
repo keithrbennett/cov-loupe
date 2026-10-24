@@ -112,7 +112,7 @@ module CovLoupe
 
         rows.each do |r|
           m = marker.call(r['covered'], r['hits'])
-          lines << format('%6d  %2s | %s', r['line'], m, r['code'])
+          lines << format('%6d  %s | %s', r['line'], m, r['code'])
         end
         lines.join("\n")
       end

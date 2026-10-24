@@ -1,6 +1,6 @@
 # Policy Validation
 
-[Back to main README](../../index.md)
+[Back to main README](../../../README.md)
 
 This document describes how cov-loupe allows users to define and enforce custom coverage policies through validation predicates.
 
@@ -37,6 +37,7 @@ We considered several approaches:
 #### Why Not a Custom DSL?
 
 A custom DSL would be:
+
 - Limited in expressiveness (hard to predict all future use cases)
 - Harder to debug (users can't use standard Ruby tools)
 - More maintenance burden (parsing, validation, documentation)
@@ -45,10 +46,11 @@ A custom DSL would be:
 #### Why Not Sandboxing?
 
 Ruby's sandboxing options are limited:
+
 - `$SAFE` levels were deprecated and removed in Ruby 2.7+
 - Full VM isolation (Docker, etc.) is too heavy for a CLI tool
-- Any Turing-complete sandbox can be escaped given enough effort
-- True security requires not executing untrusted code at all
+- In-process restrictions are not a security boundary: a predicate runs as ordinary Ruby (via `instance_eval`) with the process's full privileges
+- So cov-loupe does not try to make untrusted code safe; it runs only code the user chose to run
 
 ### Decision
 
@@ -61,24 +63,37 @@ The CLI `validate` subcommand and the MCP `project_validate` tool both use this 
 
 ```ruby
 def self.evaluate_file(path, model)
-  unless File.exist?(path)
-    raise "Predicate file not found: #{path}"
+  guard_predicate_errors('file') do
+    unless File.exist?(path)
+      raise PredicateError, "Predicate file not found: #{path}"
+    end
+
+    content = File.read(path, encoding: 'UTF-8:UTF-8')
+
+    # WARNING: The predicate code executes with full Ruby privileges.
+    # It has unrestricted access to the file system, network, and system commands.
+    # Only use predicate files from trusted sources.
+    #
+    # We evaluate in a fresh Object context to prevent accidental access to
+    # internals, but this provides NO security isolation.
+    evaluation_context = Object.new
+    predicate = evaluation_context.instance_eval(content, path, 1)
+
+    validate_callable(predicate)
+    !!predicate.call(model)
   end
+end
 
-  content = File.read(path, encoding: 'UTF-8:UTF-8')
-
-  # WARNING: The predicate code executes with full Ruby privileges.
-  # It has unrestricted access to the file system, network, and system commands.
-  # Only use predicate files from trusted sources.
-  #
-  # We evaluate in a fresh Object context to prevent accidental access to
-  evaluation_context = Object.new
-  predicate = evaluation_context.instance_eval(content, path, 1)
-
-  validate_callable(predicate)
-  predicate.call(model)
+# Failures in the predicate itself become PredicateError (CLI exit code 4); coverage-data and
+# file errors raised by the model's own queries keep their type (exit code 1).
+def self.guard_predicate_errors(kind)
+  yield
 rescue SyntaxError => e
-  raise "Syntax error in predicate file: #{e.message}"
+  raise PredicateError.new("Syntax error in predicate #{kind}: #{e.message}", e)
+rescue PredicateError, CoverageDataError, FileError
+  raise
+rescue => e
+  raise PredicateError.new(e.message, e)
 end
 ```
 
@@ -142,7 +157,9 @@ CoveragePolicy.new
 ```
 
 The predicate receives a full `CoverageModel` instance with access to:
-- `list(tracked_globs:, sort_order:)` - All file coverage data
+
+- `list(sort_order:, raise_on_stale:, tracked_globs:)` - All file coverage data
+- `project_totals(tracked_globs:, raise_on_stale:)` - Aggregated line totals
 - `summary_for(path)` - Coverage summary for a specific file
 - `uncovered_for(path)` - Uncovered lines for a specific file
 - `detailed_for(path)` - Per-line coverage data
@@ -156,7 +173,7 @@ The predicate receives a full `CoverageModel` instance with access to:
 3. **Simplicity**: No custom DSL to learn, document, or maintain
 4. **Honesty**: Security model is clear and doesn't provide false confidence
 5. **Composability**: Users can require other libraries, define helper methods, etc.
-6. **Excellent examples**: We provide 5+ well-documented example predicates
+6. **Excellent examples**: We provide three well-documented example predicates in `examples/success_predicates/`
 
 #### Negative
 
@@ -174,11 +191,13 @@ The predicate receives a full `CoverageModel` instance with access to:
 #### Threat Model
 
 This approach is **appropriate** when:
+
 - Predicate files are stored in version control with code review
 - Users treat predicates like any other code in their project (tests, Rakefile, etc.)
 - CI/CD environments already execute arbitrary code (tests, build scripts)
 
 This approach is **inappropriate** when:
+
 - Processing untrusted predicate files from unknown sources
 - Allowing users to upload predicates via web interface
 - Running in a multi-tenant environment without isolation

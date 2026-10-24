@@ -16,7 +16,7 @@ module CovLoupe
     #
     # @param code [String] Ruby code that returns a callable (lambda, proc, or object with #call)
     # @param model [CoverageModel] The coverage model to pass to the predicate
-    # @return [Boolean] The result of calling the predicate with the model
+    # @return [Boolean] Whether the predicate's result is truthy
     # @raise [PredicateError] If the code doesn't return a callable or has syntax errors
     def self.evaluate_code(code, model)
       guard_predicate_errors('code') do
@@ -30,7 +30,7 @@ module CovLoupe
         predicate = evaluation_context.instance_eval(code, '<predicate>', 1)
 
         validate_callable(predicate)
-        predicate.call(model)
+        !!predicate.call(model)
       end
     end
 
@@ -38,7 +38,7 @@ module CovLoupe
     #
     # @param path [String] Path to Ruby file containing predicate code
     # @param model [CoverageModel] The coverage model to pass to the predicate
-    # @return [Boolean] The result of calling the predicate with the model
+    # @return [Boolean] Whether the predicate's result is truthy
     # @raise [PredicateError] If the file doesn't exist, doesn't return a callable, or has syntax errors
     def self.evaluate_file(path, model)
       guard_predicate_errors('file') do
@@ -59,7 +59,7 @@ module CovLoupe
         predicate = evaluation_context.instance_eval(content, path, 1)
 
         validate_callable(predicate)
-        predicate.call(model)
+        !!predicate.call(model)
       end
     end
 

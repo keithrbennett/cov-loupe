@@ -6,6 +6,7 @@ require 'find'
 require 'net/http'
 require 'optparse'
 require 'pathname'
+require 'rubygems'
 require 'uri'
 
 class DocLinkVerifier
@@ -41,6 +42,7 @@ class DocLinkVerifier
     @root = options.fetch(:root)
     @errors = []
     @warnings = []
+    @gem_paths = load_gem_paths
   end
 
   def call
@@ -54,7 +56,7 @@ class DocLinkVerifier
   attr_reader :root
 
   private def verify_raw_markdown
-    markdown_files.each do |file|
+    (markdown_files | gem_markdown_files).each do |file|
       links_from_markdown(file).each do |link|
         verify_raw_link(link)
       end
@@ -107,6 +109,23 @@ class DocLinkVerifier
     end
   rescue Errno::ECONNREFUSED, Errno::EHOSTUNREACH, SocketError => e
     add_error('doc server', 0, base_uri.to_s, "#{e.class}: #{e.message}")
+  end
+
+  # Paths of the files the gemspec packages, and of the directories containing them, or nil if
+  # the root has no gemspec. Links in packaged files must resolve inside the installed gem too.
+  private def load_gem_paths
+    gemspec = root.glob('*.gemspec').first
+    return nil unless gemspec
+
+    files = Dir.chdir(root) { Gem::Specification.load(gemspec.to_s).files }
+    dirs = files.flat_map { |file| Pathname.new(file).dirname.descend.map(&:to_s) }
+    Set.new(files + dirs) - ['.']
+  end
+
+  private def gem_markdown_files
+    return [] unless @gem_paths
+
+    @gem_paths.select { |path| path.end_with?('.md') }.map { |path| root.join(path) }.select(&:file?)
   end
 
   private def markdown_files
@@ -215,6 +234,8 @@ class DocLinkVerifier
       return
     end
 
+    verify_link_packaged(link, target_path)
+
     return unless fragment && markdown_file?(target_path)
 
     anchors = markdown_anchors(target_path)
@@ -224,20 +245,36 @@ class DocLinkVerifier
       "missing anchor ##{fragment} in #{target_path.relative_path_from(root)}")
   end
 
+  private def verify_link_packaged(link, target_path)
+    return unless @gem_paths&.include?(link.source.relative_path_from(root).to_s)
+
+    target = target_path.relative_path_from(root).to_s
+    return if @gem_paths.include?(target)
+
+    add_error(link.source, link.line, link.target, "#{target} is not packaged in the gem")
+  end
+
   private def markdown_file?(path)
     path.extname.downcase == '.md'
   end
 
-  private def markdown_anchors(file)
+  # Anchors in files pulled in with MkDocs' include-markdown (e.g. README.md via docs/index.md)
+  # count as anchors of the including file, since that is how the docs site renders them.
+  private def markdown_anchors(file, seen = Set.new)
     anchors = []
+    return anchors unless seen.add?(file.expand_path)
 
     file.each_line do |line|
-      if (heading = line.match(/^\s{0,3}\#{1,6}\s+(.+?)\s*\#*\s*$/))
-        text = heading[1].gsub(/\{#([^}]+)\}\s*$/, '')
-        anchors.push(github_anchor(text), mkdocs_anchor(text))
+      if (include = line.match(/\{%\s*include-markdown\s+["']([^"']+)["']/))
+        included = file.dirname.join(include[1])
+        anchors.concat(markdown_anchors(included, seen)) if included.file?
       end
 
-      line.scan(/\{#([^}]+)\}/) { |match| anchors << match.first }
+      if (heading = line.match(/^\s{0,3}\#{1,6}\s+(.+?)\s*\#*\s*$/))
+        # A {#id} attribute is not used as an anchor: GitHub shows it as text. Use <a id> instead.
+        anchors.push(github_anchor(heading[1]), mkdocs_anchor(heading[1]))
+      end
+
       line.scan(/<[^>]+\sid=["']([^"']+)["'][^>]*>/i) { |match| anchors << match.first }
     end
 
@@ -249,9 +286,9 @@ class DocLinkVerifier
       .downcase
       .gsub(/<[^>]+>/, '')
       .gsub(/`([^`]+)`/, '\1')
-      .gsub(/[^\p{Alnum}\s-]/, '')
+      .gsub(/[^\p{Alnum}\s_-]/, '')
       .strip
-      .gsub(/\s+/, '-')
+      .gsub(/\s/, '-') # GitHub keeps one hyphen per space: "A & B" becomes "a--b"
   end
 
   private def mkdocs_anchor(text)
@@ -410,6 +447,7 @@ class DocLinkVerifier
     puts "Checked raw markdown links: #{@options.fetch(:raw) ? 'yes' : 'no'}"
     puts "Checked doc server links: #{@options.fetch(:server) ? @options.fetch(:server_url) : 'no'}"
     puts "Checked external links: #{@options.fetch(:check_external) ? 'yes' : 'no'}"
+    puts "Checked gem packaging: #{@options.fetch(:raw) && @gem_paths ? 'yes' : 'no'}"
 
     unless @warnings.empty?
       puts "\nWarnings:"
