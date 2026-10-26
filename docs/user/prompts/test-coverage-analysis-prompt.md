@@ -317,11 +317,24 @@ of scope; ambiguous line assignments at area boundaries; anything else that
 limits confidence in the numbers.
 
 ### Prioritized Recommendations
-A numbered list, highest value first, weighing risk reduced against
-difficulty. Include testing-infrastructure fixes where they unblock other
-recommendations. For each: the area, the effort (S/M/L), the expected
-coverage or risk improvement, and a ready-to-use prompt the user can give an
-AI assistant to implement it.
+A table of tasks, sorted by priority (highest first):
+
+| # | Task | Area | Importance (1–10) | Effort (S/M/L) | Priority | Expected improvement |
+|---|------|------|-------------------|----------------|----------|----------------------|
+
+- **Task**: one concrete action (tests to add, code to delete, or an
+  infrastructure fix).
+- **Importance**: the risk the task removes, from the area's criticality and
+  the gap's risk.
+- **Effort**: from the gap's difficulty to test (Step 5).
+- **Priority**: rank by importance relative to effort. Among tasks of similar
+  importance, put the cheaper one first: quick wins are easy to clear, and each
+  one cleared drops out of the next report, so later reports concentrate on
+  what remains. Place infrastructure fixes ahead of the tasks they unblock.
+
+Briefly state the rule you used to combine importance and effort. After the
+table, give each task a ready-to-use prompt the user can give an AI assistant
+to implement it, keyed by its number.
 
 ### Appendix: Commands Run
 Every cov-loupe call (MCP tool name and arguments, or CLI command) and
