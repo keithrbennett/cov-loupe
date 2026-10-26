@@ -20,8 +20,10 @@ Before you begin the analysis:
 - Your task is to produce a report of line coverage **organized by the logical
   parts of the system**, not just a per-file list, and to judge where the gaps
   actually matter.
-- Get every coverage number from cov-loupe. Do not compute coverage yourself
-  from `coverage/coverage.json`, and do not estimate it by reading specs.
+- Get every coverage number from cov-loupe. Do not read
+  `coverage/coverage.json` directly, and do not estimate coverage by reading
+  specs. Aggregating cov-loupe's per-line output into area totals is expected
+  (see Step 4).
   Prefer the cov-loupe MCP server; if it is unavailable, use `cov-loupe` in CLI
   mode (`bundle exec exe/cov-loupe -h` in this repo). Say in the report which
   one you used.
@@ -65,34 +67,37 @@ Before you begin the analysis:
 ## Step 3: Identify the logical areas
 
 Before computing any rollups, decide how to carve up the code. The goal is the
-most precise, targeted analysis, so choose the areas that best reveal where
-testing is strong or weak; do not settle for the directory layout if a
-different cut tells more.
+most precise, targeted analysis, so draw boundaries by what the code does, not
+by where it lives. File and directory boundaries are not area boundaries: one
+file may hold a class or module with a critical mission next to code that
+matters little, and those belong in different areas. This takes more reading
+and more tokens than a file-level rollup; that is the point.
 
 1. Read the code to understand its structure: entry points and `require`
-   graphs (e.g. `lib/cov_loupe.rb`, `lib/cov_loupe/loaders/`), namespaces, and
-   how responsibilities flow between parts.
-2. Define **logical areas at whatever granularity is meaningful**. An area can
-   be:
-   - a broad grouping of several directories (e.g. "everything the CLI path
-     uses"),
-   - a single directory or namespace,
-   - a slice of one (e.g. the staleness checks inside the coverage model, or
-     the argument-validation part of the MCP tools),
+   graphs (e.g. `lib/cov_loupe.rb`, `lib/cov_loupe/loaders/`), namespaces,
+   classes, modules, and methods, and how responsibilities flow between them.
+2. Define **logical areas at whatever granularity is meaningful**. An area is
+   a set of code units (classes, modules, methods, or line ranges) wherever
+   they live. It can be:
+   - a broad grouping spanning several directories (e.g. "everything the CLI
+     path uses"),
+   - a single namespace or class,
+   - a single method or a few methods within a class (e.g. the staleness
+     checks inside the coverage model, or the argument validation in the MCP
+     tools),
    - or a cross-cutting concern spanning many places (e.g. error handling,
      path resolution, output formatting across CLI and MCP).
 3. Arrange the areas in a hierarchy where that helps (a broad area containing
    narrower ones), and nest as deep as it is useful. Cross-cutting areas may
    overlap others; say so where they do.
-4. Express each area as one or more tracked globs where possible (for example
-   `lib/cov_loupe/tools/**/*.rb,lib/cov_loupe/mcp_server.rb,lib/cov_loupe/base_tool.rb`).
-   When an area is only part of a file, name the file plus the methods or line
-   ranges that belong to it; its numbers then come from per-line cov-loupe data
-   (Step 4) rather than from globs.
+4. Record each area's definition precisely as file paths with line ranges, and
+   name the classes, modules, or methods those ranges cover so a reader can
+   follow them. When an area is made of whole files, a glob is a fine
+   shorthand.
 5. Make sure at least one level of the hierarchy is a **complete partition**:
-   every tracked source file belongs to exactly one area at that level, with an
-   explicit "Other" area for files that fit nowhere. This level is what the
-   totals are reconciled against.
+   every coverable line in the tracked source files belongs to exactly one area
+   at that level, with an explicit "Other" area for code that fits nowhere.
+   This level is what the totals are reconciled against.
 6. Give each area a **criticality** judgment with a short reason. Treat it as a
    continuum, not a fixed set of buckets: place each area relative to the
    others and explain what drives the placement. Weigh user-visible behavior,
@@ -102,23 +107,25 @@ different cut tells more.
 
 ## Step 4: Compute coverage per area
 
-For each area:
-
-1. For a glob-defined area, run project totals with that area's globs
-   (`project_coverage_totals` with `tracked_globs`, or
-   `cov-loupe -f J -g '<globs>' totals`). Record covered, uncovered, total
-   lines, percentage, file count, and files without coverage. Run the file
-   list with the same globs, sorted ascending, to find the area's weakest
-   files.
-2. For a sub-file area, use `file_coverage_detailed` /
-   `cov-loupe -f J detailed <path>` and count the covered and coverable lines in
-   the area's line ranges. State that these numbers were derived from per-line
-   data.
-3. Get a broader area's numbers from cov-loupe with the union of its
-   children's globs, not by averaging child percentages.
-4. Confirm that the totals for the partition level from Step 3 add up to the
-   project total for the same overall globs. If they don't, find the overlap or
-   orphan and fix the map; state any remaining discrepancy.
+1. For each file touched by an area, get per-line data with
+   `file_coverage_detailed` / `cov-loupe -f J detailed <path>`. Each row gives
+   a line number, its hit count, and whether it is covered; lines that are not
+   coverable (comments, blank lines, `end`) do not appear.
+2. For each area, sum the covered and coverable lines that fall in its line
+   ranges, and compute the percentage. Also record the number of code units
+   in the area and its weakest units (e.g. the least-covered methods).
+3. Get a broader area's numbers by summing its children's line counts, never
+   by averaging child percentages.
+4. For an area made of whole files, cross-check your sums against
+   `project_coverage_totals` with `tracked_globs` /
+   `cov-loupe -f J -g '<globs>' totals`; they must match exactly.
+5. Confirm that the line totals for the partition level from Step 3 add up to
+   the project's covered and total lines for the same overall globs. If they
+   don't, find the overlap or orphaned lines and fix the map; state any
+   remaining discrepancy.
+6. Keep the aggregation mechanical and reproducible. If you write a helper
+   script to sum the per-line rows, put it in your scratch space (not the
+   repo), feed it cov-loupe output only, and include it in the appendix.
 
 ## Step 5: Examine the gaps
 
@@ -184,16 +191,19 @@ The file should have the following structure:
 
 ### Area Map
 The hierarchy of logical areas from Step 3, showing for each area its parent,
-its definition (globs, or file plus methods/line ranges), file count, and
-criticality with reason. Mark the partition level used for reconciliation and
+its definition (file paths with line ranges and the code units they cover, or
+globs for whole files), and criticality with reason. Mark the partition level used for reconciliation and
 any overlapping cross-cutting areas. Explain why you carved the code this way.
 
 ### Coverage by Area
 One table per hierarchy level that is worth showing, each sorted ascending by
 percentage:
 
-| Area | Criticality | Files | Covered | Total | % | Files w/o data | Weakest file (%) |
-|------|-------------|-------|---------|-------|---|----------------|------------------|
+| Area | Criticality | Code units | Covered | Total | % | Weakest unit (%) |
+|------|-------------|------------|---------|-------|---|------------------|
+
+List tracked files with no coverage data separately, with the areas they
+belong to.
 
 Follow with a short interpretation of each area that stands out, positively or
 negatively, relative to its criticality.
@@ -213,8 +223,8 @@ Findings from Step 6, with citations.
 
 ### Data Caveats
 Stale, skipped, missing, or unreadable files; branch coverage being out of
-scope; numbers derived from per-line data; anything else that limits
-confidence in the numbers.
+scope; ambiguous line assignments at area boundaries; anything else that
+limits confidence in the numbers.
 
 ### Prioritized Recommendations
 A numbered list, highest value first. For each: the area, the effort (S/M/L),
@@ -223,6 +233,7 @@ can give an AI assistant to implement it.
 
 ### Appendix: Commands Run
 Every cov-loupe call (MCP tool name and arguments, or CLI command) used to
-produce the numbers, so the report can be reproduced.
+produce the numbers, plus any aggregation script, so the report can be
+reproduced.
 
 ---
