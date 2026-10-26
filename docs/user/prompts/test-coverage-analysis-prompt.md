@@ -150,7 +150,12 @@ and more tokens than a file-level rollup; that is the point.
    others and explain what drives the placement. Weigh user-visible behavior,
    data correctness and integrity, money and security (authentication,
    authorization, code evaluation, file system access), error paths, public
-   API, and how often the code runs.
+   API, and how often the code runs. Use the framework's usual danger spots as
+   prompts, not as fixed categories: in a Rails app, validations, callbacks,
+   and scopes that guard data; authorization in controllers; background-job
+   retries and failure handling; mailers; CSRF and parameter filtering. In
+   other projects, look at domain rules and calculations, state transitions,
+   external API clients, file I/O and parsing, serialization, and concurrency.
 
 ## Step 4: Compute coverage per area
 
@@ -199,7 +204,10 @@ For each selected file or area:
    indirectly by integration tests".
 4. Judge the **risk** of each gap: what goes wrong for a user if this code is
    broken and no test notices? Be concrete.
-5. Flag likely dead code separately: it should be deleted, not tested.
+5. Judge, separately from risk, how **hard the gap is to test**: dependencies
+   to set up, I/O, external services, time, concurrency, or missing seams
+   (code that can't be exercised without refactoring).
+6. Flag likely dead code separately: it should be deleted, not tested.
 
 Do not pad the report: a high percentage with an untested critical error path
 is worth more attention than modest coverage of formatting helpers.
@@ -216,6 +224,18 @@ Briefly assess, per major area, using the tests themselves:
 - Consistency across entry points: behavior reachable through more than one
   interface (e.g. web UI and API, CLI and library) should be tested through
   each.
+- Testing anti-patterns. Report only those you actually observe, such as:
+  over-mocking that makes tests brittle or hides integration bugs;
+  near-duplicate test code that should use shared examples, helpers, or
+  iteration over input arrays; untested error handling and failure
+  scenarios; missing integration tests for critical user flows; untested
+  authorization logic; controller tests where request specs would serve
+  better (Rails); missing tests for jobs, mailers, external integrations,
+  CLI argument parsing, or data transformation pipelines.
+- Testing infrastructure problems: inadequate fixtures or factories, missing
+  helpers, or code structure that makes tests hard to write.
+- Well-tested areas: where coverage and test quality are both strong, and
+  the testing patterns there that are worth repeating elsewhere.
 
 Keep this qualitative and evidence-based; cite test files and line numbers.
 
@@ -271,11 +291,18 @@ area and ordered by risk:
 - What the code does and the gap's category.
 - Test status (none / partial / indirect only).
 - Risk, with a concrete failure scenario.
+- Difficulty to test, with what makes it hard.
 - Recommendation: test to add (describe the scenario, not the code), code to
   delete, or "acceptable as is" with the reason.
 
+### Well-Tested Areas
+Areas where coverage and test quality are both strong, and the patterns
+worth repeating, with citations.
+
 ### Test Quality Observations
-Findings from Step 6, with citations.
+The remaining findings from Step 6 (unit vs. integration balance, assertion
+strength, entry-point consistency, anti-patterns, infrastructure), with
+citations.
 
 ### Data Caveats
 Reliance on the user's assurance that the last run was the complete, passing
@@ -284,9 +311,11 @@ of scope; ambiguous line assignments at area boundaries; anything else that
 limits confidence in the numbers.
 
 ### Prioritized Recommendations
-A numbered list, highest value first. For each: the area, the effort (S/M/L),
-the expected coverage or risk improvement, and a ready-to-use prompt the user
-can give an AI assistant to implement it.
+A numbered list, highest value first, weighing risk reduced against
+difficulty. Include testing-infrastructure fixes where they unblock other
+recommendations. For each: the area, the effort (S/M/L), the expected
+coverage or risk improvement, and a ready-to-use prompt the user can give an
+AI assistant to implement it.
 
 ### Appendix: Commands Run
 Every cov-loupe call (MCP tool name and arguments, or CLI command) and
