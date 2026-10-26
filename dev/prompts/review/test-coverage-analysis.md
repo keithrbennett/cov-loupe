@@ -1,4 +1,4 @@
-# Test Coverage by Component Prompt
+# Test Coverage Analysis Prompt
 
 ### Preconditions
 
@@ -17,15 +17,15 @@ Before you begin the analysis:
 ----
 
 - You are a senior engineer assessing the test suite of this project.
-- Your task is to produce a report of line coverage **rolled up by higher-level
-  components and subsystems**, not just a per-file list, and to judge where the
-  gaps actually matter.
+- Your task is to produce a report of line coverage **organized by the logical
+  parts of the system**, not just a per-file list, and to judge where the gaps
+  actually matter.
 - Get every coverage number from cov-loupe. Do not compute coverage yourself
   from `coverage/coverage.json`, and do not estimate it by reading specs.
   Prefer the cov-loupe MCP server; if it is unavailable, use `cov-loupe` in CLI
   mode (`bundle exec exe/cov-loupe -h` in this repo). Say in the report which
   one you used.
-- Use source and spec files only to define components and to judge the
+- Use source and spec files only to define the logical areas and to judge the
   importance of uncovered code.
 - Do not modify source or spec files. This is a read-only analysis; the only
   file you write is the report.
@@ -62,60 +62,74 @@ Before you begin the analysis:
    If SimpleCov also collects branch coverage, say that branch coverage is out
    of scope for this report.
 
-## Step 3: Define components and subsystems
+## Step 3: Identify the logical areas
 
-Build a component map before computing any rollups.
+Before computing any rollups, decide how to carve up the code. The goal is the
+most precise, targeted analysis, so choose the areas that best reveal where
+testing is strong or weak; do not settle for the directory layout if a
+different cut tells more.
 
-1. Start from the directory and namespace structure (for this repo, the
-   directories under `lib/cov_loupe/`, plus the top-level files directly in
-   it). Read entry points and `require` graphs (e.g. `lib/cov_loupe.rb`,
-   `lib/cov_loupe/loaders/`) to see how pieces connect.
-2. Group directories into **subsystems** by responsibility, not just by
-   folder name. Each subsystem should answer "what does this part of the
-   system do for the user?" For this repo, plausible groupings include (verify
-   against the actual code; do not take this list as given):
-   - Coverage data loading and the coverage model
-   - Path resolution and staleness detection
-   - Coverage calculation and reporting
-   - Output formatting and presentation
-   - CLI (option parsing, subcommands, commands)
-   - MCP server and tools
-   - Configuration, error handling, and logging
-   - Validation / predicate evaluation
-   - Scripts, resources, and miscellaneous top-level files
-3. Assign every tracked source file to exactly one component. Files that
-   don't fit go in an explicit "Other" component; do not drop them.
-4. Express each component as one or more tracked globs (for example
+1. Read the code to understand its structure: entry points and `require`
+   graphs (e.g. `lib/cov_loupe.rb`, `lib/cov_loupe/loaders/`), namespaces, and
+   how responsibilities flow between parts.
+2. Define **logical areas at whatever granularity is meaningful**. An area can
+   be:
+   - a broad grouping of several directories (e.g. "everything the CLI path
+     uses"),
+   - a single directory or namespace,
+   - a slice of one (e.g. the staleness checks inside the coverage model, or
+     the argument-validation part of the MCP tools),
+   - or a cross-cutting concern spanning many places (e.g. error handling,
+     path resolution, output formatting across CLI and MCP).
+3. Arrange the areas in a hierarchy where that helps (a broad area containing
+   narrower ones), and nest as deep as it is useful. Cross-cutting areas may
+   overlap others; say so where they do.
+4. Express each area as one or more tracked globs where possible (for example
    `lib/cov_loupe/tools/**/*.rb,lib/cov_loupe/mcp_server.rb,lib/cov_loupe/base_tool.rb`).
-   Verify that the globs together match every file exactly once; report any
-   overlaps or orphans you had to fix.
-5. Classify each component's **criticality** (High / Medium / Low) and give
-   a one-line reason. Weigh: user-visible behavior, data correctness, security
-   boundaries (e.g. code evaluation, file system access), error paths, and
-   public API (`@api public` YARD tags).
+   When an area is only part of a file, name the file plus the methods or line
+   ranges that belong to it; its numbers then come from per-line cov-loupe data
+   (Step 4) rather than from globs.
+5. Make sure at least one level of the hierarchy is a **complete partition**:
+   every tracked source file belongs to exactly one area at that level, with an
+   explicit "Other" area for files that fit nowhere. This level is what the
+   totals are reconciled against.
+6. Give each area a **criticality** judgment with a short reason. Treat it as a
+   continuum, not a fixed set of buckets: place each area relative to the
+   others and explain what drives the placement. Weigh user-visible behavior,
+   data correctness, security boundaries (e.g. code evaluation, file system
+   access), error paths, public API (`@api public` YARD tags), and how often
+   the code runs.
 
-## Step 4: Compute coverage per component
+## Step 4: Compute coverage per area
 
-For each component:
+For each area:
 
-1. Run project totals with that component's globs
+1. For a glob-defined area, run project totals with that area's globs
    (`project_coverage_totals` with `tracked_globs`, or
    `cov-loupe -f J -g '<globs>' totals`). Record covered, uncovered, total
-   lines, percentage, file count, and files without coverage.
-2. Run the file list with the same globs, sorted ascending, to find the
-   component's weakest files.
-3. Confirm that per-component line totals add up to the project total for the
-   same overall globs. If they don't, find the overlap or orphan and fix the
-   map; state any remaining discrepancy.
-
-Then roll components up into subsystems the same way (a subsystem's numbers
-come from cov-loupe with the union of its globs, not from averaging component
-percentages).
+   lines, percentage, file count, and files without coverage. Run the file
+   list with the same globs, sorted ascending, to find the area's weakest
+   files.
+2. For a sub-file area, use `file_coverage_detailed` /
+   `cov-loupe -f J detailed <path>` and count the covered and coverable lines in
+   the area's line ranges. State that these numbers were derived from per-line
+   data.
+3. Get a broader area's numbers from cov-loupe with the union of its
+   children's globs, not by averaging child percentages.
+4. Confirm that the totals for the partition level from Step 3 add up to the
+   project total for the same overall globs. If they don't, find the overlap or
+   orphan and fix the map; state any remaining discrepancy.
 
 ## Step 5: Examine the gaps
 
-For every file below 90% in a High-criticality component, every file below
-75% elsewhere, and every tracked file with no coverage data:
+Decide for yourself which files and areas deserve a close look. Do not apply a
+fixed percentage cutoff: weigh each area's coverage against its criticality,
+so a critical area at a high percentage can still warrant scrutiny while a
+low-stakes area at a lower percentage may not. Always include every tracked
+file with no coverage data. State the reasoning behind your selection in the
+report.
+
+For each selected file or area:
 
 1. Get the uncovered lines (`file_uncovered_lines` / `cov-loupe -f J
    uncovered <path>`); use `file_coverage_detailed` or
@@ -131,18 +145,18 @@ For every file below 90% in a High-criticality component, every file below
    broken and no test notices? Be concrete.
 5. Flag likely dead code separately: it should be deleted, not tested.
 
-Do not pad the report: high percentage with an untested critical error path
-is worth more attention than 85% coverage of formatting helpers.
+Do not pad the report: a high percentage with an untested critical error path
+is worth more attention than modest coverage of formatting helpers.
 
 ## Step 6: Look beyond line percentages
 
-Briefly assess, per subsystem, using the specs themselves:
+Briefly assess, per major area, using the specs themselves:
 
 - Whether coverage comes from focused unit specs or only from broad
   integration/end-to-end specs (high coverage via integration alone can hide
   weak assertions).
 - Whether specs assert on behavior or merely execute code (spot-check a few
-  specs per subsystem; cite them).
+  specs per area; cite them).
 - Cross-mode consistency: behavior that exists in both CLI and MCP mode should
   be tested in both.
 
@@ -152,7 +166,7 @@ Keep this qualitative and evidence-based; cite spec files and line numbers.
 
 Write your analysis in a Markdown file whose name is:
 - today's date in UTC `%Y-%m-%d-%H-%M` format +
-- '-coverage-by-component-' +
+- '-test-coverage-analysis-' +
 - your name (e.g. 'codex', 'claude', 'gemini', 'zai') +
 - the `.md` extension.
 
@@ -164,31 +178,33 @@ The file should have the following structure:
 - Commit cited, cov-loupe interface used (MCP or CLI), suite result, and
   coverage file timestamp/staleness status.
 - Overall line coverage (with and without tracked globs).
-- The best- and worst-covered subsystems, and the top 3 risk areas.
+- The best- and worst-covered areas, and the top risk areas.
 - A **one-line verdict** (e.g. *"Strong core coverage; error paths in the MCP
   tools are the main gap"*).
 
-### Component Map
-A table listing each subsystem, its components, the globs used, file count,
-and criticality with reason. Note any files that were hard to place.
+### Area Map
+The hierarchy of logical areas from Step 3, showing for each area its parent,
+its definition (globs, or file plus methods/line ranges), file count, and
+criticality with reason. Mark the partition level used for reconciliation and
+any overlapping cross-cutting areas. Explain why you carved the code this way.
 
-### Coverage by Subsystem
-A table sorted ascending by percentage:
+### Coverage by Area
+One table per hierarchy level that is worth showing, each sorted ascending by
+percentage:
 
-| Subsystem | Criticality | Files | Covered | Total | % | Files w/o data | Weakest file (%) |
-|-----------|-------------|-------|---------|-------|---|----------------|------------------|
+| Area | Criticality | Files | Covered | Total | % | Files w/o data | Weakest file (%) |
+|------|-------------|-------|---------|-------|---|----------------|------------------|
 
-Follow with a short paragraph per subsystem interpreting the numbers.
-
-### Coverage by Component
-The same table at component granularity, sorted ascending.
+Follow with a short interpretation of each area that stands out, positively or
+negatively, relative to its criticality.
 
 ### Gap Analysis
-For each gap from Step 5, grouped by subsystem and ordered by risk:
+State how you chose what to examine. Then, for each gap from Step 5, grouped by
+area and ordered by risk:
 - File and uncovered line numbers (as reported by cov-loupe).
 - What the code does and the gap's category.
 - Spec status (none / partial / indirect only).
-- Risk (High / Medium / Low) with a concrete failure scenario.
+- Risk, with a concrete failure scenario.
 - Recommendation: test to add (describe the scenario, not the code), code to
   delete, or "acceptable as is" with the reason.
 
@@ -197,12 +213,13 @@ Findings from Step 6, with citations.
 
 ### Data Caveats
 Stale, skipped, missing, or unreadable files; branch coverage being out of
-scope; anything else that limits confidence in the numbers.
+scope; numbers derived from per-line data; anything else that limits
+confidence in the numbers.
 
 ### Prioritized Recommendations
-A numbered list, highest value first. For each: the subsystem, the effort
-(S/M/L), the expected coverage or risk improvement, and a ready-to-use prompt
-the user can give an AI assistant to implement it.
+A numbered list, highest value first. For each: the area, the effort (S/M/L),
+the expected coverage or risk improvement, and a ready-to-use prompt the user
+can give an AI assistant to implement it.
 
 ### Appendix: Commands Run
 Every cov-loupe call (MCP tool name and arguments, or CLI command) used to

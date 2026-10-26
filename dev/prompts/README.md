@@ -47,9 +47,9 @@ project root.
 - **Question answered:** "What would I need to do to release?" / "What is left before I can release?"
 - **Time:** 10-20 minutes
 
-**[Coverage by Component](review/coverage-by-component.md)**
+**[Test Coverage Analysis](review/test-coverage-analysis.md)**
 - **When:** Assessing where the test suite is strong or weak, planning test work
-- **Output:** Line coverage rolled up by subsystem and component (via cov-loupe), with risk-ranked gap analysis
+- **Output:** Line coverage (via cov-loupe) rolled up by logical areas at whatever granularity is most revealing, with risk-ranked gap analysis
 - **Question answered:** "Which parts of the system are under-tested, and does it matter?"
 - **Time:** 1-2 hours
 
