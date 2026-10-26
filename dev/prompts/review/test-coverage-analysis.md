@@ -1,18 +1,12 @@
 # Test Coverage Analysis Prompt
 
-### Interactive and Headless Runs
+### Unattended Operation
 
-This prompt runs either interactively or headless. Run **headless** when the
-invocation says so (e.g. "run headless") or when you have no way to ask the
-user and get an answer (e.g. `claude -p`, `codex exec`, CI). Otherwise run
-interactively.
-
-The only point where an interactive run asks the user is a failing test suite
-(Step 1); it has a headless default. In a headless run, never stop to wait for
-input: apply the default, and record the decision under **Decisions Made
-Without Confirmation** in the report. The invocation may override the default
-(e.g. "stop if the suite fails") and the report location (e.g. "write the
-report to `tmp/reports`").
+This prompt never asks the user anything, so it runs the same interactively or
+headless (e.g. `claude -p`, `codex exec`, CI). Never stop to wait for input:
+when a precondition fails, stop with an error message instead. The invocation
+may name a different report location (e.g. "write the report to
+`tmp/reports`").
 
 ### Preconditions
 
@@ -54,11 +48,9 @@ Before you begin the analysis:
 
 1. Run the full suite (`bundle exec rspec`) to regenerate
    `coverage/coverage.json`. Record the pass/fail/pending counts.
-2. If the suite fails, report the failures and ask whether to continue: a
-   failing suite can make coverage numbers misleading.
-   **Headless:** continue. List the failing examples in the Executive Summary,
-   and mark as suspect the areas whose code those specs exercise, since a spec
-   that aborts early leaves lines unexecuted.
+2. If the suite fails, stop with an error that lists the failing examples. Do
+   not run the analysis or write a report: a failing suite makes coverage
+   numbers misleading.
 3. If you cannot run the suite, use the existing coverage file, say so
    prominently, and report its timestamp.
 4. Check staleness before trusting any number. Run the project totals
@@ -245,11 +237,6 @@ Stale, skipped, missing, or unreadable files; branch coverage being out of
 scope; ambiguous line assignments at area boundaries; anything else that
 limits confidence in the numbers.
 
-### Decisions Made Without Confirmation
-Headless runs only: each default applied in place of asking the user, and
-what it affected. Write "None" if no default was needed; omit the section in
-interactive runs.
-
 ### Prioritized Recommendations
 A numbered list, highest value first. For each: the area, the effort (S/M/L),
 the expected coverage or risk improvement, and a ready-to-use prompt the user
@@ -262,5 +249,6 @@ reproduced.
 
 ---
 
-End your final message with the report's path and the one-line verdict, so a
-headless caller can find the report without parsing the rest of your output.
+End your final message with the report's path and the one-line verdict, or,
+if you stopped early, with the error. A headless caller can then find the
+outcome without parsing the rest of your output.
