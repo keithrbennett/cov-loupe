@@ -1,12 +1,21 @@
-# Test Coverage Analysis Prompt
+# Test Coverage Analysis by Logical Area Prompt
+
+[Back to main README](../../../README.md)
+
+Give this prompt to an AI coding agent from the root of your Ruby project. It
+uses cov-loupe to produce a report of line coverage organized by the logical
+parts of your system, down to individual classes and methods, and ranks the
+gaps by risk. It never asks for input, so it also works headless (e.g.
+`claude -p`, `codex exec`, CI).
+
+---
 
 ### Unattended Operation
 
 This prompt never asks the user anything, so it runs the same interactively or
-headless (e.g. `claude -p`, `codex exec`, CI). Never stop to wait for input:
-when a precondition fails, stop with an error message instead. The invocation
-may name a different report location (e.g. "write the report to
-`tmp/reports`").
+headless. Never stop to wait for input: when a precondition fails, stop with an
+error message instead. The invocation may name a different report location
+(e.g. "write the report to `tmp/reports`") or coverage file location.
 
 ### Preconditions
 
@@ -31,46 +40,52 @@ Before you begin the analysis:
 - Your task is to produce a report of line coverage **organized by the logical
   parts of the system**, not just a per-file list, and to judge where the gaps
   actually matter.
-- Get every coverage number from cov-loupe. Do not read
-  `coverage/coverage.json` directly, and do not estimate coverage by reading
-  specs. Aggregating cov-loupe's per-line output into area totals is expected
-  (see Step 4).
-  Prefer the cov-loupe MCP server; if it is unavailable, use `cov-loupe` in CLI
-  mode (`bundle exec exe/cov-loupe -h` in this repo). Say in the report which
-  one you used.
-- Use source and spec files only to define the logical areas and to judge the
+- Get every coverage number from cov-loupe. Do not read `coverage.json`
+  directly, and do not estimate coverage by reading tests. Aggregating
+  cov-loupe's per-line output into area totals is expected (see Step 4).
+- Prefer the cov-loupe MCP server. If it is unavailable, use the CLI
+  (`cov-loupe`, or `bundle exec cov-loupe` if it is in the Gemfile; run
+  `cov-loupe --help` for usage), adding `-m cli -fJ` for JSON output. Say in
+  the report which one you used.
+- Use source and test files only to define the logical areas and to judge the
   importance of uncovered code.
-- Do not modify source or spec files. This is a read-only analysis; the only
+- Do not modify source or test files. This is a read-only analysis; the only
   file you write is the report.
-- Consult `dev/prompts/guidelines/ai-code-evaluator-guidelines.md` and
-  `docs/dev/arch-decisions` before recommending tests for code that is
-  intentionally untested or excluded.
+- Before recommending tests for uncovered code, check whether it is
+  intentionally excluded or untested: SimpleCov filters and `# :nocov:`
+  markers, and any project documentation or code comments explaining why.
 
 ## Step 1: Produce fresh coverage data
 
-1. Run the full suite (`bundle exec rspec`) to regenerate
-   `coverage/coverage.json`. Record the pass/fail/pending counts.
-2. If the suite fails, stop with an error that lists the failing examples. Do
+1. Find how the project runs its tests and where its SimpleCov configuration
+   lives (`.simplecov`, `spec/spec_helper.rb`, `test/test_helper.rb`, the
+   `Rakefile`, `bin/` scripts, CI configuration). If no SimpleCov 1.x setup
+   writes `coverage.json`, stop with an error saying so.
+2. Run every suite that contributes to coverage (e.g. `bundle exec rspec`,
+   `bin/rails test`, `bundle exec rake test`, Cucumber), so that SimpleCov
+   writes a merged `coverage.json`. Record the pass/fail/pending counts.
+3. If any suite fails, stop with an error that lists the failing examples. Do
    not run the analysis or write a report: a failing suite makes coverage
    numbers misleading.
-3. If you cannot run the suite, use the existing coverage file, say so
+4. If you cannot run the suite, use the existing coverage file, say so
    prominently, and report its timestamp.
-4. Check staleness before trusting any number. Run the project totals
-   (`project_coverage_totals` / `cov-loupe -f J totals`) and confirm
+5. Check staleness before trusting any number. Run the project totals
+   (`project_coverage_totals` / `cov-loupe -m cli -fJ totals`) and confirm
    `timestamp_status` is `ok` and that the stale counts are zero. If any
    `newer_files`, `deleted_files`, `length_mismatch_files`,
    `unreadable_files`, `skipped_files`, or `missing_tracked_files` appear in
-   `project_coverage` / `cov-loupe -f J list`, list them in the report and
-   exclude them from percentages rather than silently counting them.
+   `project_coverage` / `cov-loupe -m cli -fJ list`, list them in the report
+   and exclude them from percentages rather than silently counting them.
 
 ## Step 2: Establish the project baseline
 
-1. Get overall totals with no globs, then with the project's real tracked
-   globs (for this repo, read the `SimpleCov.start` block in
-   `spec/spec_helper.rb`; typically `lib/**/*.rb`). Passing `tracked_globs`
-   makes cov-loupe report tracked files that have **no** coverage data at all
-   (`missing_tracked_files`, `without_coverage`); these are files never loaded
-   by the suite and are often the biggest real gap.
+1. Get overall totals with no globs, then with tracked globs matching the
+   code SimpleCov is meant to measure (from its `track_files` and filter
+   settings; typically `lib/**/*.rb`, or `app/**/*.rb,lib/**/*.rb` for Rails).
+   Passing `tracked_globs` makes cov-loupe report tracked files that have
+   **no** coverage data at all (`missing_tracked_files`, `without_coverage`);
+   these are files never loaded by the suite and are often the biggest real
+   gap.
 2. Get the full file list as JSON, sorted ascending (worst first).
 3. Note what the numbers cover: cov-loupe reports **line** coverage only.
    If SimpleCov also collects branch coverage, say that branch coverage is out
@@ -85,20 +100,21 @@ file may hold a class or module with a critical mission next to code that
 matters little, and those belong in different areas. This takes more reading
 and more tokens than a file-level rollup; that is the point.
 
-1. Read the code to understand its structure: entry points and `require`
-   graphs (e.g. `lib/cov_loupe.rb`, `lib/cov_loupe/loaders/`), namespaces,
-   classes, modules, and methods, and how responsibilities flow between them.
+1. Read the code to understand its structure: entry points, `require` and
+   autoload structure, namespaces, classes, modules, and methods, and how
+   responsibilities flow between them. Identify the kind of project (Rails
+   app, gem, CLI tool, service) and its conventions.
 2. Define **logical areas at whatever granularity is meaningful**. An area is
    a set of code units (classes, modules, methods, or line ranges) wherever
    they live. It can be:
-   - a broad grouping spanning several directories (e.g. "everything the CLI
-     path uses"),
+   - a broad grouping spanning several directories (e.g. "everything in the
+     checkout flow", "the public API"),
    - a single namespace or class,
-   - a single method or a few methods within a class (e.g. the staleness
-     checks inside the coverage model, or the argument validation in the MCP
-     tools),
-   - or a cross-cutting concern spanning many places (e.g. error handling,
-     path resolution, output formatting across CLI and MCP).
+   - a single method or a few methods within a class (e.g. the price
+     calculation inside an order model, or the argument parsing in a CLI
+     command),
+   - or a cross-cutting concern spanning many places (e.g. authorization,
+     error handling, input validation).
 3. Arrange the areas in a hierarchy where that helps (a broad area containing
    narrower ones), and nest as deep as it is useful. Cross-cutting areas may
    overlap others; say so where they do.
@@ -107,22 +123,22 @@ and more tokens than a file-level rollup; that is the point.
    follow them. When an area is made of whole files, a glob is a fine
    shorthand.
 5. Make sure at least one level of the hierarchy is a **complete partition**:
-   every coverable line in the source files under analysis belongs to exactly one area
-   at that level, with an explicit "Other" area for code that fits nowhere.
-   This level is what the totals are reconciled against.
+   every coverable line in the source files under analysis belongs to exactly
+   one area at that level, with an explicit "Other" area for code that fits
+   nowhere. This level is what the totals are reconciled against.
 6. Give each area a **criticality** judgment with a short reason. Treat it as a
    continuum, not a fixed set of buckets: place each area relative to the
    others and explain what drives the placement. Weigh user-visible behavior,
-   data correctness, security boundaries (e.g. code evaluation, file system
-   access), error paths, public API (`@api public` YARD tags), and how often
-   the code runs.
+   data correctness and integrity, money and security (authentication,
+   authorization, code evaluation, file system access), error paths, public
+   API, and how often the code runs.
 
 ## Step 4: Compute coverage per area
 
 1. For each file touched by an area, get per-line data with
-   `file_coverage_detailed` / `cov-loupe -f J detailed <path>`. Each row gives
-   a line number, its hit count, and whether it is covered; lines that are not
-   coverable (comments, blank lines, `end`) do not appear.
+   `file_coverage_detailed` / `cov-loupe -m cli -fJ detailed <path>`. Each row
+   gives a line number, its hit count, and whether it is covered; lines that
+   are not coverable (comments, blank lines, `end`) do not appear.
 2. For each area, sum the covered and coverable lines that fall in its line
    ranges, and compute the percentage. Also record the number of code units
    in the area and its weakest units (e.g. the least-covered methods).
@@ -130,14 +146,14 @@ and more tokens than a file-level rollup; that is the point.
    by averaging child percentages.
 4. For an area made of whole files, cross-check your sums against
    `project_coverage_totals` with `tracked_globs` /
-   `cov-loupe -f J -g '<globs>' totals`; they must match exactly.
+   `cov-loupe -m cli -fJ -g '<globs>' totals`; they must match exactly.
 5. Confirm that the line totals for the partition level from Step 3 add up to
    the project's covered and total lines for the same overall globs. If they
    don't, find the overlap or orphaned lines and fix the map; state any
    remaining discrepancy.
 6. Keep the aggregation mechanical and reproducible. If you write a helper
-   script to sum the per-line rows, put it in your scratch space (not the
-   repo), feed it cov-loupe output only, and include it in the appendix.
+   script to sum the per-line rows, put it in a temporary location outside the
+   project, feed it cov-loupe output only, and include it in the appendix.
 
 ## Step 5: Examine the gaps
 
@@ -150,16 +166,17 @@ report.
 
 For each selected file or area:
 
-1. Get the uncovered lines (`file_uncovered_lines` / `cov-loupe -f J
-   uncovered <path>`); use `file_coverage_detailed` or
-   `cov-loupe -s uncovered -n 2 uncovered <path>` to see the source in
+1. Get the uncovered lines (`file_uncovered_lines` /
+   `cov-loupe -m cli -fJ uncovered <path>`); use `file_coverage_detailed` or
+   `cov-loupe -m cli -s uncovered -n 2 uncovered <path>` to see the source in
    context.
 2. Characterize each cluster of uncovered lines: error/rescue path, edge-case
    branch, defensive guard, platform-specific code, dead code, debug/logging
    code, or core logic.
-3. Check whether a spec for that file exists (specs mirror the lib path under
-   `spec/`). Note whether the gap is "no spec at all", "spec exists but misses
-   these paths", or "covered only indirectly by integration specs".
+3. Find the tests for that code, following the project's conventions (e.g.
+   `spec/` mirroring `lib/` or `app/`, or `test/`). Note whether the gap is
+   "no tests at all", "tests exist but miss these paths", or "covered only
+   indirectly by integration tests".
 4. Judge the **risk** of each gap: what goes wrong for a user if this code is
    broken and no test notices? Be concrete.
 5. Flag likely dead code separately: it should be deleted, not tested.
@@ -169,17 +186,18 @@ is worth more attention than modest coverage of formatting helpers.
 
 ## Step 6: Look beyond line percentages
 
-Briefly assess, per major area, using the specs themselves:
+Briefly assess, per major area, using the tests themselves:
 
-- Whether coverage comes from focused unit specs or only from broad
-  integration/end-to-end specs (high coverage via integration alone can hide
+- Whether coverage comes from focused unit tests or only from broad
+  integration/end-to-end tests (high coverage via integration alone can hide
   weak assertions).
-- Whether specs assert on behavior or merely execute code (spot-check a few
-  specs per area; cite them).
-- Cross-mode consistency: behavior that exists in both CLI and MCP mode should
-  be tested in both.
+- Whether tests assert on behavior or merely execute code (spot-check a few
+  tests per area; cite them).
+- Consistency across entry points: behavior reachable through more than one
+  interface (e.g. web UI and API, CLI and library) should be tested through
+  each.
 
-Keep this qualitative and evidence-based; cite spec files and line numbers.
+Keep this qualitative and evidence-based; cite test files and line numbers.
 
 ## Report
 
@@ -187,7 +205,7 @@ Write your analysis in the project root (or in the directory the invocation
 names) as a Markdown file whose name is:
 - today's date in UTC `%Y-%m-%d-%H-%M` format +
 - '-test-coverage-analysis-' +
-- your name (e.g. 'codex', 'claude', 'gemini', 'zai') +
+- your name (e.g. 'codex', 'claude', 'gemini') +
 - the `.md` extension.
 
 The file should have the following structure:
@@ -195,18 +213,19 @@ The file should have the following structure:
 ---
 
 ### Executive Summary
-- Commit cited, cov-loupe interface used (MCP or CLI), suite result, and
-  coverage file timestamp/staleness status.
+- Commit cited, cov-loupe interface used (MCP or CLI), suites run and their
+  results, and coverage file timestamp/staleness status.
 - Overall line coverage (with and without tracked globs).
 - The best- and worst-covered areas, and the top risk areas.
-- A **one-line verdict** (e.g. *"Strong core coverage; error paths in the MCP
-  tools are the main gap"*).
+- A **one-line verdict** (e.g. *"Strong domain coverage; payment error
+  handling is the main gap"*).
 
 ### Area Map
 The hierarchy of logical areas from Step 3, showing for each area its parent,
 its definition (file paths with line ranges and the code units they cover, or
-globs for whole files), and criticality with reason. Mark the partition level used for reconciliation and
-any overlapping cross-cutting areas. Explain why you carved the code this way.
+globs for whole files), and criticality with reason. Mark the partition level
+used for reconciliation and any overlapping cross-cutting areas. Explain why
+you carved the code this way.
 
 ### Coverage by Area
 One table per hierarchy level that is worth showing, each sorted ascending by
@@ -226,7 +245,7 @@ State how you chose what to examine. Then, for each gap from Step 5, grouped by
 area and ordered by risk:
 - File and uncovered line numbers (as reported by cov-loupe).
 - What the code does and the gap's category.
-- Spec status (none / partial / indirect only).
+- Test status (none / partial / indirect only).
 - Risk, with a concrete failure scenario.
 - Recommendation: test to add (describe the scenario, not the code), code to
   delete, or "acceptable as is" with the reason.
@@ -245,9 +264,9 @@ the expected coverage or risk improvement, and a ready-to-use prompt the user
 can give an AI assistant to implement it.
 
 ### Appendix: Commands Run
-Every cov-loupe call (MCP tool name and arguments, or CLI command) used to
-produce the numbers, plus any aggregation script, so the report can be
-reproduced.
+Every test command and cov-loupe call (MCP tool name and arguments, or CLI
+command) used to produce the numbers, plus any aggregation script, so the
+report can be reproduced.
 
 ---
 
