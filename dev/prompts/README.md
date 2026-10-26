@@ -13,7 +13,7 @@ project root.
 
 ### Review Code
 
-**[State of the Code Base](state-of-the-code-base-prompt.md)**
+**[State of the Code Base](review/state-of-the-code-base-prompt.md)**
 - **When:** Periodic health checks, understanding overall state, pre-release assessments
 - **Output:** Balanced assessment (strengths + weaknesses) with weighted scoring by section, written to a timestamped Markdown file
 - **Question answered:** "How are we doing overall?"
