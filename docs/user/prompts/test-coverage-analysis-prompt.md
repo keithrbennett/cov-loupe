@@ -8,6 +8,12 @@ parts of your system, down to individual classes and methods, and ranks the
 gaps by risk. It never asks for input, so it also works headless (e.g.
 `claude -p`, `codex exec`, CI).
 
+**Requirement:** run your full test suite (every suite that feeds SimpleCov)
+first, make sure it passes, and don't change source or test files until the
+analysis finishes. The prompt does not run tests; it reads the existing
+`coverage.json` and refuses to start if that file looks out of date. This lets
+several agents run it concurrently against the same coverage data.
+
 ---
 
 ### Unattended Operation
@@ -49,33 +55,46 @@ Before you begin the analysis:
   the report which one you used.
 - Use source and test files only to define the logical areas and to judge the
   importance of uncovered code.
-- Do not modify source or test files. This is a read-only analysis; the only
-  file you write is the report.
+- Do not run the test suite, and do not modify source files, test files, or
+  coverage output. Other agents may be running this analysis concurrently
+  against the same data. This is a read-only analysis; the only file you
+  write is the report.
 - Before recommending tests for uncovered code, check whether it is
   intentionally excluded or untested: SimpleCov filters and `# :nocov:`
   markers, and any project documentation or code comments explaining why.
 
-## Step 1: Produce fresh coverage data
+## Step 1: Verify the coverage data is current
 
-1. Find how the project runs its tests and where its SimpleCov configuration
-   lives (`.simplecov`, `spec/spec_helper.rb`, `test/test_helper.rb`, the
-   `Rakefile`, `bin/` scripts, CI configuration). If no SimpleCov 1.x setup
-   writes `coverage.json`, stop with an error saying so.
-2. Run every suite that contributes to coverage (e.g. `bundle exec rspec`,
-   `bin/rails test`, `bundle exec rake test`, Cucumber), so that SimpleCov
-   writes a merged `coverage.json`. Record the pass/fail/pending counts.
-3. If any suite fails, stop with an error that lists the failing examples. Do
-   not run the analysis or write a report: a failing suite makes coverage
-   numbers misleading.
-4. If you cannot run the suite, use the existing coverage file, say so
-   prominently, and report its timestamp.
-5. Check staleness before trusting any number. Run the project totals
-   (`project_coverage_totals` / `cov-loupe -m cli -fJ totals`) and confirm
-   `timestamp_status` is `ok` and that the stale counts are zero. If any
-   `newer_files`, `deleted_files`, `length_mismatch_files`,
-   `unreadable_files`, `skipped_files`, or `missing_tracked_files` appear in
-   `project_coverage` / `cov-loupe -m cli -fJ list`, list them in the report
-   and exclude them from percentages rather than silently counting them.
+The user must run the full, passing test suite before this analysis. Verify
+what you can, and if any check below fails, stop with an error that names the
+failed check and tells the user to rerun the full suite. Do not write a report.
+
+1. Find the SimpleCov configuration (`.simplecov`, `spec/spec_helper.rb`,
+   `test/test_helper.rb`, or wherever the project starts SimpleCov) and the
+   coverage file (`coverage/coverage.json` unless the configuration or the
+   invocation says otherwise). The file must exist and be written by
+   SimpleCov 1.x.
+2. Run the project totals with the tracked globs from Step 2
+   (`project_coverage_totals` / `cov-loupe -m cli -fJ -g '<globs>' totals`)
+   and the file list with the same globs (`project_coverage` /
+   `cov-loupe -m cli -fJ -g '<globs>' list`). `timestamp_status` must be `ok`,
+   and `newer_files`, `deleted_files`, `length_mismatch_files`,
+   `unreadable_files`, and `skipped_files` must all be empty. These show
+   whether source files changed after the run.
+3. No test, fixture, or configuration file may be newer than the coverage
+   file, since cov-loupe checks only source files. For example:
+   `find spec test features Gemfile.lock .rspec .simplecov -newer coverage/coverage.json`
+   (adjusted to the paths that exist). Include directories in the search,
+   not just files, so that deleted test files show up too.
+4. If the project records test results, they must show no failures: for
+   RSpec, the file named by `example_status_persistence_file_path`
+   (commonly `.rspec_status`) must have no `failed` entries.
+
+These checks cannot prove that the last run was the complete suite. Say in
+the report that the analysis relies on the user's assurance that it was.
+
+`missing_tracked_files` (tracked files the suite never loaded) is not a
+staleness failure; it is a finding for Step 2.
 
 ## Step 2: Establish the project baseline
 
@@ -152,8 +171,9 @@ and more tokens than a file-level rollup; that is the point.
    don't, find the overlap or orphaned lines and fix the map; state any
    remaining discrepancy.
 6. Keep the aggregation mechanical and reproducible. If you write a helper
-   script to sum the per-line rows, put it in a temporary location outside the
-   project, feed it cov-loupe output only, and include it in the appendix.
+   script to sum the per-line rows, put it in a temporary directory of your
+   own outside the project (e.g. from `mktemp -d`, so concurrent agents don't
+   collide), feed it cov-loupe output only, and include it in the appendix.
 
 ## Step 5: Examine the gaps
 
@@ -208,13 +228,17 @@ names) as a Markdown file whose name is:
 - your name (e.g. 'codex', 'claude', 'gemini') +
 - the `.md` extension.
 
+If a file with that name already exists (another agent finished in the same
+minute), append `-2`, `-3`, and so on before the extension. Never overwrite an
+existing report.
+
 The file should have the following structure:
 
 ---
 
 ### Executive Summary
-- Commit cited, cov-loupe interface used (MCP or CLI), suites run and their
-  results, and coverage file timestamp/staleness status.
+- Commit cited, cov-loupe interface used (MCP or CLI), coverage file
+  timestamp, and the results of the Step 1 checks.
 - Overall line coverage (with and without tracked globs).
 - The best- and worst-covered areas, and the top risk areas.
 - A **one-line verdict** (e.g. *"Strong domain coverage; payment error
@@ -254,8 +278,9 @@ area and ordered by risk:
 Findings from Step 6, with citations.
 
 ### Data Caveats
-Stale, skipped, missing, or unreadable files; branch coverage being out of
-scope; ambiguous line assignments at area boundaries; anything else that
+Reliance on the user's assurance that the last run was the complete, passing
+suite; tracked files missing from the coverage data; branch coverage being out
+of scope; ambiguous line assignments at area boundaries; anything else that
 limits confidence in the numbers.
 
 ### Prioritized Recommendations
@@ -264,8 +289,8 @@ the expected coverage or risk improvement, and a ready-to-use prompt the user
 can give an AI assistant to implement it.
 
 ### Appendix: Commands Run
-Every test command and cov-loupe call (MCP tool name and arguments, or CLI
-command) used to produce the numbers, plus any aggregation script, so the
+Every cov-loupe call (MCP tool name and arguments, or CLI command) and
+freshness check used to produce the numbers, plus any aggregation script, so the
 report can be reproduced.
 
 ---
