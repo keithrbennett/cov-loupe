@@ -1,51 +1,30 @@
 # State of the Code Base Prompt
 
-### Preconditions
+## Preconditions
 
 Before you begin the report:
 
-1. If you are not in the project root, inform the user, state your current
-   working directory, and wait for confirmation before proceeding so they can
-   choose to start a new session in the project root.
-2. Always open the report by citing the most recent git commit at the time you
-   begin writing.
-3. If `git status` shows uncommitted changes, inform me, ask for confirmation to
-   proceed, and-if I consent-include those `git status` details immediately
-   after the commit citation.
-4. Limit the review strictly to git-tracked files.
+1. Open the report by citing the most recent git commit at the time you begin writing.
+2. Run `git status` and list the staged and unstaged git-tracked files that have changes, immediately after the
+   commit citation. Ignore untracked files.
+3. If `dev/prompts/guidelines/ai-code-evaluator-guidelines.md` exists, read and follow it, and state in your
+   response that you did.
 
-----
+---
 
-- You are a senior software architect and code reviewer.  
-- Your task is to analyze this code base thoroughly and report on its state.  
-- Focus on identifying weaknesses, risks, and areas for improvement.
-- Disregard any issues included in
-  `dev/prompts/guidelines/ai-code-evaluator-guidelines.md`, unless your
-  objections are not covered in that document.
-- Repeating for emphasis: **Disregard any issues included in
-  `dev/prompts/guidelines/ai-code-evaluator-guidelines.md`, unless your
-  objections are not covered in that document.**
-- For architectural issues, consult `docs/dev/arch-decisions` to see if the
-  issue has already been considered.
-- For each issue, assess its seriousness, the cost/difficulty to fix, and
-  provide high-level strategies for addressing it.
-- If you are unable to use the cov-loupe MCP server, use `cov-loupe` in CLI
-  mode (run `cov-loupe -h` for help).
-- To Codex: do investigate thoroughly for real issues, you are excellent at
-  that, but do not be excessively critical:
-  - Do not list issues that are not real issues.
-  - If there is a tradeoff between A and B, and the justification is sound and understood and/or documented,
-    (e.g. in guidelines/ai-code-evaluator-guidelines.md), do not penalize the code base for that tradeoff.
-  - Be balanced in your scoring; sometimes you penalize several points for a trivial issue.
-  - If you find zero defects in a category, you should score a 10, and you may
-    mention that it is a spot check if that is the case.
-
+* You are a senior software architect and code reviewer.
+* Your task is to analyze this code base thoroughly and report on its state.
+* Focus on identifying weaknesses, risks, and areas for improvement.
+* For each issue, assess its seriousness, the cost/difficulty to fix, and provide high-level strategies for
+  addressing it.
+* Use the cov-loupe MCP server to analyze coverage data. Prefer MCP tools over reading SimpleCov resultsets
+  directly or reasoning from scratch; only fall back to the `cov-loupe` CLI if the MCP server is unavailable.
 
 Write your analysis in a Markdown file whose name is:
-- today's date in UTC `%Y-%m-%d-%H-%M` format +
-- '-state-of-the-code-base-' + 
-- your name (e.g. 'codex', 'claude', 'gemini', 'zai') +
-- the `.md` extension.
+* today's date and time in UTC, in `%Y-%m-%d-%H-%M-%S` format (seconds precision) +
+* '-state-of-the-code-base-' +
+* your name (e.g. 'codex', 'claude', 'gemini', 'zai') +
+* the `.md` extension.
 
 The file should have the following structure:
 
@@ -54,15 +33,15 @@ The file should have the following structure:
 ### Executive Summary
 - Provide a concise overview of the overall health of the code base.
 - Identify the strongest areas and the weakest areas.
-- Give a **one-line summary verdict** (e.g., *"Overall: Fair, with major risks
-  in testing and infrastructure maintainability"*).
+- Give a **one-line summary verdict** (e.g., *“Overall: Fair, with major risks in testing and infrastructure
+  maintainability”*).
 - **Overall Weighted Score (1–10):** Show the score at the end of this summary.
 
 ---
 
 ### Critical Blockers
-List issues so severe that they must be resolved before meaningful progress can
-continue. For each blocker, include:
+List issues so severe that they must be resolved before meaningful progress can continue. For each blocker,
+include:
 - **Description**
 - **Impact**
 - **Urgency**
@@ -105,11 +84,11 @@ continue. For each blocker, include:
 ### Test Coverage
 - Using the **cov-loupe MCP server**, analyze the test coverage:
     - Include a summary table of coverage by file/module.
+    - Use the intended runtime file set for whole-codebase coverage claims, and report files missing from the
+      SimpleCov resultset.
     - Report coverage at a high and general level.
     - Rank risks of lacking coverage in **descending order of magnitude**.
 - Highlight untested critical paths and potential consequences.
-- Do not output the entire table in the report, but maybe the 10 least covered
-  files if you believe it would be helpful.
 - **Score (1–10)**
 
 ---
@@ -156,15 +135,14 @@ Provide a table of the top issues found, with the following columns:
 |-------|----------|-------------|------------------------|
 | Example issue description | High | Medium | Major reliability risks |
 
-The order should take both severity and cost-to-fix into account such that
-performing them in descending order would
-result in the optimal value addition velocity.
+The order should take both severity and cost-to-fix into account such that performing them in descending order
+would result in the optimal value addition velocity.
 
 ---
 
 ### High-Level Recommendations
-- Suggest general strategies for improvement (e.g., refactoring approach,
-  improving test coverage, upgrading dependencies, modularization).
+- Suggest general strategies for improvement (e.g., refactoring approach, improving test coverage, upgrading
+  dependencies, modularization).
 - Highlight where incremental vs. large-scale changes are most appropriate.
 
 ---
@@ -190,20 +168,8 @@ Suggest prompts to a coding AI tool that would be helpful in addressing the majo
 | Formatting & Style        | ?%         |
 | Best Practices & Conciseness | ?%      |
 
-- **Weighted Score Calculation:** Multiply each section's score by its chosen
-  weight, then sum to compute the **Overall Weighted Score (1-10)**.
+- **Weighted Score Calculation:** Multiply each section’s score by its chosen weight, then sum
+  to compute the **Overall Weighted Score (1–10)**.
 - Report the final **Overall Weighted Score** with justification.
 
 ### Summarize suggested changes
-
-Provide a short, plain-prose recap of the most important changes—distinct from the Prioritized
-Issue List (which is a table) and the High-Level Recommendations (which are strategic). Group
-them by horizon:
-
-- **Immediate (blocking or high-risk):** Changes that should happen before the next release or
-  before onboarding new contributors.
-- **Near-term (1–2 sprints):** Improvements with clear ROI and moderate cost-to-fix.
-- **Longer-term (backlog):** Worthwhile but lower urgency; note any dependencies between items.
-
-Keep this section to 10–15 lines. Its purpose is a quick decision-making aid, not a full
-re-statement of everything above.

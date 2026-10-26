@@ -10,7 +10,7 @@ problems-focused review (not a balanced assessment).
 - Preparing bug-fix releases
 - Answering: "What should we fix next?"
 
-For a balanced assessment showing strengths AND weaknesses, use `comprehensive-codebase-review.md` instead.
+For a balanced assessment showing strengths AND weaknesses, use `../state-of-the-code-base-prompt.md` instead.
 
 ---
 

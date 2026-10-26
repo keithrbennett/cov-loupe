@@ -13,11 +13,10 @@ project root.
 
 ### Review Code
 
-**[Comprehensive Codebase Review](review/comprehensive-codebase-review.md)**
+**[State of the Code Base](state-of-the-code-base-prompt.md)**
 - **When:** Periodic health checks, understanding overall state, pre-release assessments
-- **Output:** Balanced assessment (strengths + weaknesses) with scoring across 10 dimensions
+- **Output:** Balanced assessment (strengths + weaknesses) with weighted scoring by section, written to a timestamped Markdown file
 - **Question answered:** "How are we doing overall?"
-- **Time:** 2-4 hours
 
 **[Identify Action Items](review/identify-action-items.md)**
 - **When:** Planning sprints, "what needs fixing NOW?"
@@ -46,6 +45,11 @@ project root.
 - **Output:** Checklist of what is needed to release (target version, release notes gaps, schema version, major-release docs, cleanup, remaining steps)
 - **Question answered:** "What would I need to do to release?" / "What is left before I can release?"
 - **Time:** 10-20 minutes
+
+**[CLI / MCP Consistency Audit](review/cli-mcp-consistency-audit.md)**
+- **When:** After changing CLI commands/options or MCP tools/arguments, before releases
+- **Output:** Report of capability gaps, behavioral differences, and error-handling and documentation mismatches between the CLI and MCP server (no changes made)
+- **Question answered:** "Can everything be done, the same way, from either interface?"
 
 ### Improve Code/Docs
 
