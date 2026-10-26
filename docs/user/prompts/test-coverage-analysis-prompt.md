@@ -67,13 +67,16 @@ Before you begin the analysis:
 
 The user must run the full, passing test suite before this analysis. Verify
 what you can, and if any check below fails, stop with an error that names the
-failed check and tells the user to rerun the full suite. Do not write a report.
+failed check, gives the coverage file's path, size, and modification time (if
+it exists), and tells the user to rerun the full suite. Do not write a report.
 
 1. Find the SimpleCov configuration (`.simplecov`, `spec/spec_helper.rb`,
    `test/test_helper.rb`, or wherever the project starts SimpleCov) and the
    coverage file (`coverage/coverage.json` unless the configuration or the
    invocation says otherwise). The file must exist and be written by
-   SimpleCov 1.x.
+   SimpleCov 1.x. Record its path, size in bytes, and modification time (in
+   UTC) from the file system (e.g. `ls -l` or `stat`); this metadata is not
+   coverage data, so reading it is allowed.
 2. Run the project totals with the tracked globs from Step 2
    (`project_coverage_totals` / `cov-loupe -m cli -fJ -g '<globs>' totals`)
    and the file list with the same globs (`project_coverage` /
@@ -257,8 +260,11 @@ The file should have the following structure:
 ---
 
 ### Executive Summary
-- Commit cited, cov-loupe interface used (MCP or CLI), coverage file
-  timestamp, and the results of the Step 1 checks.
+- Commit cited, cov-loupe interface used (MCP or CLI), and the results of the
+  Step 1 checks.
+- The coverage file's path (relative to the project root), size, and
+  modification time (UTC), so readers can tell which test run the report
+  describes.
 - Overall line coverage (with and without tracked globs).
 - The best- and worst-covered areas, and the top risk areas.
 - A **one-line verdict** (e.g. *"Strong domain coverage; payment error
