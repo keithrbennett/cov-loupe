@@ -20,8 +20,10 @@ Before you begin the analysis:
 3. If `git status` shows uncommitted changes, include them in the analysis:
    analyze the working tree as it is, and list the `git status` details
    immediately after the commit citation.
-4. Limit the analysis strictly to git-tracked files. New source files that are
-   not yet tracked are excluded; list them after the `git status` details.
+4. Analyze the files git would consider part of the project: tracked files
+   plus new files not yet added, excluding anything git ignores
+   (`git ls-files --cached --others --exclude-standard`). Mark the untracked
+   files in the `git status` details.
 
 ----
 
@@ -105,7 +107,7 @@ and more tokens than a file-level rollup; that is the point.
    follow them. When an area is made of whole files, a glob is a fine
    shorthand.
 5. Make sure at least one level of the hierarchy is a **complete partition**:
-   every coverable line in the tracked source files belongs to exactly one area
+   every coverable line in the source files under analysis belongs to exactly one area
    at that level, with an explicit "Other" area for code that fits nowhere.
    This level is what the totals are reconciled against.
 6. Give each area a **criticality** judgment with a short reason. Treat it as a
