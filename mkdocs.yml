@@ -112,7 +112,6 @@ nav:
   - Prompt Library:
       - Overview: user/prompts/README.md
       - Coverage Analysis by Logical Area: user/prompts/test-coverage-analysis-prompt.md
-      - Use CLI Not MCP: user/prompts/use-cli-not-mcp-prompt.md
   - Developer Guide:
       - Overview: dev/README.md
       - Architecture: dev/ARCHITECTURE.md
