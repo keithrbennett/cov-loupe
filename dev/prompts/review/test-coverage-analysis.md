@@ -7,30 +7,27 @@ invocation says so (e.g. "run headless") or when you have no way to ask the
 user and get an answer (e.g. `claude -p`, `codex exec`, CI). Otherwise run
 interactively.
 
-Each point below where an interactive run asks the user has a headless
-default. In a headless run, never stop to wait for input: apply the default,
-and record each decision under **Decisions Made Without Confirmation** in
-the report. The invocation may override any default (e.g. "stop if the suite
-fails", "write the report to `tmp/reports`").
+The only point where an interactive run asks the user is a failing test suite
+(Step 1); it has a headless default. In a headless run, never stop to wait for
+input: apply the default, and record the decision under **Decisions Made
+Without Confirmation** in the report. The invocation may override the default
+(e.g. "stop if the suite fails") and the report location (e.g. "write the
+report to `tmp/reports`").
 
 ### Preconditions
 
 Before you begin the analysis:
 
-1. If you are not in the project root, inform the user, state your current
-   working directory, and wait for confirmation before proceeding so they can
-   choose to start a new session in the project root.
-   **Headless:** find the root with `git rev-parse --show-toplevel` and work
-   from there. If you are not inside a git repository, stop and report why in
-   your final message; no analysis is possible.
+1. If your current working directory is not the project root (the output of
+   `git rev-parse --show-toplevel`), stop with an error that states your
+   current working directory and the expected root. Do not run the analysis.
 2. Always open the report by citing the most recent git commit at the time you
    begin writing.
-3. If `git status` shows uncommitted changes, inform me, ask for confirmation to
-   proceed, and-if I consent-include those `git status` details immediately
-   after the commit citation.
-   **Headless:** proceed, and include the `git status` details after the
-   commit citation, noting that the numbers reflect the working tree.
-4. Limit the analysis strictly to git-tracked files.
+3. If `git status` shows uncommitted changes, include them in the analysis:
+   analyze the working tree as it is, and list the `git status` details
+   immediately after the commit citation.
+4. Limit the analysis strictly to git-tracked files. New source files that are
+   not yet tracked are excluded; list them after the `git status` details.
 
 ----
 
