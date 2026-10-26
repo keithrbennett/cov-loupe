@@ -111,8 +111,7 @@ nav:
       - Migrating to v2: user/migrations/MIGRATING_TO_V2.md
   - Prompt Library:
       - Overview: user/prompts/README.md
-      - Coverage Analysis: user/prompts/coverage-analysis-prompt.md
-      - Use CLI Not MCP: user/prompts/use-cli-not-mcp-prompt.md
+      - Coverage Analysis by Logical Area: user/prompts/test-coverage-analysis-prompt.md
   - Developer Guide:
       - Overview: dev/README.md
       - Architecture: dev/ARCHITECTURE.md

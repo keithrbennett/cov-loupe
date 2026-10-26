@@ -363,7 +363,7 @@ See [Troubleshooting](TROUBLESHOOTING.md#rubygems-wrapper-prints-to-stdout-befor
 
 ### Tool Catalog
 
-cov-loupe exposes 8 MCP tools by default, and 9 when started with `--allow-code-predicates`:
+cov-loupe exposes 8 MCP tools by default, and 9 when started with `--allow-code-predicates`. For each tool's CLI equivalent, see [CLI Fallback for LLMs](CLI_FALLBACK_FOR_LLMS.md#mcp-tools-and-cli-subcommands).
 
 | Tool | Purpose | Key Parameters |
 |------|---------|----------------|
@@ -701,7 +701,7 @@ To use a persistent log file, specify the `--log-file` (or `-l`) argument wherev
 
 **Important:** If the MCP server doesn't work, you can use the CLI directly with the `-fJ` (output in JSON format) flag.
 
-See the **[CLI Fallback for LLMs Guide](CLI_FALLBACK_FOR_LLMS.md)** for a short prompt to give your LLM. The longer [CLI fallback prompt](prompts/use-cli-not-mcp-prompt.md) maps each MCP tool to its CLI subcommand, and the [CLI Usage Guide](CLI_USAGE.md) has the full command reference and JSON output examples.
+See the **[CLI Fallback for LLMs Guide](CLI_FALLBACK_FOR_LLMS.md)** for a prompt to give your LLM and a mapping of each MCP tool and argument to its CLI subcommand and option. The [CLI Usage Guide](CLI_USAGE.md) has the full command reference and JSON output examples.
 
 ### Common Issues
 

@@ -16,6 +16,34 @@
 [![Gem Version](https://badge.fury.io/rb/cov-loupe.svg)](https://badge.fury.io/rb/cov-loupe)
 [![Documentation](https://img.shields.io/badge/docs-online-blue.svg)](https://keithrbennett.github.io/cov-loupe/)
 
+## ⭐ AI Test Coverage Analysis
+
+**Hand one prompt to your AI coding agent and get a written report of where your tests fall short and why it matters.**
+
+The [Test Coverage Analysis prompt](docs/user/prompts/test-coverage-analysis-prompt.md) has the agent use cov-loupe to:
+
+- **Map your code into logical areas**, from whole subsystems down to a single critical class or method inside a larger file, rather than reporting by file or directory
+- **Measure coverage for each area** from cov-loupe's line-level data, with totals that reconcile to the project's
+- **Rank the gaps by risk and difficulty**, with a concrete failure example for each and a check for dead code
+- **Review test quality**: unit vs. integration balance, weak assertions, testing anti-patterns, and the well-tested areas worth copying
+- **Recommend next steps in priority order**, each with a ready-to-use prompt for an agent to implement it
+
+To run it:
+
+1. Install cov-loupe (`gem install cov-loupe`). Setting up the [MCP server](docs/user/MCP_INTEGRATION.md) is optional; without it, the agent uses the CLI.
+2. Run your full test suite and make sure it passes. The prompt does not run tests; it checks that the coverage data is current and stops if it isn't.
+3. From your project root, give the prompt to your agent. The gem includes the prompt matching its version:
+
+   ```sh
+   PROMPT="$(dirname "$(cov-loupe -p docs-local)")/docs/user/prompts/test-coverage-analysis-prompt.md"
+
+   # Interactive: tell the agent to follow the prompt in "$PROMPT", or paste its contents.
+   # Headless:
+   claude -p "$(cat "$PROMPT")"
+   ```
+
+The agent writes a timestamped Markdown report in the project root. It runs unattended and changes nothing else, so you can run several agents (Claude, Codex, Gemini, ...) at once against the same coverage data and compare their reports.
+
 ## What is cov-loupe?
 
 **cov-loupe** makes SimpleCov coverage data queryable and actionable through three interfaces:
@@ -37,6 +65,7 @@ Reads SimpleCov's `coverage.json`, the documented JSON formatter output that Sim
 
 ### Practical Use Cases
 
+- Get a full, risk-ranked analysis of your test suite with the [Test Coverage Analysis prompt](docs/user/prompts/test-coverage-analysis-prompt.md)
 - Query coverage data from AI assistants, e.g.:
   - "Using the cov-loupe MCP server, analyze test coverage data and write a report to a markdown file containing a free text analysis of each issue and then two tables, one sorted in descending order of urgency, the other in ascending order of level of effort."
   - "Using the cov-loupe MCP server, generate a table of directories and their average coverage rates, in ascending order of coverage."
@@ -179,6 +208,7 @@ Full documentation is available at **[https://keithrbennett.github.io/cov-loupe/
 **Special Topics & Prompts:**
 
 - [CLI Fallback for LLMs](docs/user/CLI_FALLBACK_FOR_LLMS.md) - When MCP isn't available
+- [Test Coverage Analysis Prompt](docs/user/prompts/test-coverage-analysis-prompt.md) - Full, risk-ranked analysis of your test suite by logical area
 - [Sample MCP Prompts](docs/user/prompts/README.md) - Ready-to-use ChatGPT/Claude/Gemini prompts
 - [Migration Guides](docs/user/migrations/README.md)
   - [Migrate to v7](docs/user/migrations/MIGRATING_TO_V7.md)

@@ -158,6 +158,13 @@
 
 ### Other Changes
 
+- **New Test Coverage Analysis prompt.** The
+  [Test Coverage Analysis prompt](docs/user/prompts/test-coverage-analysis-prompt.md) has an
+  AI agent use cov-loupe to report coverage by logical area (down to individual classes and
+  methods), rank gaps by risk, and review test quality. It runs unattended against an
+  existing, passing test run, so several agents can run it at once. It replaces the
+  Coverage Analysis prompt (`docs/user/prompts/coverage-analysis-prompt.md`), which is
+  removed.
 - **Non-ASCII paths and source are read correctly under the C locale.** Under `LANG=C`:
     - Fixed: a coverage file with a non-ASCII path didn't load, in the CLI or MCP
       ("Invalid encoding in coverage data").
