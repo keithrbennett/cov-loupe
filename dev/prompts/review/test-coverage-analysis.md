@@ -1,5 +1,18 @@
 # Test Coverage Analysis Prompt
 
+### Interactive and Headless Runs
+
+This prompt runs either interactively or headless. Run **headless** when the
+invocation says so (e.g. "run headless") or when you have no way to ask the
+user and get an answer (e.g. `claude -p`, `codex exec`, CI). Otherwise run
+interactively.
+
+Each point below where an interactive run asks the user has a headless
+default. In a headless run, never stop to wait for input: apply the default,
+and record each decision under **Decisions Made Without Confirmation** in
+the report. The invocation may override any default (e.g. "stop if the suite
+fails", "write the report to `tmp/reports`").
+
 ### Preconditions
 
 Before you begin the analysis:
@@ -7,11 +20,16 @@ Before you begin the analysis:
 1. If you are not in the project root, inform the user, state your current
    working directory, and wait for confirmation before proceeding so they can
    choose to start a new session in the project root.
+   **Headless:** find the root with `git rev-parse --show-toplevel` and work
+   from there. If you are not inside a git repository, stop and report why in
+   your final message; no analysis is possible.
 2. Always open the report by citing the most recent git commit at the time you
    begin writing.
 3. If `git status` shows uncommitted changes, inform me, ask for confirmation to
    proceed, and-if I consent-include those `git status` details immediately
    after the commit citation.
+   **Headless:** proceed, and include the `git status` details after the
+   commit citation, noting that the numbers reflect the working tree.
 4. Limit the analysis strictly to git-tracked files.
 
 ----
@@ -41,6 +59,9 @@ Before you begin the analysis:
    `coverage/coverage.json`. Record the pass/fail/pending counts.
 2. If the suite fails, report the failures and ask whether to continue: a
    failing suite can make coverage numbers misleading.
+   **Headless:** continue. List the failing examples in the Executive Summary,
+   and mark as suspect the areas whose code those specs exercise, since a spec
+   that aborts early leaves lines unexecuted.
 3. If you cannot run the suite, use the existing coverage file, say so
    prominently, and report its timestamp.
 4. Check staleness before trusting any number. Run the project totals
@@ -171,7 +192,8 @@ Keep this qualitative and evidence-based; cite spec files and line numbers.
 
 ## Report
 
-Write your analysis in a Markdown file whose name is:
+Write your analysis in the project root (or in the directory the invocation
+names) as a Markdown file whose name is:
 - today's date in UTC `%Y-%m-%d-%H-%M` format +
 - '-test-coverage-analysis-' +
 - your name (e.g. 'codex', 'claude', 'gemini', 'zai') +
@@ -226,6 +248,11 @@ Stale, skipped, missing, or unreadable files; branch coverage being out of
 scope; ambiguous line assignments at area boundaries; anything else that
 limits confidence in the numbers.
 
+### Decisions Made Without Confirmation
+Headless runs only: each default applied in place of asking the user, and
+what it affected. Write "None" if no default was needed; omit the section in
+interactive runs.
+
 ### Prioritized Recommendations
 A numbered list, highest value first. For each: the area, the effort (S/M/L),
 the expected coverage or risk improvement, and a ready-to-use prompt the user
@@ -237,3 +264,6 @@ produce the numbers, plus any aggregation script, so the report can be
 reproduced.
 
 ---
+
+End your final message with the report's path and the one-line verdict, so a
+headless caller can find the report without parsing the rest of your output.
