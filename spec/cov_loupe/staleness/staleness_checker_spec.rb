@@ -368,6 +368,15 @@ RSpec.describe CovLoupe::StalenessChecker do
       end
     end
 
+    it 'reports a file matched by overlapping tracked globs only once' do
+      write_file(File.join(tmpdir, 'lib', 'uncovered.rb'), ['puts 1'])
+
+      checker = described_class.new(root: tmpdir, coverage_file: nil, mode: :off,
+        tracked_globs: ['lib/**/*.rb', 'lib/*.rb'], timestamp: Time.now.to_i)
+
+      expect(checker.check_project!({})[:missing_files]).to eq(['lib/uncovered.rb'])
+    end
+
     it 'does not report files as newer when timestamp is 0 in project check' do
       file = File.join(tmpdir, 'test.rb')
       write_file(file, %w[a b])

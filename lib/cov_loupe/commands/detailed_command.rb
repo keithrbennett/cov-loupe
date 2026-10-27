@@ -2,6 +2,7 @@
 
 require_relative 'base_command'
 require_relative '../formatters/source_formatter'
+require_relative '../formatters/table_formatter'
 require_relative '../presenters/coverage_payload_presenter'
 require_relative '../staleness/stale_status'
 

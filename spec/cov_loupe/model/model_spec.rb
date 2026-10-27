@@ -435,6 +435,14 @@ RSpec.describe CovLoupe::CoverageModel do
         .to include('missing_from_coverage' => 1)
     end
 
+    it 'counts a missing file matched by overlapping tracked globs once' do
+      globs = ['lib/**/*.rb', 'lib/*.rb']
+      totals = model.project_totals(tracked_globs: globs)
+
+      expect(model.list(tracked_globs: globs)['missing_tracked_files']).to eq(['lib/uncovered_file.rb'])
+      expect(totals['files']['without_coverage']['by_type']).to include('missing_from_coverage' => 1)
+    end
+
     it 'counts unreadable tracked files in without_coverage breakdown' do
       abs_unreadable = File.expand_path('lib/unreadable.rb', root)
 

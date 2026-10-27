@@ -232,6 +232,7 @@ module CovLoupe
       tracked = patterns
         .flat_map { |p| Dir.glob(p, File::FNM_EXTGLOB | File::FNM_PATHNAME) }
         .select { |p| File.file?(p) }
+        .uniq
 
       covered_set = coverage_files.to_set
       tracked.reject { |abs| covered_set.include?(abs) }.map { |abs| rel(abs) }
