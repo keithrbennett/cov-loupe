@@ -261,12 +261,8 @@ RuboCop runs in parallel mode by default, forking worker processes via the `para
 
 **Why this is not a code quality issue:**
 
-Running RuboCop with `--cache false` completes successfully with **0 violations**:
-```
-N files inspected, no offenses detected
-```
-
-The codebase has perfect RuboCop compliance. The crash is purely environmental.
+The crash is environmental. Run with `--cache false` and judge the code by that
+run's results.
 
 **Workaround:**
 
@@ -275,6 +271,8 @@ Use `bundle exec rubocop --cache false` in sandboxed environments. This adds app
 **Why caching is not disabled by default:**
 
 The 3-second speedup is valuable for frequent local development. Developers in non-sandboxed environments (the common case) benefit from faster linting. The issue only affects specific sandboxed AI tools and CI environments, which can use the `--cache false` flag when needed.
+
+[⬆ Back to top](#table-of-contents)
 
 ### Duplicate-Looking Error and Skipped-Row Output
 
@@ -298,7 +296,7 @@ Neither `spec/spec_helper.rb` nor `.github/workflows/test.yml` enforces a hard m
 
 1. **Self-reporting already exists** – `spec_helper.rb`'s `SimpleCov.at_exit` hook calls `CovLoupe::CoverageReporter.report(threshold: 80, count: 5)` and prints the result on every run, so any file dropping below 80% coverage is surfaced locally and in CI. This is deliberately a report, not a hard fail.
 
-2. **100% line coverage is the real standard, and it's visible** – the project currently sits at 100% line coverage on every tracked file (verify with `cov-loupe totals`), so any regression is a visible drop from 100%, not a slide within a tolerated band. A hard gate would mostly duplicate what reviewers already see in the PR diff and Codecov's PR comment.
+2. **100% line coverage is the real standard, and it's visible** – the project aims for 100% line coverage on every tracked file (check the current figure with `cov-loupe totals`), so any regression is a visible drop from 100%, not a slide within a tolerated band. A hard gate would mostly duplicate what reviewers already see in the PR diff and Codecov's PR comment.
 
 3. **`fail_ci_if_error: false` guards the upload step, not coverage regressions** – it prevents a transient Codecov outage, network hiccup, or token issue from failing the entire test matrix (4 Ruby versions on Linux, plus one each on Windows and macOS). That would be a false-positive CI failure, not a caught coverage regression.
 
@@ -376,7 +374,7 @@ The actual comprehensive documentation exists at:
 
 3. **Standard practice** - This is the recommended approach in the MkDocs documentation for including existing project files in the documentation site.
 
-AI tools analyzing file sizes directly will see 46-byte stubs, but the documentation is complete and properly structured.
+AI tools analyzing file sizes directly will see stubs of a few dozen bytes, but the documentation is complete and properly structured.
 
 [⬆ Back to top](#table-of-contents)
 

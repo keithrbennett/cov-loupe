@@ -246,7 +246,7 @@ Keep this qualitative and evidence-based; cite test files and line numbers.
 
 Write your analysis in the project root (or in the directory the invocation
 names) as a Markdown file whose name is:
-- today's date in UTC `%Y-%m-%d-%H-%M` format +
+- the current UTC time in `%Y-%m-%d-%H-%M` format +
 - '-test-coverage-analysis-' +
 - your name (e.g. 'codex', 'claude', 'gemini') +
 - the `.md` extension.

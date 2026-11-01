@@ -1,130 +1,98 @@
 # Test Documentation Examples
 
-**Purpose:** Verify that all command examples in documentation work correctly and produce expected outputs.
+**Purpose:** Verify that the command examples in the documentation run as
+written and produce the documented output. Report only; do not edit files.
 
 ## Preconditions
 
-Before you begin:
-
 1. If you are not in the project root, inform the user, state your current
-   working directory, and wait for confirmation before proceeding so they can
-   choose to start a new session in the project root.
+   working directory, and wait for confirmation before proceeding.
+2. Make sure `coverage/coverage.json` exists and is current. If it is missing
+   or stale, run `bundle exec rspec` once to regenerate it (skip this if other
+   agents may be reading that file, and say so in the report).
 
 ---
 
 ## When to Use This
 
-- After making documentation changes
+- After documentation changes
 - Before releases
-- After CLI or API changes that might affect examples
-- When suspecting docs are out of sync with code
+- After CLI, MCP, or library API changes that might affect examples
 
 ## Scope
 
-### Files to Test
+Test the examples in:
 
-Run all command examples found in:
 - `README.md`
 - `docs/user/**/*.md`
 - `docs/dev/**/*.md`
+- `examples/**/README.md`
 
-### Files to Exclude
+Do not test:
 
-Do NOT test examples in:
-- `docs/dev/arch-decisions/**/*.md`
-- `docs/user/migrations/**/*.md` (they describe older versions on purpose)
+- `docs/user/migrations/**/*.md`: they show older versions on purpose.
+- `docs/dev/arch-decisions/**/*.md`: they are historical records.
+- The MkDocs `include-markdown` stubs under `docs/`; test the files they
+  include instead.
+
+## Safety
+
+Run only commands that read data or write to a temporary directory. Do **not**
+run commands that:
+
+- install software or gems (`gem install`, `brew`, `pip install`),
+- change the user's configuration, such as registering an MCP server with an
+  AI client (`claude mcp add`, `codex mcp add`, editing client config files),
+- publish, tag, push, or release (`gem push`, `git push`, `rake release:*`).
+
+Check such commands by reading them against the code and help output instead,
+and list them in the report as "checked, not run".
 
 ## Process
 
-### 1. Extract Command Examples
+### 1. Extract the examples
 
-Identify all code blocks that contain executable commands:
-- Bash/shell commands
-- CLI invocations
-- Code that should produce specific output
+Collect fenced blocks marked `bash`, `sh`, `shell`, or `console`, inline code
+that is clearly a runnable command, MCP JSON-RPC examples, and Ruby snippets
+that call the library API. Note any output shown with them.
 
-Look for:
-- Code blocks marked with `bash`, `sh`, `shell`, or `console`
-- Inline code that appears to be runnable commands
-- Example command outputs
+### 2. Run each example
 
-### 2. Test Each Command
+1. Run it from the directory the documentation implies (usually the project
+   root), using `bundle exec exe/cov-loupe` in place of `cov-loupe`.
+2. Pipe MCP JSON-RPC examples to `bundle exec exe/cov-loupe -m mcp`.
+3. Create any files the example assumes in a temporary directory, not in the
+   repository.
+4. Check the exit code (0 unless the docs show a failure), compare the output
+   with the documented output (ignoring values that legitimately vary, such as
+   coverage percentages, timestamps, and absolute paths), and check that
+   documented error examples produce that error.
 
-For each command found:
+### 3. Record failures
 
-1. **Set up environment** (if needed):
-   - Install dependencies
-   - Create test files/fixtures
-   - Set environment variables
+For each failure, record the file and line, the command, the documented and
+actual results, and a suggested fix to either the documentation or, if the
+code looks wrong, the code.
 
-2. **Execute the command** in an appropriate context:
-   - Use the correct working directory
-   - Ensure required files exist
-   - Handle commands that require specific prerequisites
+## Common Causes
 
-3. **Verify output**:
-   - Check exit code (0 for success unless failure is expected)
-   - Compare actual output with documented output
-   - Verify expected files are created
-   - Check for error messages if shown in docs
-
-4. **Clean up** (if needed):
-   - Remove temporary files
-   - Reset environment
-
-### 3. Document Failures
-
-For each failing example, record:
-
-- **File:** Which documentation file contains the failing example
-- **Line/Section:** Where in the file (approximate line or section heading)
-- **Command:** The exact command that failed
-- **Expected:** What the documentation shows should happen
-- **Actual:** What actually happened
-- **Error:** Any error messages
-- **Suggested Fix:** How to correct the documentation or code
-
-## Common Issues to Check
-
-### Syntax Changes
-- Command options that have changed (`--old-flag` → `--new-flag`)
-- Subcommands that have been renamed or removed
-- New required parameters
-
-### Path Assumptions
-- Commands that assume specific working directories
-- Relative vs absolute paths
-- File paths that may not exist in all environments
-
-### Output Format Changes
-- JSON structure changes
-- Table column changes
-- Different error message text
-
-### Prerequisites
-- Missing setup steps (e.g., "First run X before running Y")
-- Undocumented dependencies
-- Configuration that must be set
-
-### Version-Specific Examples
-- Examples that only work with specific versions
-- Deprecated features still documented
+- Renamed or removed options and subcommands
+- Global options placed after the subcommand (cov-loupe requires them before)
+- Changed JSON fields, table columns, or error text
+- Working-directory or path assumptions
+- Missing setup steps
 
 ## Output Format
 
-### If All Examples Pass
+If every example passes, report that briefly:
 
-Briefly report success:
-```
-Tested X command examples across Y documentation files.
-All examples executed successfully.
+```text
+Tested X examples across Y files; all passed. Checked, not run: Z (listed below).
 ```
 
-### If Examples Fail
+Otherwise, write a report like this:
 
-Create a detailed report with:
-
-```markdown
+~~~markdown
 # Documentation Example Test Results
 
 **Date:** YYYY-MM-DD
@@ -136,58 +104,35 @@ Create a detailed report with:
 
 ### README.md
 
-#### Line 42: cov-loupe list command
-**Command:**
-\`\`\`bash
-cov-loupe list --format json
-\`\`\`
+#### Line 42: list command
 
-**Expected:**
-JSON output with coverage data
+**Command:**
+```bash
+cov-loupe list --format json
+```
+
+**Expected:** JSON output with coverage data
 
 **Actual:**
-```
+```text
 Global option(s) must come BEFORE the subcommand.
 You used: cov-loupe list --format json
 Correct: cov-loupe --format json list
 ```
 
-**Issue:**
-Use `-f` / `--format`, placed before the subcommand
-
-**Suggested Fix:**
-Update documentation to use:
-\`\`\`bash
+**Suggested Fix:** Put the global option before the subcommand:
+```bash
 cov-loupe --format json list
-\`\`\`
+```
 
----
+## Checked, Not Run
 
-### docs/QUICKSTART.md
-
-#### Line 78: Running with custom coverage file
-
-... (continue for each failure)
+- `docs/user/INSTALLATION.md` line 12: `gem install cov-loupe` (install command)
 
 ## Summary
 
-- Update format flag in README.md line 42
-- Add missing setup step in QUICKSTART.md before line 78
-- Fix output example in ADVANCED_USAGE.md line 156 (JSON structure changed)
-```
+- Fix the option order in README.md line 42
+~~~
 
-## Notes
-
-- **Don't modify code:** This is a validation task, not a fix task. Document what needs changing.
-- **Test in clean environment:** If possible, test in a fresh environment to catch missing setup steps.
-- **Check both success and failure examples:** If documentation shows an error
-  example, verify it produces that error.
-- **Version compatibility:** Note if examples only work with specific versions.
-
-## Follow-Up Actions
-
-After identifying failures:
-1. Create issues for documentation fixes
-2. Update documentation files
-3. Consider adding automated tests for critical examples
-4. Re-run this validation after fixes
+Do not modify files, open issues, or commit. The report is the deliverable;
+the user decides which fixes to make.

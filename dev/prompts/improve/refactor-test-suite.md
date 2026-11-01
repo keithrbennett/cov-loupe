@@ -1,33 +1,45 @@
-# Thoroughly Review Test Suite
+# Refactor Test Suite
+
+**Purpose:** Make the specs shorter, clearer, and free of duplication without
+reducing what they verify.
 
 ## Preconditions
 
-Before you begin:
-
 1. If you are not in the project root, inform the user, state your current
-   working directory, and wait for confirmation before proceeding so they can
-   choose to start a new session in the project root.
+   working directory, and wait for confirmation before proceeding.
+2. Read the Testing Notes and Rubocop sections of [AGENTS.md](../../../AGENTS.md).
 
 ---
 
-Carefully examine the test suite. Report and fix:
+## What to Fix
 
-- duplicate tests testing the same thing
-- tests that test the test setup rather than the actual production code
-- verbose tests, e.g.:
-  - multiple calls to `to include` that should be compressed into a single call
-    with a comma separated string list
-  - duplicate test code that can be made more concise by the use of arrays of
-    test data with an `.each`, etc. block
-- complex tests that could be clarified with comments, intermediate variables, extracted methods, etc.
+Examine `spec/` and fix:
 
-Ensure that any code changes comply with rubocop linting:
+- **Duplicate tests** that verify the same behavior.
+- **Tests of the test setup** (fixtures, doubles, helpers) rather than of
+  production code.
+- **Verbose assertions**, for example several `expect(x).to include('a')`
+  lines that can be one `expect(x).to include('a', 'b', 'c')`.
+- **Repeated test bodies** that differ only in data; iterate over an array of
+  cases instead, or use shared examples (`it_behaves_like`).
+- **Hard-to-follow tests** that would be clearer with intermediate variables,
+  extracted helpers, or a brief comment.
 
-- run `rubocop` to see if there are any errors. If cache writes fail
-  (e.g., in a sandboxed environment), use
-  `bundle exec rubocop --cache false`.
-- run `rubocop -A` (or `bundle exec rubocop -A --cache false` if needed) to
-  fix anything rubocop is capable of fixing
-- fix the other errors yourself
+## Constraints
 
-Run the test suite as necessary to verify that all tests pass.
+- Change spec files only. If a test reveals a production bug, report it rather
+  than fixing it here.
+- Do not weaken assertions or drop coverage: each refactored test must still
+  fail when the behavior it covers breaks.
+- Run the affected spec files as you go (`bundle exec rspec spec/path_spec.rb`),
+  then the full suite once at the end.
+- Run `bundle exec rubocop` and fix every offense (`bundle exec rubocop -A`
+  handles the autocorrectable ones). Add `--cache false` if cache writes fail
+  in a sandbox.
+- Do not run `git commit`. Stage only the spec files you changed and propose a
+  concise commit message.
+
+## Output
+
+Summarize what you changed, grouped by the categories above, and any
+production bugs you noticed.

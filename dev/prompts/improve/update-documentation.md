@@ -7,19 +7,26 @@
 Before you begin:
 
 1. If you are not in the project root, inform the user, state your current
-   working directory, and wait for confirmation before proceeding so they can
-   choose to start a new session in the project root.
+   working directory, and wait for confirmation before proceeding.
 
 ---
 
 ## Scope
 
-Examine all Markdown files in:
+Examine all tracked Markdown files at the repository root (`*.md`), in
+`docs/**/*.md`, and in `examples/**/*.md`.
 
-- `*.md`
-- `docs/**/*.md`
-- `docs/user/**/*.md`
-- `docs/dev/arch-decisions/**/*.md`
+Exceptions:
+
+- `docs/user/migrations/**/*.md`: each guide describes the release it was
+  written for. Fix broken links and typos only; never update them to reflect
+  later changes.
+- `docs/dev/arch-decisions/**/*.md`: these are decision records. Correct
+  factual errors about the current code, but do not rewrite the history of a
+  decision.
+- `dev/prompts/**/*.md` and `docs/user/prompts/**/*.md` are prompts, not
+  documentation; leave them alone unless they reference something that no
+  longer exists.
 
 ## What to Look For
 
@@ -86,8 +93,11 @@ for the full explanation.
 
 ## Constraints
 
-- Do not alter code files unless a documented example is genuinely broken and a
-  code fix is clearly correct; prefer updating the docs to match current
-  behaviour.
+- Treat the code as the source of truth. Do not alter code files; if the code
+  looks wrong rather than the docs, report it instead.
+- Verify claims by running the CLI (`bundle exec exe/cov-loupe --help` and the
+  documented commands) rather than trusting the existing text.
+- Run `bin/build-docs` after editing if `mkdocs` is available, and fix any new
+  warnings.
 - Do not run `git commit`. Stage only the documentation files you changed, and
   propose a concise commit message describing what was corrected and why.

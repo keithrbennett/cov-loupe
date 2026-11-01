@@ -7,7 +7,12 @@ This directory contains prompts for AI coding assistants to help with codebase m
 Unless a prompt explicitly says otherwise: if you are not in the project root,
 inform the user, state your current working directory, and wait for
 confirmation before proceeding so they can choose to start a new session in the
-project root.
+project root. Most prompts restate this, because they are usually pasted into an
+agent on their own.
+
+Review prompts write their reports to `untracked/` (gitignored) and never
+change tracked files; improve prompts edit files and stage them, but never
+commit.
 
 ## Quick Reference
 
@@ -26,7 +31,7 @@ project root.
 
 **[Verify Code Changes](review/verify-code-changes.md)**
 - **When:** After implementing a feature/fix, before committing
-- **Output:** Assessment of correctness, completeness, best practices
+- **Output:** Verdict plus findings on correctness, completeness, simplicity, and tests, written to `untracked/`
 - **Question answered:** "Did I do this right?"
 - **Time:** 10-30 minutes
 
@@ -37,7 +42,7 @@ project root.
 
 **[Pull Request Review](review/pull-request-review-prompt.md)**
 - **When:** Reviewing a pull request
-- **Output:** Assessment of correctness, scope, and test coverage
+- **Output:** Verdict plus findings on correctness, scope, tests, compatibility, and docs (no changes made)
 - **Question answered:** "Is this PR ready to merge?"
 
 **[Release Review](review/release-review.md)**
@@ -48,19 +53,19 @@ project root.
 
 **[CLI / MCP Consistency Audit](review/cli-mcp-consistency-audit.md)**
 - **When:** After changing CLI commands/options or MCP tools/arguments, before releases
-- **Output:** Report of capability gaps, behavioral differences, and error-handling and documentation mismatches between the CLI and MCP server (no changes made)
+- **Output:** Report of capability gaps, behavioral differences, and error-handling and documentation mismatches between the CLI and MCP server, written to `untracked/` (no changes made)
 - **Question answered:** "Can everything be done, the same way, from either interface?"
 
 ### Improve Code/Docs
 
 **[Refactor Test Suite](improve/refactor-test-suite.md)**
 - **When:** Tests are verbose, duplicated, or unclear
-- **Output:** Improved test code following DRY principles, Rubocop compliance
+- **Output:** Shorter, de-duplicated specs (spec files only), Rubocop clean, plus a summary
 - **Time:** 30 min - 2 hours
 
 **[Simplify Code Logic](improve/simplify-code-logic.md)**
 - **When:** Code is hard to understand or maintain
-- **Output:** Simplified code or added explanatory comments
+- **Output:** Simplified code or explanatory comments, with behavior unchanged, plus a summary
 - **Time:** 30 min - 1 hour
 
 **[Update Documentation](improve/update-documentation.md)**
@@ -72,8 +77,16 @@ project root.
 
 **[Test Documentation Examples](validate/test-documentation-examples.md)**
 - **When:** After doc changes, before releases
-- **Output:** Report of working/broken code examples in documentation
+- **Output:** Report of working/broken code examples in documentation (no changes made)
 - **Time:** 15-30 minutes
+
+### User-Facing Prompts
+
+[docs/user/prompts/](../../docs/user/prompts/README.md) holds prompts shipped
+for cov-loupe's users, such as the
+[Test Coverage Analysis](../../docs/user/prompts/test-coverage-analysis-prompt.md)
+prompt that the State of the Code Base review defers to. Keep those
+project-agnostic.
 
 ## Guidelines
 
@@ -89,11 +102,8 @@ flagging issues. This document explains:
 AI analysis tools should consult this document before reporting issues to avoid
 false positives on intentional design decisions.
 
-## Deprecated Prompts
+## Removed Prompts
 
-The following deprecated prompts were consolidated and removed from this directory:
-- `architectural-review-and-actions-prompt.md` (merged into identify-action-items.md)
-- `investigate-and-report-issues-prompt.md` (merged into identify-action-items.md)
-- `produce-action-items-prompt.md` (merged into identify-action-items.md)
-
-Use [Identify Action Items](review/identify-action-items.md) instead.
+`architectural-review-and-actions-prompt.md`, `investigate-and-report-issues-prompt.md`,
+and `produce-action-items-prompt.md` were merged into
+[Identify Action Items](review/identify-action-items.md).
