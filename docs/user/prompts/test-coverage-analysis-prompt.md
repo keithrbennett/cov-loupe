@@ -244,8 +244,10 @@ Keep this qualitative and evidence-based; cite test files and line numbers.
 
 ## Report
 
-Write your analysis in the project root (or in the directory the invocation
-names) as a Markdown file whose name is:
+Write your analysis to the directory the invocation names; otherwise to
+`untracked/` in the project root if that directory exists; otherwise to the
+project root. Do not create `untracked/`. Write it as a Markdown file whose
+name is:
 - the current UTC time in `%Y-%m-%d-%H-%M` format +
 - '-test-coverage-analysis-' +
 - your name (e.g. 'codex', 'claude', 'gemini') +

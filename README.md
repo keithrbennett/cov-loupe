@@ -42,7 +42,7 @@ To run it:
    claude -p "$(cat "$PROMPT")"
    ```
 
-The agent writes a timestamped Markdown report in the project root. It runs unattended and changes nothing else, so you can run several agents (Claude, Codex, Gemini, ...) at once against the same coverage data and compare their reports.
+The agent writes a timestamped Markdown report to `untracked/` if your project root has that directory (useful if you gitignore it), otherwise to the project root. It runs unattended and changes nothing else, so you can run several agents (Claude, Codex, Gemini, ...) at once against the same coverage data and compare their reports.
 
 ## What is cov-loupe?
 
