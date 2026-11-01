@@ -139,7 +139,10 @@ On case-insensitive volumes, comparisons are case-normalized; on case-sensitive 
    bundle exec rubocop # and then `rubocop -A` if necessary
    bundle exec rspec
     ```
-2. **Do Not Commit:** Never execute `git commit` directly. Instead, stage changes with `git add` and propose a clear, concise commit message for the user to use.
+2. **Committing:**
+    - **Agent-created branches:** If you created the current branch yourself (for example, Claude Code on the web working on a branch it was assigned or created for the session), you are permitted and requested to commit your changes there, with clear, descriptive commit messages, and to push that branch when your work is complete.
+    - **All other branches:** Never execute `git commit` directly. Instead, stage changes with `git add` and propose a clear, concise commit message for the user to use.
+    - **No AI attribution:** Do not add AI or agent credit lines (e.g., `Co-Authored-By: Claude ...`, `Claude-Session: ...`, "Generated with ...") to commit messages or PR descriptions.
 3. **Selective Staging:** Never assume that all uncommitted files are intended to be committed. Do not use `git add .` or similar catch-all commands. Explicitly stage only the files relevant to the current task.
 4. **Use `--no-pager`:** When running git commands that may produce long output (e.g., `git diff`, `git log`), include `--no-pager` between `git` and the subcommand to prevent paging issues in automated environments:
    ```sh
