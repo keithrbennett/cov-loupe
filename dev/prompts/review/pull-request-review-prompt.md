@@ -108,7 +108,9 @@ Replace or delete this section when reusing this prompt in another project.
   coverage of changed files with cov-loupe (MCP server preferred, CLI
   otherwise).
 - Run `bundle exec rubocop` (add `--cache false` in a sandbox) and the specs
-  for the changed code. `bundle exec rspec` rewrites `coverage/coverage.json`;
-  do not run the full suite if other agents may be reading that file.
+  for the changed code. Any `bundle exec rspec` run, even of a single spec file, rewrites
+  `coverage/coverage.json` (a partial run records files it did not load as 0%
+  covered). Do not run rspec if other agents may be reading that file;
+  otherwise end with a full run so the file is complete again.
 - Migration guides (`docs/user/migrations/`) describe the release they were
   written for; do not ask a PR to update older guides for its changes.

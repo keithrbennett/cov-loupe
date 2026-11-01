@@ -10,9 +10,9 @@ confirmation before proceeding so they can choose to start a new session in the
 project root. Most prompts restate this, because they are usually pasted into an
 agent on their own.
 
-Review prompts write their reports to `untracked/` (gitignored) and never
-change tracked files; improve prompts edit files and stage them, but never
-commit.
+Review and validate prompts never change tracked files. Those that write a
+report file put it in `untracked/` (gitignored); the others report in chat.
+Improve prompts edit files and stage them, but never commit.
 
 ## Quick Reference
 

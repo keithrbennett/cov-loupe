@@ -37,8 +37,9 @@ Do not test:
 
 ## Safety
 
-Run only commands that read data or write to a temporary directory. Do **not**
-run commands that:
+Apart from regenerating `coverage/` in the preconditions, run only commands
+that read data or write to a temporary directory. Do **not** run commands
+that:
 
 - install software or gems (`gem install`, `brew`, `pip install`),
 - change the user's configuration, such as registering an MCP server with an

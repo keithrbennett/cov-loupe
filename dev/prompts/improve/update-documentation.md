@@ -97,7 +97,9 @@ for the full explanation.
   looks wrong rather than the docs, report it instead.
 - Verify claims by running the CLI (`bundle exec exe/cov-loupe --help` and the
   documented commands) rather than trusting the existing text.
-- Run `bin/build-docs` after editing if `mkdocs` is available, and fix any new
-  warnings.
+- If `mkdocs` is already installed, run
+  `mkdocs build --strict --site-dir <temp dir>` after editing and fix any new
+  warnings. Do not run `bin/build-docs` unless the user agrees: it installs
+  Python packages and creates `.docs-venv/`.
 - Do not run `git commit`. Stage only the documentation files you changed, and
   propose a concise commit message describing what was corrected and why.

@@ -19,8 +19,10 @@ the code under review.
   documentation). If none is given, infer it from the commit messages in the
   range, and say at the top of the report that you did so.
 
-Review `git --no-pager diff <comparison-point>` and, if the working tree has
-uncommitted changes, include them and say so.
+Review `git --no-pager diff <comparison-point>`, which includes uncommitted
+changes to tracked files. `git diff` does not show new untracked files, so also
+run `git status --short` and read any untracked files that belong to the
+change. Say in the report whether uncommitted work was included.
 
 ## Evaluate
 
@@ -39,7 +41,10 @@ Assess whether the change is:
   otherwise).
 
 Where feasible, run `bundle exec rubocop` and the relevant specs, and say what
-you ran.
+you ran. Any `bundle exec rspec` run, even of a single spec file, rewrites
+`coverage/coverage.json` (a partial run records files it did not load as 0%
+covered). Do not run rspec if other agents may be reading that file;
+otherwise end with a full run so the file is complete again.
 
 Include only findings that would change what the author does. Omit remarks
 such as "approach X could have been used, but the current one is a better

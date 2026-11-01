@@ -300,7 +300,7 @@ Neither `spec/spec_helper.rb` nor `.github/workflows/test.yml` enforces a hard m
 
 3. **`fail_ci_if_error: false` guards the upload step, not coverage regressions** – it prevents a transient Codecov outage, network hiccup, or token issue from failing the entire test matrix (4 Ruby versions on Linux, plus one each on Windows and macOS). That would be a false-positive CI failure, not a caught coverage regression.
 
-4. **A hard threshold is brittle at a 100% baseline** – with 100% as the current standard, `SimpleCov.minimum_coverage` would have to be set to 100, failing the build on any single untested line, including lines temporarily added mid-refactor within a PR. Reviewer judgment tolerates in-progress states that a hard gate would block outright.
+4. **A hard threshold is brittle at a 100% baseline** – with 100% as the target, `SimpleCov.minimum_coverage` would have to be set to 100, failing the build on any single untested line, including lines temporarily added mid-refactor within a PR. Reviewer judgment tolerates in-progress states that a hard gate would block outright.
 
 5. **Enforcement tooling exists for cov-loupe's users, not turned on here** – the `validate` command exists precisely so consumers of cov-loupe can build their own coverage gates. This project intentionally relies on reviewer discipline plus the existing SimpleCov/Codecov visibility rather than self-applying a hard gate in its own CI.
 
