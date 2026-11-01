@@ -3,12 +3,10 @@
 /.gemini/
 /opencode.json
 
-# Directories for local AI reports. untracked/ is kept in the repo by .keep;
-# these rules still apply if it is deleted and recreated.
+# Directory for untracked AI reports, of which there may be many
 /agent-council-reports/
+/untracked/
 /reports/
-/untracked/*
-!/untracked/.keep
 
 # Bundler
 /.bundle/
