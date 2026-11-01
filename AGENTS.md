@@ -25,6 +25,7 @@ Prefer project‑local tools and scripts (for example, bin/ scripts, package.jso
 - Sandbox: workspace write access; network is restricted. Request escalation (`with_escalated_permissions` + short justification) only when indispensable.
 - Approval mode is `on-request`: retry failed-but-needed commands with escalation rather than asking the user manually.
 - Planning tool: skip for trivial chores; otherwise create a multi-step plan and keep it updated as you work (max one `in_progress` step).
+- Prompts in `dev/prompts/` that write reports put them in `untracked/` (gitignored; create it if missing) unless the invocation names another location.
 - When moving or renaming tracked files, use `git mv` (or `git mv -k`) instead of plain `mv` so history stays intact.
 
 ## Ruby Guidelines
