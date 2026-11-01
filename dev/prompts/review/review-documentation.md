@@ -46,6 +46,8 @@ Evaluate whether the documentation is:
   that case.
 - Skip purely stylistic preferences unless they affect accuracy, clarity,
   completeness, or maintainability.
+- Follow the Project-Specific Instructions at the end, if any; they override
+  these general rules where they conflict.
 - Files that consist only of a directive including another file (for
   example, an MkDocs `include-markdown` stub that publishes a root file on
   the documentation site) are intentional; do not report them as
@@ -91,3 +93,20 @@ Order issues by importance: first those that would mislead or block a
 reader, then omissions, then minor clarity problems.
 
 If you find no issues, say so, and mention any limits of the review.
+
+## Project-Specific Instructions
+
+Replace or delete this section when reusing this prompt in another project.
+
+- Read [AGENTS.md](../../../AGENTS.md) and
+  [ai-code-evaluator-guidelines.md](../guidelines/ai-code-evaluator-guidelines.md)
+  first, and do not report the intentional decisions they describe.
+- Migration guides (`docs/user/migrations/`) describe the release they were
+  written for. Do not report them for omitting later changes; report only
+  errors about their own release.
+- The documentation site is built with MkDocs from `mkdocs.yml`. If `mkdocs`
+  is already installed, run `mkdocs build --strict --site-dir <temp dir>` and
+  report its warnings. Do not run `bin/build-docs`: it installs Python
+  packages and creates `.docs-venv/`.
+- Prompts under `dev/prompts/` and `docs/user/prompts/` are in scope only for
+  accuracy of the commands, paths, and tool names they reference.

@@ -1,64 +1,64 @@
 # Verify Code Changes
 
-I need you to test that the intention of a code change was accomplished successfully, i.e. that the change is:
-
-- correct
-- complete
-- concise
-- conforms to best practices
-- as simple as possible
-- is not more easily accomplished using tools available that might not have
-  been considered, especially since coding tools do not generally search the
-  web
-- is adequately tested (for Ruby Simplecov coverage, use the cov-loupe MCP server)
+Verify that a code change accomplishes its intent. Review only; do not edit
+the code under review.
 
 ## Preconditions
 
-Before you begin:
-
 1. If you are not in the project root, inform the user, state your current
-   working directory, and wait for confirmation before proceeding so they can
-   choose to start a new session in the project root.
+   working directory, and wait for confirmation before proceeding.
+2. Read [ai-code-evaluator-guidelines.md](../guidelines/ai-code-evaluator-guidelines.md)
+   and do not report the intentional design decisions it describes.
 
----
+## Inputs
 
-### Parameters (I Will Give You...)
+- **Comparison point:** anything `git diff` accepts (a commit such as `HEAD~2`
+  or a SHA, a branch, or a tag). If none is given, ask for it before doing
+  anything else.
+- **Intent:** what the change is meant to do (feature, bug fix, tests,
+  documentation). If none is given, infer it from the commit messages in the
+  range, and say at the top of the report that you did so.
 
-- Comparison Specification (an argument to `git diff`) - the point of reference
-  from which you can do a git diff to see the changes. Examples:
-  - a commit (e.g. HEAD, HEAD~~, HEAD~4, 45076963221647d724b9b52faa3690a6d83ae8d1)
-  - a branch name
-  - a tag
-  - anything else that can be passed to `git diff`
-- A description of the intended change. Examples of changes:
-  - Implemented feature
-  - Fixed bug
-  - Test code added
-  - Documentation task
+Review `git --no-pager diff <comparison-point>`, which includes uncommitted
+changes to tracked files. `git diff` does not show new untracked files, so also
+run `git status --short` and read any untracked files that belong to the
+change. Say in the report whether uncommitted work was included.
 
-If I do not give you the compare point in this prompt, ask me for them.
+## Evaluate
 
-If I do not give you the intent to examine, use the commit message(s) and say that
-you are doing that so I can be prodded in case that was not my intent.
+Assess whether the change is:
 
-Be mindful of the signal to noise ratio. Do not add anything to the report
-unless it adds value to the reader. Here is an example of a time wasting comment:
+- **Correct:** it does what the intent says, including edge cases and error
+  paths, in every mode it affects (CLI, MCP, library).
+- **Complete:** nothing needed is missing (callers, docs, release notes,
+  schema version, `@api` tags).
+- **Simple and concise:** no unnecessary code, and no hand-written logic that
+  an existing helper, the standard library, or an already-installed gem
+  provides.
+- **Idiomatic:** it follows the project's conventions and Ruby best practices.
+- **Tested:** specs cover the new behavior and its failure modes. Check
+  coverage of the changed files with cov-loupe (MCP server preferred, CLI
+  otherwise).
 
-"Approach X could have been used, but the current implementation is a better fit."
+Where feasible, run `bundle exec rubocop` and the relevant specs, and say what
+you ran. Any `bundle exec rspec` run, even of a single spec file, rewrites
+`coverage/coverage.json` (a partial run records files it did not load as 0%
+covered). Do not run rspec if other agents may be reading that file;
+otherwise end with a full run so the file is complete again.
 
-----
+Include only findings that would change what the author does. Omit remarks
+such as "approach X could have been used, but the current one is a better
+fit."
 
-> Sure, I can verify the code changes for you. I will need you to give me:
-> - the commit, branch, etc. for me to use as the starting point of the comparison
-> - a description of the code change intention to verify
-----
+## Output
 
-### Your Response
+Write the report as Markdown to `untracked/` (create it if needed), named:
 
-Examine the diff thoroughly. In your response, be balanced, fair, organized, and thorough.
+`<UTC timestamp %Y-%m-%d-%H-%M>-code-review-<agent>-<intent-slug>.md`
 
-Write your response as markdown text and save it to a file whose name is:
+where `<agent>` is your lowercase tool name (e.g. `claude`, `codex`, `gemini`)
+and `<intent-slug>` is a few hyphenated words describing the intent.
+Example: `2026-01-08-19-45-code-review-claude-add-sort-option.md`.
 
-- today's date in UTC `%Y-%m-%d-%H-%M` format +
-- your name (e.g. 'codex', 'claude', 'gemini', 'zai') +
-- "-code-review-#{change_intention_phrase}.md"
+Open with a one-line verdict, then the findings ordered by severity, each with
+`path:line`, the problem, and a suggested fix.

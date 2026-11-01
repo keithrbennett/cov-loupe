@@ -23,8 +23,7 @@ clean tree, or the built gem.
    working directory, and wait for confirmation before proceeding.
 2. Open the report by citing the most recent git commit.
 3. Run `git status`. List any uncommitted changes. They are expected if
-   `release:bump` was just run; otherwise note them as items to resolve. Do not
-   modify any files.
+   `release:bump` was just run; otherwise note them as items to resolve.
 4. Limit the review to git-tracked files, plus untracked files reported by
    `git status` (for the cleanup step).
 

@@ -8,8 +8,10 @@ through simplification or documentation.
 Before you begin:
 
 1. If you are not in the project root, inform the user, state your current
-   working directory, and wait for confirmation before proceeding so they can
-   choose to start a new session in the project root.
+   working directory, and wait for confirmation before proceeding.
+2. Read [ai-code-evaluator-guidelines.md](../guidelines/ai-code-evaluator-guidelines.md),
+   especially [Method Length and Complexity](../guidelines/ai-code-evaluator-guidelines.md#method-length-and-complexity).
+   Do not split a long method that is already cohesive and clear.
 
 ---
 
@@ -65,20 +67,18 @@ For each instance of complex or unclear logic:
 - Add examples in comments if helpful
 - Explain why simpler approaches won't work
 
-### 4. Maintain Functionality
-- Add tests if coverage is missing
-- Run existing tests to verify no regressions
-- Follow Rubocop rules
-- Preserve documented design decisions
-
 ## Constraints
 
-- **Follow guidelines:** Respect decisions documented in
-  `dev/prompts/guidelines/ai-code-evaluator-guidelines.md`
-- **Maintain behavior:** Do not change functionality
-- **Add tests:** Ensure adequate test coverage for any refactored code
-- **Rubocop compliance:** Run `rubocop` (or `rubocop --cache false` in sandboxed environments) when feasible
-- **Preserve intent:** Maintain the original purpose and behavior
+- **Preserve behavior:** Do not change functionality, output, or public API.
+  If you find a bug, report it instead of fixing it here.
+- **Test first:** Before refactoring code, check its coverage with cov-loupe;
+  add specs for uncovered paths you are about to change.
+- **Verify:** Run the relevant specs as you go and the full suite
+  (`bundle exec rspec`) at the end.
+- **Lint:** Run `bundle exec rubocop` (add `--cache false` if cache writes fail
+  in a sandbox) and fix every offense.
+- **Comments:** Explain *why*, not *what*; do not comment code that is already
+  clear.
 
 ## Examples
 
@@ -140,8 +140,8 @@ end
 
 ## Output
 
-Make changes directly to the code files. No separate report is needed unless
-you want to summarize the improvements made.
+Make changes directly to the code files, then summarize each change in one
+line (`path:line` and what was simplified or documented).
 
-Do not run `git commit`. If the user asks for a commit, suggest a concise
-message that explains what was simplified or documented and why.
+Do not run `git commit`. Stage only the files you changed and propose a concise
+commit message that explains what was simplified or documented and why.

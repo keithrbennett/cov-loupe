@@ -1,5 +1,16 @@
 # Audit CovLoupe CLI and MCP Behavioral Consistency
 
+## Preconditions
+
+1. If you are not in the project root, inform the user, state your current
+   working directory, and wait for confirmation before proceeding.
+2. Open the report by citing the most recent git commit (hash and subject) and
+   any uncommitted changes to tracked files from `git status`.
+3. Read [ai-code-evaluator-guidelines.md](../guidelines/ai-code-evaluator-guidelines.md).
+   Differences it documents as deliberate (for example, the opt-in
+   `project_validate` tool and the MCP table output's duplicate-looking
+   skipped-row warnings) belong under "Intentional differences", not findings.
+
 ## Objective
 
 Perform a thorough technical audit of CovLoupe's CLI and MCP interfaces.
@@ -111,6 +122,10 @@ Pay particular attention to differences that could cause an AI coding agent to i
 Do not recommend making both interfaces identical when the difference is appropriate.
 
 ## Required report
+
+Write the report as Markdown to `untracked/` (create it if needed), named
+`<UTC timestamp %Y-%m-%d-%H-%M>-cli-mcp-consistency-audit-<agent>.md`, where
+`<agent>` is your lowercase tool name (e.g. `claude`, `codex`, `gemini`).
 
 ### Executive summary
 

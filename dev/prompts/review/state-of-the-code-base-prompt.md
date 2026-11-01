@@ -7,8 +7,8 @@ cost to fix, and give a high-level strategy for addressing it.
 **DO NOT MAKE ANY CODE CHANGES. REVIEW ONLY.**
 
 > **Test coverage is out of scope for this review.** Do not analyze coverage data or score coverage; it is
-> handled in depth by a separate prompt, `test-coverage-analysis-prompt.md` (in the same directory as this
-> one).
+> handled in depth by a separate test coverage analysis prompt (see Project-Specific Instructions for its
+> location).
 
 ## Ground Rules
 
