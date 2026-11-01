@@ -60,7 +60,7 @@ commit.
 
 **[Refactor Test Suite](improve/refactor-test-suite.md)**
 - **When:** Tests are verbose, duplicated, or unclear
-- **Output:** Shorter, de-duplicated specs (spec files only), Rubocop clean, plus a summary
+- **Output:** Clear, concise, de-duplicated specs (spec files only), Rubocop clean, plus a summary
 - **Time:** 30 min - 2 hours
 
 **[Simplify Code Logic](improve/simplify-code-logic.md)**

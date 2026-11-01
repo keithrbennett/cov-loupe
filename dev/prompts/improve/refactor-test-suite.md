@@ -1,6 +1,6 @@
 # Refactor Test Suite
 
-**Purpose:** Make the specs shorter, clearer, and free of duplication without
+**Purpose:** Make the specs clear, concise, and free of duplication without
 reducing what they verify.
 
 ## Preconditions
