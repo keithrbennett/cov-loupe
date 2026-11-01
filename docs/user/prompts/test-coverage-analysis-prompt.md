@@ -57,8 +57,9 @@ Before you begin the analysis:
   importance of uncovered code.
 - Do not run the test suite, and do not modify source files, test files, or
   coverage output. Other agents may be running this analysis concurrently
-  against the same data. This is a read-only analysis; the only file you
-  write is the report.
+  against the same data. This is a read-only analysis; the only files you
+  write are the report and, if you create the report directory, its
+  `.gitignore` (see [Report](#report)).
 - Before recommending tests for uncovered code, check whether it is
   intentionally excluded or untested: SimpleCov filters and `# :nocov:`
   markers, and any project documentation or code comments explaining why.
@@ -244,8 +245,10 @@ Keep this qualitative and evidence-based; cite test files and line numbers.
 
 ## Report
 
-Write your analysis in the project root (or in the directory the invocation
-names) as a Markdown file whose name is:
+Write your analysis to `untracked/` in the project root (or to the directory
+the invocation names). If `untracked/` does not exist, create it and add an
+`untracked/.gitignore` containing `*`, so git ignores the reports. Write the
+analysis as a Markdown file whose name is:
 - the current UTC time in `%Y-%m-%d-%H-%M` format +
 - '-test-coverage-analysis-' +
 - your name (e.g. 'codex', 'claude', 'gemini') +
