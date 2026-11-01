@@ -53,9 +53,11 @@ To run it:
    prompt matching its version:
 
    ```sh
-   PROMPT="$(dirname "$(cov-loupe -p docs-local)")/docs/user/prompts/test-coverage-analysis-prompt.md"
+   PROMPT="$(dirname "$(cov-loupe -p docs-local)")"
+   PROMPT="$PROMPT/docs/user/prompts/test-coverage-analysis-prompt.md"
 
-   # Interactive: tell the agent to follow the prompt in "$PROMPT", or paste its contents.
+   # Interactive: tell the agent to follow the prompt in "$PROMPT", or paste
+   # its contents.
    # Headless:
    claude -p "$(cat "$PROMPT")"
    ```
@@ -151,7 +153,8 @@ SimpleCov.start
 Then run your test suite:
 
 ```sh
-# Generate your SimpleCov test coverage data with your test suite run command, e.g.:
+# Generate your SimpleCov test coverage data with your test suite run command,
+# e.g.:
 bundle exec rspec
 
 # Verify coverage was generated
@@ -216,10 +219,12 @@ model = CovLoupe::CoverageModel.new
 list_result = model.list
 # => { "schema_version" => 1, "files" => [...], ... }
 files = list_result["files"]
-# => [{ "file" => "lib/my_app/order.rb", "covered" => 114, "total" => 118, "percentage" => 96.61, "stale" => "ok" }, ...]
+# => [{ "file" => "lib/my_app/order.rb", "covered" => 114, "total" => 118,
+#    "percentage" => 96.61, "stale" => "ok" }, ...]
 
 summary = model.summary_for("lib/my_app/order.rb")
-# => { "schema_version" => 1, "file" => "lib/my_app/order.rb", "summary" => { "covered" => 114, "total" => 118, "percentage" => 96.61 } }
+# => { "schema_version" => 1, "file" => "lib/my_app/order.rb",
+#    "summary" => { "covered" => 114, "total" => 118, "percentage" => 96.61 } }
 ```
 
 Library payloads report file paths relative to the project root, like the CLI

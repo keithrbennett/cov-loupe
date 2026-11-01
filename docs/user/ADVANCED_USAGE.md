@@ -329,11 +329,12 @@ unknown methods, and unknown tools
 # No error logging (the error message is still printed)
 clp --error-mode off summary app/models/order.rb
 
-# Standard mode (the default) - user-friendly errors, also logged when --log-file names a file
+# Standard mode (the default) - user-friendly errors, also logged when
+# --log-file names a file
 clp --error-mode log summary app/models/order.rb
 
-# Verbose mode - stack traces (only the first 5 lines on stderr when --log-file names a file,
-# which gets the full trace)
+# Verbose mode - stack traces (only the first 5 lines on stderr when --log-file
+# names a file, which gets the full trace)
 clp --error-mode debug summary app/models/order.rb
 ```
 
@@ -412,8 +413,8 @@ success or `false`/`nil` for failure.
 
 **Quick Usage:**
 ```sh
-# validate prints no result (only what the predicate itself prints); check the exit code
-# with `echo $?` (0 = pass, 3 = fail, 4 = error in the predicate)
+# validate prints no result (only what the predicate itself prints); check the
+# exit code with `echo $?` (0 = pass, 3 = fail, 4 = error in the predicate)
 
 # Every file in the coverage data must be >= 80%
 clp validate examples/success_predicates/all_files_above_threshold_predicate.rb
@@ -425,7 +426,9 @@ clp validate examples/success_predicates/project_coverage_minimum_predicate.rb
 clp validate coverage_policy.rb
 
 # Inline string mode
-clp validate -i '->(m) { m.list["files"].all? { |f| f["percentage"].nil? || f["percentage"] >= 80 } }'
+clp validate -i '->(m) {
+  m.list["files"].all? { |f| f["percentage"].nil? || f["percentage"] >= 80 }
+}'
 ```
 
 **Creating a predicate:**
@@ -433,7 +436,9 @@ clp validate -i '->(m) { m.list["files"].all? { |f| f["percentage"].nil? || f["p
 # coverage_policy.rb
 ->(model) do
   # All files must have >= 80% coverage
-  model.list['files'].all? { |f| f['percentage'].nil? || f['percentage'] >= 80 }
+  model.list['files'].all? do |f|
+    f['percentage'].nil? || f['percentage'] >= 80
+  end
 end
 ```
 
@@ -444,7 +449,9 @@ end
 class CoveragePolicy
   def call(model)
     threshold = 80
-    low_files = model.list['files'].select { |f| f['percentage'] && f['percentage'] < threshold }
+    low_files = model.list['files'].select do |f|
+      f['percentage'] && f['percentage'] < threshold
+    end
 
     if low_files.empty?
       warn "✓ All files have >= #{threshold}% coverage"
@@ -506,8 +513,9 @@ pipeline workflows:
 # 1. Run tests to generate coverage
 bundle exec rspec
 
-# 2. Validate coverage freshness (fails with exit code 1 if any tracked file is stale
-#    or missing from coverage; on the demo fixture it fails, since two lib files are missing)
+# 2. Validate coverage freshness (fails with exit code 1 if any tracked file is
+#    stale or missing from coverage; on the demo fixture it fails, since two
+#    lib files are missing)
 clp -S true -g "lib/**/*.rb"
 
 # 3. Export data for CI artifacts or further processing
@@ -598,13 +606,16 @@ clp -fJ list | jq '.files[] | select(.file | test("ops") | not)'
 
 # Ruby alternative:
 clp -fJ list | ruby -r json -e '
-  JSON.parse($stdin.read)["files"].reject { |f| f["file"].include?("ops") }.each do |f|
+  files = JSON.parse($stdin.read)["files"]
+  files.reject { |f| f["file"].include?("ops") }.each do |f|
     puts JSON.pretty_generate(f)
   end
 '
 
 # Rexe alternative:
-clp -fJ list | rexe -ij -mb -oJ 'self["files"].reject { |f| f["file"].include?("ops") }'
+clp -fJ list | rexe -ij -mb -oJ '
+  self["files"].reject { |f| f["file"].include?("ops") }
+'
 
 # Complex patterns
 -g "app/models/**/*.rb,app/controllers/**/*.rb"

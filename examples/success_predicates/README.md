@@ -30,7 +30,11 @@ cov-loupe validate examples/success_predicates/<filename>.rb
 
 **String mode:**
 ```sh
-cov-loupe validate -i '->(model) { model.list["files"].all? { |f| f["percentage"].nil? || f["percentage"] >= 80 } }'
+cov-loupe validate -i '->(model) {
+  model.list["files"].all? do |f|
+    f["percentage"].nil? || f["percentage"] >= 80
+  end
+}'
 ```
 
 The predicate receives a `CoverageModel` instance and returns:
@@ -48,14 +52,16 @@ coverage entry at all is not in `list['files']`; to catch those, set tracked
 globs and check `missing_tracked_files`.
 
 ```sh
-cov-loupe validate examples/success_predicates/all_files_above_threshold_predicate.rb
+cov-loupe validate \
+  examples/success_predicates/all_files_above_threshold_predicate.rb
 ```
 
 ### `project_coverage_minimum_predicate.rb`
 Total project coverage must be >= 85%.
 
 ```sh
-cov-loupe validate examples/success_predicates/project_coverage_minimum_predicate.rb
+cov-loupe validate \
+  examples/success_predicates/project_coverage_minimum_predicate.rb
 ```
 
 ### `directory_specific_thresholds_predicate.rb`
@@ -66,7 +72,8 @@ Different thresholds for different directories:
 - `lib/ops/jobs/` - 80% required
 
 ```sh
-cov-loupe validate examples/success_predicates/directory_specific_thresholds_predicate.rb
+cov-loupe validate \
+  examples/success_predicates/directory_specific_thresholds_predicate.rb
 ```
 
 ## Creating Custom Predicates
@@ -89,7 +96,9 @@ vacuously.
 **Lambda example:**
 ```ruby
 ->(model) do
-  model.list['files'].all? { |f| f['percentage'].nil? || f['percentage'] >= 80 }
+  model.list['files'].all? do |f|
+    f['percentage'].nil? || f['percentage'] >= 80
+  end
 end
 ```
 
@@ -99,7 +108,9 @@ class MyPolicy
   THRESHOLD = 80
 
   def self.call(model)
-    model.list['files'].all? { |f| f['percentage'].nil? || f['percentage'] >= THRESHOLD }
+    model.list['files'].all? do |f|
+      f['percentage'].nil? || f['percentage'] >= THRESHOLD
+    end
   end
 end
 
@@ -114,7 +125,9 @@ class MyPolicy
   end
 
   def call(model)
-    model.list['files'].all? { |f| f['percentage'].nil? || f['percentage'] >= @threshold }
+    model.list['files'].all? do |f|
+      f['percentage'].nil? || f['percentage'] >= @threshold
+    end
   end
 end
 
@@ -129,7 +142,8 @@ The `model` parameter provides:
 ```ruby
 # Get all files
 files = model.list['files']
-# => [{ "file" => "...", "covered" => 12, "total" => 14, "percentage" => 85.71, "stale" => "ok" }, ...]
+# => [{ "file" => "...", "covered" => 12, "total" => 14, "percentage" => 85.71,
+#    "stale" => "ok" }, ...]
 
 # Filter by globs
 api_files = model.list(tracked_globs: ['lib/api/**/*.rb'])['files']
@@ -183,7 +197,9 @@ model = CovLoupe::CoverageModel.new(
 
 # Complex logic with external API
 files = model.list['files']
-low_coverage_files = files.select { |f| f['percentage'] && f['percentage'] < 80 }
+low_coverage_files = files.select do |f|
+  f['percentage'] && f['percentage'] < 80
+end
 
 # Post to Slack
 if low_coverage_files.any?

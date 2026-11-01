@@ -88,7 +88,8 @@ code looks wrong, the code.
 If every example passes, report that briefly:
 
 ```text
-Tested X examples across Y files; all passed. Checked, not run: Z (listed below).
+Tested X examples across Y files; all passed.
+Checked, not run: Z (listed below).
 ```
 
 Otherwise, write a report like this:
@@ -128,7 +129,8 @@ cov-loupe --format json list
 
 ## Checked, Not Run
 
-- `docs/user/INSTALLATION.md` line 12: `gem install cov-loupe` (install command)
+- `docs/user/INSTALLATION.md` line 12: `gem install cov-loupe` (install
+  command)
 
 ## Summary
 

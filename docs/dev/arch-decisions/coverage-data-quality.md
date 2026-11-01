@@ -103,7 +103,9 @@ def compute_file_staleness_details(file_abs, coverage_lines)
 
   # Don't check for mismatch if we couldn't read the file
   len_mismatch = read_error ? false : length_mismatch?(cov_len, src_len)
-  newer = check_file_newer_than_coverage(file_mtime, coverage_ts, len_mismatch, read_error)
+  newer = check_file_newer_than_coverage(
+    file_mtime, coverage_ts, len_mismatch, read_error
+  )
 
   {
     exists: exists,
@@ -188,7 +190,9 @@ project-level checks use it to detect newly added files:
 
 ```ruby
 # Detects if lib/**/*.rb files exist that have no coverage data
-checker = StalenessChecker.new(root: root, coverage_file: path, tracked_globs: ['lib/**/*.rb'])
+checker = StalenessChecker.new(
+  root: root, coverage_file: path, tracked_globs: ['lib/**/*.rb']
+)
 checker.check_project!(coverage_map)
 ```
 

@@ -141,7 +141,11 @@ totals = model.project_totals
 totals['lines']['percent_covered']  # => 81.3
 ```
 ```json
-{ "lines": { "total": 123, "covered": 100, "uncovered": 23, "percent_covered": 81.3 } }
+{
+  "lines": {
+    "total": 123, "covered": 100, "uncovered": 23, "percent_covered": 81.3
+  }
+}
 ```
 
 **After (v5.0):**
@@ -150,7 +154,11 @@ totals = model.project_totals
 totals['lines']['percentage']  # => 81.3
 ```
 ```json
-{ "lines": { "total": 123, "covered": 100, "uncovered": 23, "percentage": 81.3 } }
+{
+  "lines": {
+    "total": 123, "covered": 100, "uncovered": 23, "percentage": 81.3
+  }
+}
 ```
 
 **Migration:**

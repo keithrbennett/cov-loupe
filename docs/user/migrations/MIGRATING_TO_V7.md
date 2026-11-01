@@ -171,7 +171,8 @@ Upgrade SimpleCov to 1.x to produce a supported file.
 **Before (v6.x):**
 
 ```sh
-# .resultset.json was found automatically (also tried: ./.resultset.json, tmp/.resultset.json)
+# .resultset.json was found automatically (also tried: ./.resultset.json,
+# tmp/.resultset.json)
 ls coverage/.resultset.json
 cov-loupe list
 cov-loupe --resultset coverage/.resultset.json list      # explicit resultset
@@ -180,11 +181,13 @@ cov-loupe --resultset coverage/.resultset.json list      # explicit resultset
 **After (v7.0):**
 
 ```sh
-# Only coverage.json is found; it is written by SimpleCov 1.0+ after every test run
+# Only coverage.json is found; it is written by SimpleCov 1.0+ after every test
+# run
 ls coverage/coverage.json
 cov-loupe list
 cov-loupe --coverage-file coverage/coverage.json list     # explicit file
-cov-loupe --coverage-file coverage list                   # directory containing coverage.json
+# Directory containing coverage.json
+cov-loupe --coverage-file coverage list
 ```
 
 **Migration:**
@@ -350,7 +353,8 @@ cov-loupe list
 ls coverage/coverage.json
 cov-loupe list
 
-# Anything else needs the option (a file, or a directory containing coverage.json)
+# Anything else needs the option (a file, or a directory containing
+# coverage.json)
 cov-loupe -c tmp list
 cov-loupe -c ./coverage.json list
 ```

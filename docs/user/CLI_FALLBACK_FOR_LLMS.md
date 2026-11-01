@@ -14,15 +14,18 @@ If MCP isn't working, provide this prompt to your LLM:
 ```
 The cov-loupe MCP server isn't available. Use the cov-loupe CLI instead:
 
-- Run it as `cov-loupe -m cli -fJ <subcommand> ...` (or `bundle exec exe/cov-loupe ...`
-  from a cov-loupe checkout). -m cli guards against COV_LOUPE_OPTS selecting MCP mode;
-  -fJ gives the same JSON the MCP tools return.
-- Carry over any root, coverage file, tracked globs, or staleness settings you were using:
-  -R <root>, -c <coverage file>, -g <glob,glob>, -S true.
+- Run it as `cov-loupe -m cli -fJ <subcommand> ...` (or
+  `bundle exec exe/cov-loupe ...` from a cov-loupe checkout). -m cli guards
+  against COV_LOUPE_OPTS selecting MCP mode; -fJ gives the same JSON the MCP
+  tools return.
+- Carry over any root, coverage file, tracked globs, or staleness settings you
+  were using: -R <root>, -c <coverage file>, -g <glob,glob>, -S true.
 - Run `cov-loupe --help` for subcommands and options.
-- Do not retry the MCP server, and do not read coverage.json yourself or estimate coverage
-  from source or test files. All coverage data must come from cov-loupe output.
-- validate prints no result; read its exit code (0 pass, 3 fail, 1 data error, 4 bad predicate).
+- Do not retry the MCP server, and do not read coverage.json yourself or
+  estimate coverage from source or test files. All coverage data must come
+  from cov-loupe output.
+- validate prints no result; read its exit code (0 pass, 3 fail, 1 data error,
+  4 bad predicate).
 - Say in your response that you used the CLI rather than the MCP server.
 ```
 

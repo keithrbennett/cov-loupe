@@ -73,8 +73,9 @@ claude mcp list
 # Get server details
 claude mcp get cov-loupe
 
-# Remove if needed. Without --scope, it is removed from whichever scope it exists in;
-# use --scope to be explicit (or if the same name exists in more than one scope)
+# Remove if needed. Without --scope, it is removed from whichever scope it
+# exists in; use --scope to be explicit (or if the same name exists in more
+# than one scope)
 claude mcp remove cov-loupe
 claude mcp remove --scope user cov-loupe
 claude mcp remove --scope project cov-loupe
@@ -236,7 +237,9 @@ because the approval is reset by a change:
 ```sh
 cursor-agent mcp enable cov-loupe
 cursor-agent mcp list                    # should show: cov-loupe: ready
-cursor-agent mcp list-tools cov-loupe    # starts the server and lists its 8 tools (9 with --allow-code-predicates); no model needed
+# Starts the server and lists its 8 tools (9 with --allow-code-predicates);
+# no model needed
+cursor-agent mcp list-tools cov-loupe
 ```
 
 To remove the server, delete its entry from `mcp.json` (or run
@@ -463,7 +466,9 @@ it.
 it:
 
 ```sh
-echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"version","arguments":{}}}' | cov-loupe-no-bundler
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call",' \
+  '"params":{"name":"version","arguments":{}}}' \
+  | cov-loupe-no-bundler
 ```
 
 **3. Register `cov-loupe-no-bundler` instead of `cov-loupe -m mcp`.** If
@@ -731,22 +736,44 @@ lines (for example, a file containing only comments).
 
 **`file_coverage_summary`** - Covered/total/percentage summary
 ```json
-{"schema_version": 1, "file": "...", "summary": {"covered": 12, "total": 14, "percentage": 85.71}, "stale": "ok"}
+{
+  "schema_version": 1,
+  "file": "...",
+  "summary": {"covered": 12, "total": 14, "percentage": 85.71},
+  "stale": "ok"
+}
 ```
 
 **`file_uncovered_lines`** - List uncovered line numbers
 ```json
-{"schema_version": 1, "file": "...", "uncovered": [5, 9, 12], "summary": {...}, "stale": "ok"}
+{
+  "schema_version": 1,
+  "file": "...",
+  "uncovered": [5, 9, 12],
+  "summary": {...},
+  "stale": "ok"
+}
 ```
 
 **`file_coverage_detailed`** - Per-line hit counts
 ```json
-{"schema_version": 1, "file": "...", "lines": [{"line": 1, "hits": 1, "covered": true}, ...], "summary": {...}, "stale": "ok"}
+{
+  "schema_version": 1,
+  "file": "...",
+  "lines": [{"line": 1, "hits": 1, "covered": true}, ...],
+  "summary": {...},
+  "stale": "ok"
+}
 ```
 
 **`file_coverage_raw`** - Raw SimpleCov lines array
 ```json
-{"schema_version": 1, "file": "...", "lines": [1, 0, null, 5, 2, null, 1], "stale": "ok"}
+{
+  "schema_version": 1,
+  "file": "...",
+  "lines": [1, 0, null, 5, 2, null, 1],
+  "stale": "ok"
+}
 ```
 Lines SimpleCov marked `"ignored"` (excluded with `nocov` blocks or directive
 comments) are returned as `null` and, like other `null` lines, are not counted
@@ -867,22 +894,41 @@ MCP failure model.
 ```sh
 # Prefer the real executable or a known-clean working directory for MCP tests.
 # Test version tool (simplest, no parameters needed)
-echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"version","arguments":{}}}' | cov-loupe -m mcp
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call",' \
+  '"params":{"name":"version","arguments":{}}}' \
+  | cov-loupe -m mcp
 
 # Test help tool (no parameters needed)
-echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"help","arguments":{}}}' | cov-loupe -m mcp
+echo '{"jsonrpc":"2.0","id":3,"method":"tools/call",' \
+  '"params":{"name":"help","arguments":{}}}' \
+  | cov-loupe -m mcp
 
-# Test summary tool: run from your project root, replacing lib/my_app/order.rb with a file in your coverage
-echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"lib/my_app/order.rb","root":"."}}}' | cov-loupe -m mcp
+# Test summary tool: run from your project root, replacing lib/my_app/order.rb
+# with a file in your coverage
+echo '{"jsonrpc":"2.0","id":2,"method":"tools/call",' \
+  '"params":{"name":"file_coverage_summary",' \
+  '"arguments":{"path":"lib/my_app/order.rb","root":"."}}}' \
+  | cov-loupe -m mcp
 
-# Optional error sanity check: the response should contain a `result` with `isError: true`
-echo '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"nonexistent.rb","root":"."}}}' | cov-loupe -m mcp
+# Optional error sanity check: the response should contain a `result` with
+# `isError: true`
+echo '{"jsonrpc":"2.0","id":5,"method":"tools/call",' \
+  '"params":{"name":"file_coverage_summary",' \
+  '"arguments":{"path":"nonexistent.rb","root":"."}}}' \
+  | cov-loupe -m mcp
 
-# Optional validation sanity check: this also returns a `result` with `isError: true`
-echo '{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{}}}' | cov-loupe -m mcp
+# Optional validation sanity check: this also returns a `result` with
+# `isError: true`
+echo '{"jsonrpc":"2.0","id":6,"method":"tools/call",' \
+  '"params":{"name":"file_coverage_summary","arguments":{}}}' \
+  | cov-loupe -m mcp
 
 # Test with a project-specific root
-echo '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"app/models/order.rb","root":"docs/fixtures/demo_project"}}}' | cov-loupe -m mcp
+echo '{"jsonrpc":"2.0","id":4,"method":"tools/call",' \
+  '"params":{"name":"file_coverage_summary",' \
+  '"arguments":{"path":"app/models/order.rb",' \
+  '"root":"docs/fixtures/demo_project"}}}' \
+  | cov-loupe -m mcp
 ```
 
 **Important Notes:**

@@ -113,7 +113,9 @@ def process_order(order)
   return reject_order(order, "Invalid order") unless order.valid?
   return reject_order(order, "No items") if order.items.empty?
   return reject_order(order, "No payment method") unless order.payment_method
-  return reject_order(order, "Payment not authorized") unless order.payment_method.authorized?
+  unless order.payment_method.authorized?
+    return reject_order(order, "Payment not authorized")
+  end
 
   complete_order(order)
 end

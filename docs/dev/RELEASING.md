@@ -185,7 +185,8 @@ git push origin main --follow-tags
       `gem build` again after tagging
     - Optionally confirm the file hash before pushing:
 ```bash
-sha256sum "cov-loupe-$VERSION.gem"   # macOS: shasum -a 256 "cov-loupe-$VERSION.gem"
+# macOS: shasum -a 256 "cov-loupe-$VERSION.gem"
+sha256sum "cov-loupe-$VERSION.gem"
 ```
     - Compare against the SHA256 printed by the script
 

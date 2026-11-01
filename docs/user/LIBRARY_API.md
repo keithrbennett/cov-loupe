@@ -126,9 +126,12 @@ model = CovLoupe::CoverageModel.new
 # Custom configuration (non-default values):
 model = CovLoupe::CoverageModel.new(
   root: File.join(Dir.home, 'project'),          # non-default project root
-  coverage_file: "build/coverage",                # coverage.json file, or its directory
-  raise_on_stale: true,                          # enable strict staleness checks (raise on stale)
-  tracked_globs: ["lib/my_app/**/*.rb"]          # for 'list' staleness: flag new/missing files
+  coverage_file: "build/coverage",               # coverage.json file, or its
+                                                 # directory
+  raise_on_stale: true,                          # enable strict staleness
+                                                 # checks (raise on stale)
+  tracked_globs: ["lib/my_app/**/*.rb"]          # for 'list' staleness: flag
+                                                 # new/missing files
 )
 
 # List all files with coverage summary
@@ -192,7 +195,9 @@ require 'json_schemer'
 require 'cov_loupe'
 
 saved = JSON.parse(File.read('saved-coverage.json'))
-schema_path = CovLoupe::PayloadSchema.schema_path('list', version: saved.fetch('schema_version'))
+schema_path = CovLoupe::PayloadSchema.schema_path(
+  'list', version: saved.fetch('schema_version')
+)
 schema = JSONSchemer.schema(JSON.parse(File.read(schema_path)))
 raise 'Invalid saved coverage payload' unless schema.valid?(saved)
 
@@ -258,7 +263,8 @@ Returns coverage summary for all files in the coverage file.
 list_result = model.list
 # => { 'schema_version' => 1, 'files' => [...], ... }
 files = list_result['files']
-# => [ { 'file' => 'lib/foo.rb', 'covered' => 12, 'total' => 14, 'percentage' => 85.71, 'stale' => "ok" }, ... ]
+# => [ { 'file' => 'lib/foo.rb', 'covered' => 12, 'total' => 14,
+#    'percentage' => 85.71, 'stale' => "ok" }, ... ]
 
 # Get worst coverage first
 worst_files = model.list(sort_order: :ascending)['files'].first(10)
@@ -288,7 +294,8 @@ Returns coverage summary for a specific file.
 **Example:**
 ```ruby
 summary = model.summary_for(target)
-# => { 'schema_version' => 1, 'file' => 'lib/foo.rb', 'summary' => {'covered'=>12, 'total'=>14, 'percentage'=>85.71} }
+# => { 'schema_version' => 1, 'file' => 'lib/foo.rb',
+#    'summary' => {'covered'=>12, 'total'=>14, 'percentage'=>85.71} }
 ```
 
 **Note:** `CoverageModel#summary_for` returns the schema version, file path,
@@ -316,7 +323,8 @@ Returns list of uncovered line numbers for a specific file.
 **Example:**
 ```ruby
 uncovered = model.uncovered_for("lib/foo.rb")
-# => { 'schema_version' => 1, 'file' => 'lib/foo.rb', 'uncovered' => [5, 9, 12], 'summary' => { ... } }
+# => { 'schema_version' => 1, 'file' => 'lib/foo.rb',
+#    'uncovered' => [5, 9, 12], 'summary' => { ... } }
 ```
 
 ### `detailed_for(path, raise_on_stale: model default)`
@@ -340,7 +348,9 @@ Returns per-line coverage details with hit counts.
 **Example:**
 ```ruby
 detailed = model.detailed_for("lib/foo.rb")
-# => { 'schema_version' => 1, 'file' => 'lib/foo.rb', 'lines' => [{'line' => 1, 'hits' => 1, 'covered' => true}, ...], 'summary' => { ... } }
+# => { 'schema_version' => 1, 'file' => 'lib/foo.rb',
+#    'lines' => [{'line' => 1, 'hits' => 1, 'covered' => true}, ...],
+#    'summary' => { ... } }
 ```
 
 ### `raw_for(path, raise_on_stale: model default)`
@@ -367,7 +377,8 @@ lines or in percentages.
 **Example:**
 ```ruby
 raw = model.raw_for("lib/foo.rb")
-# => { 'schema_version' => 1, 'file' => 'lib/foo.rb', 'lines' => [nil, 1, 0, 3, ...] }
+# => { 'schema_version' => 1, 'file' => 'lib/foo.rb',
+#    'lines' => [nil, 1, 0, 3, ...] }
 ```
 
 ### `format_table(rows = nil, sort_order: :descending, raise_on_stale: model default, tracked_globs: model default, output_chars: :default)`
@@ -422,9 +433,11 @@ Returns aggregated coverage totals across all files.
 totals = model.project_totals
 # => {
 #      'schema_version' => 1,
-#      'lines' => { 'total' => 123, 'covered' => 100, 'uncovered' => 23, 'percentage' => 81.3 },
+#      'lines' => { 'total' => 123, 'covered' => 100, 'uncovered' => 23,
+#        'percentage' => 81.3 },
 #      'tracking' => { 'enabled' => false, 'globs' => [] },
-#      'files' => { 'total' => 4, 'with_coverage' => { 'total' => 4, 'ok' => 4, 'stale' => { ... } } }
+#      'files' => { 'total' => 4,
+#        'with_coverage' => { 'total' => 4, 'ok' => 4, 'stale' => { ... } } }
 #    }
 
 # Filter to specific directory
@@ -506,18 +519,24 @@ Returns `Hash` with file data and staleness metadata:
   'schema_version' => Integer, # Currently 1; first top-level key
   'files' => [
     {
-      'file' => String,       # Project-relative path (absolute if outside the root)
+      'file' => String,       # Project-relative path (absolute if outside the
+                              # root)
       'covered' => Integer,   # Number of covered lines
       'total' => Integer,     # Total relevant lines
-      'percentage' => Float | nil, # Line coverage percentage (0.00-100.00); nil if no coverable lines
-      'stale' => String       # Staleness indicator: "ok", "deleted", "newer", "length_mismatch", or "unreadable"
+      'percentage' => Float | nil, # Line coverage percentage (0.00-100.00);
+                                   # nil if no coverable lines
+      'stale' => String       # Staleness indicator: "ok", "deleted", "newer",
+                              # "length_mismatch", or "unreadable"
     }
   ],
-  'skipped_files' => Array<Hash>,          # Skipped rows; each hash has 'file', 'error', 'error_class'
-  'missing_tracked_files' => Array<String>,# Tracked files missing from coverage
+  'skipped_files' => Array<Hash>,          # Skipped rows; each hash has
+                                           # 'file', 'error', 'error_class'
+  'missing_tracked_files' => Array<String>, # Tracked files missing from
+                                            # coverage
   'newer_files' => Array<String>,          # Files newer than coverage
   'deleted_files' => Array<String>,        # Coverage entries for deleted files
-  'length_mismatch_files' => Array<String>,# Files whose line counts differ from coverage
+  'length_mismatch_files' => Array<String>, # Files whose line counts differ
+                                            # from coverage
   'unreadable_files' => Array<String>,     # Files that could not be read
   'timestamp_status' => String             # 'ok' or 'missing'
 }
@@ -530,11 +549,13 @@ Returns `Hash`:
 ```ruby
 {
   'schema_version' => Integer, # Currently 1; first top-level key
-  'file' => String,       # Project-relative path (absolute if outside the root)
+  'file' => String,       # Project-relative path (absolute if outside the
+                          # root)
   'summary' => {
     'covered' => Integer, # Number of covered lines
     'total' => Integer,   # Total relevant lines
-    'percentage' => Float | nil # Line coverage percentage (0.00-100.00); nil if no coverable lines
+    'percentage' => Float | nil # Line coverage percentage (0.00-100.00); nil
+                                # if no coverable lines
   }
 }
 ```
@@ -549,7 +570,8 @@ Returns `Hash`:
 ```ruby
 {
   'schema_version' => Integer, # Currently 1; first top-level key
-  'file' => String,       # Project-relative path (absolute if outside the root)
+  'file' => String,       # Project-relative path (absolute if outside the
+                          # root)
   'uncovered' => Array<Integer>,  # Line numbers that are not covered
   'summary' => {
     'covered' => Integer,
@@ -566,7 +588,8 @@ Returns `Hash`:
 ```ruby
 {
   'schema_version' => Integer, # Currently 1; first top-level key
-  'file' => String,       # Project-relative path (absolute if outside the root)
+  'file' => String,       # Project-relative path (absolute if outside the
+                          # root)
   'lines' => Array<Hash>, # Per-line coverage details
   'summary' => {
     'covered' => Integer,
@@ -592,8 +615,10 @@ Returns `Hash`:
 ```ruby
 {
   'schema_version' => Integer, # Currently 1; first top-level key
-  'file' => String,              # Project-relative path (absolute if outside the root)
-  'lines' => Array<Integer | nil>   # SimpleCov lines array (nil = irrelevant, 0 = uncovered, >0 = hit count)
+  'file' => String,              # Project-relative path (absolute if outside
+                                 # the root)
+  'lines' => Array<Integer | nil>   # SimpleCov lines array (nil = irrelevant,
+                                    # 0 = uncovered, >0 = hit count)
 }
 ```
 
@@ -608,7 +633,8 @@ Returns `Hash`:
     'total' => Integer,            # Total relevant lines across all files
     'covered' => Integer,          # Total covered lines
     'uncovered' => Integer,        # Total uncovered lines
-    'percentage' => Float | nil,   # Overall line coverage percent; nil if no measurable lines
+    'percentage' => Float | nil,   # Overall line coverage percent; nil if no
+                                   # measurable lines
     'included_files' => Integer,   # Non-stale files included in line totals
     'excluded_files' => Integer    # Stale files excluded from line totals
   },
@@ -617,9 +643,12 @@ Returns `Hash`:
     'globs' => Array<String>       # Active tracked globs (empty when disabled)
   },
   'files' => {
-    'total' => Integer,          # Total number of files (with + without coverage; without only when tracking is enabled)
+    'total' => Integer,          # Total number of files (with + without
+                                 # coverage; without only when tracking is
+                                 # enabled)
     'with_coverage' => {
-      'total' => Integer,        # Files with coverage entries (skipped rows excluded)
+      'total' => Integer,        # Files with coverage entries (skipped rows
+                                 # excluded)
       'ok' => Integer,           # Fresh coverage entries
       'stale' => {
         'total' => Integer,      # Stale coverage entries
@@ -632,7 +661,8 @@ Returns `Hash`:
       }
     },
     'without_coverage' => {
-      'total' => Integer,        # Tracked files missing, unreadable, or skipped
+      'total' => Integer,        # Tracked files missing, unreadable, or
+                                 # skipped
       'by_type' => {
         'missing_from_coverage' => Integer,
         'unreadable' => Integer,
@@ -691,7 +721,8 @@ begin
   summary = model.summary_for("lib/foo.rb")
   percentage = summary['summary']['percentage']
   puts "Coverage: #{percentage ? "#{percentage}%" : 'n/a'}"
-rescue CovLoupe::CoverageFileNotFoundError => e # subclass of FileError, so rescue it first
+# Subclass of FileError, so rescue it first
+rescue CovLoupe::CoverageFileNotFoundError => e
   puts "Coverage data not found: #{e.message}"
   puts "Run your tests first: bundle exec rspec"
 rescue CovLoupe::FileError => e
@@ -720,7 +751,8 @@ end
 begin
   model = CovLoupe::CoverageModel.new(raise_on_stale: true)
   files = model.list['files']
-rescue CovLoupe::CoverageDataStaleError, CovLoupe::CoverageDataProjectStaleError => e
+rescue CovLoupe::CoverageDataStaleError,
+       CovLoupe::CoverageDataProjectStaleError => e
   puts "Stale coverage detected: #{e.message}"
   puts "Re-run tests: bundle exec rspec"
   exit 1
@@ -774,11 +806,11 @@ files_to_check = [
 
 results = files_to_check.map do |path|
   begin
-    summary = model.summary_for(path)
+    percentage = model.summary_for(path)['summary']['percentage']
     {
       file: path,
-      coverage: summary['summary']['percentage'],
-      status: summary['summary']['percentage'].nil? || summary['summary']['percentage'] >= 80 ? :ok : :low
+      coverage: percentage,
+      status: percentage.nil? || percentage >= 80 ? :ok : :low
     }
   rescue CovLoupe::FileError
     {
@@ -792,7 +824,8 @@ end
 # Report
 results.each do |r|
   status_icon = { ok: '✓', low: '⚠', missing: '✗' }[r[:status]]
-  puts "#{status_icon} #{r[:file]}: #{r[:coverage] ? "#{r[:coverage]}%" : 'n/a'}"
+  coverage = r[:coverage] ? "#{r[:coverage]}%" : 'n/a'
+  puts "#{status_icon} #{r[:file]}: #{coverage}"
 end
 ```
 
@@ -917,7 +950,8 @@ class CoverageDeltaTracker
 
     current.each do |file|
       baseline_file = baseline.find { |f| f['file'] == file['file'] }
-      next unless baseline_file && file['percentage'] && baseline_file['percentage']
+      next unless baseline_file && file['percentage'] &&
+                  baseline_file['percentage']
 
       delta = file['percentage'] - baseline_file['percentage']
 
@@ -941,14 +975,16 @@ class CoverageDeltaTracker
     if improved.any?
       puts "\n✓ Coverage Improvements:"
       improved.sort_by { |f| -f[:delta] }.each do |f|
-        puts "  #{f[:file]}: #{f[:before]}% → #{f[:after]}% (+#{f[:delta].round(2)}%)"
+        puts "  #{f[:file]}: #{f[:before]}% → #{f[:after]}% " \
+             "(+#{f[:delta].round(2)}%)"
       end
     end
 
     if regressed.any?
       puts "\n⚠ Coverage Regressions:"
       regressed.sort_by { |f| f[:delta] }.each do |f|
-        puts "  #{f[:file]}: #{f[:before]}% → #{f[:after]}% (#{f[:delta].round(2)}%)"
+        puts "  #{f[:file]}: #{f[:before]}% → #{f[:after]}% " \
+             "(#{f[:delta].round(2)}%)"
       end
     end
 
@@ -988,7 +1024,9 @@ class MarkdownCoverageReport
 
     # Files below threshold
     threshold = 80.0
-    low_coverage = files.select { |file| file['percentage'] && file['percentage'] < threshold }
+    low_coverage = files.select do |file|
+      file['percentage'] && file['percentage'] < threshold
+    end
 
     # Build low coverage table
     low_coverage_section = if low_coverage.any?
@@ -1011,7 +1049,10 @@ class MarkdownCoverageReport
     end
 
     # Build top performers table
-    top_rows = files.select { |file| file['percentage'] }.sort_by { |file| -file['percentage'] }.take(10).map do |file|
+    top_files = files.select { |file| file['percentage'] }
+                     .sort_by { |file| -file['percentage'] }
+                     .take(10)
+    top_rows = top_files.map do |file|
       "| #{file['file']} | #{file['percentage']}% |"
     end.join("\n")
 

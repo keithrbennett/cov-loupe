@@ -128,7 +128,8 @@ hash passwords on registration and verify hashed passwords on login.
 
 ### Actionable Prompt
 ```
-Update the user authentication system to use bcrypt for password hashing. Specifically:
+Update the user authentication system to use bcrypt for password hashing.
+Specifically:
 1. Add bcrypt gem to Gemfile
 2. Update User model to hash passwords before saving
 3. Update authentication logic to compare hashed passwords

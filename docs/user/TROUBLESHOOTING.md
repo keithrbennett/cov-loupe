@@ -27,10 +27,12 @@ dies with `Gem::Resolver::APISet::GemParser` errors.
 - Or execute RSpec with explicit RVM paths (replace `3.4.5` and the `cov-loupe`
   gemset with your own):
   ```bash
-  PATH="$HOME/.rvm/gems/ruby-3.4.5@cov-loupe/bin:$HOME/.rvm/rubies/ruby-3.4.5/bin:$PATH" \
-    GEM_HOME="$HOME/.rvm/gems/ruby-3.4.5@cov-loupe" \
-    GEM_PATH="$HOME/.rvm/gems/ruby-3.4.5@cov-loupe:$HOME/.rvm/gems/ruby-3.4.5@global" \
-    $HOME/.rvm/rubies/ruby-3.4.5/bin/bundle exec rspec
+  RVM_GEMS="$HOME/.rvm/gems/ruby-3.4.5"
+  RVM_RUBY="$HOME/.rvm/rubies/ruby-3.4.5"
+  PATH="$RVM_GEMS@cov-loupe/bin:$RVM_RUBY/bin:$PATH" \
+    GEM_HOME="$RVM_GEMS@cov-loupe" \
+    GEM_PATH="$RVM_GEMS@cov-loupe:$RVM_GEMS@global" \
+    "$RVM_RUBY/bin/bundle" exec rspec
   ```
 - Use a different AI coding agent and/or operating system.
 
@@ -166,7 +168,9 @@ Check the following when you see an `Unable to use log target` message:
 
 2. **Smoke-test MCP server mode manually:**
    ```bash
-   echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"version","arguments":{}}}' | cov-loupe -m mcp
+   echo '{"jsonrpc":"2.0","id":1,"method":"tools/call",' \
+     '"params":{"name":"version","arguments":{}}}' \
+     | cov-loupe -m mcp
    ```
    This should return a JSON-RPC response, confirming that the server launches
    and responds over stdio. It is not an exhaustive contract test; see [MCP
@@ -284,7 +288,9 @@ stays quiet.
    ```
 4. Test MCP manually:
    ```bash
-   echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"version","arguments":{}}}' | cov-loupe -m mcp 2>/dev/null
+   echo '{"jsonrpc":"2.0","id":1,"method":"tools/call",' \
+     '"params":{"name":"version","arguments":{}}}' \
+     | cov-loupe -m mcp 2>/dev/null
    ```
    Any stdout output before the JSON-RPC payload is a problem for MCP startup
    (stderr is discarded here, since log lines there are harmless).
@@ -312,7 +318,10 @@ stays quiet.
 - Fallback: bypass the RubyGems wrapper and invoke the real executable
   directly:
   ```bash
-  ruby -e 'spec = Gem::Specification.find_by_name("cov-loupe"); puts File.join(spec.full_gem_path, "exe", "cov-loupe")'
+  ruby -e '
+    spec = Gem::Specification.find_by_name("cov-loupe")
+    puts File.join(spec.full_gem_path, "exe", "cov-loupe")
+  '
   ```
   Then use that path in your MCP config with `-m mcp`.
 - For local development from a checkout, another fallback is to point the MCP
@@ -378,7 +387,9 @@ ls -la coverage/coverage.json
 head -20 coverage/coverage.json
 
 # Test MCP mode
-echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"version","arguments":{}}}' | cov-loupe -m mcp 2>&1
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call",' \
+  '"params":{"name":"version","arguments":{}}}' \
+  | cov-loupe -m mcp 2>&1
 ```
 
 ## Getting More Help

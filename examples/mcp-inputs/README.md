@@ -48,7 +48,8 @@ jq . examples/mcp-inputs/coverage_summary.json
 Using Ruby:
 ```sh
 ruby -r json -e '
-  puts JSON.pretty_generate(JSON.parse(File.read("examples/mcp-inputs/coverage_summary.json")))
+  json = File.read("examples/mcp-inputs/coverage_summary.json")
+  puts JSON.pretty_generate(JSON.parse(json))
 '
 ```
 
@@ -66,12 +67,14 @@ exe/cov-loupe -m mcp < examples/mcp-inputs/coverage_summary.json | jq .
 
 Using Ruby:
 ```sh
-exe/cov-loupe -m mcp < examples/mcp-inputs/coverage_summary.json | ruby -r json -e '
+exe/cov-loupe -m mcp < examples/mcp-inputs/coverage_summary.json \
+  | ruby -r json -e '
   puts JSON.pretty_generate(JSON.parse($stdin.read))
 '
 ```
 
 Using `rexe`:
 ```sh
-exe/cov-loupe -m mcp < examples/mcp-inputs/coverage_summary.json | rexe -ml -ij -oJ
+exe/cov-loupe -m mcp < examples/mcp-inputs/coverage_summary.json \
+  | rexe -ml -ij -oJ
 ```

@@ -13,7 +13,8 @@ version, skipping any prereleases.
 To install a prerelease, you must explicitly opt in:
 
 ```sh
-# Install the newest version, prereleases included (a newer stable release wins)
+# Install the newest version, prereleases included (a newer stable release
+# wins)
 gem install cov-loupe --pre
 
 # Install a specific prerelease version
@@ -28,7 +29,8 @@ In a Gemfile, you need to explicitly specify the prerelease version:
 # Exact version
 gem 'cov-loupe', '7.0.0.pre.1'
 
-# Or allow this prerelease or any later 7.0.x version, including stable releases
+# Or allow this prerelease or any later 7.0.x version, including stable
+# releases
 gem 'cov-loupe', '~> 7.0.0.pre.1'
 ```
 

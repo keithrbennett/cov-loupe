@@ -59,11 +59,13 @@ clp -fJ t
 clp validate examples/success_predicates/project_coverage_minimum_predicate.rb
 clp v examples/success_predicates/project_coverage_minimum_predicate.rb
 clp v -i '->(m) { m.project_totals["lines"]["percentage"].to_f >= 85 }'
-# validate prints no result (only what the predicate itself prints); check the exit code (0 pass, 3 fail). On the demo fixture
-# (80.85% total) these minimum-85% checks fail, so they exit 3.
+# validate prints no result (only what the predicate itself prints); check the
+# exit code (0 pass, 3 fail). On the demo fixture (80.85% total) these
+# minimum-85% checks fail, so they exit 3.
 echo $?
 
-# Show version (no subcommand; use -v or --version; `v` without a dash runs validate)
+# Show version (no subcommand; use -v or --version; `v` without a dash runs
+# validate)
 clp -v
 clp --version
 
@@ -128,13 +130,20 @@ Files: total 7, ok 7, stale 0
 {
   "schema_version": 1,
   "files": [
-    { "file": "app/models/user.rb", "covered": 6, "total": 6, "percentage": 100.0, "stale": "ok" },
-    { "file": "lib/api/client.rb", "covered": 8, "total": 9, "percentage": 88.88, "stale": "ok" },
-    { "file": "app/models/order.rb", "covered": 6, "total": 7, "percentage": 85.71, "stale": "ok" },
-    { "file": "lib/ops/jobs/report_job.rb", "covered": 4, "total": 5, "percentage": 80.0, "stale": "ok" },
-    { "file": "lib/payments/processor.rb", "covered": 4, "total": 5, "percentage": 80.0, "stale": "ok" },
-    { "file": "app/controllers/orders_controller.rb", "covered": 7, "total": 10, "percentage": 70.0, "stale": "ok" },
-    { "file": "lib/payments/refund_service.rb", "covered": 3, "total": 5, "percentage": 60.0, "stale": "ok" }
+    { "file": "app/models/user.rb", "covered": 6, "total": 6,
+      "percentage": 100.0, "stale": "ok" },
+    { "file": "lib/api/client.rb", "covered": 8, "total": 9,
+      "percentage": 88.88, "stale": "ok" },
+    { "file": "app/models/order.rb", "covered": 6, "total": 7,
+      "percentage": 85.71, "stale": "ok" },
+    { "file": "lib/ops/jobs/report_job.rb", "covered": 4, "total": 5,
+      "percentage": 80.0, "stale": "ok" },
+    { "file": "lib/payments/processor.rb", "covered": 4, "total": 5,
+      "percentage": 80.0, "stale": "ok" },
+    { "file": "app/controllers/orders_controller.rb", "covered": 7,
+      "total": 10, "percentage": 70.0, "stale": "ok" },
+    { "file": "lib/payments/refund_service.rb", "covered": 3, "total": 5,
+      "percentage": 60.0, "stale": "ok" }
   ],
   "skipped_files": [],
   "missing_tracked_files": [],
@@ -213,7 +222,8 @@ Show uncovered line numbers for a specific file.
 clp uncovered app/controllers/orders_controller.rb
 clp u app/controllers/orders_controller.rb
 clp -s uncovered u app/controllers/orders_controller.rb  # -s = --source
-clp -s uncovered -n 3 u app/controllers/orders_controller.rb  # -s = --source, -n = --context-lines
+# -s = --source, -n = --context-lines
+clp -s uncovered -n 3 u app/controllers/orders_controller.rb
 ```
 
 **Arguments:**
@@ -406,7 +416,8 @@ File: app/models/order.rb
 {
   "schema_version": 1,
   "file": "app/models/order.rb",
-  "lines": [null, null, null, null, null, 1, 1, 1, null, null, 1, 1, null, null, 1, 0, null, null, null, null],
+  "lines": [null, null, null, null, null, 1, 1, 1, null, null, 1, 1, null,
+            null, 1, 0, null, null, null, null],
   "stale": "ok"
 }
 ```
@@ -659,7 +670,8 @@ Number of context lines around uncovered code (for `-s uncovered` /
 `--source uncovered`). Must be a non-negative integer.
 
 ```sh
-clp -s u -n 3 uncovered lib/api/client.rb  # -s u = uncovered, -n = --context-lines
+# -s u = uncovered, -n = --context-lines
+clp -s u -n 3 uncovered lib/api/client.rb
 ```
 
 **Default:** 2 lines
@@ -950,9 +962,9 @@ its own; without `--mode mcp` (on the command line or in `COV_LOUPE_OPTS`) it
 runs in CLI mode.
 
 ```sh
-clp -m mcp               # MCP server mode (required for MCP), short option form
-clp --mode mcp           # MCP server mode (required for MCP), long option form
-clp -m cli list          # CLI mode (default), can use to override environment variable
+clp -m mcp          # MCP server mode (required for MCP), short option form
+clp --mode mcp      # MCP server mode (required for MCP), long option form
+clp -m cli list     # CLI mode (default); overrides a mode set in env vars
 ```
 
 ### `--[no-]allow-code-predicates`
@@ -1013,8 +1025,12 @@ cov-loupe v coverage_policy.rb
 **String mode (inline code):**
 ```sh
 # Simple inline validation
-clp validate -i '->(m) { m.list["files"].all? { |f| f["percentage"].nil? || f["percentage"] >= 80 } }'
-clp v -i '->(m) { m.list["files"].all? { |f| f["percentage"].nil? || f["percentage"] >= 80 } }'
+clp validate -i '->(m) {
+  m.list["files"].all? { |f| f["percentage"].nil? || f["percentage"] >= 80 }
+}'
+clp v -i '->(m) {
+  m.list["files"].all? { |f| f["percentage"].nil? || f["percentage"] >= 80 }
+}'
 
 # Long form of -i, with a global option before the subcommand
 clp -S true validate --inline '->(m) { m.list["files"].size > 0 }'
@@ -1025,7 +1041,9 @@ clp -S true v --inline '->(m) { m.list["files"].size > 0 }'
 ```ruby
 # coverage_policy.rb
 ->(model) do
-  model.list["files"].all? { |f| f['percentage'].nil? || f['percentage'] >= 80 }
+  model.list["files"].all? do |f|
+    f['percentage'].nil? || f['percentage'] >= 80
+  end
 end
 ```
 
@@ -1127,7 +1145,8 @@ export COV_LOUPE_OPTS="-S true -fJ --error-mode debug"
 # Show all files sorted by highest coverage first (default)
 clp
 
-# Find the 5 files with worst coverage (the first 3 lines are the table's top border, header, and separator)
+# Find the 5 files with worst coverage (the first 3 lines are the table's top
+# border, header, and separator)
 clp -o a list | head -8
 ```
 
@@ -1161,24 +1180,32 @@ clp -fJ list | jq '.files[] | select(.percentage != null and .percentage < 80)'
 
 # Ruby alternative:
 clp -fJ list | ruby -r json -e '
-  JSON.parse($stdin.read)["files"].select { |f| f["percentage"] && f["percentage"] < 80 }.each do |f|
+  files = JSON.parse($stdin.read)["files"]
+  files.select { |f| f["percentage"] && f["percentage"] < 80 }.each do |f|
     puts JSON.pretty_generate(f)
   end
 '
 
 # Rexe alternative:
-clp -fJ list | rexe -ij -mb -oJ 'self["files"].select { |f| f["percentage"] && f["percentage"] < 80 }'
+clp -fJ list | rexe -ij -mb -oJ '
+  self["files"].select { |f| f["percentage"] && f["percentage"] < 80 }
+'
 
 # Count files below 80% coverage
-clp -fJ list | jq '[.files[] | select(.percentage != null and .percentage < 80)] | length'
+clp -fJ list | jq '
+  [.files[] | select(.percentage != null and .percentage < 80)] | length
+'
 
 # Ruby alternative:
 clp -fJ list | ruby -r json -e '
-  puts JSON.parse($stdin.read)["files"].count { |f| f["percentage"] && f["percentage"] < 80 }
+  files = JSON.parse($stdin.read)["files"]
+  puts files.count { |f| f["percentage"] && f["percentage"] < 80 }
 '
 
 # Rexe alternative:
-clp -fJ list | rexe -ij -mb -op 'self["files"].count { |f| f["percentage"] && f["percentage"] < 80 }'
+clp -fJ list | rexe -ij -mb -op '
+  self["files"].count { |f| f["percentage"] && f["percentage"] < 80 }
+'
 ```
 
 ### Filtering and Sorting
@@ -1205,8 +1232,9 @@ clp -g "lib/payments/**/*.rb" list
 # Check if coverage is stale (for CI/CD)
 clp -S true
 
-# Check with specific file patterns. On the demo fixture this exits 1: two files
-# these globs match are missing from coverage, which -S true also treats as stale
+# Check with specific file patterns. On the demo fixture this exits 1: two
+# files these globs match are missing from coverage, which -S true also treats
+# as stale
 clp -S true -g "lib/payments/**/*.rb,lib/ops/jobs/**/*.rb" list
 
 # See which files are stale (don't error)
@@ -1240,7 +1268,8 @@ mkdir -p artifacts
 clp -fJ list > artifacts/coverage-report.json
 
 # Check specific directory in monorepo
-cov-loupe -R services/api -c services/api/coverage  # -R = --root, -c = --coverage-file
+# -R = --root, -c = --coverage-file
+cov-loupe -R services/api -c services/api/coverage
 ```
 
 ### Debugging

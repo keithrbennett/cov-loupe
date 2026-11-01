@@ -58,13 +58,16 @@ RSpec.describe CovLoupe::Tools::YourTool do
     })
   end
 
-  subject { described_class.call(path: 'lib/foo.rb', server_context: server_context) }
+  subject do
+    described_class.call(path: 'lib/foo.rb', server_context: server_context)
+  end
 
   it_behaves_like 'an MCP tool that returns text JSON'
 
   it 'returns your tool data with expected structure' do
     response = subject
-    data, item = expect_mcp_text_json(response, expected_keys: ['file', 'your_data'])
+    data, item = expect_mcp_text_json(response,
+                                      expected_keys: ['file', 'your_data'])
     expect(data['your_data']).to include('key')
   end
 end
@@ -72,14 +75,18 @@ end
 
 #### After (Parameterized)
 ```ruby
-# Just add to FILE_BASED_TOOL_CONFIGS - 8 lines
+# Just add to FILE_BASED_TOOL_CONFIGS - 12 lines
 your_tool: {
   tool_class: CovLoupe::Tools::YourTool,
   model_method: :your_method,
   expected_keys: ['file', 'your_data'], 
   description: 'your tool data',
-  mock_data: { 'file' => '/abs/path/lib/foo.rb', 'your_data' => { 'key' => 'value' } },
-  additional_validations: ->(data, item) { expect(data['your_data']).to include('key') }
+  mock_data: {
+    'file' => '/abs/path/lib/foo.rb', 'your_data' => { 'key' => 'value' }
+  },
+  additional_validations: lambda { |data, item|
+    expect(data['your_data']).to include('key')
+  }
 }
 ```
 

@@ -169,8 +169,12 @@ lines = CovLoupe::Resolvers::ResolverHelpers.lookup_lines(cov_data, abs_path)
 # New
 root = '/path/to/project'
 volume_case_sensitive = CovLoupe::PathUtils.volume_case_sensitive?(root)
-resolver = CovLoupe::Resolvers::CoverageLineResolver.new(cov_data, root: root, volume_case_sensitive: volume_case_sensitive)
-lines = CovLoupe::Resolvers::ResolverHelpers.lookup_lines(cov_data, abs_path, root: root, volume_case_sensitive: volume_case_sensitive)
+resolver = CovLoupe::Resolvers::CoverageLineResolver.new(
+  cov_data, root: root, volume_case_sensitive: volume_case_sensitive
+)
+lines = CovLoupe::Resolvers::ResolverHelpers.lookup_lines(
+  cov_data, abs_path, root: root, volume_case_sensitive: volume_case_sensitive
+)
 ```
 
 **Note**: If you're using `CoverageModel` (recommended), this is handled
@@ -237,14 +241,16 @@ low_coverage = files.select { |f| f['percentage'] < 80 }
 
 # Now you can also:
 if result['skipped_files'].any?
-  warn "Warning: #{result['skipped_files'].size} files were skipped due to errors"
+  count = result['skipped_files'].size
+  warn "Warning: #{count} files were skipped due to errors"
   result['skipped_files'].each do |skip|
     warn "  #{skip['file']}: #{skip['error']}"
   end
 end
 
 if result['newer_files'].any?
-  warn "Warning: #{result['newer_files'].size} files are newer than coverage data"
+  count = result['newer_files'].size
+  warn "Warning: #{count} files are newer than coverage data"
 end
 ```
 
@@ -298,7 +304,8 @@ totals = model.project_totals
 #   "tracking" => { "enabled" => true, "globs" => ["lib/**/*.rb"] },
 #   "files" => {
 #     "total" => 4,
-#     "with_coverage" => { "total" => 4, "ok" => 4, "stale" => { "total" => 0, "by_type" => { ... } } }
+#     "with_coverage" => { "total" => 4, "ok" => 4,
+#       "stale" => { "total" => 0, "by_type" => { ... } } }
 #   }
 # }
 ```
@@ -330,7 +337,8 @@ logger = CovLoupe::Logger.new(target: 'cov_loupe.log', mcp_mode: false)
 
 # New
 logger = CovLoupe::Logger.new(target: 'cov_loupe.log', mode: :mcp)
-logger = CovLoupe::Logger.new(target: 'cov_loupe.log', mode: :cli)     # or :library
+# mode: :cli or :library
+logger = CovLoupe::Logger.new(target: 'cov_loupe.log', mode: :cli)
 ```
 
 [↑ Back to top](#table-of-contents)
@@ -359,7 +367,9 @@ model.summary_for('lib/foo.rb')
 
 # Without raise_on_stale, the stale data is still returned
 CovLoupe::CoverageModel.new(root: '.').summary_for('lib/foo.rb')
-# => { 'file' => 'lib/foo.rb', 'summary' => { 'covered' => 4, 'total' => 6, 'percentage' => 66.67 }, ... }
+# => { 'file' => 'lib/foo.rb',
+#    'summary' => { 'covered' => 4, 'total' => 6, 'percentage' => 66.67 },
+#    ... }
 ```
 
 ```sh
@@ -431,7 +441,8 @@ result = model.list
 ### New Behavior (v4.x)
 ```ruby
 result = model.list
-# => { 'files' => [{ 'file' => 'lib/foo.rb', 'stale' => "missing", ... }], ... }
+# => { 'files' => [{ 'file' => 'lib/foo.rb', 'stale' => "missing", ... }],
+#    ... }
 
 # Staleness is now indicated by readable strings:
 # "ok" - Fresh coverage data

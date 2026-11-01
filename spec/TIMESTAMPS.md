@@ -37,7 +37,8 @@ date -u -d @1720000000        # GNU date; on macOS: date -u -r 1720000000
 # Wed Jul  3 09:46:40 UTC 2024
 
 # Human readable to Unix timestamp  
-date -d "2024-07-03 09:46:40 UTC" +%s   # GNU date; on macOS: date -j -u -f "%Y-%m-%d %H:%M:%S" "2024-07-03 09:46:40" +%s
+date -d "2024-07-03 09:46:40 UTC" +%s   # GNU date
+date -j -u -f "%Y-%m-%d %H:%M:%S" "2024-07-03 09:46:40" +%s   # macOS
 # 1720000000
 ```
 

@@ -86,8 +86,8 @@ def self.evaluate_file(path, model)
     content = File.read(path, encoding: 'UTF-8:UTF-8')
 
     # WARNING: The predicate code executes with full Ruby privileges.
-    # It has unrestricted access to the file system, network, and system commands.
-    # Only use predicate files from trusted sources.
+    # It has unrestricted access to the file system, network, and system
+    # commands. Only use predicate files from trusted sources.
     #
     # We evaluate in a fresh Object context to prevent accidental access to
     # internals, but this provides NO security isolation.
@@ -99,12 +99,15 @@ def self.evaluate_file(path, model)
   end
 end
 
-# Failures in the predicate itself become PredicateError (CLI exit code 4); coverage-data and
-# file errors raised by the model's own queries keep their type (exit code 1).
+# Failures in the predicate itself become PredicateError (CLI exit code 4);
+# coverage-data and file errors raised by the model's own queries keep their
+# type (exit code 1).
 def self.guard_predicate_errors(kind)
   yield
 rescue SyntaxError => e
-  raise PredicateError.new("Syntax error in predicate #{kind}: #{e.message}", e)
+  raise PredicateError.new(
+    "Syntax error in predicate #{kind}: #{e.message}", e
+  )
 rescue PredicateError, CoverageDataError, FileError
   raise
 rescue => e
@@ -147,8 +150,8 @@ predicates **exactly like any other Ruby code in the project**:
    ```
    ⚠️ SECURITY WARNING
 
-   Validation predicates execute as arbitrary Ruby code with full system privileges.
-   Only use predicate files from trusted sources.
+   Validation predicates execute as arbitrary Ruby code with full system
+   privileges. Only use predicate files from trusted sources.
    - Never use predicates from untrusted or unknown sources
    - Review predicates before use, especially in CI/CD environments
    - Store predicates in version control with code review
@@ -172,7 +175,9 @@ method):
 **Lambda example:**
 ```ruby
 ->(model) do
-  model.list["files"].all? { |f| f['percentage'].nil? || f['percentage'] >= 80 }
+  model.list["files"].all? do |f|
+    f['percentage'].nil? || f['percentage'] >= 80
+  end
 end
 ```
 
@@ -182,7 +187,9 @@ end
 
 class CoveragePolicy
   def call(model)
-    api_files = model.list['files'].select { |f| f['file'].start_with?('lib/api/') }
+    api_files = model.list['files'].select do |f|
+      f['file'].start_with?('lib/api/')
+    end
     api_files.all? { |f| f['percentage'].nil? || f['percentage'] >= 90 }
   end
 end

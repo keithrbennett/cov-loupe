@@ -633,7 +633,9 @@
   **Example output:**
   ```json
   {
-    "lines": { "total": 100, "covered": 90, "uncovered": 10, "percent_covered": 90.0 },
+    "lines": {
+      "total": 100, "covered": 90, "uncovered": 10, "percent_covered": 90.0
+    },
     "tracking": { "enabled": true, "globs": ["lib/**/*.rb"] },
     "files": {
       "total": 10,

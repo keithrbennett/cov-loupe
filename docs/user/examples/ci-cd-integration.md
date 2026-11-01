@@ -41,15 +41,19 @@ jobs:
       - name: Check coverage threshold
         shell: bash
         run: |
-          # Generate JSON report using the full command (aliases like 'clp' are not available here)
+          # Generate JSON report using the full command (aliases like 'clp' are
+          # not available here)
           cov-loupe -fJ list > coverage-report.json
 
           # Verify coverage using Ruby for cross-platform compatibility
-          # (Tools like jq and rexe are not guaranteed to be installed on all runners)
+          # (Tools like jq and rexe are not guaranteed to be installed on all
+          # runners)
           ruby -r json -e '
             data = JSON.parse(File.read("coverage-report.json"))
             files = data["files"]
-            low_cov_files = files.select { |f| f["percentage"] && f["percentage"] < 80 }
+            low_cov_files = files.select do |f|
+              f["percentage"] && f["percentage"] < 80
+            end
 
             if low_cov_files.any?
               puts "❌ #{low_cov_files.count} files below 80% coverage:"
@@ -62,7 +66,7 @@ jobs:
           '
 
       - name: Upload coverage report
-        # Saves the coverage file as an artifact so you can download/inspect it 
+        # Saves the coverage file as an artifact so you can download/inspect it
         # from the GitHub Actions run summary page.
         uses: actions/upload-artifact@v7
         if: always()
@@ -99,8 +103,9 @@ test:
 ```ruby
 # coverage_policy.rb
 ->(model) do
-  # percentage is nil when nothing can be measured. Totals use `to_f` so that fails the check;
-  # a file with no coverable lines has nothing to cover, so the per-file check skips it.
+  # percentage is nil when nothing can be measured. Totals use `to_f` so that
+  # fails the check; a file with no coverable lines has nothing to cover, so
+  # the per-file check skips it.
   list = model.list['files']
 
   # Must have at least 80% overall line coverage

@@ -123,7 +123,8 @@ cov-loupe --format amazing_print list # only 'amazing_print' is accepted
 
 # New formats
 cov-loupe -f i list                   # inspect: Ruby #inspect output
-cov-loupe -fp list                    # puts: Ruby Kernel#puts output ('p' now means puts, not pretty_json)
+cov-loupe -fp list                    # puts: Ruby Kernel#puts output ('p'
+                                      # now means puts, not pretty_json)
 cov-loupe -f P list                   # pretty_print: Ruby stdlib PP.pp output
 ```
 

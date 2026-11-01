@@ -277,7 +277,9 @@ class ErrorHandler
   def handle_error(error, context: nil, reraise: true)
     log_error(error, context)
     if reraise
-      raise error.is_a?(CovLoupe::Error) ? error : convert_standard_error(error)
+      raise error if error.is_a?(CovLoupe::Error)
+
+      raise convert_standard_error(error)
     end
   end
 end
@@ -307,7 +309,8 @@ module ErrorHandlerFactory
   end
 
   def self.for_mcp_server(error_mode: :log)
-    ErrorHandler.new(error_mode: error_mode)  # Logs to the log target (stderr by default)
+    # Logs to the log target (stderr by default)
+    ErrorHandler.new(error_mode: error_mode)
   end
 end
 ```
