@@ -2,10 +2,10 @@
 
 [Back to main README](../../README.md)
 
-When the MCP server integration isn't working or available, LLMs can run the `cov-loupe` CLI
-instead. Every MCP tool has a CLI equivalent that returns the same JSON payload when run with
-`-fJ` (pretty JSON) or `-fj` (compact JSON). This page maps each tool and argument to its CLI
-form.
+When the MCP server integration isn't working or available, LLMs can run the
+`cov-loupe` CLI instead. Every MCP tool has a CLI equivalent that returns the
+same JSON payload when run with `-fJ` (pretty JSON) or `-fj` (compact JSON).
+This page maps each tool and argument to its CLI form.
 
 ## Sample Prompt for Users
 
@@ -55,19 +55,21 @@ The cov-loupe MCP server isn't available. Use the cov-loupe CLI instead:
 | `error_mode` | All tools | `-e`, `--error-mode` |
 | `output_chars` | All tools | `-O`, `--output-chars` |
 
-Arguments the MCP server takes at startup rather than per call, such as `--log-file` and
-`--allow-code-predicates`, have no per-call CLI counterpart; pass `-l`/`--log-file` on the
-command line instead.
+Arguments the MCP server takes at startup rather than per call, such as
+`--log-file` and `--allow-code-predicates`, have no per-call CLI counterpart;
+pass `-l`/`--log-file` on the command line instead.
 
 ## Differences Between the Interfaces
 
-- **Errors:** MCP returns `isError: true` with an `Error: <message>` text. The CLI prints the
-  same message to stderr and exits nonzero. See [Error Handling](ERROR_HANDLING.md).
-- **Output formats:** In MCP, only `project_coverage` accepts `format`; the other tools return
-  JSON. The CLI accepts `-f` for every subcommand.
-- **CLI-only options:** source display (`-s`/`--source`, `-n`/`--context-lines`), ANSI color
-  (`-C`/`--color`), and resource lookup (`-p`/`--path-for`). The MCP server lists the same
-  resources in its server instructions.
+- **Errors:** MCP returns `isError: true` with an `Error: <message>` text. The
+  CLI prints the same message to stderr and exits nonzero. See [Error
+  Handling](ERROR_HANDLING.md).
+- **Output formats:** In MCP, only `project_coverage` accepts `format`; the
+  other tools return JSON. The CLI accepts `-f` for every subcommand.
+- **CLI-only options:** source display (`-s`/`--source`,
+  `-n`/`--context-lines`), ANSI color (`-C`/`--color`), and resource lookup
+  (`-p`/`--path-for`). The MCP server lists the same resources in its server
+  instructions.
 
 ## Related Documentation
 

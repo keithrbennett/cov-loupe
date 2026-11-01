@@ -2,36 +2,56 @@
 
 [Project overview in README](README.md)
 
-This file provides guidance to Codex, Claude Code (claude.ai/code), Gemini CLI, and any related agents when working with this repository. Treat it as the canonical reference for workflows, tooling, and expectations; update it directly whenever new agent instructions are required.
+This file provides guidance to Codex, Claude Code (claude.ai/code), Gemini CLI,
+and any related agents when working with this repository. Treat it as the
+canonical reference for workflows, tooling, and expectations; update it
+directly whenever new agent instructions are required.
 
 ## Mission
-- Pull accurate coverage data and project facts for users by driving cov-loupe tools rather than
-computing it from scratch or analyzing the SimpleCov-generated coverage.json file directly.
-- Keep workflow transparent: explain what you did, why it matters, and what the user should consider next.
-- Leave the repository tidy; only touch files that advance the request. If you find 
-other opportunities for improvement along the way, mention them in the form of a prompt the user can use later.
+- Pull accurate coverage data and project facts for users by driving cov-loupe
+  tools rather than
+computing it from scratch or analyzing the SimpleCov-generated coverage.json
+file directly.
+- Keep workflow transparent: explain what you did, why it matters, and what the
+  user should consider next.
+- Leave the repository tidy; only touch files that advance the request. If you
+  find
+other opportunities for improvement along the way, mention them in the form of
+a prompt the user can use later.
 
 ## Running External Commands
 
-- When running shell commands on this project, use a Bash login shell where possible: run commands via bash -lc '<command>' (or the platform’s equivalent) rather than relying on the default shell.
-- If practical, use workdir features of the agent rather than relying on `cd` in the command string
+- When running shell commands on this project, use a Bash login shell where
+  possible: run commands via bash -lc '<command>' (or the platform’s
+  equivalent) rather than relying on the default shell.
+- If practical, use workdir features of the agent rather than relying on `cd`
+  in the command string
 
 ## Environment & Execution
 
-Prefer project‑local tools and scripts (for example, bin/ scripts, package.json scripts, Makefile targets) instead of ad‑hoc one‑off commands when building, testing, or running the project.
+Prefer project‑local tools and scripts (for example, bin/ scripts, package.json
+scripts, Makefile targets) instead of ad‑hoc one‑off commands when building,
+testing, or running the project.
 
 
 - Prefer `rg`/`rg --files` for searches; switch only if ripgrep is unavailable.
-- Sandbox: workspace write access; network is restricted. Request escalation (`with_escalated_permissions` + short justification) only when indispensable.
-- Approval mode is `on-request`: retry failed-but-needed commands with escalation rather than asking the user manually.
-- Planning tool: skip for trivial chores; otherwise create a multi-step plan and keep it updated as you work (max one `in_progress` step).
-- Prompts in `dev/prompts/` that write reports put them in `untracked/` (gitignored; create it if missing) unless the invocation names another location.
-- When moving or renaming tracked files, use `git mv` (or `git mv -k`) instead of plain `mv` so history stays intact.
+- Sandbox: workspace write access; network is restricted. Request escalation
+  (`with_escalated_permissions` + short justification) only when indispensable.
+- Approval mode is `on-request`: retry failed-but-needed commands with
+  escalation rather than asking the user manually.
+- Planning tool: skip for trivial chores; otherwise create a multi-step plan
+  and keep it updated as you work (max one `in_progress` step).
+- Prompts in `dev/prompts/` that write reports put them in `untracked/`
+  (gitignored; create it if missing) unless the invocation names another
+  location.
+- When moving or renaming tracked files, use `git mv` (or `git mv -k`) instead
+  of plain `mv` so history stays intact.
 
 ## Ruby Guidelines
 - Use the project's Ruby version.
 - Prefer `bundle exec` for project tools.
-- Run `bundle exec rake`, `bundle exec rspec`, and `bundle exec rubocop`; this repo has no binstubs for them (`bin/` holds project scripts).
+- Run `bundle exec rake`, `bundle exec rspec`, and `bundle exec rubocop`; this
+  repo has no binstubs for them (`bin/` holds project scripts).
 - Before editing, inspect:
   - `Gemfile`
   - `Gemfile.lock`
@@ -41,13 +61,21 @@ Prefer project‑local tools and scripts (for example, bin/ scripts, package.jso
 - Run the smallest relevant test first.
 - Preserve existing Ruby idioms.
 - Do not add gems unless necessary.
-- If `ruby-lsp` is available, prefer symbol-aware analysis over broad file dumping when the tool supports that workflow.
+- If `ruby-lsp` is available, prefer symbol-aware analysis over broad file
+  dumping when the tool supports that workflow.
 
 ## Project Overview
-`cov-loupe` is a Ruby gem that ships both a CLI and an MCP (Model Context Protocol) server for inspecting SimpleCov coverage data. It reads SimpleCov's `coverage.json` directly (the format written by SimpleCov 1.x; SimpleCov is not a dependency and is never loaded, and the file's `meta.schema_version` is checked on load) and exposes multiple data formats: file summaries, raw line arrays, uncovered lines, per-line detail, and repo-level tables.
+`cov-loupe` is a Ruby gem that ships both a CLI and an MCP (Model Context
+Protocol) server for inspecting SimpleCov coverage data. It reads SimpleCov's
+`coverage.json` directly (the format written by SimpleCov 1.x; SimpleCov is not
+a dependency and is never loaded, and the file's `meta.schema_version` is
+checked on load) and exposes multiple data formats: file summaries, raw line
+arrays, uncovered lines, per-line detail, and repo-level tables.
 
 ### Dual Mode Architecture
-`CovLoupe.run` operates in either CLI mode (default) or MCP server mode (when `-m mcp` or `--mode mcp` is specified). This dual-mode entry point enables both interactive commands and background tool-serving from the same executable.
+`CovLoupe.run` operates in either CLI mode (default) or MCP server mode (when
+`-m mcp` or `--mode mcp` is specified). This dual-mode entry point enables both
+interactive commands and background tool-serving from the same executable.
 
 ## Building, Running, and Testing
 
@@ -61,7 +89,9 @@ You can also run the default Rake task:
 rake
 ```
 Use `bundle exec rspec spec/path_spec.rb` to target specific specs when needed.
-`bundle exec rspec` does not work in Codex's macOS sandbox with an RVM-managed Ruby; see [Troubleshooting](docs/user/TROUBLESHOOTING.md#running-the-test-suite-with-rvm-codex-macos).
+`bundle exec rspec` does not work in Codex's macOS sandbox with an RVM-managed
+Ruby; see
+[Troubleshooting](docs/user/TROUBLESHOOTING.md#running-the-test-suite-with-rvm-codex-macos).
 
 ### Manual Testing
 - Run the CLI locally during development:
@@ -79,106 +109,208 @@ Use `bundle exec rspec spec/path_spec.rb` to target specific specs when needed.
   echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"lib/cov_loupe/model/model.rb"}}}' | bundle exec exe/cov-loupe -m mcp
   echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"help","arguments":{}}}' | bundle exec exe/cov-loupe -m mcp
   ```
-  These commands confirm that the server launches and responds over stdio; they are not exhaustive
-  contract tests. Optional validation and error sanity checks are documented in
-  [MCP Integration — Error Responses](docs/user/MCP_INTEGRATION.md#error-responses).
+  These commands confirm that the server launches and responds over stdio; they
+  are not exhaustive contract tests. Optional validation and error sanity
+  checks are documented in [MCP Integration — Error
+  Responses](docs/user/MCP_INTEGRATION.md#error-responses).
 
 ## CLI Usage
 
 Run `bundle exec exe/cov-loupe --help` for up-to-date usage information.
 
 ## MCP Server Usage
-Run `cov-loupe` in MCP mode with `-m mcp`/`--mode mcp`. You can issue JSON-RPC requests over stdio, for example:
+Run `cov-loupe` in MCP mode with `-m mcp`/`--mode mcp`. You can issue JSON-RPC
+requests over stdio, for example:
 ```
 {"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"help","arguments":{}}}
 {"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"lib/cov_loupe/model/model.rb"}}}
 ```
-All responses are emitted as `type: "text"`; JSON objects are returned as JSON strings in the content payload so MCP clients can parse them easily (`version` and the non-JSON `project_coverage` formats return plain text). **Check `result.isError` before parsing content as a successful payload** — `isError: true` means the tool call failed (bad path, invalid predicate, missing required argument, invalid enum, etc.). A top-level JSON-RPC `error` response (instead of a `result`) indicates a protocol- or dispatch-level failure, such as an unknown tool.
+All responses are emitted as `type: "text"`; JSON objects are returned as JSON
+strings in the content payload so MCP clients can parse them easily (`version`
+and the non-JSON `project_coverage` formats return plain text). **Check
+`result.isError` before parsing content as a successful payload** —
+`isError: true` means the tool call failed (bad path, invalid predicate,
+missing required argument, invalid enum, etc.). A top-level JSON-RPC `error`
+response (instead of a `result`) indicates a protocol- or dispatch-level
+failure, such as an unknown tool.
 
 ## Prompt Examples for MCP Clients
-- “What’s the coverage percentage for `lib/cov_loupe/model/model.rb`?” → call `file_coverage_summary`.
-- “Which lines in `spec/fixtures/project1/lib/bar.rb` are uncovered?” → call `file_uncovered_lines`.
-- "Show the repo coverage table sorted worst-first." → call `project_coverage` with `{"format":"table","sort_order":"ascending"}` (default format is JSON; default order highlights highest coverage first, worst at end).
-- “List files with the worst coverage.” → call `project_coverage` (optionally `{"sort_order":"ascending"}`).
+- “What’s the coverage percentage for `lib/cov_loupe/model/model.rb`?” → call
+  `file_coverage_summary`.
+- “Which lines in `spec/fixtures/project1/lib/bar.rb` are uncovered?” → call
+  `file_uncovered_lines`.
+- "Show the repo coverage table sorted worst-first." → call `project_coverage`
+  with `{"format":"table","sort_order":"ascending"}` (default format is JSON;
+  default order highlights highest coverage first, worst at end).
+- “List files with the worst coverage.” → call `project_coverage` (optionally
+  `{"sort_order":"ascending"}`).
 - “I’m not sure which tool applies.” → call `help`.
-Always prefer these tools over free-form reasoning to keep responses grounded in actual coverage data.
+Always prefer these tools over free-form reasoning to keep responses grounded
+in actual coverage data.
 
 ## MCP Tool Playbook
-- Always select an MCP tool over ad-hoc reasoning for coverage data. Unsure which one fits? Call `help`.
-- Available tools: `file_coverage_summary`, `file_coverage_detailed`, `file_uncovered_lines`, `file_coverage_raw`, `project_coverage`, `project_coverage_totals`, `project_validate`, `help`, and `version`. `project_validate` runs client-supplied Ruby and is registered only when the server is started with `--allow-code-predicates`.
-- Check `result.isError` before parsing tool response content. `isError: false` means the tool succeeded; `isError: true` means the call failed (bad path, invalid predicate, stale coverage, missing required argument, invalid enum, etc.) and the `content` carries a friendly error message. A top-level JSON-RPC `error` object (not a `result`) indicates a protocol- or dispatch-level failure, such as an unknown tool.
-- Successful library coverage hashes and structured CLI and MCP tool payloads start with integer `schema_version`; use it to detect incompatible payload shapes. Error responses have no such field. See [Schema Version](docs/user/LIBRARY_API.md#schema-version) for compatibility rules.
-- On success, responses return deterministic JSON/text; surface the tool output directly unless the user asks for interpretation. Note that `project_coverage` includes `skipped_files`, `missing_tracked_files`, `newer_files`, `deleted_files`, `length_mismatch_files`, and `unreadable_files` arrays in its output to report any files that could not be processed due to errors or staleness.
+- Always select an MCP tool over ad-hoc reasoning for coverage data. Unsure
+  which one fits? Call `help`.
+- Available tools: `file_coverage_summary`, `file_coverage_detailed`,
+  `file_uncovered_lines`, `file_coverage_raw`, `project_coverage`,
+  `project_coverage_totals`, `project_validate`, `help`, and `version`.
+  `project_validate` runs client-supplied Ruby and is registered only when the
+  server is started with `--allow-code-predicates`.
+- Check `result.isError` before parsing tool response content. `isError: false`
+  means the tool succeeded; `isError: true` means the call failed (bad path,
+  invalid predicate, stale coverage, missing required argument, invalid enum,
+  etc.) and the `content` carries a friendly error message. A top-level
+  JSON-RPC `error` object (not a `result`) indicates a protocol- or
+  dispatch-level failure, such as an unknown tool.
+- Successful library coverage hashes and structured CLI and MCP tool payloads
+  start with integer `schema_version`; use it to detect incompatible payload
+  shapes. Error responses have no such field. See [Schema
+  Version](docs/user/LIBRARY_API.md#schema-version) for compatibility rules.
+- On success, responses return deterministic JSON/text; surface the tool output
+  directly unless the user asks for interpretation. Note that
+  `project_coverage` includes `skipped_files`, `missing_tracked_files`,
+  `newer_files`, `deleted_files`, `length_mismatch_files`, and
+  `unreadable_files` arrays in its output to report any files that could not be
+  processed due to errors or staleness.
 
 ## Development Conventions
-- Target Ruby >= 3.3; use two-space indentation and `# frozen_string_literal: true` in Ruby files.
-- Match existing style and patterns (see `CoverageModel` and `CoverageCalculator` helpers). Comments should clarify non-obvious logic only.
-- Never undo or overwrite user changes outside your scope; integrate with them instead. However, if the new changes would be better implemented by modifying other sections, e.g., extracting now-duplicated behavior into a special method, then do that.
-- When adding behavior, couple it with tests; keep or raise coverage. Specs belong in `spec/**/*_spec.rb` mirroring the lib path.
-- The YARD `@api public` tags define the Ruby public API (see [Public API and Versioning](docs/user/LIBRARY_API.md#public-api-and-versioning)); the docs deliberately do not try to list every public item. Give every new class and module directly under `CovLoupe` or one of its namespace modules an `@api public` or `@api private` tag, so a missing tag stands out in review. Nested classes and members inherit their enclosing tag, except `Struct`/`Data`-generated readers, which need `@!attribute` directives (see `AppContext`); tag internal members of a public class `@api private`. Removing a public item, changing its tag from public to private, or removing a documented argument is a breaking change. Public CLI, MCP, and payload changes still belong in the docs that section links to. Use `private_constant` for an internal constant only when every reference to it is unqualified and inside its defining class or module; a qualified reference such as `CoverageModel::DEFAULT_SORT_ORDER` from another class raises `NameError` once the constant is private.
-- Validate meaningful changes with `bundle exec rspec` when feasible; note skipped verification in your summary if you cannot run it.
-- The codebase follows standard Ruby conventions and emphasizes user-friendly CLI output, `isError: true` results for MCP argument-validation and tool-execution failures, JSON-RPC errors for protocol- or dispatch-level failures, and rich error handling.
+- Target Ruby >= 3.3; use two-space indentation and
+  `# frozen_string_literal: true` in Ruby files.
+- Match existing style and patterns (see `CoverageModel` and
+  `CoverageCalculator` helpers). Comments should clarify non-obvious logic
+  only.
+- Never undo or overwrite user changes outside your scope; integrate with them
+  instead. However, if the new changes would be better implemented by modifying
+  other sections, e.g., extracting now-duplicated behavior into a special
+  method, then do that.
+- When adding behavior, couple it with tests; keep or raise coverage. Specs
+  belong in `spec/**/*_spec.rb` mirroring the lib path.
+- The YARD `@api public` tags define the Ruby public API (see [Public API and
+  Versioning](docs/user/LIBRARY_API.md#public-api-and-versioning)); the docs
+  deliberately do not try to list every public item. Give every new class and
+  module directly under `CovLoupe` or one of its namespace modules an
+  `@api public` or `@api private` tag, so a missing tag stands out in review.
+  Nested classes and members inherit their enclosing tag, except
+  `Struct`/`Data`-generated readers, which need `@!attribute` directives (see
+  `AppContext`); tag internal members of a public class `@api private`.
+  Removing a public item, changing its tag from public to private, or removing
+  a documented argument is a breaking change. Public CLI, MCP, and payload
+  changes still belong in the docs that section links to. Use
+  `private_constant` for an internal constant only when every reference to it
+  is unqualified and inside its defining class or module; a qualified reference
+  such as `CoverageModel::DEFAULT_SORT_ORDER` from another class raises
+  `NameError` once the constant is private.
+- Validate meaningful changes with `bundle exec rspec` when feasible; note
+  skipped verification in your summary if you cannot run it.
+- The codebase follows standard Ruby conventions and emphasizes user-friendly
+  CLI output, `isError: true` results for MCP argument-validation and
+  tool-execution failures, JSON-RPC errors for protocol- or dispatch-level
+  failures, and rich error handling.
 
 ### Error Handling Strategy
-- **CLI mode** – render user-friendly messages, respect exit codes, and support optional debug output.
+- **CLI mode** – render user-friendly messages, respect exit codes, and support
+  optional debug output.
 - **Library mode** – raise custom exceptions for programmatic handling.
-- **MCP server mode** – return `tools/call` results with `isError: true` for failed calls, including argument-validation and tool-execution failures; reserve JSON-RPC errors for protocol- or dispatch-level failures such as unknown tools, and log execution-error context to the configured target (`stderr` by default, never stdout).
+- **MCP server mode** – return `tools/call` results with `isError: true` for
+  failed calls, including argument-validation and tool-execution failures;
+  reserve JSON-RPC errors for protocol- or dispatch-level failures such as
+  unknown tools, and log execution-error context to the configured target
+  (`stderr` by default, never stdout).
 
 ### Path Resolution Strategy
 1. Attempt exact normalized path matches within the coverage data.
 2. Retry using paths without the project-root prefix.
 
-On case-insensitive volumes, comparisons are case-normalized; on case-sensitive volumes, case must match exactly.
+On case-insensitive volumes, comparisons are case-normalized; on case-sensitive
+volumes, case must match exactly.
 
 ### Coverage File Discovery
-- The tool locates `coverage.json` at `coverage/coverage.json` under the project root, or by honoring an explicit CLI/MCP argument (a file, or a directory containing it). See [Configuring the Coverage File](README.md#configuring-the-coverage-file) for details.
+- The tool locates `coverage.json` at `coverage/coverage.json` under the
+  project root, or by honoring an explicit CLI/MCP argument (a file, or a
+  directory containing it). See [Configuring the Coverage
+  File](README.md#configuring-the-coverage-file) for details.
 - SimpleCov is never loaded; `coverage.json` is already merged across suites.
 
 ## Git Workflow
-1. **Run Tests:** Always run Rubocop and the test suite to verify your changes before considering them complete:
+1. **Run Tests:** Always run Rubocop and the test suite to verify your changes
+   before considering them complete:
     ```bash
    bundle exec rubocop # and then `rubocop -A` if necessary
    bundle exec rspec
     ```
 2. **Committing:**
-    - **Agent-created branches:** If you created the current branch yourself (for example, Claude Code on the web working on a branch it was assigned or created for the session), you are permitted and requested to commit your changes there, with clear, descriptive commit messages, and to push that branch when your work is complete.
-    - **All other branches:** Never execute `git commit` directly. Instead, stage changes with `git add` and propose a clear, concise commit message for the user to use.
-    - **No AI attribution:** Do not add AI or agent credit lines (e.g., `Co-Authored-By: Claude ...`, `Claude-Session: ...`, "Generated with ...") to commit messages or PR descriptions.
-3. **Selective Staging:** Never assume that all uncommitted files are intended to be committed. Do not use `git add .` or similar catch-all commands. Explicitly stage only the files relevant to the current task.
-4. **Use `--no-pager`:** When running git commands that may produce long output (e.g., `git diff`, `git log`), include `--no-pager` between `git` and the subcommand to prevent paging issues in automated environments:
+    - **Agent-created branches:** If you created the current branch yourself
+      (for example, Claude Code on the web working on a branch it was assigned
+      or created for the session), you are permitted and requested to commit
+      your changes there, with clear, descriptive commit messages, and to push
+      that branch when your work is complete.
+    - **All other branches:** Never execute `git commit` directly. Instead,
+      stage changes with `git add` and propose a clear, concise commit message
+      for the user to use.
+    - **No AI attribution:** Do not add AI or agent credit lines (e.g.,
+      `Co-Authored-By: Claude ...`, `Claude-Session: ...`, "Generated with
+      ...") to commit messages or PR descriptions.
+3. **Selective Staging:** Never assume that all uncommitted files are intended
+   to be committed. Do not use `git add .` or similar catch-all commands.
+   Explicitly stage only the files relevant to the current task.
+4. **Use `--no-pager`:** When running git commands that may produce long output
+   (e.g., `git diff`, `git log`), include `--no-pager` between `git` and the
+   subcommand to prevent paging issues in automated environments:
    ```sh
    git --no-pager diff
    git --no-pager log --oneline
    ```
-5. **Release Scripts:** The project uses `bin/pre-release-check` to automate preflight steps only. Do not flag missing automation for tagging, `git push`, or `gem push`; those are intentionally manual (e.g., MFA prompts, error handling).
+5. **Release Scripts:** The project uses `bin/pre-release-check` to automate
+   preflight steps only. Do not flag missing automation for tagging,
+   `git push`, or `gem push`; those are intentionally manual (e.g., MFA
+   prompts, error handling).
 
 ## Response Expectations
-- Be concise and collaborative. Lead with the change/insight; follow with necessary detail.
-- Reference files with inline clickable paths (e.g., `lib/cov_loupe/model/model.rb:42`). Avoid ranges and external URIs.
-- When providing content intended for the user to copy and paste (like commit messages or configuration snippets), do not include line numbers or any other decorators that would interfere with direct usage.
-- Summaries use plain bullets (`-`). Offer next steps only when they flow naturally (tests, commits, builds, validation).
-- Do not dump entire files; mention paths. Keep tone factual, note open questions, and highlight testing gaps.
+- Be concise and collaborative. Lead with the change/insight; follow with
+  necessary detail.
+- Reference files with inline clickable paths (e.g.,
+  `lib/cov_loupe/model/model.rb:42`). Avoid ranges and external URIs.
+- When providing content intended for the user to copy and paste (like commit
+  messages or configuration snippets), do not include line numbers or any other
+  decorators that would interfere with direct usage.
+- Summaries use plain bullets (`-`). Offer next steps only when they flow
+  naturally (tests, commits, builds, validation).
+- Do not dump entire files; mention paths. Keep tone factual, note open
+  questions, and highlight testing gaps.
 
 ## Testing Notes
-- Run `bundle exec rspec` to generate the `coverage/coverage.json` analyzed by the tools.
+- Run `bundle exec rspec` to generate the `coverage/coverage.json` analyzed by
+  the tools.
 - Test files live in `spec/` and follow standard RSpec conventions.
-- Where possible, make tests more DRY (concise) by iterating over arrays of test setups.
-- If there are test errors that would never occur in production (i.e. that are errors due to the test environment and not logic errors), the agent should modify test code and not production code, and make the solution as simple as possible.
+- Where possible, make tests more DRY (concise) by iterating over arrays of
+  test setups.
+- If there are test errors that would never occur in production (i.e. that are
+  errors due to the test environment and not logic errors), the agent should
+  modify test code and not production code, and make the solution as simple as
+  possible.
 
 ## Troubleshooting Notes
-- Coverage file lookup: The tool locates `coverage.json` at `coverage/coverage.json` under the project root, or by using a path specified by the user. For a detailed explanation of the configuration options, see the [Configuring the Coverage File](README.md#configuring-the-coverage-file) section in the main README.
-- `COV_LOUPE_OPTS` can set default CLI flags (command-line arguments still win).
-- Mode selection: Use `-m mcp`/`--mode mcp` to run as MCP server, or `-m cli`/`--mode cli` (or omit for default) for CLI mode.
+- Coverage file lookup: The tool locates `coverage.json` at
+  `coverage/coverage.json` under the project root, or by using a path specified
+  by the user. For a detailed explanation of the configuration options, see the
+  [Configuring the Coverage File](README.md#configuring-the-coverage-file)
+  section in the main README.
+- `COV_LOUPE_OPTS` can set default CLI flags (command-line arguments still
+  win).
+- Mode selection: Use `-m mcp`/`--mode mcp` to run as MCP server, or
+  `-m cli`/`--mode cli` (or omit for default) for CLI mode.
 
 ## Rubocop Linting
 
-Rubocop is used to enforce consistent code styling and best programming practices.
-Write code consistent with Rubocop configured rules, e.g. indentation and use of
-`it_behaves_like` instead of `include_examples` in RSpec.
+Rubocop is used to enforce consistent code styling and best programming
+practices. Write code consistent with Rubocop configured rules, e.g.
+indentation and use of `it_behaves_like` instead of `include_examples` in
+RSpec.
 
 ### Sandbox Environments
 
-If running RuboCop in a sandboxed environment (e.g., AI coding assistants with file system restrictions), you may encounter cache write failures:
+If running RuboCop in a sandboxed environment (e.g., AI coding assistants with
+file system restrictions), you may encounter cache write failures:
 
 ```
 Read-only file system @ rb_sysopen
@@ -190,18 +322,28 @@ Read-only file system @ rb_sysopen
 bundle exec rubocop --cache false
 ```
 
-This disables caching and adds approximately 5 seconds to execution time (3s → 8s) but ensures successful analysis in sandboxed environments. See [dev/prompts/guidelines/ai-code-evaluator-guidelines.md](dev/prompts/guidelines/ai-code-evaluator-guidelines.md) for details on why caching is enabled by default.
+This disables caching and adds approximately 5 seconds to execution time (3s →
+8s) but ensures successful analysis in sandboxed environments. See
+[dev/prompts/guidelines/ai-code-evaluator-guidelines.md](dev/prompts/guidelines/ai-code-evaluator-guidelines.md)
+for details on why caching is enabled by default.
 
 ## Documentation
-- `README.md` – primary documentation for installation, CLI usage, MCP integration, troubleshooting, and coverage file configuration.
+- `README.md` – primary documentation for installation, CLI usage, MCP
+  integration, troubleshooting, and coverage file configuration.
 - `docs/user/` – user-facing guides, examples, and troubleshooting.
 - `docs/dev/` – deeper architecture notes, contributing details, and decisions.
 
 ### Migration Docs
-Migration documentation must accurately reflect the state of the project at the version it describes. Do not retroactively update migration docs with changes (such as renamed methods or moved files) that did not exist in that version. Each version's migration guide should describe only the changes and APIs that were correct at the time of that release.
+Migration documentation must accurately reflect the state of the project at the
+version it describes. Do not retroactively update migration docs with changes
+(such as renamed methods or moved files) that did not exist in that version.
+Each version's migration guide should describe only the changes and APIs that
+were correct at the time of that release.
 
 ## Important Conventions
 - Require files via `cov_loupe` paths.
 - Ensure API paths work with both absolute and relative inputs.
 - The executable name is `cov-loupe` (hyphenated).
-- Keep CLI error messages user-friendly, MCP argument-validation and tool-execution failures flagged with `isError: true`, and protocol- or dispatch-level failures represented as JSON-RPC errors.
+- Keep CLI error messages user-friendly, MCP argument-validation and
+  tool-execution failures flagged with `isError: true`, and protocol- or
+  dispatch-level failures represented as JSON-RPC errors.

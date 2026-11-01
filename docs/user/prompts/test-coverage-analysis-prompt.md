@@ -84,11 +84,11 @@ it exists), and tells the user to rerun the full suite. Do not write a report.
    and `newer_files`, `deleted_files`, `length_mismatch_files`,
    `unreadable_files`, and `skipped_files` must all be empty. These show
    whether source files changed after the run.
-3. No test, fixture, or configuration file may be newer than the coverage
-   file, since cov-loupe checks only source files. For example:
+3. No test, fixture, or configuration file may be newer than the coverage file,
+   since cov-loupe checks only source files. For example:
    `find spec test features Gemfile.lock .rspec .simplecov -newer coverage/coverage.json`
-   (adjusted to the paths that exist). Include directories in the search,
-   not just files, so that deleted test files show up too.
+   (adjusted to the paths that exist). Include directories in the search, not
+   just files, so that deleted test files show up too.
 4. If the project records test results, they must show no failures: for
    RSpec, the file named by `example_status_persistence_file_path`
    (commonly `.rspec_status`) must have no `failed` entries.
@@ -340,8 +340,8 @@ to implement it, keyed by its number.
 
 ### Appendix: Commands Run
 Every cov-loupe call (MCP tool name and arguments, or CLI command) and
-freshness check used to produce the numbers, plus any aggregation script, so the
-report can be reproduced.
+freshness check used to produce the numbers, plus any aggregation script, so
+the report can be reproduced.
 
 ---
 

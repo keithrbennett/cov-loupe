@@ -2,7 +2,8 @@
 
 [Back to main README](../../../README.md)
 
-This document describes how cov-loupe allows users to define and enforce custom coverage policies through validation predicates.
+This document describes how cov-loupe allows users to define and enforce custom
+coverage policies through validation predicates.
 
 ## Ruby `instance_eval` for Validation Predicates
 
@@ -12,27 +13,36 @@ Accepted
 
 ### Context
 
-cov-loupe needed a mechanism for users to define custom coverage policies beyond simple percentage thresholds. Different projects have different requirements:
+cov-loupe needed a mechanism for users to define custom coverage policies
+beyond simple percentage thresholds. Different projects have different
+requirements:
 
 - Some want all files above 80%, others allow a few files below threshold
-- Some need different thresholds for different directories (e.g., 90% for API code, 60% for legacy)
+- Some need different thresholds for different directories (e.g., 90% for API
+  code, 60% for legacy)
 - Some want total project coverage minimums
 - CI/CD pipelines need exit codes based on policy compliance
 
 We considered several approaches:
 
-1. **Built-in policy DSL**: Define a limited language for expressing policies (e.g., YAML/JSON config)
-2. **Plugin architecture**: Define a protocol/interface, require users to create Ruby classes implementing it
-3. **Ruby file evaluation**: Load and execute arbitrary Ruby code that returns a callable predicate
-4. **Sandboxed DSL**: Use a restricted Ruby environment (e.g., `$SAFE` levels, isolated VMs)
+1. **Built-in policy DSL**: Define a limited language for expressing policies
+   (e.g., YAML/JSON config)
+2. **Plugin architecture**: Define a protocol/interface, require users to
+   create Ruby classes implementing it
+3. **Ruby file evaluation**: Load and execute arbitrary Ruby code that returns
+   a callable predicate
+4. **Sandboxed DSL**: Use a restricted Ruby environment (e.g., `$SAFE` levels,
+   isolated VMs)
 
 #### Key Requirements
 
 - Flexibility: Support arbitrarily complex coverage policies
 - Simplicity: Easy for users to write and understand
 - Debuggability: Users can use standard Ruby debugging tools
-- CI/CD integration: Clear exit codes (0 = pass, 1 = runtime error, 2 = usage error, 3 = validation failed, 4 = predicate error)
-- Access to coverage data: Predicates need access to the full `CoverageModel` API
+- CI/CD integration: Clear exit codes (0 = pass, 1 = runtime error, 2 = usage
+  error, 3 = validation failed, 4 = predicate error)
+- Access to coverage data: Predicates need access to the full `CoverageModel`
+  API
 
 #### Why Not a Custom DSL?
 
@@ -49,17 +59,22 @@ Ruby's sandboxing options are limited:
 
 - `$SAFE` levels were deprecated and removed in Ruby 2.7+
 - Full VM isolation (Docker, etc.) is too heavy for a CLI tool
-- In-process restrictions are not a security boundary: a predicate runs as ordinary Ruby (via `instance_eval`) with the process's full privileges
-- So cov-loupe does not try to make untrusted code safe; it runs only code the user chose to run
+- In-process restrictions are not a security boundary: a predicate runs as
+  ordinary Ruby (via `instance_eval`) with the process's full privileges
+- So cov-loupe does not try to make untrusted code safe; it runs only code the
+  user chose to run
 
 ### Decision
 
-We chose to **evaluate Ruby files using `instance_eval`** with prominent security warnings rather than attempting to create a false sense of security through incomplete sandboxing.
+We chose to **evaluate Ruby files using `instance_eval`** with prominent
+security warnings rather than attempting to create a false sense of security
+through incomplete sandboxing.
 
 #### Implementation
 
-Predicate evaluation is centralized in `lib/cov_loupe/config/predicate_evaluator.rb`.
-The CLI `validate` subcommand and the MCP `project_validate` tool both use this evaluator.
+Predicate evaluation is centralized in
+`lib/cov_loupe/config/predicate_evaluator.rb`. The CLI `validate` subcommand
+and the MCP `project_validate` tool both use this evaluator.
 
 ```ruby
 def self.evaluate_file(path, model)
@@ -109,13 +124,26 @@ end
 exit(result ? ExitCodes::SUCCESS : ExitCodes::VALIDATION_FAILED)
 ```
 
-The command does not rescue errors. `PredicateEvaluator` wraps failures in the predicate itself (syntax errors, a missing or non-callable predicate, exceptions from its own code) in `PredicateError`. That includes a `UsageError` or `ConfigurationError` the predicate raises itself, since it is a predicate problem and not a command-line problem. Only `CoverageDataError` and `FileError` (raised by the model's own queries, such as a missing file or stale data) keep their type. `CoverageCLI#handle_user_facing_error` passes every such error to the error handler for logging (the built-in handler skips this for the default `stderr` log target), prints its message, and exits with `exit_code_for(error)`: 4 for `PredicateError` (validation failure is 3) and 1 for coverage-data and file errors. Usage errors in `validate`'s own arguments exit 2.
+The command does not rescue errors. `PredicateEvaluator` wraps failures in the
+predicate itself (syntax errors, a missing or non-callable predicate,
+exceptions from its own code) in `PredicateError`. That includes a `UsageError`
+or `ConfigurationError` the predicate raises itself, since it is a predicate
+problem and not a command-line problem. Only `CoverageDataError` and
+`FileError` (raised by the model's own queries, such as a missing file or stale
+data) keep their type. `CoverageCLI#handle_user_facing_error` passes every such
+error to the error handler for logging (the built-in handler skips this for the
+default `stderr` log target), prints its message, and exits with
+`exit_code_for(error)`: 4 for `PredicateError` (validation failure is 3) and 1
+for coverage-data and file errors. Usage errors in `validate`'s own arguments
+exit 2.
 
 #### Security Model: Treat as Executable Code
 
-Rather than pretending to sandbox untrusted code, we treat validation predicates **exactly like any other Ruby code in the project**:
+Rather than pretending to sandbox untrusted code, we treat validation
+predicates **exactly like any other Ruby code in the project**:
 
-1. **Prominent warnings** in documentation (highlighted near the top of `examples/success_predicates/README.md`):
+1. **Prominent warnings** in documentation (highlighted near the top of
+   `examples/success_predicates/README.md`):
    ```
    ⚠️ SECURITY WARNING
 
@@ -129,11 +157,17 @@ Rather than pretending to sandbox untrusted code, we treat validation predicates
 2. **Code review workflow**: Predicates live in version control alongside tests
 3. **CI/CD best practices**: Same permissions model as running tests themselves
 4. **Example predicates**: Well-documented examples showing safe patterns
-5. **MCP opt-in**: The MCP server registers `project_validate` only when started with `--allow-code-predicates`. Over MCP the predicate is written by the client (usually an LLM), not reviewed by the user, and runs in the server process, outside any sandbox or approval prompt the client puts on shell commands. The CLI needs no flag, since its predicates come through the user's own shell.
+5. **MCP opt-in**: The MCP server registers `project_validate` only when
+   started with `--allow-code-predicates`. Over MCP the predicate is written by
+   the client (usually an LLM), not reviewed by the user, and runs in the
+   server process, outside any sandbox or approval prompt the client puts on
+   shell commands. The CLI needs no flag, since its predicates come through the
+   user's own shell.
 
 #### Predicate API
 
-Validation predicates must be callable (lambda, proc, or object with `#call` method):
+Validation predicates must be callable (lambda, proc, or object with `#call`
+method):
 
 **Lambda example:**
 ```ruby
@@ -168,12 +202,16 @@ The predicate receives a full `CoverageModel` instance with access to:
 
 #### Positive
 
-1. **Maximum flexibility**: Users can express arbitrarily complex coverage policies using full Ruby
-2. **Familiar tooling**: Users can debug predicates with standard Ruby tools (pry, byebug, etc.)
+1. **Maximum flexibility**: Users can express arbitrarily complex coverage
+   policies using full Ruby
+2. **Familiar tooling**: Users can debug predicates with standard Ruby tools
+   (pry, byebug, etc.)
 3. **Simplicity**: No custom DSL to learn, document, or maintain
 4. **Honesty**: Security model is clear and doesn't provide false confidence
-5. **Composability**: Users can require other libraries, define helper methods, etc.
-6. **Excellent examples**: We provide three well-documented example predicates in `examples/success_predicates/`
+5. **Composability**: Users can require other libraries, define helper methods,
+   etc.
+6. **Excellent examples**: We provide three well-documented example predicates
+   in `examples/success_predicates/`
 
 #### Negative
 
@@ -184,16 +222,20 @@ The predicate receives a full `CoverageModel` instance with access to:
 
 #### Trade-offs
 
-- **Versus custom DSL**: More powerful and debuggable, but requires user awareness of security
-- **Versus plugin architecture**: Simpler (no gem dependencies, no protocol to learn), but same security profile
-- **Versus incomplete sandboxing**: Honest about capabilities rather than security theater
+- **Versus custom DSL**: More powerful and debuggable, but requires user
+  awareness of security
+- **Versus plugin architecture**: Simpler (no gem dependencies, no protocol to
+  learn), but same security profile
+- **Versus incomplete sandboxing**: Honest about capabilities rather than
+  security theater
 
 #### Threat Model
 
 This approach is **appropriate** when:
 
 - Predicate files are stored in version control with code review
-- Users treat predicates like any other code in their project (tests, Rakefile, etc.)
+- Users treat predicates like any other code in their project (tests, Rakefile,
+  etc.)
 - CI/CD environments already execute arbitrary code (tests, build scripts)
 
 This approach is **inappropriate** when:
@@ -208,15 +250,20 @@ If demand arises for truly untrusted predicate execution, alternatives include:
 
 1. **JSON-based policy format**: Limited expressiveness but safe
 2. **WebAssembly sandbox**: Execute policies in an isolated WASM runtime
-3. **External process**: Run predicates in separate process with restricted permissions
+3. **External process**: Run predicates in separate process with restricted
+   permissions
 
-However, for the primary use case (CI/CD policy enforcement), the current approach is simpler and more flexible than these alternatives.
+However, for the primary use case (CI/CD policy enforcement), the current
+approach is simpler and more flexible than these alternatives.
 
 ### References
 
-- Implementation: `lib/cov_loupe/config/predicate_evaluator.rb`, `lib/cov_loupe/commands/validate_command.rb`, `lib/cov_loupe/tools/project_validate_tool.rb`
+- Implementation: `lib/cov_loupe/config/predicate_evaluator.rb`,
+  `lib/cov_loupe/commands/validate_command.rb`,
+  `lib/cov_loupe/tools/project_validate_tool.rb`
 - Security warnings: `examples/success_predicates/README.md`
 - Example predicates: `examples/success_predicates/*.rb`
 - CoverageModel API: `lib/cov_loupe/model/model.rb`
 - CLI config: `lib/cov_loupe/config/app_config.rb`
-- Option parsing: `lib/cov_loupe/config/option_parser_builder.rb` and `lib/cov_loupe/commands/validate_command.rb`
+- Option parsing: `lib/cov_loupe/config/option_parser_builder.rb` and
+  `lib/cov_loupe/commands/validate_command.rb`

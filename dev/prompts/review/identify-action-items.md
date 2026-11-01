@@ -10,7 +10,8 @@ problems-focused review (not a balanced assessment).
 - Preparing bug-fix releases
 - Answering: "What should we fix next?"
 
-For a balanced assessment showing strengths AND weaknesses, use `state-of-the-code-base-prompt.md` instead.
+For a balanced assessment showing strengths AND weaknesses, use
+`state-of-the-code-base-prompt.md` instead.
 
 ---
 
@@ -60,8 +61,10 @@ that already covers them.
 - If there is a tradeoff between A and B, and the justification is sound and
   documented (e.g., in ai-code-evaluator-guidelines.md), do not penalize the
   code base for that tradeoff.
-- Be fair in your severity assessments; sometimes trivial issues are overweighted.
-- Investigate thoroughly for real issues, but maintain perspective on their actual impact.
+- Be fair in your severity assessments; sometimes trivial issues are
+  overweighted.
+- Investigate thoroughly for real issues, but maintain perspective on their
+  actual impact.
 
 ---
 
@@ -116,7 +119,8 @@ User passwords are stored in plain text in the database.
 ### Assessment
 - **Severity:** High
 - **Effort to Fix:** Medium
-- **Impact if Unaddressed:** Critical security vulnerability; user accounts easily compromised.
+- **Impact if Unaddressed:** Critical security vulnerability; user accounts
+  easily compromised.
 
 ### Strategy
 Replace plain text storage with bcrypt hashing. Update authentication logic to
@@ -147,7 +151,8 @@ ordered by priority (considering severity, effort, and impact):
 | :--- | :---: | :---: | :--- | :--- |
 | ... | ... | ... | ... | [See below](#issue-insecure-password-storage) |
 
-**Priority ordering:** Issues should be ordered to maximize value. Generally this means:
+**Priority ordering:** Issues should be ordered to maximize value. Generally
+this means:
 - High severity with low-to-medium effort → highest priority
 - High severity with high effort → high priority
 - Medium severity with low effort → medium-high priority
@@ -159,7 +164,8 @@ Use your judgment to order issues for optimal value delivery.
 
 ## Output File
 
-Write your analysis in a Markdown file in the untracked/ dir (mkdir if necessary) whose name is:
+Write your analysis in a Markdown file in the untracked/ dir (mkdir if
+necessary) whose name is:
 
 - the current UTC time in `%Y-%m-%d-%H-%M` format +
 - `-prioritized-action-items-` +

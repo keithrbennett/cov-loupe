@@ -2,7 +2,8 @@
 
 [Back to main README](../../../README.md)
 
-This document describes how cov-loupe ensures the accuracy and reliability of coverage data through staleness detection.
+This document describes how cov-loupe ensures the accuracy and reliability of
+coverage data through staleness detection.
 
 ## Coverage Staleness Detection
 
@@ -12,7 +13,8 @@ Accepted
 
 ### Context
 
-Coverage data can become outdated when source files are modified after tests run. This creates misleading results:
+Coverage data can become outdated when source files are modified after tests
+run. This creates misleading results:
 
 - Coverage percentages appear lower/higher than reality
 - Line numbers in coverage reports don't match the current source
@@ -29,34 +31,53 @@ We needed a staleness detection system that could:
 #### Alternative Approaches Considered
 
 1. **No staleness checking**: Simple, but leads to confusing/incorrect reports
-2. **Single timestamp check**: Fast, but misses line count mismatches (files edited and reverted)
+2. **Single timestamp check**: Fast, but misses line count mismatches (files
+   edited and reverted)
 3. **Content hashing**: Accurate, but expensive for large projects
-4. **Multi-type detection with modes**: More complex, but provides accurate detection with user control
+4. **Multi-type detection with modes**: More complex, but provides accurate
+   detection with user control
 
 ### Decision
 
-We implemented a **staleness detection system** with configurable error modes that can identify four distinct staleness conditions (plus `ok` for fresh files).
+We implemented a **staleness detection system** with configurable error modes
+that can identify four distinct staleness conditions (plus `ok` for fresh
+files).
 
 #### Staleness Statuses
 
-The `StalenessChecker` class (defined in `lib/cov_loupe/staleness/staleness_checker.rb`) detects four distinct types of staleness and reports `ok` otherwise:
+The `StalenessChecker` class (defined in
+`lib/cov_loupe/staleness/staleness_checker.rb`) detects four distinct types of
+staleness and reports `ok` otherwise:
 
-1. **Type "unreadable" (Unreadable)**: The source file could not be read, or its staleness check failed
-   - Returned by `file_staleness_status` on permission or I/O errors, and by `CoverageModel#staleness_for` when an exception is raised during staleness checking
-   - Example: File permission errors, resolver failures, or other unexpected issues
-   - An exception raised during the staleness check is logged (a read error is not), and execution continues with an "unreadable" status instead of crashing
+1. **Type "unreadable" (Unreadable)**: The source file could not be read, or
+   its staleness check failed
+   - Returned by `file_staleness_status` on permission or I/O errors, and by
+     `CoverageModel#staleness_for` when an exception is raised during staleness
+     checking
+   - Example: File permission errors, resolver failures, or other unexpected
+     issues
+   - An exception raised during the staleness check is logged (a read error is
+     not), and execution continues with an "unreadable" status instead of
+     crashing
 
-2. **Type "deleted" (Deleted)**: The source file exists in coverage but has been deleted from disk
-   - Returned by `file_staleness_status` when `File.file?(file_abs)` returns false
+2. **Type "deleted" (Deleted)**: The source file exists in coverage but has
+   been deleted from disk
+   - Returned by `file_staleness_status` when `File.file?(file_abs)` returns
+     false
    - Example: File was deleted after tests ran
 
-3. **Type "newer" (Timestamp)**: The source file's mtime is newer than coverage timestamp
+3. **Type "newer" (Timestamp)**: The source file's mtime is newer than coverage
+   timestamp
    - Detected by comparing `File.mtime(file_abs)` with coverage timestamp
    - Example: File was edited after tests ran
 
-4. **Type "length_mismatch" (Length)**: The source file line count doesn't match the coverage lines array length
-   - Detected by comparing the source's newline count (`File.binread(path).count("\n")`, matching SimpleCov's line counting) with `coverage_lines.length`
-   - Example: Lines were added/removed without changing mtime (rare but possible with version control)
+4. **Type "length_mismatch" (Length)**: The source file line count doesn't
+   match the coverage lines array length
+   - Detected by comparing the source's newline count
+     (`File.binread(path).count("\n")`, matching SimpleCov's line counting)
+     with `coverage_lines.length`
+   - Example: Lines were added/removed without changing mtime (rare but
+     possible with version control)
 
 5. **Type "ok" (Not stale)**: The file is not stale
    - Returned when none of the above staleness conditions apply
@@ -64,7 +85,8 @@ The `StalenessChecker` class (defined in `lib/cov_loupe/staleness/staleness_chec
 
 #### Implementation Details
 
-The core algorithm lives in `CovLoupe::StalenessChecker#compute_file_staleness_details`:
+The core algorithm lives in
+`CovLoupe::StalenessChecker#compute_file_staleness_details`:
 
 ```ruby
 def compute_file_staleness_details(file_abs, coverage_lines)
@@ -98,10 +120,13 @@ end
 
 #### Staleness Modes
 
-The checker supports two modes, configured when instantiating `StalenessChecker`:
+The checker supports two modes, configured when instantiating
+`StalenessChecker`:
 
-- **`:off`** (default): Staleness is detected but only reported in responses, never raises errors
-- **`:error`**: Staleness raises `CoverageDataStaleError` or `CoverageDataProjectStaleError`
+- **`:off`** (default): Staleness is detected but only reported in responses,
+  never raises errors
+- **`:error`**: Staleness raises `CoverageDataStaleError` or
+  `CoverageDataProjectStaleError`
 
 This allows:
 
@@ -114,8 +139,10 @@ This allows:
 **File-level** (`check_file!` and `file_staleness_status`):
 
 - Checks a single file's staleness
-- `file_staleness_status` returns one of the staleness status strings ("ok", "deleted", "newer", "length_mismatch", "unreadable") and never raises
-- `check_file!` returns nil, or in `:error` mode raises `CoverageDataStaleError` (or `FileError` for an unreadable file)
+- `file_staleness_status` returns one of the staleness status strings ("ok",
+  "deleted", "newer", "length_mismatch", "unreadable") and never raises
+- `check_file!` returns nil, or in `:error` mode raises
+  `CoverageDataStaleError` (or `FileError` for an unreadable file)
 - Used by single-file tools (summary, raw, detailed, uncovered)
 
 **Project-level** (`check_project!` and `check_project_with_lines!`):
@@ -125,23 +152,39 @@ This allows:
     - Files newer than coverage timestamp
     - Files deleted since coverage was collected
     - Tracked files missing from coverage (newly added files)
-- Return a hash of the problem file lists (`newer_files`, `missing_files`, `deleted_files`, `unreadable_files`, plus `length_mismatch_files` from `check_project_with_lines!`) and `timestamp_status`
-- In `:error` mode, raise `CoverageDataProjectStaleError` with those lists instead
-- `CoverageModel` uses `check_project_with_lines!` in `list` and `project_totals` (behind the `project_coverage` and `project_coverage_totals` MCP tools), passing coverage line arrays so length mismatches and unreadable files are also reported
+- Return a hash of the problem file lists (`newer_files`, `missing_files`,
+  `deleted_files`, `unreadable_files`, plus `length_mismatch_files` from
+  `check_project_with_lines!`) and `timestamp_status`
+- In `:error` mode, raise `CoverageDataProjectStaleError` with those lists
+  instead
+- `CoverageModel` uses `check_project_with_lines!` in `list` and
+  `project_totals` (behind the `project_coverage` and `project_coverage_totals`
+  MCP tools), passing coverage line arrays so length mismatches and unreadable
+  files are also reported
 
 **Totals behavior**:
 
-- `project_totals` excludes any stale files ("deleted", "newer", "length_mismatch", "unreadable") from aggregate counts.
-- Totals include a `with_coverage` breakdown, plus a `without_coverage` breakdown when tracked globs are set, so callers can reconcile what was omitted.
+- `project_totals` excludes any stale files ("deleted", "newer",
+  "length_mismatch", "unreadable") from aggregate counts.
+- Totals include a `with_coverage` breakdown, plus a `without_coverage`
+  breakdown when tracked globs are set, so callers can reconcile what was
+  omitted.
 - The `without_coverage` payload includes counts for three categories:
-    - `missing_from_coverage`: Tracked files that have no coverage data in the coverage file
-    - `unreadable`: Files that exist but could not be read (e.g., due to permission errors, I/O issues, or staleness check failures)
-    - `skipped`: Files that were skipped during list processing due to coverage data errors (e.g., malformed entries)
-- The `unreadable` count comes from `list_result['unreadable_files']` (collected during staleness checking when files exist but cannot be accessed or validated), excluding files that already appear as a coverage row or a skipped row, so no file is counted twice.
+    - `missing_from_coverage`: Tracked files that have no coverage data in the
+      coverage file
+    - `unreadable`: Files that exist but could not be read (e.g., due to
+      permission errors, I/O issues, or staleness check failures)
+    - `skipped`: Files that were skipped during list processing due to coverage
+      data errors (e.g., malformed entries)
+- The `unreadable` count comes from `list_result['unreadable_files']`
+  (collected during staleness checking when files exist but cannot be accessed
+  or validated), excluding files that already appear as a coverage row or a
+  skipped row, so no file is counted twice.
 
 #### Tracked Globs Feature
 
-`StalenessChecker` takes a `tracked_globs:` constructor keyword; the project-level checks use it to detect newly added files:
+`StalenessChecker` takes a `tracked_globs:` constructor keyword; the
+project-level checks use it to detect newly added files:
 
 ```ruby
 # Detects if lib/**/*.rb files exist that have no coverage data
@@ -153,48 +196,62 @@ This helps teams ensure new files are included in test runs.
 
 #### Coverage Path Consistency (SimpleCov)
 
-SimpleCov can emit mixed path forms for the same file when results are merged across suites or
-environments (for example, absolute vs relative paths, or different roots). This is a SimpleCov
-data consistency risk, not a cov-loupe behavior. When multiple keys normalize to the same absolute
-path, cov-loupe raises `CoverageDataError` instead of letting one entry silently override another
-(see `CoverageRepository#normalize_paths`).
+SimpleCov can emit mixed path forms for the same file when results are merged
+across suites or environments (for example, absolute vs relative paths, or
+different roots). This is a SimpleCov data consistency risk, not a cov-loupe
+behavior. When multiple keys normalize to the same absolute path, cov-loupe
+raises `CoverageDataError` instead of letting one entry silently override
+another (see `CoverageRepository#normalize_paths`).
 
-**Guidance:** Keep `SimpleCov.root` consistent across all suites and avoid manual path rewriting
-before merging results.
+**Guidance:** Keep `SimpleCov.root` consistent across all suites and avoid
+manual path rewriting before merging results.
 
 ### Consequences
 
 #### Positive
 
-1. **Accurate detection**: Four types catch different staleness scenarios comprehensively
+1. **Accurate detection**: Four types catch different staleness scenarios
+   comprehensively
 2. **User control**: Modes allow errors or warnings based on use case
-3. **Detailed information**: Staleness errors include specific file lists and timestamps
+3. **Detailed information**: Staleness errors include specific file lists and
+   timestamps
 4. **Project awareness**: Can detect newly added files that lack coverage
 5. **Conservative totals**: Aggregate totals only include fresh coverage data
 
 #### Negative
 
-1. **Complexity**: Four staleness types are harder to understand than a single timestamp check
+1. **Complexity**: Four staleness types are harder to understand than a single
+   timestamp check
 2. **Performance**: Line counting and mtime checks for every file add overhead
-3. **Ambiguity**: When multiple staleness types apply, prioritization logic (length > timestamp) may surprise users
+3. **Ambiguity**: When multiple staleness types apply, prioritization logic
+   (length > timestamp) may surprise users
 
 #### Trade-offs
 
 - **Versus timestamp-only**: More accurate but slower and more complex
-- **Versus content hashing**: Fast enough for most projects, but can't detect "edit then revert" scenarios
-- **Versus no checking**: Essential for reliable coverage reporting, worth the complexity
+- **Versus content hashing**: Fast enough for most projects, but can't detect
+  "edit then revert" scenarios
+- **Versus no checking**: Essential for reliable coverage reporting, worth the
+  complexity
 
 #### Edge Cases Handled
 
 1. **Deleted files**: Appear as "deleted" type staleness
 2. **Empty files**: `cov_len.positive?` guard prevents false positives
-3. **No coverage timestamp**: Defaults to 0, effectively disabling timestamp checks
+3. **No coverage timestamp**: Defaults to 0, effectively disabling timestamp
+   checks
 
 ### References
 
-- Implementation: `lib/cov_loupe/staleness/staleness_checker.rb` (`StalenessChecker` class)
-- File-level checking: `StalenessChecker#check_file!` and `#file_staleness_status`
-- Project-level checking: `StalenessChecker#check_project!` and `#check_project_with_lines!`
-- Staleness detail computation: `StalenessChecker#compute_file_staleness_details`
-- Error types: `lib/cov_loupe/errors/errors.rb` (`CoverageDataStaleError`, `CoverageDataProjectStaleError`)
-- Usage in tools: `lib/cov_loupe/tools/project_coverage_tool.rb`, `lib/cov_loupe/model/model.rb`
+- Implementation: `lib/cov_loupe/staleness/staleness_checker.rb`
+  (`StalenessChecker` class)
+- File-level checking: `StalenessChecker#check_file!` and
+  `#file_staleness_status`
+- Project-level checking: `StalenessChecker#check_project!` and
+  `#check_project_with_lines!`
+- Staleness detail computation:
+  `StalenessChecker#compute_file_staleness_details`
+- Error types: `lib/cov_loupe/errors/errors.rb` (`CoverageDataStaleError`,
+  `CoverageDataProjectStaleError`)
+- Usage in tools: `lib/cov_loupe/tools/project_coverage_tool.rb`,
+  `lib/cov_loupe/model/model.rb`

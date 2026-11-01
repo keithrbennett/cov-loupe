@@ -1,82 +1,201 @@
 # Architecture
 
-[Back to main README](../../README.md) | [Architecture Decision Records](arch-decisions/README.md)
+[Back to main README](../../README.md) | [Architecture Decision
+Records](arch-decisions/README.md)
 
-cov-loupe is organized around a single coverage data model that feeds three delivery channels: a command-line interface, an MCP server for LLM agents, and a light-weight Ruby API. The codebase is intentionally modular—shared logic for loading, normalizing, and validating SimpleCov data lives in `lib/cov_loupe/`, while adapters wrap that core for each runtime mode.
+cov-loupe is organized around a single coverage data model that feeds three
+delivery channels: a command-line interface, an MCP server for LLM agents, and
+a light-weight Ruby API. The codebase is intentionally modular—shared logic for
+loading, normalizing, and validating SimpleCov data lives in `lib/cov_loupe/`,
+while adapters wrap that core for each runtime mode.
 
 ## Runtime Entry Points
 
-- **Executable** – `exe/cov-loupe` bootstraps the gem, enforces Ruby >= 3.3, and delegates to `CovLoupe.run(ARGV)`.
-- **Mode Negotiation** – `CovLoupe.run` inspects environment defaults from `COV_LOUPE_OPTS` and parses the `-m/--mode` flag. It defaults to CLI mode and instantiates `CovLoupe::CoverageCLI`. When `-m mcp` or `--mode mcp` is specified, it instantiates `CovLoupe::MCPServer` for MCP protocol communication over STDIO.
-- **Embedded Usage** – Applications embed the gem by instantiating `CovLoupe::CoverageModel` directly, optionally wrapping work in `CovLoupe.with_context` to scope a log target to that work.
+- **Executable** – `exe/cov-loupe` bootstraps the gem, enforces Ruby >= 3.3,
+  and delegates to `CovLoupe.run(ARGV)`.
+- **Mode Negotiation** – `CovLoupe.run` inspects environment defaults from
+  `COV_LOUPE_OPTS` and parses the `-m/--mode` flag. It defaults to CLI mode and
+  instantiates `CovLoupe::CoverageCLI`. When `-m mcp` or `--mode mcp` is
+  specified, it instantiates `CovLoupe::MCPServer` for MCP protocol
+  communication over STDIO.
+- **Embedded Usage** – Applications embed the gem by instantiating
+  `CovLoupe::CoverageModel` directly, optionally wrapping work in
+  `CovLoupe.with_context` to scope a log target to that work.
 
 ## Coverage Data Pipeline
 
-1. **Coverage file discovery** – `CoverageFilePathResolver` locates SimpleCov's `coverage.json` at `coverage/coverage.json` under the project root, or at a path specified by the user (a file, or a directory containing it). For a detailed explanation of the configuration options, see the [Configuring the Coverage File](../../README.md#configuring-the-coverage-file) section in the main README.
-2. **Parsing and normalization** – `CoverageJsonLoader` reads the chosen `coverage.json` once (the document is already merged across suites, and `"ignored"` line markers become `nil`), and `CoverageRepository` maps all file keys to absolute paths anchored at the configured project root. The `meta.timestamp` is kept for staleness checks. SimpleCov itself is never loaded.
-3. **Path relativizing** – `PathRelativizer` (powered by the centralized `PathUtils` module) produces relative paths for payloads without mutating the canonical data. The model keys coverage data by absolute path and relativizes each path-bearing query result as it returns, so library, CLI, and MCP payloads share one shape. `StalenessChecker` already reports its path arrays in this form, so relativizing them again changes nothing.
-4. **Derived metrics** – `CoverageCalculator.summary`, `CoverageCalculator.uncovered`, and `CoverageCalculator.detailed` compute coverage stats from the raw `lines` arrays. `CoverageModel` exposes `summary_for`, `uncovered_for`, `detailed_for`, and `raw_for` helpers that wrap these calculations.
-5. **Staleness detection** – `StalenessChecker` compares source mtimes/line counts to coverage metadata. CLI flags and MCP arguments can promote warnings to hard failures (`--raise-on-stale true`) or simply mark rows as stale for display.
+1. **Coverage file discovery** – `CoverageFilePathResolver` locates SimpleCov's
+   `coverage.json` at `coverage/coverage.json` under the project root, or at a
+   path specified by the user (a file, or a directory containing it). For a
+   detailed explanation of the configuration options, see the [Configuring the
+   Coverage File](../../README.md#configuring-the-coverage-file) section in the
+   main README.
+2. **Parsing and normalization** – `CoverageJsonLoader` reads the chosen
+   `coverage.json` once (the document is already merged across suites, and
+   `"ignored"` line markers become `nil`), and `CoverageRepository` maps all
+   file keys to absolute paths anchored at the configured project root. The
+   `meta.timestamp` is kept for staleness checks. SimpleCov itself is never
+   loaded.
+3. **Path relativizing** – `PathRelativizer` (powered by the centralized
+   `PathUtils` module) produces relative paths for payloads without mutating
+   the canonical data. The model keys coverage data by absolute path and
+   relativizes each path-bearing query result as it returns, so library, CLI,
+   and MCP payloads share one shape. `StalenessChecker` already reports its
+   path arrays in this form, so relativizing them again changes nothing.
+4. **Derived metrics** – `CoverageCalculator.summary`,
+   `CoverageCalculator.uncovered`, and `CoverageCalculator.detailed` compute
+   coverage stats from the raw `lines` arrays. `CoverageModel` exposes
+   `summary_for`, `uncovered_for`, `detailed_for`, and `raw_for` helpers that
+   wrap these calculations.
+5. **Staleness detection** – `StalenessChecker` compares source mtimes/line
+   counts to coverage metadata. CLI flags and MCP arguments can promote
+   warnings to hard failures (`--raise-on-stale true`) or simply mark rows as
+   stale for display.
 
 ## Interfaces
 
 ### CLI (`CovLoupe::CoverageCLI`)
 
-- Builds on Ruby’s `OptionParser`, with global options such as `--coverage-file`, `--raise-on-stale`, `--format` (`-fJ` is `-f J`), and `--source`.
-- Subcommands (`list`, `summary`, `raw`, `uncovered`, `detailed`, `totals`, `validate`) translate to calls on `CoverageModel`.
-- **Subcommand Abbreviations** – Frequent CLI users can use single-character abbreviations for most subcommands: `l` (list), `s` (summary), `u` (uncovered), `d` (detailed), `r` (raw), `t` (totals), and `v` (validate). The version is printed by the global `-v`/`--version` flag, not a subcommand.
-- Uses `ErrorHandlerFactory.for_cli` to convert unexpected exceptions into friendly user messages while honoring `--error-mode`.
-- Formatting logic lives in `lib/cov_loupe/formatters/` (output formats, source display, warnings) and `lib/cov_loupe/coverage/coverage_table_formatter.rb` (the coverage table), shared with the MCP tools to keep presentation consistent.
+- Builds on Ruby’s `OptionParser`, with global options such as
+  `--coverage-file`, `--raise-on-stale`, `--format` (`-fJ` is `-f J`), and
+  `--source`.
+- Subcommands (`list`, `summary`, `raw`, `uncovered`, `detailed`, `totals`,
+  `validate`) translate to calls on `CoverageModel`.
+- **Subcommand Abbreviations** – Frequent CLI users can use single-character
+  abbreviations for most subcommands: `l` (list), `s` (summary), `u`
+  (uncovered), `d` (detailed), `r` (raw), `t` (totals), and `v` (validate). The
+  version is printed by the global `-v`/`--version` flag, not a subcommand.
+- Uses `ErrorHandlerFactory.for_cli` to convert unexpected exceptions into
+  friendly user messages while honoring `--error-mode`.
+- Formatting logic lives in `lib/cov_loupe/formatters/` (output formats, source
+  display, warnings) and `lib/cov_loupe/coverage/coverage_table_formatter.rb`
+  (the coverage table), shared with the MCP tools to keep presentation
+  consistent.
 
 ### MCP Server (`CovLoupe::MCPServer`)
 
-- Assembles a list of tool classes and mounts them in `MCP::Server` using STDIO transport.
-- Relies on the same core model; each MCP request creates a fresh `CoverageModel` instance, but the underlying coverage data is cached in a global `ModelDataCache` singleton. The cache automatically reloads when the coverage file changes (validated via file signature: mtime, subsecond mtime, size, inode, and MD5 digest).
-- Configuration precedence in MCP: per-request JSON parameters override CLI arguments passed when the server starts (including `COV_LOUPE_OPTS`), which in turn override built-in defaults. CLI-only presentation flags (`--format`, `--sort-order`, `--source`, `--context-lines`, `--color`) are ignored in MCP mode.
-- Tool-execution failures delegate to `BaseTool.handle_mcp_error`, which uses the MCP-specific handler and emits `MCP::Tool::Response` objects flagged with `isError: true`. Argument-validation failures are returned with `isError: true` by the MCP SDK before cov-loupe runs; protocol- or dispatch-level failures such as unknown tools remain JSON-RPC errors.
+- Assembles a list of tool classes and mounts them in `MCP::Server` using STDIO
+  transport.
+- Relies on the same core model; each MCP request creates a fresh
+  `CoverageModel` instance, but the underlying coverage data is cached in a
+  global `ModelDataCache` singleton. The cache automatically reloads when the
+  coverage file changes (validated via file signature: mtime, subsecond mtime,
+  size, inode, and MD5 digest).
+- Configuration precedence in MCP: per-request JSON parameters override CLI
+  arguments passed when the server starts (including `COV_LOUPE_OPTS`), which
+  in turn override built-in defaults. CLI-only presentation flags (`--format`,
+  `--sort-order`, `--source`, `--context-lines`, `--color`) are ignored in MCP
+  mode.
+- Tool-execution failures delegate to `BaseTool.handle_mcp_error`, which uses
+  the MCP-specific handler and emits `MCP::Tool::Response` objects flagged with
+  `isError: true`. Argument-validation failures are returned with
+  `isError: true` by the MCP SDK before cov-loupe runs; protocol- or
+  dispatch-level failures such as unknown tools remain JSON-RPC errors.
 
 ### Library API
 
-- Consuming code instantiates `CoverageModel` directly for fine-grained control over coverage queries.
-- Library calls raise `CovLoupe::Error` subclasses for callers to rescue; they never consult the context's configured error handler. To log a block of work to a different target, run it inside `CovLoupe.with_context(CovLoupe.create_context(log_target: ...))`.
-- The Ruby public API is whatever is tagged `@api public` in the source (see [Public API and Versioning](../user/LIBRARY_API.md#public-api-and-versioning)); classes described in this document are internal unless tagged `@api public`, as `CoverageModel` is.
+- Consuming code instantiates `CoverageModel` directly for fine-grained control
+  over coverage queries.
+- Library calls raise `CovLoupe::Error` subclasses for callers to rescue; they
+  never consult the context's configured error handler. To log a block of work
+  to a different target, run it inside
+  `CovLoupe.with_context(CovLoupe.create_context(log_target: ...))`.
+- The Ruby public API is whatever is tagged `@api public` in the source (see
+  [Public API and
+  Versioning](../user/LIBRARY_API.md#public-api-and-versioning)); classes
+  described in this document are internal unless tagged `@api public`, as
+  `CoverageModel` is.
 
 ## MCP Tool Stack
 
-- `CovLoupe::BaseTool` centralizes JSON schema definitions, error conversion, and response serialization for the MCP protocol.
-- Individual tools reside in `lib/cov_loupe/tools/` and follow a consistent shape: define an input schema, call into `CoverageModel`, then serialize via `respond_json`. Examples include `ProjectCoverageTool`, `FileCoverageSummaryTool`, and `FileUncoveredLinesTool`.
-- `CovLoupe::MCPServer::TOOLSET` lists every tool. Adding a new tool requires creating a subclass, requiring it in `lib/cov_loupe/loaders/all_mcp.rb`, appending it to that list, and adding a `HelpTool::TOOL_GUIDE` entry. The server registers `MCPServer#toolset`, which omits tools whose `executes_code?` returns true unless it was started with `--allow-code-predicates`. A new tool that runs client-supplied code must override `executes_code?` to return true, or it will be exposed by default.
+- `CovLoupe::BaseTool` centralizes JSON schema definitions, error conversion,
+  and response serialization for the MCP protocol.
+- Individual tools reside in `lib/cov_loupe/tools/` and follow a consistent
+  shape: define an input schema, call into `CoverageModel`, then serialize via
+  `respond_json`. Examples include `ProjectCoverageTool`,
+  `FileCoverageSummaryTool`, and `FileUncoveredLinesTool`.
+- `CovLoupe::MCPServer::TOOLSET` lists every tool. Adding a new tool requires
+  creating a subclass, requiring it in `lib/cov_loupe/loaders/all_mcp.rb`,
+  appending it to that list, and adding a `HelpTool::TOOL_GUIDE` entry. The
+  server registers `MCPServer#toolset`, which omits tools whose
+  `executes_code?` returns true unless it was started with
+  `--allow-code-predicates`. A new tool that runs client-supplied code must
+  override `executes_code?` to return true, or it will be exposed by default.
 
 ## Error Handling & Logging
 
-- Custom exceptions under `lib/cov_loupe/errors/errors.rb` capture context for configuration issues, missing files, stale coverage, and general runtime errors. Each implements `#user_friendly_message` for consistent UX.
-- `CovLoupe::ErrorHandler` encapsulates logging and severity decisions. Modes (`:off`, `:log`, `:debug`) control whether errors are recorded and whether stack traces are included.
-- Runtime configuration (error handlers, log destinations) flows through `CovLoupe::AppContext`. Entry points push a context with `CovLoupe.with_context`, which stores the active configuration in `Thread.current` (`CovLoupe.context`). That storage is fiber-local, so a new Fiber (for example, in an `Enumerator` or async code) starts without the context and uses the default. Nested calls automatically restore the previous context when the block exits, ensuring isolation even when multiple callers share a process or thread.
+- Custom exceptions under `lib/cov_loupe/errors/errors.rb` capture context for
+  configuration issues, missing files, stale coverage, and general runtime
+  errors. Each implements `#user_friendly_message` for consistent UX.
+- `CovLoupe::ErrorHandler` encapsulates logging and severity decisions. Modes
+  (`:off`, `:log`, `:debug`) control whether errors are recorded and whether
+  stack traces are included.
+- Runtime configuration (error handlers, log destinations) flows through
+  `CovLoupe::AppContext`. Entry points push a context with
+  `CovLoupe.with_context`, which stores the active configuration in
+  `Thread.current` (`CovLoupe.context`). That storage is fiber-local, so a new
+  Fiber (for example, in an `Enumerator` or async code) starts without the
+  context and uses the default. Nested calls automatically restore the previous
+  context when the block exits, ensuring isolation even when multiple callers
+  share a process or thread.
 - Two helper accessors clarify intent:
-    - `CovLoupe.default_log_file` / `default_log_file=` adjust the baseline log sink that future contexts inherit.
-    - `CovLoupe.active_log_file` / `active_log_file=` mutate only the current context (or create one on demand) without touching the default. A `CoverageModel` keeps the logger it was built with, so the change reaches models created afterward.
-- `ErrorHandlerFactory` wires the appropriate handler for the CLI and the MCP server, each of which installs its handler inside a fresh `AppContext` before executing user work. Library contexts carry a default `for_library` handler, but library calls raise exceptions and never consult it.
-- Diagnostics are written through `CovLoupe::Logger` to `stderr` by default in CLI and MCP modes; library mode is quiet by default. See the [logging initialization and target testing guide](../user/LOGGING.md#log-file-initialization-and-target-testing) for probe behavior, cached failures, and explicit file-target details. MCP tool-execution errors reach this logger, but argument-validation failures emitted by the MCP SDK before cov-loupe runs do not. Override the destination with CLI `--log-file`, set `CovLoupe.default_log_file` for future contexts, or temporarily tweak `CovLoupe.active_log_file` when a caller needs a different destination mid-run.
+    - `CovLoupe.default_log_file` / `default_log_file=` adjust the baseline log
+      sink that future contexts inherit.
+    - `CovLoupe.active_log_file` / `active_log_file=` mutate only the current
+      context (or create one on demand) without touching the default. A
+      `CoverageModel` keeps the logger it was built with, so the change reaches
+      models created afterward.
+- `ErrorHandlerFactory` wires the appropriate handler for the CLI and the MCP
+  server, each of which installs its handler inside a fresh `AppContext` before
+  executing user work. Library contexts carry a default `for_library` handler,
+  but library calls raise exceptions and never consult it.
+- Diagnostics are written through `CovLoupe::Logger` to `stderr` by default in
+  CLI and MCP modes; library mode is quiet by default. See the [logging
+  initialization and target testing
+  guide](../user/LOGGING.md#log-file-initialization-and-target-testing) for
+  probe behavior, cached failures, and explicit file-target details. MCP
+  tool-execution errors reach this logger, but argument-validation failures
+  emitted by the MCP SDK before cov-loupe runs do not. Override the destination
+  with CLI `--log-file`, set `CovLoupe.default_log_file` for future contexts,
+  or temporarily tweak `CovLoupe.active_log_file` when a caller needs a
+  different destination mid-run.
 
 ## Output Character Mode
 
-cov-loupe provides a global output character mode that chooses how cov-loupe draws its own decoration (table borders and the covered-line marker) across both CLI and MCP interfaces: with Unicode characters, or with ASCII for terminals and systems that cannot display them. Data is never changed. See the [Output Character Mode decision](arch-decisions/output-character-mode.md).
+cov-loupe provides a global output character mode that chooses how cov-loupe
+draws its own decoration (table borders and the covered-line marker) across
+both CLI and MCP interfaces: with Unicode characters, or with ASCII for
+terminals and systems that cannot display them. Data is never changed. See the
+[Output Character Mode decision](arch-decisions/output-character-mode.md).
 
 ### Configuration
 
-- **CLI flag** – `-O/--output-chars MODE` accepts `default`, `fancy`, or `ascii` (case-insensitive, with short forms `d`, `f`, `a`)
-- **MCP parameter** – Optional `output_chars` parameter in tool requests overrides server default
-- **Mode resolution** – `:default` resolves at runtime: fancy if the output stream's encoding (or the locale's, when the stream has none) is UTF-8, otherwise ASCII
+- **CLI flag** – `-O/--output-chars MODE` accepts `default`, `fancy`, or
+  `ascii` (case-insensitive, with short forms `d`, `f`, `a`)
+- **MCP parameter** – Optional `output_chars` parameter in tool requests
+  overrides server default
+- **Mode resolution** – `:default` resolves at runtime: fancy if the output
+  stream's encoding (or the locale's, when the stream has none) is UTF-8,
+  otherwise ASCII
 
 ### Implementation
 
-- **Charsets** – Separate charset definitions for fancy (Unicode box-drawing) and ASCII table borders, chosen with `OutputChars.charset_for`
-- **Source markers** – Covered lines are marked `+` instead of `✓` in ASCII mode; the uncovered marker is always `X`
-- **JSON** – `JSON.generate(..., ascii_only: true)` in ASCII mode escapes non-ASCII as `\uXXXX`, which encodes the data without changing it
+- **Charsets** – Separate charset definitions for fancy (Unicode box-drawing)
+  and ASCII table borders, chosen with `OutputChars.charset_for`
+- **Source markers** – Covered lines are marked `+` instead of `✓` in ASCII
+  mode; the uncovered marker is always `X`
+- **JSON** – `JSON.generate(..., ascii_only: true)` in ASCII mode escapes
+  non-ASCII as `\uXXXX`, which encodes the data without changing it
 
 ### What ASCII Mode Does Not Change
 
-- **Data** – File paths, source lines, error messages, backtraces, and YAML, AmazingPrint, `inspect`, `puts` and `pretty_print` output are never rewritten by cov-loupe, so they can contain non-ASCII characters in any mode (Ruby's own `inspect` escapes non-ASCII when its default encodings are not UTF-8; under the C locale the executable sets `Encoding.default_external` to UTF-8, so it does not, unless `Encoding.default_internal` is set to a non-UTF-8 encoding)
+- **Data** – File paths, source lines, error messages, backtraces, and YAML,
+  AmazingPrint, `inspect`, `puts` and `pretty_print` output are never rewritten
+  by cov-loupe, so they can contain non-ASCII characters in any mode (Ruby's
+  own `inspect` escapes non-ASCII when its default encodings are not UTF-8;
+  under the C locale the executable sets `Encoding.default_external` to UTF-8,
+  so it does not, unless `Encoding.default_internal` is set to a non-UTF-8
+  encoding)
 - **Log files** – Preserved in original encoding for debugging fidelity
 
 ### Testing
@@ -84,33 +203,57 @@ cov-loupe provides a global output character mode that chooses how cov-loupe dra
 Comprehensive test coverage exists:
 
 - Mode resolution and normalization tests
-- Formatter tests for ASCII mode (JSON escaping, table borders, source markers, data left unchanged)
+- Formatter tests for ASCII mode (JSON escaping, table borders, source markers,
+  data left unchanged)
 - CLI option parsing tests for `--output-chars` flag
 - MCP tool output mode tests
 - Staleness error message tests with Unicode file paths
 
 ## Configuration Surface
 
-- **Environment defaults** – `COV_LOUPE_OPTS` applies baseline CLI flags before parsing the actual command line.
-- **Coverage file overrides** – The location of `coverage.json` can be specified via CLI options or in the MCP configuration. See [Configuring the Coverage File](../../README.md#configuring-the-coverage-file) for details.
-- **Tracked globs** – Glob patterns (e.g., `lib/**/*.rb`) that specify which files should have coverage. When provided, cov-loupe alerts you if any matching files are missing from the coverage data, helping catch untested files that were added to the project but never executed during test runs.
-- **Output character mode** – Global choice between Unicode and ASCII table borders and markers via `-O/--output-chars` (CLI) or `output_chars` parameter (MCP). Default mode chooses by output encoding (normally the locale's).
-- **Source display** – CLI-only flags: `--source` and `--context-lines` choose which source lines the per-file commands include (as annotated text, or a `source` array in structured formats), and `--color` colors the coverage markers.
+- **Environment defaults** – `COV_LOUPE_OPTS` applies baseline CLI flags before
+  parsing the actual command line.
+- **Coverage file overrides** – The location of `coverage.json` can be
+  specified via CLI options or in the MCP configuration. See [Configuring the
+  Coverage File](../../README.md#configuring-the-coverage-file) for details.
+- **Tracked globs** – Glob patterns (e.g., `lib/**/*.rb`) that specify which
+  files should have coverage. When provided, cov-loupe alerts you if any
+  matching files are missing from the coverage data, helping catch untested
+  files that were added to the project but never executed during test runs.
+- **Output character mode** – Global choice between Unicode and ASCII table
+  borders and markers via `-O/--output-chars` (CLI) or `output_chars` parameter
+  (MCP). Default mode chooses by output encoding (normally the locale's).
+- **Source display** – CLI-only flags: `--source` and `--context-lines` choose
+  which source lines the per-file commands include (as annotated text, or a
+  `source` array in structured formats), and `--color` colors the coverage
+  markers.
 
 ## Repository Layout Highlights
 
-- `lib/cov_loupe/` – Core runtime (model, utilities, error handling, CLI, MCP server, tools).
+- `lib/cov_loupe/` – Core runtime (model, utilities, error handling, CLI, MCP
+  server, tools).
 - `lib/cov_loupe.rb` – Primary public entry point required by gem consumers.
-- `lib/cov_loupe/paths/path_utils.rb` – Centralized path normalization and expansion logic.
-- `docs/` – Audience-specific guides (`docs/user` for usage, `docs/dev` for contributors).
-- `spec/` – RSpec suite with fixtures under `spec/fixtures/` for deterministic coverage data.
+- `lib/cov_loupe/paths/path_utils.rb` – Centralized path normalization and
+  expansion logic.
+- `docs/` – Audience-specific guides (`docs/user` for usage, `docs/dev` for
+  contributors).
+- `spec/` – RSpec suite with fixtures under `spec/fixtures/` for deterministic
+  coverage data.
 
 ## Extending the System With a New Tool or Metric
 
-1. Add or update data processing inside `CoverageModel` or `CoverageCalculator` when a new metric is needed.
-2. Surface that metric through all interfaces: add a CLI option/subcommand, create an MCP tool, and expose a library helper method.
-3. Register the new tool in `MCPServer` and update CLI option parsing in `CoverageCLI`. If the tool runs client-supplied code, override `executes_code?` to return true (see the MCP layer notes above).
-4. Provide tests under `spec/` mirroring the lib path (`spec/cov_loupe/..._spec.rb`).
+1. Add or update data processing inside `CoverageModel` or `CoverageCalculator`
+   when a new metric is needed.
+2. Surface that metric through all interfaces: add a CLI option/subcommand,
+   create an MCP tool, and expose a library helper method.
+3. Register the new tool in `MCPServer` and update CLI option parsing in
+   `CoverageCLI`. If the tool runs client-supplied code, override
+   `executes_code?` to return true (see the MCP layer notes above).
+4. Provide tests under `spec/` mirroring the lib path
+   (`spec/cov_loupe/..._spec.rb`).
 5. Update documentation to reflect the new capability.
 
-By funnelling every interface through the shared `CoverageModel`, cov-loupe guarantees that CLI users, MCP clients, and embedding libraries all observe identical coverage semantics and staleness rules, while still allowing each adapter to tailor presentation and error handling to its audience.
+By funnelling every interface through the shared `CoverageModel`, cov-loupe
+guarantees that CLI users, MCP clients, and embedding libraries all observe
+identical coverage semantics and staleness rules, while still allowing each
+adapter to tailor presentation and error handling to its audience.

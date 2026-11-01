@@ -2,7 +2,8 @@
 
 [Back to main README](../../README.md)
 
-> **Note:** Commands like `cov-loupe` assume the gem is installed globally. If not, substitute `bundle exec exe/cov-loupe`.
+> **Note:** Commands like `cov-loupe` assume the gem is installed globally. If
+> not, substitute `bundle exec exe/cov-loupe`.
 
 ## Setup
 
@@ -17,12 +18,14 @@ cov-loupe --version  # verify it works
 
 ## Git Hooks
 
-Hooks are optional and live in the tracked `hooks/` directory. `bin/setup-hooks` sets
-`core.hooksPath` to that directory (nothing is copied into `.git/hooks`), so edits to a hook
-take effect immediately. `pre-commit` and `pre-merge-commit` both run RuboCop and RSpec.
+Hooks are optional and live in the tracked `hooks/` directory.
+`bin/setup-hooks` sets `core.hooksPath` to that directory (nothing is copied
+into `.git/hooks`), so edits to a hook take effect immediately. `pre-commit`
+and `pre-merge-commit` both run RuboCop and RSpec.
 
-`core.hooksPath` replaces any global hooks path for this repository, and hooks previously copied
-into `.git/hooks` are no longer used. CI runs the same checks regardless.
+`core.hooksPath` replaces any global hooks path for this repository, and hooks
+previously copied into `.git/hooks` are no longer used. CI runs the same checks
+regardless.
 
 ## Running Tests
 
@@ -30,16 +33,17 @@ into `.git/hooks` are no longer used. CI runs the same checks regardless.
 bundle exec rspec
 ```
 
-The suite must pass in any locale. CI also runs it under the C locale, where Ruby's default
-external encoding is US-ASCII; to check a change that touches paths, arguments or output:
+The suite must pass in any locale. CI also runs it under the C locale, where
+Ruby's default external encoding is US-ASCII; to check a change that touches
+paths, arguments or output:
 
 ```sh
 LANG=C LC_ALL=C bundle exec rspec
 ```
 
-Specs see captured output as UTF-8 and pick the default output character mode as on a UTF-8
-terminal; a spec that needs another encoding sets it explicitly (see `with_default_encodings` in
-`spec/support/io_helpers.rb`).
+Specs see captured output as UTF-8 and pick the default output character mode
+as on a UTF-8 terminal; a spec that needs another encoding sets it explicitly
+(see `with_default_encodings` in `spec/support/io_helpers.rb`).
 
 ## Project-Specific Patterns
 
@@ -48,7 +52,8 @@ terminal; a spec that needs another encoding sets it explicitly (see `with_defau
 # frozen_string_literal: true
 ```
 
-**Error handling uses custom exceptions from `lib/cov_loupe/errors/errors.rb`:**
+**Error handling uses custom exceptions from
+`lib/cov_loupe/errors/errors.rb`:**
 ```ruby
 rescue Errno::ENOENT => e
   raise FileError.new("Coverage data not found: #{e.message}")
@@ -99,17 +104,31 @@ before { setup_mcp_response_stub }
 
 ## Adding Features
 
-**CLI commands:** Add a command class under `lib/cov_loupe/commands/`, require it and register it in `CovLoupe::Commands::CommandFactory::COMMAND_MAP` (`command_factory.rb`), add its name to `CovLoupe::SUBCOMMANDS` (`lib/cov_loupe/subcommands.rb`; the CLI rejects names not listed there), optionally add an abbreviation to `CoverageCLI::SUBCOMMAND_ABBREVIATIONS`, describe it in the subcommand help in `OptionParserBuilder`, and add tests.
+**CLI commands:** Add a command class under `lib/cov_loupe/commands/`, require
+it and register it in `CovLoupe::Commands::CommandFactory::COMMAND_MAP`
+(`command_factory.rb`), add its name to `CovLoupe::SUBCOMMANDS`
+(`lib/cov_loupe/subcommands.rb`; the CLI rejects names not listed there),
+optionally add an abbreviation to `CoverageCLI::SUBCOMMAND_ABBREVIATIONS`,
+describe it in the subcommand help in `OptionParserBuilder`, and add tests.
 
-**MCP tools:** Create `*_tool.rb` in `lib/cov_loupe/tools/`, require it in `lib/cov_loupe/loaders/all_mcp.rb`, add it to `MCPServer::TOOLSET` in `mcp_server.rb`, and add an entry to `HelpTool::TOOL_GUIDE` (`spec/cov_loupe/mcp_server_spec.rb` checks that the two match). A tool that runs client-supplied code must override `executes_code?` to return true, so that it is registered only with `--allow-code-predicates`.
+**MCP tools:** Create `*_tool.rb` in `lib/cov_loupe/tools/`, require it in
+`lib/cov_loupe/loaders/all_mcp.rb`, add it to `MCPServer::TOOLSET` in
+`mcp_server.rb`, and add an entry to `HelpTool::TOOL_GUIDE`
+(`spec/cov_loupe/mcp_server_spec.rb` checks that the two match). A tool that
+runs client-supplied code must override `executes_code?` to return true, so
+that it is registered only with `--allow-code-predicates`.
 
-**Coverage features:** Add core data operations to `CoverageModel` in `lib/cov_loupe/model/model.rb` or pure line-counting logic to `CoverageCalculator` in `lib/cov_loupe/coverage/coverage_calculator.rb`.
+**Coverage features:** Add core data operations to `CoverageModel` in
+`lib/cov_loupe/model/model.rb` or pure line-counting logic to
+`CoverageCalculator` in `lib/cov_loupe/coverage/coverage_calculator.rb`.
 
 ## Documentation Development
 
-This project uses [MkDocs](https://www.mkdocs.org/) with the [Material theme](https://squidfunk.github.io/mkdocs-material/) for documentation.
+This project uses [MkDocs](https://www.mkdocs.org/) with the [Material
+theme](https://squidfunk.github.io/mkdocs-material/) for documentation.
 
-For the local docs server, dependency updates and audits, and publishing, see [Documentation Server](DOC_SERVER.md).
+For the local docs server, dependency updates and audits, and publishing, see
+[Documentation Server](DOC_SERVER.md).
 
 ### Documentation Structure
 
@@ -122,18 +141,23 @@ For the local docs server, dependency updates and audits, and publishing, see [D
 
 1. Create or edit markdown files in the `docs/` directory
 2. Add new pages to the `nav` section in `mkdocs.yml`
-3. Test locally with `bin/start-doc-server` and `bin/build-docs` (see [Documentation Server](DOC_SERVER.md))
+3. Test locally with `bin/start-doc-server` and `bin/build-docs` (see
+   [Documentation Server](DOC_SERVER.md))
 4. Commit changes along with your code changes
 
 ## Troubleshooting
 
-**RVM + Codex macOS:** `bundle exec rspec` fails in Codex's macOS sandbox with an RVM-managed Ruby; see [Troubleshooting](../user/TROUBLESHOOTING.md#running-the-test-suite-with-rvm-codex-macos) for workarounds.
+**RVM + Codex macOS:** `bundle exec rspec` fails in Codex's macOS sandbox with
+an RVM-managed Ruby; see
+[Troubleshooting](../user/TROUBLESHOOTING.md#running-the-test-suite-with-rvm-codex-macos)
+for workarounds.
 
 **MCP server smoke test:**
 ```sh
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"version","arguments":{}}}' | cov-loupe -m mcp
 ```
 
-This confirms that the server launches and responds over stdio; it is not an exhaustive contract
-test. See [MCP Integration — Error Responses](../user/MCP_INTEGRATION.md#error-responses) for
-optional validation and error sanity checks and the full failure model.
+This confirms that the server launches and responds over stdio; it is not an
+exhaustive contract test. See [MCP Integration — Error
+Responses](../user/MCP_INTEGRATION.md#error-responses) for optional validation
+and error sanity checks and the full failure model.

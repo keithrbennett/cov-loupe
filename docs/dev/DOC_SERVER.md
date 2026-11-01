@@ -2,13 +2,17 @@
 
 [Back to Developer Documentation](README.md)
 
-This project uses MkDocs to serve the Markdown documentation locally. The repository keeps the Python
-documentation dependencies separate from the Ruby gem dependencies in `.docs-venv`.
+This project uses MkDocs to serve the Markdown documentation locally. The
+repository keeps the Python documentation dependencies separate from the Ruby
+gem dependencies in `.docs-venv`.
 
-Source `bin/set-up-python-for-doc-server` (`source bin/set-up-python-for-doc-server`), and run `bin/start-doc-server` and the
-`docs:setup` and `docs:serve` Rake tasks, from the repository root; they use `.docs-venv` relative to the current directory. `bin/build-docs`,
-`bin/audit-docs-deps`, and `bin/update-docs-deps` resolve the repository paths themselves and work from any
-directory. The docs dependency set requires Python 3.11 or newer.
+Source `bin/set-up-python-for-doc-server`
+(`source bin/set-up-python-for-doc-server`), and run `bin/start-doc-server` and
+the `docs:setup` and `docs:serve` Rake tasks, from the repository root; they
+use `.docs-venv` relative to the current directory. `bin/build-docs`,
+`bin/audit-docs-deps`, and `bin/update-docs-deps` resolve the repository paths
+themselves and work from any directory. The docs dependency set requires Python
+3.11 or newer.
 
 ## First-Time Setup
 
@@ -18,10 +22,11 @@ Use the setup script when you want the fastest interactive setup:
 source bin/set-up-python-for-doc-server
 ```
 
-The script must be sourced because it creates and activates `.docs-venv` in the current shell. It installs the
-locked Python packages from `requirements-lock.txt`, including MkDocs and the configured MkDocs plugins. If
-your default `python3` is older than 3.11, make `python3` resolve to a newer interpreter before sourcing the
-script.
+The script must be sourced because it creates and activates `.docs-venv` in the
+current shell. It installs the locked Python packages from
+`requirements-lock.txt`, including MkDocs and the configured MkDocs plugins. If
+your default `python3` is older than 3.11, make `python3` resolve to a newer
+interpreter before sourcing the script.
 
 After setup, start the server:
 
@@ -46,13 +51,15 @@ source .docs-venv/bin/activate
 bin/start-doc-server
 ```
 
-`bin/start-doc-server` also checks `.docs-venv/bin/mkdocs` first, so it can usually find the project-local
-MkDocs executable even if the virtual environment is not currently active; when it uses `.docs-venv`, it
-first reinstalls `requirements-lock.txt` into it, as `bin/build-docs` does. It falls back to `mkdocs` on your
-`PATH`, and if neither exists it creates `.docs-venv` first.
+`bin/start-doc-server` also checks `.docs-venv/bin/mkdocs` first, so it can
+usually find the project-local MkDocs executable even if the virtual
+environment is not currently active; when it uses `.docs-venv`, it first
+reinstalls `requirements-lock.txt` into it, as `bin/build-docs` does. It falls
+back to `mkdocs` on your `PATH`, and if neither exists it creates `.docs-venv`
+first.
 
-The helper script does not forward extra flags. To pass MkDocs options, run MkDocs directly, for example
-`mkdocs serve --dev-addr 127.0.0.1:8001`.
+The helper script does not forward extra flags. To pass MkDocs options, run
+MkDocs directly, for example `mkdocs serve --dev-addr 127.0.0.1:8001`.
 
 ## Rake Tasks
 
@@ -63,31 +70,35 @@ bundle exec rake docs:setup
 bundle exec rake docs:serve
 ```
 
-Use the Rake tasks for non-interactive setup or when you want to stay within the Ruby project tooling. The
-`docs:setup` task creates `.docs-venv` and installs `requirements-lock.txt`.
+Use the Rake tasks for non-interactive setup or when you want to stay within
+the Ruby project tooling. The `docs:setup` task creates `.docs-venv` and
+installs `requirements-lock.txt`.
 
 ## Dependency Updates and Audits
 
-The documentation tooling is pinned in `requirements-lock.txt`, so it does not pick up security fixes on its
-own. Two scripts (each also available as a Rake task) keep it current. Both create a temporary virtual
-environment outside the repository, remove it when they finish, and need network access to PyPI:
+The documentation tooling is pinned in `requirements-lock.txt`, so it does not
+pick up security fixes on its own. Two scripts (each also available as a Rake
+task) keep it current. Both create a temporary virtual environment outside the
+repository, remove it when they finish, and need network access to PyPI:
 
 ```bash
 bin/audit-docs-deps    # or: rake docs:audit
 bin/update-docs-deps   # or: rake docs:update_deps
 ```
 
-- `bin/audit-docs-deps` checks `requirements-lock.txt` with `pip-audit` and exits non-zero if it finds known
-  vulnerabilities.
-- `bin/update-docs-deps` reinstalls from the version ranges in `requirements.txt` and rewrites
-  `requirements-lock.txt` only if every step succeeds. Afterward, review `git diff requirements-lock.txt`, run
-  `bin/build-docs`, and re-run the audit. If an advisory needs a version outside a range in
-  `requirements.txt`, widen the range first.
+- `bin/audit-docs-deps` checks `requirements-lock.txt` with `pip-audit` and
+  exits non-zero if it finds known vulnerabilities.
+- `bin/update-docs-deps` reinstalls from the version ranges in
+  `requirements.txt` and rewrites `requirements-lock.txt` only if every step
+  succeeds. Afterward, review `git diff requirements-lock.txt`, run
+  `bin/build-docs`, and re-run the audit. If an advisory needs a version
+  outside a range in `requirements.txt`, widen the range first.
 
 `rake security` runs this audit together with the Ruby audits.
 
-CI runs `bin/audit-docs-deps` in the **Security audit** job, so a newly published advisory against a pinned
-package fails that job until `requirements-lock.txt` is updated.
+CI runs `bin/audit-docs-deps` in the **Security audit** job, so a newly
+published advisory against a pinned package fails that job until
+`requirements-lock.txt` is updated.
 
 ## Strict Build Check
 
@@ -103,57 +114,69 @@ or:
 bundle exec rake docs:build
 ```
 
-This runs `mkdocs build --strict`, using `.docs-venv` if it exists and otherwise `mkdocs` from your `PATH`
-(it creates `.docs-venv` if there is neither), and writes the site to `site/`. The command fails on strict MkDocs errors. The root `.gitignore`
-ignores both `site/` and `.docs-venv/`.
+This runs `mkdocs build --strict`, using `.docs-venv` if it exists and
+otherwise `mkdocs` from your `PATH` (it creates `.docs-venv` if there is
+neither), and writes the site to `site/`. The command fails on strict MkDocs
+errors. The root `.gitignore` ignores both `site/` and `.docs-venv/`.
 
 ## Publishing Documentation
 
-The GitHub Actions workflow publishes a GitHub Pages artifact only for final release tags matching `vX.Y.Z`
-(for example `v7.0.0`). Pre-release tags such as `v7.0.0.pre.1` or `v7.0.0-rc1` do not publish documentation.
-Pull requests and documentation-related pushes to `main` only build the site for validation. The web
-documentation is refreshed when the next final release tag is published.
+The GitHub Actions workflow publishes a GitHub Pages artifact only for final
+release tags matching `vX.Y.Z` (for example `v7.0.0`). Pre-release tags such as
+`v7.0.0.pre.1` or `v7.0.0-rc1` do not publish documentation. Pull requests and
+documentation-related pushes to `main` only build the site for validation. The
+web documentation is refreshed when the next final release tag is published.
 
-To republish a released version, open the **Docs** workflow in GitHub Actions, choose **Run workflow**, and
-select that version tag. A manual run on a pre-release tag fails at the workflow's release-tag check. GitHub
-runs the workflow file as it exists at the selected tag, so tags that predate this workflow (such as `v6.1.0`)
-cannot be republished this way.
+To republish a released version, open the **Docs** workflow in GitHub Actions,
+choose **Run workflow**, and select that version tag. A manual run on a
+pre-release tag fails at the workflow's release-tag check. GitHub runs the
+workflow file as it exists at the selected tag, so tags that predate this
+workflow (such as `v6.1.0`) cannot be republished this way.
 
 Repository settings required for publishing:
 
 - GitHub Pages must be configured to deploy from **GitHub Actions**.
-- The `github-pages` environment must allow deployments from `v*` tags (**Settings > Environments >
-  github-pages > Deployment branches and tags**). Otherwise, tag deploys are rejected with "not allowed to
-  deploy to github-pages due to environment protection rules".
+- The `github-pages` environment must allow deployments from `v*` tags
+  (**Settings > Environments > github-pages > Deployment branches and tags**).
+  Otherwise, tag deploys are rejected with "not allowed to deploy to
+  github-pages due to environment protection rules".
 
 ## Key Files
 
-- `mkdocs.yml` - MkDocs configuration, plugin setup, excluded paths, and site navigation.
+- `mkdocs.yml` - MkDocs configuration, plugin setup, excluded paths, and site
+  navigation.
 - `docs/index.md` - MkDocs landing page.
-- `requirements-lock.txt` - Locked Python dependencies used by the setup script and Rake task.
+- `requirements-lock.txt` - Locked Python dependencies used by the setup script
+  and Rake task.
 - `requirements.txt` - Broad dependency constraints for documentation tooling.
-- `bin/set-up-python-for-doc-server` - First-time interactive environment setup.
-- `bin/start-doc-server` - Starts `mkdocs serve` with the project configuration.
-- `bin/build-docs` - Runs `mkdocs build --strict` with the project configuration. It uses
-  `.docs-venv`, creating it if neither it nor a `mkdocs` on your `PATH` exists, and first
-  installs `requirements-lock.txt` into it, so a venv made from an older lock is updated.
-  Packages dropped from the lock stay installed; delete `.docs-venv` for an exact copy.
-- `bin/audit-docs-deps` - Audits `requirements-lock.txt` for known vulnerabilities with `pip-audit`.
-- `bin/update-docs-deps` - Regenerates `requirements-lock.txt` from `requirements.txt`.
+- `bin/set-up-python-for-doc-server` - First-time interactive environment
+  setup.
+- `bin/start-doc-server` - Starts `mkdocs serve` with the project
+  configuration.
+- `bin/build-docs` - Runs `mkdocs build --strict` with the project
+  configuration. It uses `.docs-venv`, creating it if neither it nor a `mkdocs`
+  on your `PATH` exists, and first installs `requirements-lock.txt` into it, so
+  a venv made from an older lock is updated. Packages dropped from the lock
+  stay installed; delete `.docs-venv` for an exact copy.
+- `bin/audit-docs-deps` - Audits `requirements-lock.txt` for known
+  vulnerabilities with `pip-audit`.
+- `bin/update-docs-deps` - Regenerates `requirements-lock.txt` from
+  `requirements.txt`.
 
 ## Troubleshooting
 
-If `bin/start-doc-server` reports that `mkdocs` is missing, run this from the repository root:
+If `bin/start-doc-server` reports that `mkdocs` is missing, run this from the
+repository root:
 
 ```bash
 source bin/set-up-python-for-doc-server
 ```
 
-If `python3 -m venv` is unavailable on Ubuntu, install the system venv package for your Python version and run
-the setup command again.
+If `python3 -m venv` is unavailable on Ubuntu, install the system venv package
+for your Python version and run the setup command again.
 
-If setup reports that Python is too old, install Python 3.11 or newer, make sure `python3` resolves to it, and
-run the setup command again.
+If setup reports that Python is too old, install Python 3.11 or newer, make
+sure `python3` resolves to it, and run the setup command again.
 
 If port `8000` is already in use, run MkDocs directly with another address:
 
@@ -161,5 +184,5 @@ If port `8000` is already in use, run MkDocs directly with another address:
 mkdocs serve --dev-addr 127.0.0.1:8001
 ```
 
-If rendered Markdown still looks stale after restarting the server, hard-refresh the browser page. For
-example, use `Cmd+Shift+R` on macOS.
+If rendered Markdown still looks stale after restarting the server,
+hard-refresh the browser page. For example, use `Cmd+Shift+R` on macOS.

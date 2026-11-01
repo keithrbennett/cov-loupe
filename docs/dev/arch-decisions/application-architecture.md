@@ -2,12 +2,16 @@
 
 [Back to main README](../../../README.md)
 
-This document describes the core architectural decisions that shape how cov-loupe operates: its dual-mode design and context-aware error handling strategy.
+This document describes the core architectural decisions that shape how
+cov-loupe operates: its dual-mode design and context-aware error handling
+strategy.
 
 ## Table of Contents
 
-- [Dual-Mode Operation (CLI and MCP Server)](#dual-mode-operation-cli-and-mcp-server)
-- [Shared Resource Identifier Contract (CLI and MCP)](#shared-resource-identifier-contract-cli-and-mcp)
+- [Dual-Mode Operation (CLI and MCP
+  Server)](#dual-mode-operation-cli-and-mcp-server)
+- [Shared Resource Identifier Contract (CLI and
+  MCP)](#shared-resource-identifier-contract-cli-and-mcp)
 - [Context-Aware Error Handling](#context-aware-error-handling)
 
 ---
@@ -22,75 +26,102 @@ Accepted
 
 cov-loupe needed to serve two distinct use cases:
 
-1. **Human users** wanting a command-line tool to inspect coverage reports in their terminal
-2. **AI agents and MCP clients** needing programmatic access to coverage data via the Model Context Protocol (MCP) over JSON-RPC
+1. **Human users** wanting a command-line tool to inspect coverage reports in
+   their terminal
+2. **AI agents and MCP clients** needing programmatic access to coverage data
+   via the Model Context Protocol (MCP) over JSON-RPC
 
 We considered three approaches:
 
-1. **Separate binaries/gems**: Create `simplecov-cli` and `cov-loupe` as separate projects
-2. **Single binary with explicit mode flags**: Require users to pass `--mode mcp` to run as MCP server
-3. **Automatic mode detection**: Single binary that automatically detects the operating mode based on input (TTY status, stdin)
+1. **Separate binaries/gems**: Create `simplecov-cli` and `cov-loupe` as
+   separate projects
+2. **Single binary with explicit mode flags**: Require users to pass
+   `--mode mcp` to run as MCP server
+3. **Automatic mode detection**: Single binary that automatically detects the
+   operating mode based on input (TTY status, stdin)
 
 #### Key Constraints
 
-- MCP servers communicate via JSON-RPC over stdin/stdout, so any human-readable output would corrupt the protocol
+- MCP servers communicate via JSON-RPC over stdin/stdout, so any human-readable
+  output would corrupt the protocol
 - CLI users expect immediate, readable output without ceremony
 - The gem should be simple to install and use for both audiences
 - Mode selection must be reliable and unambiguous
 
 ### Decision (v4.0.0+)
 
-We implemented **explicit mode selection** via the `-m/--mode` flag. The default mode is `cli`, and MCP users must pass `-m mcp` or `--mode mcp` to run the server.
+We implemented **explicit mode selection** via the `-m/--mode` flag. The
+default mode is `cli`, and MCP users must pass `-m mcp` or `--mode mcp` to run
+the server.
 
 #### Mode Selection Logic
 
-The mode is determined by parsing the `-m/--mode` flag from argv (including environment variables via `COV_LOUPE_OPTS`):
+The mode is determined by parsing the `-m/--mode` flag from argv (including
+environment variables via `COV_LOUPE_OPTS`):
 
 - **Default**: CLI mode (when `-m/--mode` is not specified)
 - **MCP mode**: Must explicitly pass `-m mcp` or `--mode mcp`
 
-The implementation parses the configuration from the command-line arguments and routes to either `CoverageCLI` or `MCPServer` based on the mode setting.
+The implementation parses the configuration from the command-line arguments and
+routes to either `CoverageCLI` or `MCPServer` based on the mode setting.
 
 #### Why This Works
 
-- **MCP clients** are configured once with `-m mcp` or `--mode mcp` in their server config → always routes to MCP server
+- **MCP clients** are configured once with `-m mcp` or `--mode mcp` in their
+  server config → always routes to MCP server
 - **CLI users** don't need to specify anything → defaults to CLI mode
-- **No ambiguity**: Mode is explicit and deterministic based on the `-m/--mode` flag
+- **No ambiguity**: Mode is explicit and deterministic based on the `-m/--mode`
+  flag
 
 #### Historical Note
 
-Prior to v4.0.0, cov-loupe used automatic mode detection based on TTY status and presence of subcommands. This was removed because:
+Prior to v4.0.0, cov-loupe used automatic mode detection based on TTY status
+and presence of subcommands. This was removed because:
 
-- Automatic detection caused issues with piped input (`cov-loupe --format json > output.json` would hang in MCP mode)
+- Automatic detection caused issues with piped input
+  (`cov-loupe --format json > output.json` would hang in MCP mode)
 - CI environments and non-TTY contexts were unpredictable
-- CLI-only flags without subcommands (`--format`, `--sort-order`) couldn't be reliably detected
-- Explicit mode selection is more predictable and follows standard practice for language servers
+- CLI-only flags without subcommands (`--format`, `--sort-order`) couldn't be
+  reliably detected
+- Explicit mode selection is more predictable and follows standard practice for
+  language servers
 
 ### Consequences
 
 #### Positive
 
-1. **User convenience**: Single gem to install (`gem install cov-loupe`), single executable (`cov-loupe`)
-2. **Predictable behavior**: Mode is explicit and deterministic - no surprises based on environment
+1. **User convenience**: Single gem to install (`gem install cov-loupe`),
+   single executable (`cov-loupe`)
+2. **Predictable behavior**: Mode is explicit and deterministic - no surprises
+   based on environment
 3. **Simpler implementation**: No complex mode detection logic to maintain
-4. **Clear separation**: CLI and MCP server implementations remain completely separate after routing
-5. **Follows conventions**: Matches standard practice for language servers (e.g., `typescript-language-server --stdio`)
+4. **Clear separation**: CLI and MCP server implementations remain completely
+   separate after routing
+5. **Follows conventions**: Matches standard practice for language servers
+   (e.g., `typescript-language-server --stdio`)
 
 #### Negative
 
-1. **Breaking change**: Users upgrading from v3.x must update MCP server configuration to include `-m mcp` or `--mode mcp`
-2. **Slight verbosity**: MCP users must include `-m mcp` or `--mode mcp` in their server config (but this is one-time setup)
-3. **Shared dependencies**: Some components (error handling, coverage model) must work correctly in both modes
+1. **Breaking change**: Users upgrading from v3.x must update MCP server
+   configuration to include `-m mcp` or `--mode mcp`
+2. **Slight verbosity**: MCP users must include `-m mcp` or `--mode mcp` in
+   their server config (but this is one-time setup)
+3. **Shared dependencies**: Some components (error handling, coverage model)
+   must work correctly in both modes
 
 #### Trade-offs
 
-- **Versus automatic detection**: More explicit, but eliminates ambiguity and edge cases
-- **Versus separate gems**: Single installation is simpler, but requires mode flag for MCP
+- **Versus automatic detection**: More explicit, but eliminates ambiguity and
+  edge cases
+- **Versus separate gems**: Single installation is simpler, but requires mode
+  flag for MCP
 
 #### Future Constraints
 
-- Shared components (like `CoverageModel`) must never output to stdout/stderr in ways that differ by mode
-- Default mode must remain `cli` for backward compatibility with existing CLI users
+- Shared components (like `CoverageModel`) must never output to stdout/stderr
+  in ways that differ by mode
+- Default mode must remain `cli` for backward compatibility with existing CLI
+  users
 
 ### References
 
@@ -98,7 +129,8 @@ Prior to v4.0.0, cov-loupe used automatic mode detection based on TTY status and
 - Configuration: `lib/cov_loupe/config/app_config.rb`
 - CLI implementation: `lib/cov_loupe/cli.rb`
 - MCP server implementation: `lib/cov_loupe/mcp_server.rb`
-- Related section: [Context-Aware Error Handling](#context-aware-error-handling)
+- Related section: [Context-Aware Error
+  Handling](#context-aware-error-handling)
 
 ---
 
@@ -115,11 +147,13 @@ cov-loupe exposes key project resources across two surfaces:
 1. CLI (`cov-loupe --path-for=NAME`)
 2. MCP (`help` response)
 
-The project needs one consistent contract so humans and agents can request the same named values without translation logic.
+The project needs one consistent contract so humans and agents can request the
+same named values without translation logic.
 
 ### Decision (v4.1.0+)
 
-Use one shared canonical map in `CovLoupe::Resources::RESOURCE_MAP` for both CLI and MCP.
+Use one shared canonical map in `CovLoupe::Resources::RESOURCE_MAP` for both
+CLI and MCP.
 
 Canonical identifiers:
 
@@ -129,9 +163,11 @@ Canonical identifiers:
 
 Both interfaces now consume this same map:
 
-- CLI uses `--path-for=NAME` (short: `-p NAME`; `NAME` is required) and prints the mapped value.
+- CLI uses `--path-for=NAME` (short: `-p NAME`; `NAME` is required) and prints
+  the mapped value.
 - `help` returns `resources` with the same canonical keys.
-- MCP server startup instructions serialize the same resource map for discoverability.
+- MCP server startup instructions serialize the same resource map for
+  discoverability.
 
 ### Consequences
 
@@ -144,7 +180,8 @@ Both interfaces now consume this same map:
 #### Negative
 
 1. Renaming or removing resource keys is a cross-surface API change
-2. `docs-local` is a path, not a URL, so wording must stay precise in docs/help text
+2. `docs-local` is a path, not a URL, so wording must stay precise in docs/help
+   text
 
 ### References
 
@@ -163,32 +200,47 @@ Accepted
 
 ### Context
 
-cov-loupe operates in three distinct contexts, each with different error handling requirements:
+cov-loupe operates in three distinct contexts, each with different error
+handling requirements:
 
-1. **CLI mode**: Human users expect friendly error messages, exit codes, and optional debug traces
-2. **MCP server mode**: AI agents/clients need tool results flagged with `isError: true` that don't crash the server
-3. **Library mode**: Embedding applications need exceptions they can catch and handle programmatically
+1. **CLI mode**: Human users expect friendly error messages, exit codes, and
+   optional debug traces
+2. **MCP server mode**: AI agents/clients need tool results flagged with
+   `isError: true` that don't crash the server
+3. **Library mode**: Embedding applications need exceptions they can catch and
+   handle programmatically
 
-Initially, we considered uniform error handling across all modes, but this created poor user experiences:
+Initially, we considered uniform error handling across all modes, but this
+created poor user experiences:
 
 - CLI users saw raw exceptions with stack traces (scary and unhelpful)
 - MCP servers crashed on errors instead of returning error responses
-- Library users got friendly messages logged to stderr (unwanted side effects in their applications)
+- Library users got friendly messages logged to stderr (unwanted side effects
+  in their applications)
 
 #### Key Requirements
 
-- **CLI**: User-friendly messages, meaningful exit codes, optional stack traces for debugging
-- **MCP Server**: Logged execution errors (to the configured log target, `stderr` by default, never stdout), tool results with `isError: true` for argument-validation and execution failures (reserving JSON-RPC errors for protocol- or dispatch-level failures such as unknown tools), no server crashes
-- **Library**: Raise custom exceptions (logging is off unless the caller configures a log target), allowing consumers to handle errors as needed
-- **Consistency**: Same underlying error types, but different presentation strategies
+- **CLI**: User-friendly messages, meaningful exit codes, optional stack traces
+  for debugging
+- **MCP Server**: Logged execution errors (to the configured log target,
+  `stderr` by default, never stdout), tool results with `isError: true` for
+  argument-validation and execution failures (reserving JSON-RPC errors for
+  protocol- or dispatch-level failures such as unknown tools), no server
+  crashes
+- **Library**: Raise custom exceptions (logging is off unless the caller
+  configures a log target), allowing consumers to handle errors as needed
+- **Consistency**: Same underlying error types, but different presentation
+  strategies
 
 ### Decision
 
-We implemented a **context-aware error handling strategy** using three components:
+We implemented a **context-aware error handling strategy** using three
+components:
 
 #### 1. Custom Exception Hierarchy
 
-All errors inherit from `CovLoupe::Error` (`lib/cov_loupe/errors/errors.rb`) with a `user_friendly_message` method:
+All errors inherit from `CovLoupe::Error` (`lib/cov_loupe/errors/errors.rb`)
+with a `user_friendly_message` method:
 
 ```ruby
 class Error < StandardError
@@ -203,11 +255,13 @@ class CoverageFileNotFoundError < FileError; end
 # ... etc
 ```
 
-This provides a unified interface for presenting errors to users while preserving exception types for programmatic handling.
+This provides a unified interface for presenting errors to users while
+preserving exception types for programmatic handling.
 
 #### 2. ErrorHandler Class
 
-The `ErrorHandler` class (see `lib/cov_loupe/errors/error_handler.rb`) provides configurable error handling behavior:
+The `ErrorHandler` class (see `lib/cov_loupe/errors/error_handler.rb`) provides
+configurable error handling behavior:
 
 ```ruby
 class ErrorHandler
@@ -229,7 +283,8 @@ class ErrorHandler
 end
 ```
 
-The `convert_standard_error` method transforms Ruby's standard errors into user-friendly custom exceptions:
+The `convert_standard_error` method transforms Ruby's standard errors into
+user-friendly custom exceptions:
 
 - `Errno::ENOENT` → `FileNotFoundError`
 - `JSON::ParserError` → `CoverageDataError`
@@ -237,7 +292,9 @@ The `convert_standard_error` method transforms Ruby's standard errors into user-
 
 #### 3. ErrorHandlerFactory
 
-The `ErrorHandlerFactory` (defined in `lib/cov_loupe/errors/error_handler_factory.rb`) creates mode-specific handlers:
+The `ErrorHandlerFactory` (defined in
+`lib/cov_loupe/errors/error_handler_factory.rb`) creates mode-specific
+handlers:
 
 ```ruby
 module ErrorHandlerFactory
@@ -260,21 +317,32 @@ end
 **CLI Mode** (lib/cov_loupe/cli.rb):
 
 1. Catches all exceptions in the main run loop
-2. Uses the `for_cli` handler to log errors to a log file target (not to the default `stderr` target, where the message is already printed); a custom handler is called for every error except invalid options, which are reported during option parsing
+2. Uses the `for_cli` handler to log errors to a log file target (not to the
+   default `stderr` target, where the message is already printed); a custom
+   handler is called for every error except invalid options, which are reported
+   during option parsing
 3. Displays `user_friendly_message` to the user
-4. Exits with the code from `CoverageCLI#exit_code_for` (see `CovLoupe::ExitCodes`): 1 runtime error, 2 usage or configuration error, 4 predicate error. The one exception is `validate`, which exits directly with 0 (pass) or 3 (validation failed) when the predicate runs to completion, since that outcome is not an error
+4. Exits with the code from `CoverageCLI#exit_code_for` (see
+   `CovLoupe::ExitCodes`): 1 runtime error, 2 usage or configuration error, 4
+   predicate error. The one exception is `validate`, which exits directly with
+   0 (pass) or 3 (validation failed) when the predicate runs to completion,
+   since that outcome is not an error
 
 **MCP Server Mode** (`lib/cov_loupe/base_tool.rb`):
 
 1. Each tool wraps execution in a rescue block
-2. Uses `for_mcp_server` handler to report errors through the configured target,
-   which defaults to `stderr`
-3. Returns a `tools/call` result with `isError: true` and the friendly message in the content (matching the result shape that the MCP SDK uses for argument-validation failures; a JSON-RPC `error` is reserved for protocol- or dispatch-level failures such as unknown tools)
+2. Uses `for_mcp_server` handler to report errors through the configured
+   target, which defaults to `stderr`
+3. Returns a `tools/call` result with `isError: true` and the friendly message
+   in the content (matching the result shape that the MCP SDK uses for
+   argument-validation failures; a JSON-RPC `error` is reserved for protocol-
+   or dispatch-level failures such as unknown tools)
 4. Server continues running (no crashes)
 
 **Library Mode** (`lib/cov_loupe.rb`):
 
-1. Raises custom exceptions directly; library calls never consult the context's error handler
+1. Raises custom exceptions directly; library calls never consult the context's
+   error handler
 2. Consumers catch and handle `CovLoupe::Error` subclasses
 
 ### Consequences
@@ -283,35 +351,49 @@ end
 
 1. **Excellent UX**: Each context gets appropriate error handling behavior
 2. **Robustness**: MCP server never crashes on tool errors
-3. **Debuggability**: CLI users can enable stack traces with error modes, MCP errors are logged
-4. **Clean library API**: No unwanted side effects (logging, stderr output) when used as a library
+3. **Debuggability**: CLI users can enable stack traces with error modes, MCP
+   errors are logged
+4. **Clean library API**: No unwanted side effects (logging, stderr output)
+   when used as a library
 5. **Type safety**: Custom exceptions allow programmatic error handling by type
 
 #### Negative
 
 1. **Complexity**: Three error handling paths to maintain and test
-2. **Coordination required**: All error types must implement `user_friendly_message` consistently
-3. **Error conversion overhead**: Standard errors must be converted to custom exceptions
+2. **Coordination required**: All error types must implement
+   `user_friendly_message` consistently
+3. **Error conversion overhead**: Standard errors must be converted to custom
+   exceptions
 
 #### Trade-offs
 
-- **Versus uniform error handling**: More code complexity, but dramatically better UX in each context
-- **Versus separate error classes per mode**: Single error hierarchy is simpler, factory pattern adds mode-specific behavior
+- **Versus uniform error handling**: More code complexity, but dramatically
+  better UX in each context
+- **Versus separate error classes per mode**: Single error hierarchy is
+  simpler, factory pattern adds mode-specific behavior
 
 #### Implementation Notes
 
-The `ErrorHandler#convert_standard_error` method maps standard exceptions to cov-loupe errors by type, and by context (for example, whether coverage data was being loaded). This includes:
+The `ErrorHandler#convert_standard_error` method maps standard exceptions to
+cov-loupe errors by type, and by context (for example, whether coverage data
+was being loaded). This includes:
 
 - Extracting filenames from system error messages
-- Reporting coverage-loading failures (missing, unreadable or malformed data) as coverage errors
-- Providing actionable suggestions, such as "run tests or set --coverage-file option" when no coverage file is found
+- Reporting coverage-loading failures (missing, unreadable or malformed data)
+  as coverage errors
+- Providing actionable suggestions, such as "run tests or set --coverage-file
+  option" when no coverage file is found
 
 ### References
 
 - Custom exceptions: `lib/cov_loupe/errors/errors.rb`
 - ErrorHandler implementation: `lib/cov_loupe/errors/error_handler.rb`
 - ErrorHandlerFactory: `lib/cov_loupe/errors/error_handler_factory.rb`
-- CLI error handling: `lib/cov_loupe/cli.rb` (rescue block in `CoverageCLI#run`)
-- MCP tool error handling: `lib/cov_loupe/base_tool.rb` (`BaseTool.with_error_handling` and `BaseTool.handle_mcp_error`)
-- Library mode: `CoverageModel` raises the exceptions in `lib/cov_loupe/errors/errors.rb` directly
-- Related section: [Dual-Mode Operation](#dual-mode-operation-cli-and-mcp-server)
+- CLI error handling: `lib/cov_loupe/cli.rb` (rescue block in
+  `CoverageCLI#run`)
+- MCP tool error handling: `lib/cov_loupe/base_tool.rb`
+  (`BaseTool.with_error_handling` and `BaseTool.handle_mcp_error`)
+- Library mode: `CoverageModel` raises the exceptions in
+  `lib/cov_loupe/errors/errors.rb` directly
+- Related section: [Dual-Mode
+  Operation](#dual-mode-operation-cli-and-mcp-server)

@@ -2,7 +2,9 @@
 
 [Back to Examples](../EXAMPLES.md) | [Back to main README](../../../README.md)
 
-These examples assume your test suite runs SimpleCov 1.x, whose default HTML formatter (or its JSONFormatter) writes `coverage/coverage.json` for cov-loupe to read. See [Quick Start](../../QUICKSTART.md) to set it up.
+These examples assume your test suite runs SimpleCov 1.x, whose default HTML
+formatter (or its JSONFormatter) writes `coverage/coverage.json` for cov-loupe
+to read. See [Quick Start](../../QUICKSTART.md) to set it up.
 
 ## GitHub Actions
 

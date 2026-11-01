@@ -16,12 +16,16 @@
 
 ### Running the Test Suite with RVM (Codex macOS)
 
-Codex's macOS sandbox forbids `/bin/ps`; RVM shells need it. When you run `bundle exec rspec` there, the shell falls back to macOS Ruby 2.6 and Bundler dies with `Gem::Resolver::APISet::GemParser` errors.
+Codex's macOS sandbox forbids `/bin/ps`; RVM shells need it. When you run
+`bundle exec rspec` there, the shell falls back to macOS Ruby 2.6 and Bundler
+dies with `Gem::Resolver::APISet::GemParser` errors.
 
 **Workarounds:**
 
-- Run outside the macOS sandbox (Codex on Ubuntu, Gemini, Claude Code, local shells) or use a version manager that does not invoke `ps`.
-- Or execute RSpec with explicit RVM paths (replace `3.4.5` and the `cov-loupe` gemset with your own):
+- Run outside the macOS sandbox (Codex on Ubuntu, Gemini, Claude Code, local
+  shells) or use a version manager that does not invoke `ps`.
+- Or execute RSpec with explicit RVM paths (replace `3.4.5` and the `cov-loupe`
+  gemset with your own):
   ```bash
   PATH="$HOME/.rvm/gems/ruby-3.4.5@cov-loupe/bin:$HOME/.rvm/rubies/ruby-3.4.5/bin:$PATH" \
     GEM_HOME="$HOME/.rvm/gems/ruby-3.4.5@cov-loupe" \
@@ -34,12 +38,14 @@ Codex's macOS sandbox forbids `/bin/ps`; RVM shells need it. When you run `bundl
 
 ### Missing coverage file
 
-`cov-loupe` only reads coverage data; it never generates it. It reads `coverage.json`,
-which SimpleCov 1.0.0 and later write alongside the HTML report. SimpleCov 0.x writes
-only `.resultset.json` by default, which cov-loupe no longer reads; upgrade SimpleCov to
-1.0 or later. If you see "Could not find coverage.json":
+`cov-loupe` only reads coverage data; it never generates it. It reads
+`coverage.json`, which SimpleCov 1.0.0 and later write alongside the HTML
+report. SimpleCov 0.x writes only `.resultset.json` by default, which cov-loupe
+no longer reads; upgrade SimpleCov to 1.0 or later. If you see "Could not find
+coverage.json":
 
-1. Run the test suite with SimpleCov enabled (see [Quick Start](../QUICKSTART.md) to set it up).
+1. Run the test suite with SimpleCov enabled (see [Quick
+   Start](../QUICKSTART.md) to set it up).
    ```bash
    bundle exec rspec
    ls coverage/coverage.json
@@ -53,9 +59,10 @@ only `.resultset.json` by default, which cov-loupe no longer reads; upgrade Simp
 
 ### Unsupported coverage.json format
 
-cov-loupe checks `meta.schema_version` in `coverage.json` (the file format version, not the
-SimpleCov gem version) and accepts any 1.x. If the value is missing or has another major
-version, loading fails with (the CLI adds the `Coverage data error:` prefix):
+cov-loupe checks `meta.schema_version` in `coverage.json` (the file format
+version, not the SimpleCov gem version) and accepts any 1.x. If the value is
+missing or has another major version, loading fails with (the CLI adds the
+`Coverage data error:` prefix):
 
 ```
 Coverage data error: Unsupported coverage.json format (meta.schema_version: nil; meta.simplecov_version: "0.22.0") in <path>; cov-loupe requires format 1.x (written by SimpleCov 1.0 and later)
@@ -63,52 +70,63 @@ Coverage data error: Unsupported coverage.json format (meta.schema_version: nil;
 
 The `meta.simplecov_version` part appears only when the file records it.
 
-- **Missing value (`nil`):** the file was usually written for SimpleCov 0.x by the separate
-  `simplecov_json_formatter` gem, or rewritten by another tool that dropped the field.
-  Upgrade SimpleCov to 1.0 or later and re-run the test suite, or make sure the rewriting
-  tool preserves `meta.schema_version`.
-- **Newer major version (e.g. `"2.0"`):** the file uses a format this cov-loupe release does
-  not read. Upgrade cov-loupe if a newer release supports it, or pin SimpleCov to a version
-  that writes format 1.x.
+- **Missing value (`nil`):** the file was usually written for SimpleCov 0.x by
+  the separate `simplecov_json_formatter` gem, or rewritten by another tool
+  that dropped the field. Upgrade SimpleCov to 1.0 or later and re-run the test
+  suite, or make sure the rewriting tool preserves `meta.schema_version`.
+- **Newer major version (e.g. `"2.0"`):** the file uses a format this cov-loupe
+  release does not read. Upgrade cov-loupe if a newer release supports it, or
+  pin SimpleCov to a version that writes format 1.x.
 
 ### Stale Coverage Errors
 
-`--raise-on-stale true` (or `-S true`, or `raise_on_stale: true`) compares file mtimes and line counts
-to the coverage snapshot and raises if stale. When it fails:
+`--raise-on-stale true` (or `-S true`, or `raise_on_stale: true`) compares file
+mtimes and line counts to the coverage snapshot and raises if stale. When it
+fails:
 
-- Regenerate coverage (`bundle exec rspec`) so the snapshot matches current sources.
-- Or drop back to warning-only behaviour using `--raise-on-stale false` / `raise_on_stale: false`.
+- Regenerate coverage (`bundle exec rspec`) so the snapshot matches current
+  sources.
+- Or drop back to warning-only behaviour using `--raise-on-stale false` /
+  `raise_on_stale: false`.
 
-If you only care about a subset of files, supply `-g` / `--tracked-globs` (CLI) or `tracked_globs:`
-(API) so new files outside those globs do not trigger staleness.
+If you only care about a subset of files, supply `-g` / `--tracked-globs` (CLI)
+or `tracked_globs:` (API) so new files outside those globs do not trigger
+staleness.
 
-**Note:** If you see warnings about missing timestamps, time-based staleness checks may be skipped.
-See [Timestamp Warnings](ADVANCED_USAGE.md#timestamp-warnings) for details.
+**Note:** If you see warnings about missing timestamps, time-based staleness
+checks may be skipped. See [Timestamp
+Warnings](ADVANCED_USAGE.md#timestamp-warnings) for details.
 
 ### "No coverage entry found for ..."
 
-The model looks up files by absolute path, then by relative path (stripping the project root). If you still hit this error:
+The model looks up files by absolute path, then by relative path (stripping the
+project root). If you still hit this error:
 
-1. Verify the file is listed in the coverage table (`cov-loupe list | grep model.rb` or `cov-loupe l | grep model.rb`).
-2. Use the exact project-relative path that SimpleCov recorded (no symlinks; case-sensitivity
+1. Verify the file is listed in the coverage table
+   (`cov-loupe list | grep model.rb` or `cov-loupe l | grep model.rb`).
+2. Use the exact project-relative path that SimpleCov recorded (no symlinks;
+   case-sensitivity
 depends on your volume - see note below).
 
-3. If the file truly never executes under tests, add coverage or exclude it from your workflow.
+3. If the file truly never executes under tests, add coverage or exclude it
+   from your workflow.
 
-**Note on case-sensitivity:** `cov-loupe` auto-detects volume case-sensitivity at startup. 
-On case-insensitive volumes (most macOS/Windows), `lib/Foo.rb` and `lib/foo.rb` are treated
-as the same file. On case-sensitive volumes (most Linux, some macOS), they are different files.
+**Note on case-sensitivity:** `cov-loupe` auto-detects volume case-sensitivity
+at startup. On case-insensitive volumes (most macOS/Windows), `lib/Foo.rb` and
+`lib/foo.rb` are treated as the same file. On case-sensitive volumes (most
+Linux, some macOS), they are different files.
 
 ### SimpleCov path consistency (merged results)
 
-When SimpleCov merges results from multiple suites or environments, it can record the same file
-under different path forms (for example, absolute vs relative, or with different roots). This is a
-SimpleCov output issue, not a cov-loupe issue. cov-loupe normalizes paths, and if two keys map to
-the same file it fails with a `CoverageDataError` naming the colliding keys, rather than silently
-using one of them.
+When SimpleCov merges results from multiple suites or environments, it can
+record the same file under different path forms (for example, absolute vs
+relative, or with different roots). This is a SimpleCov output issue, not a
+cov-loupe issue. cov-loupe normalizes paths, and if two keys map to the same
+file it fails with a `CoverageDataError` naming the colliding keys, rather than
+silently using one of them.
 
-**Recommendation:** Keep `SimpleCov.root` consistent across suites and avoid manual path rewriting
-when merging results.
+**Recommendation:** Keep `SimpleCov.root` consistent across suites and avoid
+manual path rewriting when merging results.
 
 ## Logging Target Issues
 
@@ -150,10 +168,10 @@ Check the following when you see an `Unable to use log target` message:
    ```bash
    echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"version","arguments":{}}}' | cov-loupe -m mcp
    ```
-   This should return a JSON-RPC response, confirming that the server launches and responds over
-   stdio. It is not an exhaustive contract test; see
-   [MCP Integration — Error Responses](MCP_INTEGRATION.md#error-responses) for optional validation
-   and error sanity checks and the full failure model.
+   This should return a JSON-RPC response, confirming that the server launches
+   and responds over stdio. It is not an exhaustive contract test; see [MCP
+   Integration — Error Responses](MCP_INTEGRATION.md#error-responses) for
+   optional validation and error sanity checks and the full failure model.
 
 3. **Verify MCP server is configured:**
    ```bash
@@ -177,25 +195,31 @@ Check the following when you see an `Unable to use log target` message:
 
 6. **Use CLI as fallback:**
 
-   If MCP still isn't working, you can use the CLI with `-fJ` flag instead.
-   See **[CLI Fallback for LLMs](CLI_FALLBACK_FOR_LLMS.md)** for complete guidance.
+   If MCP still isn't working, you can use the CLI with `-fJ` flag instead. See
+   **[CLI Fallback for LLMs](CLI_FALLBACK_FOR_LLMS.md)** for complete guidance.
 
-7. **Check for Codex environment variable issues:**
-   If you are using Codex and the server fails to start due to missing gems, you need to manually add 
-   `env_vars = ["GEM_HOME", "GEM_PATH"]` to your `~/.codex/config.toml`. 
-   See the [MCP Integration - Codex section](MCP_INTEGRATION.md#codex) for complete setup instructions.
+7. **Check for Codex environment variable issues:** If you are using Codex and
+   the server fails to start due to missing gems, you need to manually add
+   `env_vars = ["GEM_HOME", "GEM_PATH"]` to your `~/.codex/config.toml`. See
+   the [MCP Integration - Codex section](MCP_INTEGRATION.md#codex) for complete
+   setup instructions.
 
 ### RubyGems Wrapper Prints to Stdout Before MCP Startup
 
 **Symptoms:**
 
-- `cov-loupe -m mcp` prints `Resolving dependencies...` or similar text before any MCP response
-- MCP clients fail with handshake/startup errors such as `connection closed` or `initialize response`
+- `cov-loupe -m mcp` prints `Resolving dependencies...` or similar text before
+  any MCP response
+- MCP clients fail with handshake/startup errors such as `connection closed` or
+  `initialize response`
 - The same `cov-loupe` install works in one project directory but not another
 
 **Root cause:**
 
-The generated RubyGems-installed `cov-loupe` launcher is not the same file as this repository's [`exe/cov-loupe`](https://github.com/keithrbennett/cov-loupe/blob/main/exe/cov-loupe). A typical RubyGems stub looks like this:
+The generated RubyGems-installed `cov-loupe` launcher is not the same file as
+this repository's
+[`exe/cov-loupe`](https://github.com/keithrbennett/cov-loupe/blob/main/exe/cov-loupe).
+A typical RubyGems stub looks like this:
 
 ```ruby
 require 'rubygems'
@@ -203,26 +227,44 @@ Gem.use_gemdeps
 Gem.activate_and_load_bin_path('cov-loupe', 'cov-loupe', version)
 ```
 
-That `Gem.use_gemdeps` call can make the launcher inspect the current working directory for a `Gemfile` (via RubyGems/Bundler integration) before `cov-loupe` itself starts. On setups that also use `ruby_executable_hooks` and the `rubygems-bundler` plugin, the wrapper stack can do even more work up front by walking the current directory tree, loading Bundler, and trying to match the executable against the local bundle. If the current directory has a `Gemfile` but the bundle is unresolved, incomplete, or missing a lockfile, Bundler may resolve dependencies and emit progress text such as `Resolving dependencies...`.
+That `Gem.use_gemdeps` call can make the launcher inspect the current working
+directory for a `Gemfile` (via RubyGems/Bundler integration) before `cov-loupe`
+itself starts. On setups that also use `ruby_executable_hooks` and the
+`rubygems-bundler` plugin, the wrapper stack can do even more work up front by
+walking the current directory tree, loading Bundler, and trying to match the
+executable against the local bundle. If the current directory has a `Gemfile`
+but the bundle is unresolved, incomplete, or missing a lockfile, Bundler may
+resolve dependencies and emit progress text such as
+`Resolving dependencies...`.
 
-For normal CLI use, that extra output is usually harmless. For MCP over stdio, it is fatal because `stdout` must carry only protocol messages, from startup until the server exits.
+For normal CLI use, that extra output is usually harmless. For MCP over stdio,
+it is fatal because `stdout` must carry only protocol messages, from startup
+until the server exits.
 
-Upstream tracking issue: [rvm/rvm#5649](https://github.com/rvm/rvm/issues/5649).
+Upstream tracking issue:
+[rvm/rvm#5649](https://github.com/rvm/rvm/issues/5649).
 
 **Why one repo can fail while another works:**
 
-- Repo A has a valid `Gemfile.lock` and `bundle check` succeeds, so Bundler has nothing noisy to do at startup.
-- Repo B has a `Gemfile` but no settled bundle state, so the launcher triggers dependency resolution before `cov-loupe` starts.
+- Repo A has a valid `Gemfile.lock` and `bundle check` succeeds, so Bundler has
+  nothing noisy to do at startup.
+- Repo B has a `Gemfile` but no settled bundle state, so the launcher triggers
+  dependency resolution before `cov-loupe` starts.
 
 Same launcher, same command, different working directory state.
 
 **Why `bundle install` often fixes it:**
 
-Running `bundle install` settles the bundle for that directory by creating/updating `Gemfile.lock` and installing required gems. After that, the launcher often stops printing dependency-resolution output, so MCP startup appears to recover.
+Running `bundle install` settles the bundle for that directory by
+creating/updating `Gemfile.lock` and installing required gems. After that, the
+launcher often stops printing dependency-resolution output, so MCP startup
+appears to recover.
 
-This is the first fix to try. After `bundle install`, retry normal `cov-loupe -m mcp` startup before changing your MCP command.
+This is the first fix to try. After `bundle install`, retry normal
+`cov-loupe -m mcp` startup before changing your MCP command.
 
-This does not change MCP itself. It only changes whether the RubyGems wrapper stays quiet.
+This does not change MCP itself. It only changes whether the RubyGems wrapper
+stays quiet.
 
 **How to confirm:**
 
@@ -244,33 +286,48 @@ This does not change MCP itself. It only changes whether the RubyGems wrapper st
    ```bash
    echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"version","arguments":{}}}' | cov-loupe -m mcp 2>/dev/null
    ```
-   Any stdout output before the JSON-RPC payload is a problem for MCP startup (stderr is discarded here, since log lines there are harmless).
+   Any stdout output before the JSON-RPC payload is a problem for MCP startup
+   (stderr is discarded here, since log lines there are harmless).
 
 **Recommended workarounds:**
 
-- Most reliable workaround in wrapper-heavy environments: launch `cov-loupe` through a small shell wrapper that disables `rubygems-bundler` noexec before the stub starts:
+- Most reliable workaround in wrapper-heavy environments: launch `cov-loupe`
+  through a small shell wrapper that disables `rubygems-bundler` noexec before
+  the stub starts:
   ```bash
   #!/usr/bin/env bash
   export NOEXEC_DISABLE=1
   exec cov-loupe -m mcp "$@"
   ```
-  Then point your MCP client at that wrapper script. For copy-and-paste setup steps, including the command for each client, see [Step by Step: The Launch Wrapper](MCP_INTEGRATION.md#step-by-step-the-launch-wrapper).
-- Preferred fix: settle the current project's bundle, then retry normal startup:
+  Then point your MCP client at that wrapper script. For copy-and-paste setup
+  steps, including the command for each client, see [Step by Step: The Launch
+  Wrapper](MCP_INTEGRATION.md#step-by-step-the-launch-wrapper).
+- Preferred fix: settle the current project's bundle, then retry normal
+  startup:
   ```bash
   bundle install
   bundle check
   cov-loupe -m mcp
   ```
-- Fallback: bypass the RubyGems wrapper and invoke the real executable directly:
+- Fallback: bypass the RubyGems wrapper and invoke the real executable
+  directly:
   ```bash
   ruby -e 'spec = Gem::Specification.find_by_name("cov-loupe"); puts File.join(spec.full_gem_path, "exe", "cov-loupe")'
   ```
   Then use that path in your MCP config with `-m mcp`.
-- For local development from a checkout, another fallback is to point the MCP client directly at the checkout's [`exe/cov-loupe`](https://github.com/keithrbennett/cov-loupe/blob/main/exe/cov-loupe) instead of the RubyGems stub.
+- For local development from a checkout, another fallback is to point the MCP
+  client directly at the checkout's
+  [`exe/cov-loupe`](https://github.com/keithrbennett/cov-loupe/blob/main/exe/cov-loupe)
+  instead of the RubyGems stub.
 
 **Recommendation:**
 
-Use either a wrapper that exports `NOEXEC_DISABLE=1` or normal `cov-loupe -m mcp` startup after the current project's bundle is settled. Only switch MCP clients to the real executable path if you need a fallback that is insulated from the working directory's Bundler state. For upstream discussion and any eventual fix, follow [rvm/rvm#5649](https://github.com/rvm/rvm/issues/5649).
+Use either a wrapper that exports `NOEXEC_DISABLE=1` or normal
+`cov-loupe -m mcp` startup after the current project's bundle is settled. Only
+switch MCP clients to the real executable path if you need a fallback that is
+insulated from the working directory's Bundler state. For upstream discussion
+and any eventual fix, follow
+[rvm/rvm#5649](https://github.com/rvm/rvm/issues/5649).
 
 ### Path Issues with Version Managers
 
@@ -298,7 +355,8 @@ rvm wrapper show cov-loupe
 
 ## Diagnostic Commands
 
-Before reporting an issue, run these diagnostic commands and include the output:
+Before reporting an issue, run these diagnostic commands and include the
+output:
 
 ```bash
 # System info
@@ -351,6 +409,7 @@ If the above doesn't solve your problem:
 
 - [Installation Guide](INSTALLATION.md) - Setup and PATH configuration
 - [CLI Usage](CLI_USAGE.md) - Command-line options and examples
-- [CLI Fallback for LLMs](CLI_FALLBACK_FOR_LLMS.md) - Using CLI when MCP isn't available
+- [CLI Fallback for LLMs](CLI_FALLBACK_FOR_LLMS.md) - Using CLI when MCP isn't
+  available
 - [MCP Integration](MCP_INTEGRATION.md) - MCP server configuration
 - [Error Handling](ERROR_HANDLING.md) - Understanding error modes

@@ -10,7 +10,8 @@ on GitHub.
 
 ## Gathering the PR
 
-- Run `gh pr view --json number,title,body,author,baseRefName,headRefName,headRefOid,files,reviews,reviewDecision,statusCheckRollup`
+- Run
+  `gh pr view --json number,title,body,author,baseRefName,headRefName,headRefOid,files,reviews,reviewDecision,statusCheckRollup`
   for the PR's metadata and review summaries, and `gh pr view --comments` for
   its discussion. Read inline review comments with
   `gh api --paginate repos/{owner}/{repo}/pulls/<number>/comments`; without
@@ -19,7 +20,8 @@ on GitHub.
   `gh api graphql`; the REST endpoint does not report resolution.
 - Take the PR's changes from `gh pr diff`; it is authoritative even if the
   local base branch is stale.
-- For failing checks, use `gh pr checks` and `gh run view <run-id> --log-failed`.
+- For failing checks, use `gh pr checks` and
+  `gh run view <run-id> --log-failed`.
 - Compare `git rev-parse HEAD` with `headRefOid`. If they differ, or there
   are uncommitted changes, say so at the top of the report: local files may
   not match the PR.
@@ -108,9 +110,9 @@ Replace or delete this section when reusing this prompt in another project.
   coverage of changed files with cov-loupe (MCP server preferred, CLI
   otherwise).
 - Run `bundle exec rubocop` (add `--cache false` in a sandbox) and the specs
-  for the changed code. Any `bundle exec rspec` run, even of a single spec file, rewrites
-  `coverage/coverage.json` (a partial run records files it did not load as 0%
-  covered). Do not run rspec if other agents may be reading that file;
-  otherwise end with a full run so the file is complete again.
+  for the changed code. Any `bundle exec rspec` run, even of a single spec
+  file, rewrites `coverage/coverage.json` (a partial run records files it did
+  not load as 0% covered). Do not run rspec if other agents may be reading that
+  file; otherwise end with a full run so the file is complete again.
 - Migration guides (`docs/user/migrations/`) describe the release they were
   written for; do not ask a PR to update older guides for its changes.

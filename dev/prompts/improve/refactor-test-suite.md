@@ -7,7 +7,8 @@ reducing what they verify.
 
 1. If you are not in the project root, inform the user, state your current
    working directory, and wait for confirmation before proceeding.
-2. Read the Testing Notes and Rubocop sections of [AGENTS.md](../../../AGENTS.md).
+2. Read the Testing Notes and Rubocop sections of
+   [AGENTS.md](../../../AGENTS.md).
 
 ---
 
@@ -31,8 +32,8 @@ Examine `spec/` and fix:
   than fixing it here.
 - Do not weaken assertions or drop coverage: each refactored test must still
   fail when the behavior it covers breaks.
-- Run the affected spec files as you go (`bundle exec rspec spec/path_spec.rb`),
-  then the full suite once at the end.
+- Run the affected spec files as you go
+  (`bundle exec rspec spec/path_spec.rb`), then the full suite once at the end.
 - Run `bundle exec rubocop` and fix every offense (`bundle exec rubocop -A`
   handles the autocorrectable ones). Add `--cache false` if cache writes fail
   in a sandbox.

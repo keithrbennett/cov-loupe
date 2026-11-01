@@ -8,7 +8,8 @@ is the hard gate.
 
 ## When to Use This
 
-- At any point, to answer "what would I need to do to release?" (before the bump)
+- At any point, to answer "what would I need to do to release?" (before the
+  bump)
 - After running `release:bump`, before committing and pushing
   ("what is left?")
 
@@ -44,10 +45,10 @@ by `bin/pre-release-check`.
 - Find the previous *stable* release tag (`git tag --sort=-v:refname`, ignoring
   `.pre.` tags).
 - Decide whether the bump has been done. It **has** if the newest `## v...`
-  heading matches `VERSION`, is not already tagged, and `## Unreleased` is empty.
-  It **has not** if there is content under `## Unreleased`, or `VERSION` equals
-  an already-tagged release or a prerelease that is not the intended target.
-  If the state is ambiguous, say so and ask.
+  heading matches `VERSION`, is not already tagged, and `## Unreleased` is
+  empty. It **has not** if there is content under `## Unreleased`, or `VERSION`
+  equals an already-tagged release or a prerelease that is not the intended
+  target. If the state is ambiguous, say so and ask.
 - Determine the target version:
   - Bumped: the target is `VERSION`.
   - Not bumped: if the user named a target version, use it. Otherwise

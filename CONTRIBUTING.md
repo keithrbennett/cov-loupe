@@ -4,17 +4,24 @@
 
 Thank you for your interest in contributing.
 
-Bug reports, feature proposals, documentation suggestions, and other feedback are welcome.
+Bug reports, feature proposals, documentation suggestions, and other feedback
+are welcome.
 
 ---
 
 ## Before Submitting a Pull Request
 
-Please do not submit a pull request unless you have first opened an issue and received explicit approval from the maintainer to proceed.
+Please do not submit a pull request unless you have first opened an issue and
+received explicit approval from the maintainer to proceed.
 
-Discussing a proposal in an issue does not by itself constitute approval. Please wait until the maintainer specifically confirms that a pull request would be welcome.
+Discussing a proposal in an issue does not by itself constitute approval.
+Please wait until the maintainer specifically confirms that a pull request
+would be welcome.
 
-This project is maintained by a single developer. Even a well-intentioned and technically sound pull request can require substantial review, testing, discussion, and ongoing maintenance. A proposed change may also conflict with the project's scope, design, priorities, or planned work.
+This project is maintained by a single developer. Even a well-intentioned and
+technically sound pull request can require substantial review, testing,
+discussion, and ongoing maintenance. A proposed change may also conflict with
+the project's scope, design, priorities, or planned work.
 
 The contribution process is:
 
@@ -23,13 +30,17 @@ The contribution process is:
 3. Wait for explicit approval to prepare a pull request.
 4. Submit a pull request only after receiving that approval.
 
-Pull requests submitted without prior approval may be closed without detailed review.
+Pull requests submitted without prior approval may be closed without detailed
+review.
 
 ### AI-Assisted Contributions
 
-AI-assisted work is welcomed. The same prior-approval requirement applies whether the work is produced manually or with AI assistance.
+AI-assisted work is welcomed. The same prior-approval requirement applies
+whether the work is produced manually or with AI assistance.
 
-Contributors are responsible for supervising and validating their work. A pull request should not shift the primary burden of reviewing, debugging, or establishing correctness to the maintainer.
+Contributors are responsible for supervising and validating their work. A pull
+request should not shift the primary burden of reviewing, debugging, or
+establishing correctness to the maintainer.
 
 ---
 
@@ -40,8 +51,10 @@ Before opening an issue:
 - Check whether an existing issue already addresses the subject.
 - Include clear reproduction steps when reporting a problem.
 - Describe the expected and actual behavior.
-- Include your Ruby version (`ruby -v`), operating system, and any other relevant environment information.
-- Keep discussion technical and respectful. See the [Code of Conduct](CODE_OF_CONDUCT.md).
+- Include your Ruby version (`ruby -v`), operating system, and any other
+  relevant environment information.
+- Keep discussion technical and respectful. See the [Code of
+  Conduct](CODE_OF_CONDUCT.md).
 
 ---
 
@@ -105,14 +118,17 @@ Useful commands and entry points include:
 
 - `bundle exec rspec` — run the test suite
 - `bundle exec rubocop` — run static analysis and style checks
-- `bundle exec rake` — run the default Rake task (the test suite); `bundle exec rake test` also runs RuboCop and the docs build
+- `bundle exec rake` — run the default Rake task (the test suite);
+  `bundle exec rake test` also runs RuboCop and the docs build
 - `exe/cov-loupe` — run the CLI or MCP entry point for end-to-end testing
 
 ---
 
 ## Documentation
 
-This project uses [MkDocs](https://www.mkdocs.org/) with the [Material theme](https://squidfunk.github.io/mkdocs-material/) to build and serve its documentation.
+This project uses [MkDocs](https://www.mkdocs.org/) with the [Material
+theme](https://squidfunk.github.io/mkdocs-material/) to build and serve its
+documentation.
 
 To run the documentation locally:
 
@@ -123,7 +139,8 @@ bin/start-doc-server
 
 The documentation will be available at <http://127.0.0.1:8000>.
 
-For setup details, dependency updates, publishing, and troubleshooting, see [Documentation Server](docs/dev/DOC_SERVER.md).
+For setup details, dependency updates, publishing, and troubleshooting, see
+[Documentation Server](docs/dev/DOC_SERVER.md).
 
 ---
 
@@ -131,4 +148,5 @@ For setup details, dependency updates, publishing, and troubleshooting, see [Doc
 
 Please review and follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
-Instances of unacceptable behavior may be reported through GitHub's [Report Abuse form](https://github.com/contact/report-abuse).
+Instances of unacceptable behavior may be reported through GitHub's [Report
+Abuse form](https://github.com/contact/report-abuse).

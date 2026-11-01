@@ -9,8 +9,10 @@ Before you begin:
 
 1. If you are not in the project root, inform the user, state your current
    working directory, and wait for confirmation before proceeding.
-2. Read [ai-code-evaluator-guidelines.md](../guidelines/ai-code-evaluator-guidelines.md),
-   especially [Method Length and Complexity](../guidelines/ai-code-evaluator-guidelines.md#method-length-and-complexity).
+2. Read
+   [ai-code-evaluator-guidelines.md](../guidelines/ai-code-evaluator-guidelines.md),
+   especially [Method Length and
+   Complexity](../guidelines/ai-code-evaluator-guidelines.md#method-length-and-complexity).
    Do not split a long method that is already cohesive and clear.
 
 ---

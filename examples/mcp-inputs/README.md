@@ -2,13 +2,19 @@
 
 [Back to main README](../../README.md)
 
-This directory contains example JSON-RPC requests that can be sent to the MCP server over stdio.
+This directory contains example JSON-RPC requests that can be sent to the MCP
+server over stdio.
 
-The inputs are `coverage_summary.json`, `coverage_detailed.json`, `coverage_raw.json`, `uncovered_lines.json`, and `list.json`. Each file contains a single line of JSON (NDJSON-ready), so you can pipe it directly to the executable.
+The inputs are `coverage_summary.json`, `coverage_detailed.json`,
+`coverage_raw.json`, `uncovered_lines.json`, and `list.json`. Each file
+contains a single line of JSON (NDJSON-ready), so you can pipe it directly to
+the executable.
 
-**Target Project:** These inputs are designed to work with the demo project located at `docs/fixtures/demo_project`.
+**Target Project:** These inputs are designed to work with the demo project
+located at `docs/fixtures/demo_project`.
 
-The fixture's coverage timestamp is deliberately set far in the future, so the example responses are reproducible on a fresh clone.
+The fixture's coverage timestamp is deliberately set far in the future, so the
+example responses are reproducible on a fresh clone.
 
 ### Running the Examples
 
@@ -19,7 +25,8 @@ exe/cov-loupe -m mcp < examples/mcp-inputs/coverage_summary.json
 exe/cov-loupe -m mcp < examples/mcp-inputs/uncovered_lines.json
 ```
 
-If `cov-loupe` is installed globally and available on your `PATH`, run it from the repository root too, since the inputs use paths relative to it:
+If `cov-loupe` is installed globally and available on your `PATH`, run it from
+the repository root too, since the inputs use paths relative to it:
 
 ```sh
 cov-loupe -m mcp < examples/mcp-inputs/coverage_summary.json
@@ -27,7 +34,9 @@ cov-loupe -m mcp < examples/mcp-inputs/coverage_summary.json
 
 ### Formatting Tips (jq and rexe)
 
-You can use tools like [jq](https://github.com/jqlang/jq) or [rexe](https://github.com/keithrbennett/rexe) to format the JSON input and output, which is especially helpful for debugging.
+You can use tools like [jq](https://github.com/jqlang/jq) or
+[rexe](https://github.com/keithrbennett/rexe) to format the JSON input and
+output, which is especially helpful for debugging.
 
 **Pretty-print an input file:**
 

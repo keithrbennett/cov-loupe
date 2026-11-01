@@ -4,13 +4,16 @@
 
 Complete reference for using cov-loupe from the command line.
 
-> Docs use `clp` as a shortcut pointing at the demo fixture with partial coverage:
-> `alias clp='cov-loupe -R docs/fixtures/demo_project'`  # -R = --root
-> Run the examples from the root of a cov-loupe checkout, since the alias's path is relative. Without the gem
-> installed, use `alias clp='bundle exec exe/cov-loupe -R docs/fixtures/demo_project'` instead.
-> Replace `clp` with `cov-loupe` to run commands against your own project.
-> The demo fixture is a small Rails-like project in `docs/fixtures/demo_project` with intentional coverage gaps for testing `--tracked-globs`.
-> Its coverage timestamp is deliberately set far in the future, so the outputs below are reproducible on a fresh clone.
+> Docs use `clp` as a shortcut pointing at the demo fixture with partial
+> coverage: `alias clp='cov-loupe -R docs/fixtures/demo_project'` # -R = --root
+> Run the examples from the root of a cov-loupe checkout, since the alias's
+> path is relative. Without the gem installed, use
+> `alias clp='bundle exec exe/cov-loupe -R docs/fixtures/demo_project'`
+> instead. Replace `clp` with `cov-loupe` to run commands against your own
+> project. The demo fixture is a small Rails-like project in
+> `docs/fixtures/demo_project` with intentional coverage gaps for testing
+> `--tracked-globs`. Its coverage timestamp is deliberately set far in the
+> future, so the outputs below are reproducible on a fresh clone.
 
 ## Table of Contents
 
@@ -74,7 +77,8 @@ clp --path-for docs
 clp --path-for docs-local
 ```
 
-Note: `-l` with a dash sets `--log-file`; `l` without a dash runs the `list` subcommand abbreviation.
+Note: `-l` with a dash sets `--log-file`; `l` without a dash runs the `list`
+subcommand abbreviation.
 
 ## Subcommands
 
@@ -89,7 +93,10 @@ clp -o d l  # -o = --sort-order, d = descending
 clp -fJ l           
 ```
 
-Default sort order is descending (highest coverage first) so the lowest-coverage files stay visible at the bottom of the scrollback. Files with no coverable lines (`n/a`) sort above 100%; see [Sorting Coverage Lists with n/a Entries](ADVANCED_USAGE.md#sorting-coverage-lists-with-na-entries).
+Default sort order is descending (highest coverage first) so the
+lowest-coverage files stay visible at the bottom of the scrollback. Files with
+no coverable lines (`n/a`) sort above 100%; see [Sorting Coverage Lists with
+n/a Entries](ADVANCED_USAGE.md#sorting-coverage-lists-with-na-entries).
 
 **Options:**
 
@@ -140,9 +147,16 @@ Files: total 7, ok 7, stale 0
 }
 ```
 
-**Stale indicators:** deleted (source file deleted), newer (timestamp mismatch), length_mismatch (line count mismatch), unreadable (source file could not be read, or its staleness check failed)
+**Stale indicators:** deleted (source file deleted), newer (timestamp
+mismatch), length_mismatch (line count mismatch), unreadable (source file could
+not be read, or its staleness check failed)
 
-**Skipped rows:** a coverage row with invalid data is left out of the report. It is listed in the exclusions summary on `stderr` (table format) or in `skipped_files` (structured formats, with a warning on `stderr`). The table-format exclusions summary also lists missing tracked files and stale files, and a table with stale rows ends with a `Staleness:` legend line. With `--raise-on-stale true`, such a row is an error instead.
+**Skipped rows:** a coverage row with invalid data is left out of the report.
+It is listed in the exclusions summary on `stderr` (table format) or in
+`skipped_files` (structured formats, with a warning on `stderr`). The
+table-format exclusions summary also lists missing tracked files and stale
+files, and a table with stale rows ends with a `Staleness:` legend line. With
+`--raise-on-stale true`, such a row is an error instead.
 
 ### `summary <path>`, `s <path>`
 
@@ -240,7 +254,8 @@ Coverage: 70.00% (7/10 lines)
 }
 ```
 
-With `-s`, the JSON also has a `source` array; see [`-s, --source MODE`](#source).
+With `-s`, the JSON also has a `source` array; see
+[`-s, --source MODE`](#source).
 
 **Output (with source, `-s uncovered` and the default 2 context lines):**
 ```
@@ -400,7 +415,10 @@ File: app/models/order.rb
 
 - Integer (e.g., `1`, `5`) - Number of times line was executed
 - `0` - Line is executable but was not executed
-- `null` - Line is not executable (comment, blank line), or excluded from coverage. Lines SimpleCov marked `"ignored"` (excluded with `nocov` blocks or directive comments) are returned as `null` and, like other `null` lines, are not counted in covered or total lines or in percentages.
+- `null` - Line is not executable (comment, blank line), or excluded from
+  coverage. Lines SimpleCov marked `"ignored"` (excluded with `nocov` blocks or
+  directive comments) are returned as `null` and, like other `null` lines, are
+  not counted in covered or total lines or in percentages.
 
 ### `totals`, `t`
 
@@ -413,7 +431,8 @@ clp -fJ t
 clp -g "lib/ops/jobs/*.rb" t  # -g = --tracked-globs
 ```
 
-`totals` has no table form: `-f table` prints the same text breakdown as the default.
+`totals` has no table form: `-f table` prints the same text breakdown as the
+default.
 
 **Output of `clp totals` (default format):**
 ```
@@ -477,17 +496,24 @@ File breakdown:
 **Notes:**
 
 - `lines` are based on fresh coverage entries only.
-- `lines.included_files` is the count of non-stale files included in the line totals; `lines.excluded_files` is the count of stale files excluded.
-- `with_coverage.stale.by_type` keys match the per-file `stale` values: `deleted`, `newer`,
-  `length_mismatch`, `unreadable`.
-- `without_coverage` is only present when tracking is enabled (tracked globs provided).
-- Respects `-g` / `--tracked-globs` when you only want to aggregate a subset of files.
-- Totals exclude stale files (`"deleted"`, `"newer"`, `"length_mismatch"`, `"unreadable"`) so the aggregate reflects only fresh coverage data.
-- Honors `-S true` / `--raise-on-stale true` to raise if coverage data is out of date.
+- `lines.included_files` is the count of non-stale files included in the line
+  totals; `lines.excluded_files` is the count of stale files excluded.
+- `with_coverage.stale.by_type` keys match the per-file `stale` values:
+  `deleted`, `newer`, `length_mismatch`, `unreadable`.
+- `without_coverage` is only present when tracking is enabled (tracked globs
+  provided).
+- Respects `-g` / `--tracked-globs` when you only want to aggregate a subset of
+  files.
+- Totals exclude stale files (`"deleted"`, `"newer"`, `"length_mismatch"`,
+  `"unreadable"`) so the aggregate reflects only fresh coverage data.
+- Honors `-S true` / `--raise-on-stale true` to raise if coverage data is out
+  of date.
 
 ## Global Options
 
-These options can be used with every subcommand, though some affect only certain subcommands (for example, `-o` affects only `list` and the default report, and `-s`/`-n` only the per-file commands noted below).
+These options can be used with every subcommand, though some affect only
+certain subcommands (for example, `-o` affects only `list` and the default
+report, and `-s`/`-n` only the per-file commands noted below).
 
 Global options must come before the subcommand:
 
@@ -496,17 +522,28 @@ clp --format json summary lib/api/client.rb  # Correct
 clp summary lib/api/client.rb --format json  # Incorrect
 ```
 
-The exception is `-v`/`--version`, which prints the version wherever it appears.
+The exception is `-v`/`--version`, which prints the version wherever it
+appears.
 
-`-h`/`--help` prints usage and exits, and `-v`/`--version` prints the version and exits; see the [Quick Reference](#quick-reference).
+`-h`/`--help` prints usage and exits, and `-v`/`--version` prints the version
+and exits; see the [Quick Reference](#quick-reference).
 
 ### `-c, --coverage-file PATH`
 
-Path to a SimpleCov `coverage.json` file, or to a directory containing one. With no `-c` argument at all, `coverage/coverage.json` relative to the project root is used.
+Path to a SimpleCov `coverage.json` file, or to a directory containing one.
+With no `-c` argument at all, `coverage/coverage.json` relative to the project
+root is used.
 
-A relative path is resolved against both the current directory and the project root (`-R`). If it names a valid location under both and the two differ (they are the same when you run from the project root), cov-loupe exits with an ambiguity error; pass an absolute path instead.
+A relative path is resolved against both the current directory and the project
+root (`-R`). If it names a valid location under both and the two differ (they
+are the same when you run from the project root), cov-loupe exits with an
+ambiguity error; pass an absolute path instead.
 
-For a detailed explanation of how to configure the coverage file location, including the default search path, environment variables, and MCP configuration, see the [Configuring the Coverage File](../../README.md#configuring-the-coverage-file) section in the main README.
+For a detailed explanation of how to configure the coverage file location,
+including the default search path, environment variables, and MCP
+configuration, see the [Configuring the Coverage
+File](../../README.md#configuring-the-coverage-file) section in the main
+README.
 
 ### `-R, --root PATH`
 
@@ -567,7 +604,8 @@ JSON output (`-fj` / `-fJ`) is useful for:
 
 ### `-o, --sort-order ORDER`
 
-Sort order for `list`, including the default report when no subcommand is given.
+Sort order for `list`, including the default report when no subcommand is
+given.
 
 **Values:**
 
@@ -583,7 +621,11 @@ clp -o a list  # a = ascending
 
 ### `-s, --source MODE`
 
-Include source code in output (default: no source). Applies to `summary`, `uncovered`, and `detailed`; `raw` ignores it. Source files are read as UTF-8 whatever the locale. For a file that is not valid UTF-8, JSON and YAML output fail with `Source file is not valid UTF-8`, the table shows the bytes raw, and the other formats escape them; convert such files to UTF-8.
+Include source code in output (default: no source). Applies to `summary`,
+`uncovered`, and `detailed`; `raw` ignores it. Source files are read as UTF-8
+whatever the locale. For a file that is not valid UTF-8, JSON and YAML output
+fail with `Source file is not valid UTF-8`, the table shows the bytes raw, and
+the other formats escape them; convert such files to UTF-8.
 
 **Modes:**
 
@@ -606,11 +648,15 @@ clp -s n summary lib/api/client.rb        # n = none
 clp -s f -s n summary lib/api/client.rb   # later -s n disables earlier -s f
 ```
 
-With a structured format (`-fJ`, `-f yaml`, etc.), the source is returned as a `source` array instead of annotated text; each entry has `line`, `code`, `hits`, and `covered` (`hits` and `covered` are `null` for non-executable lines).
+With a structured format (`-fJ`, `-f yaml`, etc.), the source is returned as a
+`source` array instead of annotated text; each entry has `line`, `code`,
+`hits`, and `covered` (`hits` and `covered` are `null` for non-executable
+lines).
 
 ### `-n, --context-lines N`
 
-Number of context lines around uncovered code (for `-s uncovered` / `--source uncovered`). Must be a non-negative integer.
+Number of context lines around uncovered code (for `-s uncovered` /
+`--source uncovered`). Must be a non-negative integer.
 
 ```sh
 clp -s u -n 3 uncovered lib/api/client.rb  # -s u = uncovered, -n = --context-lines
@@ -620,7 +666,8 @@ clp -s u -n 3 uncovered lib/api/client.rb  # -s u = uncovered, -n = --context-li
 
 ### Boolean Flags (`--color` / `-C`, `--raise-on-stale`)
 
-These options require explicit boolean values. Recognized literals (case-insensitive):
+These options require explicit boolean values. Recognized literals
+(case-insensitive):
 
 | True   | False   |
 |--------|---------|
@@ -639,7 +686,8 @@ clp --raise-on-stale yes    # enforce stale coverage failures
 
 ### `-C, --color BOOLEAN`
 
-Enable or disable ANSI colors for the coverage markers in source output. Requires an explicit boolean value.
+Enable or disable ANSI colors for the coverage markers in source output.
+Requires an explicit boolean value.
 
 ```sh
 clp -s uncovered --color true uncovered lib/api/client.rb
@@ -650,7 +698,13 @@ clp -s uncovered -C false uncovered lib/api/client.rb
 
 ### `-S, --raise-on-stale BOOLEAN`
 
-Raise error if coverage is stale. Project queries (`list`, `totals`, the default report, and `validate` predicates that call `model.list` or `model.project_totals`) also raise if a tracked file is missing from coverage or a coverage row is skipped because its data is invalid. Requires an explicit boolean value. Default is `false` (report staleness and skipped rows instead of raising; `totals` counts skipped rows only when tracked globs are set, and otherwise leaves them out of its output, logging each only as an INFO line).
+Raise error if coverage is stale. Project queries (`list`, `totals`, the
+default report, and `validate` predicates that call `model.list` or
+`model.project_totals`) also raise if a tracked file is missing from coverage
+or a coverage row is skipped because its data is invalid. Requires an explicit
+boolean value. Default is `false` (report staleness and skipped rows instead of
+raising; `totals` counts skipped rows only when tracked globs are set, and
+otherwise leaves them out of its output, logging each only as an INFO line).
 
 ```sh
 # Enable raising an error if coverage is stale
@@ -665,9 +719,13 @@ clp --raise-on-stale false
 
 - **"deleted"** (Deleted): Source file no longer exists on disk
 - **"newer"** (Timestamp): Source file modified after coverage was generated
-- **"length_mismatch"** (Length): Source file line count differs from coverage data
-- **"unreadable"** (Unreadable): Source file could not be read (permission or I/O errors), or its staleness check failed
-- Tracked files missing from coverage (with `--tracked-globs`; checked by `list`, `totals`, the default report, and `validate` predicates that call `model.list` or `model.project_totals`; the per-file commands ignore `-g`)
+- **"length_mismatch"** (Length): Source file line count differs from coverage
+  data
+- **"unreadable"** (Unreadable): Source file could not be read (permission or
+  I/O errors), or its staleness check failed
+- Tracked files missing from coverage (with `--tracked-globs`; checked by
+  `list`, `totals`, the default report, and `validate` predicates that call
+  `model.list` or `model.project_totals`; the per-file commands ignore `-g`)
 
 <a id="tracked-globs"></a>
 
@@ -676,19 +734,30 @@ clp --raise-on-stale false
 Comma-separated glob patterns for files that should be tracked.
 
 - Put all patterns in one `-g` value; a repeated `-g` replaces the earlier one.
-- The value is split on every comma, including commas inside braces, so a brace pattern such as `lib/{models,controllers}/**/*.rb` matches no files and the output lists none, without an error. List the alternatives separately instead (see [Advanced Filtering](ADVANCED_USAGE.md#advanced-filtering-glob-patterns)).
+- The value is split on every comma, including commas inside braces, so a brace
+  pattern such as `lib/{models,controllers}/**/*.rb` matches no files and the
+  output lists none, without an error. List the alternatives separately instead
+  (see [Advanced
+  Filtering](ADVANCED_USAGE.md#advanced-filtering-glob-patterns)).
 
 **Default:** `[]` (empty - shows all files in the coverage file)
 
 **Why no default patterns?**
 
-1. **Transparency** - Shows all coverage data without hiding files that don't match assumptions
-2. **Avoids false positives** - Broad patterns like `**/*.rb` flag migrations, bin scripts, etc. as "missing"
-3. **Project variety** - Coverage patterns vary by project structure (lib/, app/, src/, config/, etc.)
+1. **Transparency** - Shows all coverage data without hiding files that don't
+   match assumptions
+2. **Avoids false positives** - Broad patterns like `**/*.rb` flag migrations,
+   bin scripts, etc. as "missing"
+3. **Project variety** - Coverage patterns vary by project structure (lib/,
+   app/, src/, config/, etc.)
 
-**Important:** Files never loaded during tests appear in the coverage file only if SimpleCov's `cover` globs include them (SimpleCov then records them at 0%). Otherwise they won't be visible with the default empty array; to detect them, set `--tracked-globs` to match the files you expect to have coverage.
+**Important:** Files never loaded during tests appear in the coverage file only
+if SimpleCov's `cover` globs include them (SimpleCov then records them at 0%).
+Otherwise they won't be visible with the default empty array; to detect them,
+set `--tracked-globs` to match the files you expect to have coverage.
 
-**Best practice:** Match your SimpleCov configuration by setting `COV_LOUPE_OPTS`:
+**Best practice:** Match your SimpleCov configuration by setting
+`COV_LOUPE_OPTS`:
 
 ```ruby
 # In spec_helper.rb or similar
@@ -725,10 +794,13 @@ clp -g "lib/**/*.rb,app/**/*.rb" -fJ list > coverage-report.json
 **Use cases:**
 
 - **Exclude unwanted results** - Narrow focus to a subsystem or layer
-- **Include files without coverage** - Report files that should be tracked but aren't in the coverage file
-- **CI validation** - Use with `-S true`/`--raise-on-stale true` to catch coverage gaps
+- **Include files without coverage** - Report files that should be tracked but
+  aren't in the coverage file
+- **CI validation** - Use with `-S true`/`--raise-on-stale true` to catch
+  coverage gaps
 
-**Important:** The `missing_tracked_files` array (in `list` output) only includes files that:
+**Important:** The `missing_tracked_files` array (in `list` output) only
+includes files that:
 
 1. Match the tracked globs
 2. Exist in the filesystem
@@ -739,19 +811,20 @@ Without globs, this array is empty (no expectations = no violations).
 ### `-l, --log-file PATH`
 
 Log target. The default is `stderr`; use a file path for persistent logging.
-Use 'stderr' to log to standard error.
-Use 'off' to disable logging entirely (cross-platform alternative to /dev/null); use './off' for a file named `off`.
-Logging to 'stdout' is not permitted because it would corrupt command output.
-A relative log file path is resolved against the current directory, not `--root`.
+Use 'stderr' to log to standard error. Use 'off' to disable logging entirely
+(cross-platform alternative to /dev/null); use './off' for a file named `off`.
+Logging to 'stdout' is not permitted because it would corrupt command output. A
+relative log file path is resolved against the current directory, not `--root`.
 
-With the default `stderr` target, the CLI does not log its parameters or errors there;
-an error appears there once, as the user-facing message (followed by its stack trace
-with `--error-mode debug`). Warnings and diagnostics about the coverage data can still
-appear on stderr. A file target also receives a `CLI parameters` line for each run that
-gets past option parsing (including the default report) and, unless `--error-mode off`
-is used, a log entry for each error. Invalid options and option values are rejected
-before logging is set up, so they appear only on stderr; other usage errors, such as an
-unknown subcommand or misplaced global options, are logged to the file.
+With the default `stderr` target, the CLI does not log its parameters or errors
+there; an error appears there once, as the user-facing message (followed by its
+stack trace with `--error-mode debug`). Warnings and diagnostics about the
+coverage data can still appear on stderr. A file target also receives a
+`CLI parameters` line for each run that gets past option parsing (including the
+default report) and, unless `--error-mode off` is used, a log entry for each
+error. Invalid options and option values are rejected before logging is set up,
+so they appear only on stderr; other usage errors, such as an unknown
+subcommand or misplaced global options, are logged to the file.
 
 ```sh
 clp -l /tmp/cov-loupe.log  # -l = --log-file
@@ -759,9 +832,14 @@ clp -l stderr                   # Log to standard error
 clp -l off                      # Disable logging entirely
 ```
 
-**Default:** `stderr` — see the [logging initialization and target testing guide](LOGGING.md#log-file-initialization-and-target-testing).
+**Default:** `stderr` — see the [logging initialization and target testing
+guide](LOGGING.md#log-file-initialization-and-target-testing).
 
-**Warning:** Explicit log files may grow unbounded in long-running or CI usage. cov-loupe does not rotate them; use external rotation or periodically clean them up. If multiple agents or processes run concurrently, give each one a different log file; see [Concurrent processes and agents](LOGGING.md#concurrent-processes-and-agents).
+**Warning:** Explicit log files may grow unbounded in long-running or CI usage.
+cov-loupe does not rotate them; use external rotation or periodically clean
+them up. If multiple agents or processes run concurrently, give each one a
+different log file; see [Concurrent processes and
+agents](LOGGING.md#concurrent-processes-and-agents).
 
 ### `-e, --error-mode MODE`
 
@@ -775,11 +853,12 @@ Error handling verbosity.
 | `l`                | `log`   | Log errors without stack traces (default) |
 | `d`                | `debug` | Log errors with full stack traces         |
 
-Error messages are always printed to stderr, and `debug` also prints a stack trace
-after the message: the first 5 lines with a log file, which gets the full trace, and
-otherwise (the default `stderr` target, or `off`) the full trace. With the `stderr` target, errors are
-not logged there a second time, so `off` and `log` look the same. With a log file,
-`log` and `debug` write each error to the file.
+Error messages are always printed to stderr, and `debug` also prints a stack
+trace after the message: the first 5 lines with a log file, which gets the full
+trace, and otherwise (the default `stderr` target, or `off`) the full trace.
+With the `stderr` target, errors are not logged there a second time, so `off`
+and `log` look the same. With a log file, `log` and `debug` write each error to
+the file.
 
 ```sh
 clp --error-mode debug summary lib/api/client.rb
@@ -791,7 +870,9 @@ clp -edebug summary lib/api/client.rb   # attached short option form
 
 ### `-O, --output-chars MODE`
 
-Choose how cov-loupe draws its own decoration (table borders and the covered-line marker): with Unicode characters, or with ASCII for terminals that cannot display them. Your data is never changed.
+Choose how cov-loupe draws its own decoration (table borders and the
+covered-line marker): with Unicode characters, or with ASCII for terminals that
+cannot display them. Your data is never changed.
 
 **Modes:**
 
@@ -817,40 +898,56 @@ clp -O f list  # f = fancy
 **What changes in ASCII mode:**
 
 - Table borders (│ ─ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼ become | - + + + + + + + + +)
-- The covered-line marker in source output (✓ becomes +; the uncovered marker is always `X`)
-- JSON output (`-f json`, `-f pretty_json`) escapes non-ASCII characters as `\uXXXX`. This
-  encodes the data without changing it: parsing the JSON gives back the original text.
+- The covered-line marker in source output (✓ becomes +; the uncovered marker
+  is always `X`)
+- JSON output (`-f json`, `-f pretty_json`) escapes non-ASCII characters as
+  `\uXXXX`. This encodes the data without changing it: parsing the JSON gives
+  back the original text.
 
 **What never changes:**
 
-- Your data: file paths, source lines, error messages, backtraces, and YAML or other text
-  formats are shown exactly as they are, so output in ASCII mode can still contain non-ASCII
-  characters such as accented letters, curly quotes, or Japanese
+- Your data: file paths, source lines, error messages, backtraces, and YAML or
+  other text formats are shown exactly as they are, so output in ASCII mode can
+  still contain non-ASCII characters such as accented letters, curly quotes, or
+  Japanese
 - Log files
 
-cov-loupe never rewrites data for display. Ruby itself escapes non-ASCII characters as
-`\uXXXX` in the `inspect`, `pretty_print`, `amazing_print` and `puts` formats, and in error
-messages that quote a path the way `inspect` does, when Ruby's default encodings are not UTF-8.
-Under the C locale (`LANG=C`) the `cov-loupe` executable sets `Encoding.default_external` to
-UTF-8, so the characters are shown as they are there (unless `Encoding.default_internal` is
-set to a non-UTF-8 encoding, for example with `RUBYOPT=-E:US-ASCII`; then the other formats
-can fail to write non-ASCII characters at all).
+cov-loupe never rewrites data for display. Ruby itself escapes non-ASCII
+characters as `\uXXXX` in the `inspect`, `pretty_print`, `amazing_print` and
+`puts` formats, and in error messages that quote a path the way `inspect` does,
+when Ruby's default encodings are not UTF-8. Under the C locale (`LANG=C`) the
+`cov-loupe` executable sets `Encoding.default_external` to UTF-8, so the
+characters are shown as they are there (unless `Encoding.default_internal` is
+set to a non-UTF-8 encoding, for example with `RUBYOPT=-E:US-ASCII`; then the
+other formats can fail to write non-ASCII characters at all).
 
 **Use cases:**
 
-- **CI/CD systems** whose logs or terminals cannot draw box-drawing characters: `clp -O ascii list`
-- **Windows** with a legacy code page, so table borders render: `clp -O ascii summary lib/api/client.rb`
-- **Piped output** to files that should not contain box-drawing characters: `clp -O ascii list > coverage.txt`
-- **Force Unicode** when the locale is not UTF-8 but the terminal can draw it: `clp -O fancy list`
+- **CI/CD systems** whose logs or terminals cannot draw box-drawing characters:
+  `clp -O ascii list`
+- **Windows** with a legacy code page, so table borders render:
+  `clp -O ascii summary lib/api/client.rb`
+- **Piped output** to files that should not contain box-drawing characters:
+  `clp -O ascii list > coverage.txt`
+- **Force Unicode** when the locale is not UTF-8 but the terminal can draw it:
+  `clp -O fancy list`
 
-**Note:** The default mode checks the output encoding, which normally follows your locale (e.g., `LANG`): UTF-8 gives Unicode, anything else ASCII. It cannot see what your terminal can actually draw. If table borders or the ✓ marker appear garbled, try `clp -O ascii`. Non-ASCII characters in your data are left as they are in every mode, except that ASCII mode escapes them as `\uXXXX` in JSON output.
+**Note:** The default mode checks the output encoding, which normally follows
+your locale (e.g., `LANG`): UTF-8 gives Unicode, anything else ASCII. It cannot
+see what your terminal can actually draw. If table borders or the ✓ marker
+appear garbled, try `clp -O ascii`. Non-ASCII characters in your data are left
+as they are in every mode, except that ASCII mode escapes them as `\uXXXX` in
+JSON output.
 
-**Limitation:** Table column widths are measured in characters, so wide (for example CJK) characters can leave the right border misaligned.
+**Limitation:** Table column widths are measured in characters, so wide (for
+example CJK) characters can leave the right border misaligned.
 
 ### `-m, --mode MODE`
 
-Specify execution mode: `cli` or `mcp` (or `c`/`m`; default: `cli`). Use `--mode mcp` to run as an MCP server.
-cov-loupe never switches to MCP mode on its own; without `--mode mcp` (on the command line or in `COV_LOUPE_OPTS`) it runs in CLI mode.
+Specify execution mode: `cli` or `mcp` (or `c`/`m`; default: `cli`). Use
+`--mode mcp` to run as an MCP server. cov-loupe never switches to MCP mode on
+its own; without `--mode mcp` (on the command line or in `COV_LOUPE_OPTS`) it
+runs in CLI mode.
 
 ```sh
 clp -m mcp               # MCP server mode (required for MCP), short option form
@@ -860,7 +957,12 @@ clp -m cli list          # CLI mode (default), can use to override environment v
 
 ### `--[no-]allow-code-predicates`
 
-MCP mode only: registers the `project_validate` tool, which runs Ruby predicates supplied by the MCP client with full process privileges. Off by default. The CLI `validate` subcommand does not need it, and CLI mode ignores the option, so it can be set in a `COV_LOUPE_OPTS` shared by both modes. See [MCP Integration: Policy Validation Tools](MCP_INTEGRATION.md#policy-validation-tools).
+MCP mode only: registers the `project_validate` tool, which runs Ruby
+predicates supplied by the MCP client with full process privileges. Off by
+default. The CLI `validate` subcommand does not need it, and CLI mode ignores
+the option, so it can be set in a `COV_LOUPE_OPTS` shared by both modes. See
+[MCP Integration: Policy Validation
+Tools](MCP_INTEGRATION.md#policy-validation-tools).
 
 ```sh
 clp -m mcp --allow-code-predicates     # enable project_validate
@@ -873,19 +975,29 @@ Validate coverage against custom policies for CI/CD enforcement.
 
 > **⚠️ SECURITY WARNING**
 >
-> Validation predicates execute as **arbitrary Ruby code with full system privileges**. They have unrestricted access
-> to file system, network, system commands, and environment variables.
+> Validation predicates execute as **arbitrary Ruby code with full system
+> privileges**. They have unrestricted access to file system, network, system
+> commands, and environment variables.
 >
 > **Only use predicate files from trusted sources.**
 > Review predicates before use, especially in CI/CD environments.
 
-The predicate must be a callable (lambda, proc, or object with `#call` method) that receives a `CoverageModel` and returns a truthy or falsy value; this applies to `-i` code too, so `-i 'true'` is an error. A predicate file path is resolved against the current directory, not `--root`, and the file is read as UTF-8 whatever the locale.
+The predicate must be a callable (lambda, proc, or object with `#call` method)
+that receives a `CoverageModel` and returns a truthy or falsy value; this
+applies to `-i` code too, so `-i 'true'` is an error. A predicate file path is
+resolved against the current directory, not `--root`, and the file is read as
+UTF-8 whatever the locale.
 
 **Predicate return values:**
 
 - Truthy (e.g., `true`) - Coverage meets your criteria (CLI exits with code 0)
-- Falsy (`false` or `nil`) - Coverage fails your criteria (CLI exits with code 3)
-- Error in the predicate itself (syntax error, not callable, or an exception raised by its own code) - Predicate error (CLI exits with code 4). Coverage-data errors triggered while the predicate queries the model, such as a missing file or stale data with `--raise-on-stale true`, exit with code 1 like any other command.
+- Falsy (`false` or `nil`) - Coverage fails your criteria (CLI exits with
+  code 3)
+- Error in the predicate itself (syntax error, not callable, or an exception
+  raised by its own code) - Predicate error (CLI exits with code 4).
+  Coverage-data errors triggered while the predicate queries the model, such as
+  a missing file or stale data with `--raise-on-stale true`, exit with code 1
+  like any other command.
 
 **File mode (most common):**
 ```sh
@@ -917,13 +1029,17 @@ clp -S true v --inline '->(m) { m.list["files"].size > 0 }'
 end
 ```
 
-See [examples/success_predicates/](../../examples/success_predicates/README.md) for more examples.
+See [examples/success_predicates/](../../examples/success_predicates/README.md)
+for more examples.
 
 ## Output Formats
 
 ### Table Format
 
-The default format, except for `totals`, which has no table form, and `validate`, which prints no result. Uses Unicode box-drawing characters, or ASCII when the output encoding is not UTF-8 or with `-O ascii` (see [`--output-chars`](#output-chars)).
+The default format, except for `totals`, which has no table form, and
+`validate`, which prints no result. Uses Unicode box-drawing characters, or
+ASCII when the output encoding is not UTF-8 or with `-O ascii` (see
+[`--output-chars`](#output-chars)).
 
 ```
 ┌──────────────────────────────────┬──────────┬───────────┬─────────┬───────┐
@@ -935,8 +1051,13 @@ The default format, except for `totals`, which has no table form, and `validate`
 
 ### JSON Format
 
-Machine-readable output. Paths of files under the project root are relative to it; files outside the root keep absolute paths.
-Every structured CLI format and library coverage hash has integer `schema_version` as its first key. The [shipped JSON Schemas](https://github.com/keithrbennett/cov-loupe/tree/main/lib/cov_loupe/schemas/v1) define these shapes; see [Schema Version](LIBRARY_API.md#schema-version) for schema lookup and compatibility rules.
+Machine-readable output. Paths of files under the project root are relative to
+it; files outside the root keep absolute paths. Every structured CLI format and
+library coverage hash has integer `schema_version` as its first key. The
+[shipped JSON
+Schemas](https://github.com/keithrbennett/cov-loupe/tree/main/lib/cov_loupe/schemas/v1)
+define these shapes; see [Schema Version](LIBRARY_API.md#schema-version) for
+schema lookup and compatibility rules.
 
 ```json
 {
@@ -1028,7 +1149,8 @@ clp detailed lib/payments/refund_service.rb
 
 ### JSON Output for Scripts
 
-The rexe examples use [rexe](https://github.com/keithrbennett/rexe) (`gem install rexe`), whose `-ij -mb` options parse JSON input into `self`.
+The rexe examples use [rexe](https://github.com/keithrbennett/rexe)
+(`gem install rexe`), whose `-ij -mb` options parse JSON input into `self`.
 
 ```sh
 # Get JSON for parsing
@@ -1134,10 +1256,15 @@ clp -l /tmp/cov-loupe-debug.log summary lib/api/client.rb
 ## Exit Codes
 
 - `0` - Success
-- `1` - Error (file not found, coverage data missing, stale coverage with `-S true` / `--raise-on-stale true`, etc.)
-- `2` - Usage error (invalid option, option value, or subcommand arguments, including an argument that is not valid text in its encoding; invalid configuration such as `--log-file stdout`)
-- `3` - Validation failed: the `validate` predicate ran and returned a falsy value
-- `4` - Predicate error: the `validate` predicate itself could not be loaded or raised an error (coverage-data errors it triggers exit `1`)
+- `1` - Error (file not found, coverage data missing, stale coverage with
+  `-S true` / `--raise-on-stale true`, etc.)
+- `2` - Usage error (invalid option, option value, or subcommand arguments,
+  including an argument that is not valid text in its encoding; invalid
+  configuration such as `--log-file stdout`)
+- `3` - Validation failed: the `validate` predicate ran and returned a falsy
+  value
+- `4` - Predicate error: the `validate` predicate itself could not be loaded or
+  raised an error (coverage-data errors it triggers exit `1`)
 
 ## Next Steps
 

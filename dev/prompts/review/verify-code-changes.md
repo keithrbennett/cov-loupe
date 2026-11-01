@@ -7,7 +7,8 @@ the code under review.
 
 1. If you are not in the project root, inform the user, state your current
    working directory, and wait for confirmation before proceeding.
-2. Read [ai-code-evaluator-guidelines.md](../guidelines/ai-code-evaluator-guidelines.md)
+2. Read
+   [ai-code-evaluator-guidelines.md](../guidelines/ai-code-evaluator-guidelines.md)
    and do not report the intentional design decisions it describes.
 
 ## Inputs

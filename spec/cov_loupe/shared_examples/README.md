@@ -4,7 +4,8 @@ This directory contains reusable test patterns for cov-loupe MCP tools.
 
 ## File-Based MCP Tools
 
-The `file_based_mcp_tools.rb` shared example provides parameterized testing for MCP tools that follow the same pattern:
+The `file_based_mcp_tools.rb` shared example provides parameterized testing for
+MCP tools that follow the same pattern:
 
 - Take a `path` parameter (file to analyze)
 - Call a specific method on `CoverageModel`
@@ -12,7 +13,8 @@ The `file_based_mcp_tools.rb` shared example provides parameterized testing for 
 
 ### Usage
 
-Instead of creating separate spec files for each similar tool, add your tool to the `FILE_BASED_TOOL_CONFIGS` hash:
+Instead of creating separate spec files for each similar tool, add your tool to
+the `FILE_BASED_TOOL_CONFIGS` hash:
 
 ```ruby
 # In spec/cov_loupe/shared_examples/file_based_mcp_tools.rb
@@ -83,16 +85,20 @@ your_tool: {
 
 ### Additional Benefits
 
-1. **Cross-tool consistency testing**: Automatically tests that all tools handle parameters consistently
-2. **Structural validation**: Ensures all tools return properly formed MCP text responses
-3. **Reduced maintenance**: Bug fixes and improvements benefit all tools at once
+1. **Cross-tool consistency testing**: Automatically tests that all tools
+   handle parameters consistently
+2. **Structural validation**: Ensures all tools return properly formed MCP text
+   responses
+3. **Reduced maintenance**: Bug fixes and improvements benefit all tools at
+   once
 4. **Better coverage**: Gets consistency tests you wouldn't write individually
 5. **Enforces patterns**: Encourages consistent tool design
 
 ### When NOT to Use This
 
 Don't use the parameterized approach for tools that:
-- Don't follow the file-based pattern (e.g., `ProjectCoverageTool`, `VersionTool`)
+- Don't follow the file-based pattern (e.g., `ProjectCoverageTool`,
+  `VersionTool`)
 - Have significantly different parameter signatures
 - Need extensive tool-specific testing that doesn't fit the pattern
 - Are prototypes or experimental tools

@@ -1,17 +1,21 @@
 # Architecture Decision Records
 
-[Back to main README](../../../README.md) | [Architecture Overview](../ARCHITECTURE.md)
+[Back to main README](../../../README.md) | [Architecture
+Overview](../ARCHITECTURE.md)
 
 ## What is an ADR?
 
-An Architecture Decision Record (ADR) captures a significant architectural decision made during the development of this project, along with its context and consequences.
+An Architecture Decision Record (ADR) captures a significant architectural
+decision made during the development of this project, along with its context
+and consequences.
 
 ## ADR Format
 
 Each ADR follows this structure:
 
 ### Title
-A short phrase describing the decision (e.g., "Dual-Mode Operation: CLI and MCP Server")
+A short phrase describing the decision (e.g., "Dual-Mode Operation: CLI and MCP
+Server")
 
 ### Status
 - **Accepted**: The decision has been made and is currently in effect
@@ -40,13 +44,20 @@ Links to related code, issues, documentation, or other ADRs.
 
 ADRs are organized by topic area rather than chronologically:
 
-- [Application Architecture](application-architecture.md) - Dual-mode operation (CLI/MCP) and context-aware error handling
-- [Coverage Data Quality](coverage-data-quality.md) - Staleness detection system
-- [Dependency Locking](dependency-locking.md) - Gemfile.lock tracking vs. CI matrix support, and Dependabot alert coverage
-- [Output Character Mode](output-character-mode.md) - Unicode or ASCII table borders and markers; data is never changed
-- [Path Resolution](path-resolution.md) - Path matching strategy; coverage from another OS is not supported
-- [Policy Validation](policy-validation.md) - Validation predicates using Ruby `instance_eval`
-- [SimpleCov Integration](simplecov-integration.md) - Dependency strategy and data loading (`coverage.json` only since v7)
+- [Application Architecture](application-architecture.md) - Dual-mode operation
+  (CLI/MCP) and context-aware error handling
+- [Coverage Data Quality](coverage-data-quality.md) - Staleness detection
+  system
+- [Dependency Locking](dependency-locking.md) - Gemfile.lock tracking vs. CI
+  matrix support, and Dependabot alert coverage
+- [Output Character Mode](output-character-mode.md) - Unicode or ASCII table
+  borders and markers; data is never changed
+- [Path Resolution](path-resolution.md) - Path matching strategy; coverage from
+  another OS is not supported
+- [Policy Validation](policy-validation.md) - Validation predicates using Ruby
+  `instance_eval`
+- [SimpleCov Integration](simplecov-integration.md) - Dependency strategy and
+  data loading (`coverage.json` only since v7)
 
 ## When to Create an ADR
 
@@ -61,7 +72,8 @@ Create an ADR when:
 
 When adding a new ADR:
 
-1. Add it to the appropriate topic-based file, or create a new file if it covers a new area
+1. Add it to the appropriate topic-based file, or create a new file if it
+   covers a new area
 2. Follow the format outlined above
 3. Update this README's index
 4. Link to relevant code and documentation

@@ -10,16 +10,17 @@ This document describes the breaking changes introduced in version 5.0.0.
 - [Removed `version` Subcommand](#removed-version-subcommand)
 - [Simplified `--version` Output](#simplified-version-output)
 - [`--resource` Renamed to `--path-for`](#resource-renamed-to-path-for)
-- [Single-Letter Subcommand Abbreviations](#single-letter-subcommand-abbreviations)
+- [Single-Letter Subcommand
+  Abbreviations](#single-letter-subcommand-abbreviations)
 - [Totals Key Renamed: `percent_covered` → `percentage`](#totals-key-renamed)
 
 ---
 
 ## MCP Tool Names Renamed
 
-All MCP tool names have the `_tool` suffix removed. File-scope tools gain a `file_` prefix and
-project-scope tools gain a `project_` prefix. The meta-tools (`help`, `version`) are simply
-shortened from `help_tool` and `version_tool`.
+All MCP tool names have the `_tool` suffix removed. File-scope tools gain a
+`file_` prefix and project-scope tools gain a `project_` prefix. The meta-tools
+(`help`, `version`) are simply shortened from `help_tool` and `version_tool`.
 
 | v4.x name                | v5.0 name                 |
 |--------------------------|---------------------------|
@@ -34,14 +35,15 @@ shortened from `help_tool` and `version_tool`.
 | `help_tool`              | `help`                   |
 | `version_tool`           | `version`                |
 
-Update any MCP client configurations, tool-call strings in prompts, or direct JSON-RPC requests
-that reference the old names.
+Update any MCP client configurations, tool-call strings in prompts, or direct
+JSON-RPC requests that reference the old names.
 
 ---
 
 ## Removed `version` Subcommand
 
-The `version` subcommand has been removed. Any scripts calling `cov-loupe version` must be updated.
+The `version` subcommand has been removed. Any scripts calling
+`cov-loupe version` must be updated.
 
 **Before (v4.x):**
 ```sh
@@ -61,7 +63,8 @@ cov-loupe --version   # or: cov-loupe -v
 ## Simplified `--version` Output
 
 `-v`/`--version` now prints only the bare version string and exits immediately.
- The former table output (with `Gem Root` and `Documentation` fields) and JSON format option are gone.
+The former table output (with `Gem Root` and `Documentation` fields) and JSON
+format option are gone.
 
 **Before (v4.x):**
 ```
@@ -77,7 +80,9 @@ cov-loupe --version   # or: cov-loupe -v
 5.0.0
 ```
 
-If you need the gem root path, use `cov-loupe --path-for docs-local` to locate the local documentation, or inspect the gem installation with `gem contents cov-loupe`.
+If you need the gem root path, use `cov-loupe --path-for docs-local` to locate
+the local documentation, or inspect the gem installation with
+`gem contents cov-loupe`.
 
 ---
 
@@ -85,7 +90,9 @@ If you need the gem root path, use `cov-loupe --path-for docs-local` to locate t
 
 ## `--resource` Renamed to `--path-for`
 
-The `--resource NAME` option (added in 4.1.0) is now `--path-for NAME`, with the short form `-p`. The names are unchanged: `repo`, `docs`, and `docs-local`. `--resource` is no longer accepted.
+The `--resource NAME` option (added in 4.1.0) is now `--path-for NAME`, with
+the short form `-p`. The names are unchanged: `repo`, `docs`, and `docs-local`.
+`--resource` is no longer accepted.
 
 **Before (v4.1):**
 ```sh
@@ -102,7 +109,9 @@ cov-loupe -p docs
 
 ## Single-Letter Subcommand Abbreviations
 
-All CLI subcommands can be abbreviated to their first letter. This is not a change in 5.0: the abbreviations were added in 4.1.0, which had no release notes, so they are described here.
+All CLI subcommands can be abbreviated to their first letter. This is not a
+change in 5.0: the abbreviations were added in 4.1.0, which had no release
+notes, so they are described here.
 
 ```sh
 cov-loupe l
@@ -111,7 +120,8 @@ cov-loupe u lib/foo.rb
 cov-loupe v -i '->(m) { m.list["files"].all? { |f| f["percentage"] >= 80 } }'
 ```
 
-Available abbreviations: `l` (list), `s` (summary), `r` (raw), `u` (uncovered), `d` (detailed), `t` (totals), `v` (validate).
+Available abbreviations: `l` (list), `s` (summary), `r` (raw), `u` (uncovered),
+`d` (detailed), `t` (totals), `v` (validate).
 
 ---
 
@@ -119,11 +129,11 @@ Available abbreviations: `l` (list), `s` (summary), `r` (raw), `u` (uncovered), 
 
 ## Totals Key Renamed: `percent_covered` → `percentage`
 
-The `lines` hash returned by `project_totals`
- (and all outputs that delegate to it: the `totals`
-CLI subcommand in JSON/YAML/pretty-json format, and the `project_coverage_totals` MCP tool) now
-uses `"percentage"` instead of `"percent_covered"`. This makes aggregated totals consistent with
-the per-file summary API, which already used `"percentage"`.
+The `lines` hash returned by `project_totals` (and all outputs that delegate to
+it: the `totals` CLI subcommand in JSON/YAML/pretty-json format, and the
+`project_coverage_totals` MCP tool) now uses `"percentage"` instead of
+`"percent_covered"`. This makes aggregated totals consistent with the per-file
+summary API, which already used `"percentage"`.
 
 **Before (v4.x):**
 ```ruby
@@ -145,8 +155,11 @@ totals['lines']['percentage']  # => 81.3
 
 **Migration:**
 
-- Replace `totals['lines']['percent_covered']` with `totals['lines']['percentage']`.
+- Replace `totals['lines']['percent_covered']` with
+  `totals['lines']['percentage']`.
 - Update `jq` snippets: `.lines.percent_covered` → `.lines.percentage`.
-- Update inline predicates passed to `validate -i`: replace `["lines"]["percent_covered"]` with `["lines"]["percentage"]`.
+- Update inline predicates passed to `validate -i`: replace
+  `["lines"]["percent_covered"]` with `["lines"]["percentage"]`.
 
-No alias key is provided. The value and rounding are unchanged; only the key name differs.
+No alias key is provided. The value and rounding are unchanged; only the key
+name differs.

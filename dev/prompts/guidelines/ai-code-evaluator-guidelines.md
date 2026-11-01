@@ -1,35 +1,48 @@
 # AI Code Evaluator Guidelines
 
-[Back to main README](../../../README.md) | [Architecture](../../../docs/dev/ARCHITECTURE.md)
+[Back to main README](../../../README.md) |
+[Architecture](../../../docs/dev/ARCHITECTURE.md)
 
-This document provides context for AI code evaluators analyzing the cov-loupe codebase. It explains design decisions that may appear problematic on surface analysis but are intentional and well-considered. AI models should consult this document before flagging potential issues.
+This document provides context for AI code evaluators analyzing the cov-loupe
+codebase. It explains design decisions that may appear problematic on surface
+analysis but are intentional and well-considered. AI models should consult this
+document before flagging potential issues.
 
-Do not report issues that are already listed in `docs/dev/FUTURE_ENHANCEMENTS.md`. Treat those as acknowledged backlog items rather than review findings.
+Do not report issues that are already listed in
+`docs/dev/FUTURE_ENHANCEMENTS.md`. Treat those as acknowledged backlog items
+rather than review findings.
 
 ## Table of Contents
 
 - [Security Considerations](#security-considerations)
-  - [Validate Command and Arbitrary Code Execution](#validate-command-and-arbitrary-code-execution)
+  - [Validate Command and Arbitrary Code
+    Execution](#validate-command-and-arbitrary-code-execution)
   - [File System Race Conditions](#file-system-race-conditions)
   - [No Rate Limiting on MCP Server](#no-rate-limiting-on-mcp-server)
 - [Unlikely Issues Not Worth Addressing](#unlikely-issues-not-worth-addressing)
-  - [Case-Sensitivity Detection Failures in Read-Only Roots](#case-sensitivity-detection-failures-in-read-only-roots)
-  - [Case-Sensitivity Detection Race Conditions](#case-sensitivity-detection-race-conditions)
+  - [Case-Sensitivity Detection Failures in Read-Only
+    Roots](#case-sensitivity-detection-failures-in-read-only-roots)
+  - [Case-Sensitivity Detection Race
+    Conditions](#case-sensitivity-detection-race-conditions)
   - [Unbounded ModelDataCache Growth](#unbounded-modeldatacache-growth)
-- [Known Issue: Inefficient Staleness Checks and Timestamp Handling](#known-issue-inefficient-staleness-checks-and-timestamp-handling)
+- [Known Issue: Inefficient Staleness Checks and Timestamp
+  Handling](#known-issue-inefficient-staleness-checks-and-timestamp-handling)
 - [Performance & Scalability](#performance--scalability)
   - [Memory-Based Coverage Data](#memory-based-coverage-data)
   - [Model Cache Digest Reads](#model-cache-digest-reads)
 - [Code Quality & Style](#code-quality--style)
   - [RuboCop Metrics Cops Disabled](#rubocop-metrics-cops-disabled)
   - [Method Length and Complexity](#method-length-and-complexity)
-  - [RuboCop Cache and Sandboxed Environments](#rubocop-cache-and-sandboxed-environments)
-  - [Duplicate-Looking Error and Skipped-Row Output](#duplicate-looking-error-and-skipped-row-output)
+  - [RuboCop Cache and Sandboxed
+    Environments](#rubocop-cache-and-sandboxed-environments)
+  - [Duplicate-Looking Error and Skipped-Row
+    Output](#duplicate-looking-error-and-skipped-row-output)
 - [Testing & CI](#testing--ci)
   - [No Coverage Floor or CI Gate](#no-coverage-floor-or-ci-gate)
   - [Getting Project Coverage Data](#getting-project-coverage-data)
 - [Dependency Management](#dependency-management)
-  - [Documentation Dependencies: Version Ranges vs. Lock Files](#documentation-dependencies-version-ranges-vs-lock-files)
+  - [Documentation Dependencies: Version Ranges vs. Lock
+    Files](#documentation-dependencies-version-ranges-vs-lock-files)
 - [Documentation Structure](#documentation-structure)
   - [MkDocs Include-Markdown Stubs](#mkdocs-include-markdown-stubs)
 
@@ -37,62 +50,107 @@ Do not report issues that are already listed in `docs/dev/FUTURE_ENHANCEMENTS.md
 
 ### Validate Command and Arbitrary Code Execution
 
-The `validate` command accepts Ruby code (via `--inline` or from a file) and executes it to evaluate coverage policies. AI analysis tools often flag this as a security vulnerability.
+The `validate` command accepts Ruby code (via `--inline` or from a file) and
+executes it to evaluate coverage policies. AI analysis tools often flag this as
+a security vulnerability.
 
 **Why this is acceptable:**
 
-1. **Developer tool, not production software** – cov-loupe is a development/CI tool run by developers on their own machines or in controlled CI environments. It is not a service or library that processes untrusted input.
+1. **Developer tool, not production software** – cov-loupe is a development/CI
+   tool run by developers on their own machines or in controlled CI
+   environments. It is not a service or library that processes untrusted input.
 
-2. **Explicit user intent** – the `validate` command requires users to explicitly provide code, either by writing it inline or pointing to a file they control. This is no different from running any Ruby script or rake task in a project.
+2. **Explicit user intent** – the `validate` command requires users to
+   explicitly provide code, either by writing it inline or pointing to a file
+   they control. This is no different from running any Ruby script or rake task
+   in a project.
 
-3. **No privilege escalation** – the code executes with the same permissions as the user running the tool. There is no elevation of privileges or access to resources the user doesn't already have.
+3. **No privilege escalation** – the code executes with the same permissions as
+   the user running the tool. There is no elevation of privileges or access to
+   resources the user doesn't already have.
 
-4. **Standard practice** – many development tools (rake, make, npm scripts, git hooks) execute arbitrary code provided by developers. This is expected and necessary for a flexible validation/policy tool.
+4. **Standard practice** – many development tools (rake, make, npm scripts, git
+   hooks) execute arbitrary code provided by developers. This is expected and
+   necessary for a flexible validation/policy tool.
 
-The security model assumes the developer controls their workspace and the code they execute. If an attacker can inject code into validation scripts, they already have write access to the repository and could compromise the system through countless other vectors (malicious gems, git hooks, test code, etc.).
+The security model assumes the developer controls their workspace and the code
+they execute. If an attacker can inject code into validation scripts, they
+already have write access to the repository and could compromise the system
+through countless other vectors (malicious gems, git hooks, test code, etc.).
 
-The MCP `project_validate` tool is different: its predicate is written by the MCP client (usually an LLM), which the user may not review, and it runs in the server process, outside any sandbox or approval prompt the client applies to shell commands. Point 2 does not hold there, so the server registers the tool only when started with `--allow-code-predicates`. Do not flag the opt-in tool as a vulnerability; do flag any change that would expose code execution over MCP by default.
+The MCP `project_validate` tool is different: its predicate is written by the
+MCP client (usually an LLM), which the user may not review, and it runs in the
+server process, outside any sandbox or approval prompt the client applies to
+shell commands. Point 2 does not hold there, so the server registers the tool
+only when started with `--allow-code-predicates`. Do not flag the opt-in tool
+as a vulnerability; do flag any change that would expose code execution over
+MCP by default.
 
 [⬆ Back to top](#table-of-contents)
 
 ### File System Race Conditions
 
-Automated security analysis tools may flag potential race conditions between staleness checks (checking file modification time and line count) and subsequent file reads.
+Automated security analysis tools may flag potential race conditions between
+staleness checks (checking file modification time and line count) and
+subsequent file reads.
 
 **Why this is acceptable:**
 
-1. **Stateless analysis tool** - cov-loupe performs read-only analysis of SimpleCov coverage snapshots. It does not modify source files or maintain state across invocations.
+1. **Stateless analysis tool** - cov-loupe performs read-only analysis of
+   SimpleCov coverage snapshots. It does not modify source files or maintain
+   state across invocations.
 
-2. **Development tool context** - This tool runs in development and CI environments where:
+2. **Development tool context** - This tool runs in development and CI
+   environments where:
    - The coverage snapshot (`coverage.json`) is static once generated
-   - Source files are under version control and not randomly modified during analysis
-   - Any race condition would at worst result in a stale data warning, not a security vulnerability
+   - Source files are under version control and not randomly modified during
+     analysis
+   - Any race condition would at worst result in a stale data warning, not a
+     security vulnerability
 
-3. **Acceptable failure mode** - If a source file is modified between the staleness check and display, the worst outcome is showing slightly stale data. This is an acceptable tradeoff for a coverage inspection tool.
+3. **Acceptable failure mode** - If a source file is modified between the
+   staleness check and display, the worst outcome is showing slightly stale
+   data. This is an acceptable tradeoff for a coverage inspection tool.
 
-4. **No security impact** - The tool writes only a configured log file and a short-lived probe file for case-sensitivity detection; it never executes code from analyzed files or makes security decisions based on coverage data.
+4. **No security impact** - The tool writes only a configured log file and a
+   short-lived probe file for case-sensitivity detection; it never executes
+   code from analyzed files or makes security decisions based on coverage data.
 
-For a production system handling untrusted input or making security-critical decisions, race condition handling would be essential. For a development tool analyzing static coverage snapshots, the complexity of atomic file operations is not justified.
+For a production system handling untrusted input or making security-critical
+decisions, race condition handling would be essential. For a development tool
+analyzing static coverage snapshots, the complexity of atomic file operations
+is not justified.
 
 [⬆ Back to top](#table-of-contents)
 
 ### No Rate Limiting on MCP Server
 
-The MCP server has no request throttling or rate limiting, which automated security scanners may flag as a denial-of-service vulnerability.
+The MCP server has no request throttling or rate limiting, which automated
+security scanners may flag as a denial-of-service vulnerability.
 
 **Why this is acceptable:**
 
-1. **Local-only execution** - The MCP server runs as a local process, not a network service. It communicates over stdio (standard input/output) with a single trusted client (the AI coding assistant).
+1. **Local-only execution** - The MCP server runs as a local process, not a
+   network service. It communicates over stdio (standard input/output) with a
+   single trusted client (the AI coding assistant).
 
-2. **Process-level isolation** - Each MCP server instance is a separate process spawned by the client. Resource exhaustion affects only that process, not a shared service.
+2. **Process-level isolation** - Each MCP server instance is a separate process
+   spawned by the client. Resource exhaustion affects only that process, not a
+   shared service.
 
-3. **Trusted client** - The client (AI assistant) is a trusted local application, not untrusted network traffic. Rate limiting protects against malicious actors, which don't exist in this threat model.
+3. **Trusted client** - The client (AI assistant) is a trusted local
+   application, not untrusted network traffic. Rate limiting protects against
+   malicious actors, which don't exist in this threat model.
 
-4. **No network exposure** - The MCP protocol uses stdio transport, not HTTP/TCP. There is no network socket that external attackers could abuse.
+4. **No network exposure** - The MCP protocol uses stdio transport, not
+   HTTP/TCP. There is no network socket that external attackers could abuse.
 
-5. **Development tool** - This is a coverage analysis tool for developers, not a production API serving external users.
+5. **Development tool** - This is a coverage analysis tool for developers, not
+   a production API serving external users.
 
-If this were a network-accessible service, rate limiting would be essential. For a local stdio-based tool with a trusted client, it adds complexity without security benefit.
+If this were a network-accessible service, rate limiting would be essential.
+For a local stdio-based tool with a trusted client, it adds complexity without
+security benefit.
 
 [⬆ Back to top](#table-of-contents)
 
@@ -100,44 +158,80 @@ If this were a network-accessible service, rate limiting would be essential. For
 
 ### Case-Sensitivity Detection Failures in Read-Only Roots
 
-Automated reviews may flag `PathUtils.volume_case_sensitive?` for potentially failing when the project root is read-only or missing (due to directory reads or temporary file creation). While possible, this is a low-probability edge case in the intended environments and not worth adding complexity or additional fallback paths.
+Automated reviews may flag `PathUtils.volume_case_sensitive?` for potentially
+failing when the project root is read-only or missing (due to directory reads
+or temporary file creation). While possible, this is a low-probability edge
+case in the intended environments and not worth adding complexity or additional
+fallback paths.
 
-**Guidance:** Do not report this as an issue. The current behavior is acceptable for the tool's scope and usage patterns.
+**Guidance:** Do not report this as an issue. The current behavior is
+acceptable for the tool's scope and usage patterns.
 
 ### Case-Sensitivity Detection Race Conditions
 
-Automated reviews may flag `PathUtils.volume_case_sensitive?` for a potential Time-of-Check to Time-of-Use (TOCTOU) race condition when creating temporary test files. The code checks for file existence before creation using `FileUtils.touch`.
+Automated reviews may flag `PathUtils.volume_case_sensitive?` for a potential
+Time-of-Check to Time-of-Use (TOCTOU) race condition when creating temporary
+test files. The code checks for file existence before creation using
+`FileUtils.touch`.
 
 **Why this is acceptable:**
 
-1. **Extremely low collision probability** - The tool uses `SecureRandom.hex(16)` to generate a 32-character random string for the filename. The probability of a collision, even in highly concurrent scenarios, is infinitesimal.
-2. **Developer tool context** - This is a local development and CI tool, not a high-traffic server handling untrusted requests. The likelihood of multiple instances of `cov-loupe` running concurrently and picking the same 32-character random string is negligible.
-3. **Non-critical failure** - In the virtually impossible event of a collision, the worst case is a temporary file creation failure or an incorrect case-sensitivity detection for one run. This has no security or data integrity implications.
+1. **Extremely low collision probability** - The tool uses
+   `SecureRandom.hex(16)` to generate a 32-character random string for the
+   filename. The probability of a collision, even in highly concurrent
+   scenarios, is infinitesimal.
+2. **Developer tool context** - This is a local development and CI tool, not a
+   high-traffic server handling untrusted requests. The likelihood of multiple
+   instances of `cov-loupe` running concurrently and picking the same
+   32-character random string is negligible.
+3. **Non-critical failure** - In the virtually impossible event of a collision,
+   the worst case is a temporary file creation failure or an incorrect
+   case-sensitivity detection for one run. This has no security or data
+   integrity implications.
 
-**Guidance:** Do not flag this as a race condition or security defect. The use of `SecureRandom` makes this a non-issue in practice.
+**Guidance:** Do not flag this as a race condition or security defect. The use
+of `SecureRandom` makes this a non-issue in practice.
 
 ### Unbounded ModelDataCache Growth
 
-The `ModelDataCache` singleton stores coverage data (`ModelData` instances) keyed by coverage file path and project root without a size cap. In theory, a long-lived MCP server analyzing many different projects could accumulate entries. In practice:
+The `ModelDataCache` singleton stores coverage data (`ModelData` instances)
+keyed by coverage file path and project root without a size cap. In theory, a
+long-lived MCP server analyzing many different projects could accumulate
+entries. In practice:
 
-1. The cache is keyed by coverage file path and root, not by other model configuration
-2. Multiple models using the same coverage file and root share a single cache entry
+1. The cache is keyed by coverage file path and root, not by other model
+   configuration
+2. Multiple models using the same coverage file and root share a single cache
+   entry
 3. MCP servers are typically short-lived and used for a small set of projects
 4. The cache automatically evicts stale data when coverage files change
 
-Adding eviction logic (LRU, TTL, size limits) would add complexity without meaningful benefit for the tool's intended use case.
+Adding eviction logic (LRU, TTL, size limits) would add complexity without
+meaningful benefit for the tool's intended use case.
 
-**Guidance:** Do not report this as an issue. The current behavior is a reasonable tradeoff for simplicity.
+**Guidance:** Do not report this as an issue. The current behavior is a
+reasonable tradeoff for simplicity.
 
 [⬆ Back to top](#table-of-contents)
 
 ## Known Issue: Inefficient Staleness Checks and Timestamp Handling
 
-- **Description:** `coverage.json` carries one `meta.timestamp` for the merged result of all suites (read by `CovLoupe::CoverageJsonLoader`), and staleness checks reread each file to count lines (implemented in `CovLoupe::StalenessChecker`).  
-  **Impact:** Projects that re-run only some suites get false positives/negatives on freshness, and large repositories pay O(total lines) per query, making results unreliable and slow for larger code bases.  
+- **Description:** `coverage.json` carries one `meta.timestamp` for the merged
+  result of all suites (read by `CovLoupe::CoverageJsonLoader`), and staleness
+  checks reread each file to count lines (implemented in
+  `CovLoupe::StalenessChecker`).  
+  **Impact:** Projects that re-run only some suites get false
+  positives/negatives on freshness, and large repositories pay O(total lines)
+  per query, making results unreliable and slow for larger code bases.  
   **Urgency:** Medium.  
-  **Estimated Cost-to-Fix:** High (store per-suite/file metadata and cache line counts/mtimes).
-  **Rationale for Status Quo:** Fixing this requires a significant architectural overhaul to track per-file/per-suite metadata. Simple caching of file stats is insufficient because the primary use case involves active development where source files change frequently, invalidating caches. Given the high cost of a proper fix and the tool's focus on small-to-medium projects, the current O(N) check is an acceptable tradeoff.
+  **Estimated Cost-to-Fix:** High (store per-suite/file metadata and cache line
+  counts/mtimes). **Rationale for Status Quo:** Fixing this requires a
+  significant architectural overhaul to track per-file/per-suite metadata.
+  Simple caching of file stats is insufficient because the primary use case
+  involves active development where source files change frequently,
+  invalidating caches. Given the high cost of a proper fix and the tool's focus
+  on small-to-medium projects, the current O(N) check is an acceptable
+  tradeoff.
 
 [⬆ Back to top](#table-of-contents)
 
@@ -145,33 +239,55 @@ Adding eviction logic (LRU, TTL, size limits) would add complexity without meani
 
 ### Memory-Based Coverage Data
 
-cov-loupe loads the entire SimpleCov coverage file into memory for analysis. This means it is not designed to handle extremely large codebases that produce coverage data too large to fit in memory.
+cov-loupe loads the entire SimpleCov coverage file into memory for analysis.
+This means it is not designed to handle extremely large codebases that produce
+coverage data too large to fit in memory.
 
 **Why this is acceptable:**
 
-1. **Target use case** – cov-loupe is designed for small-to-medium sized Ruby projects. The typical SimpleCov coverage file for such projects is measured in megabytes, well within modern system capabilities.
+1. **Target use case** – cov-loupe is designed for small-to-medium sized Ruby
+   projects. The typical SimpleCov coverage file for such projects is measured
+   in megabytes, well within modern system capabilities.
 
-2. **SimpleCov's own limitations** – SimpleCov itself loads coverage data into memory. If SimpleCov can generate the coverage file, cov-loupe can analyze it.
+2. **SimpleCov's own limitations** – SimpleCov itself loads coverage data into
+   memory. If SimpleCov can generate the coverage file, cov-loupe can analyze
+   it.
 
-3. **Performance trade-off** – in-memory processing enables fast queries, rich data transformations, and a responsive CLI. Streaming or database-backed approaches would add significant complexity for marginal benefit in the target use case.
+3. **Performance trade-off** – in-memory processing enables fast queries, rich
+   data transformations, and a responsive CLI. Streaming or database-backed
+   approaches would add significant complexity for marginal benefit in the
+   target use case.
 
-4. **Practical upper bound** – even large Ruby projects (Rails, GitLab) generate coverage files in the tens of megabytes. Modern machines have gigabytes of RAM. The constraint is theoretical rather than practical for the intended audience.
+4. **Practical upper bound** – even large Ruby projects (Rails, GitLab)
+   generate coverage files in the tens of megabytes. Modern machines have
+   gigabytes of RAM. The constraint is theoretical rather than practical for
+   the intended audience.
 
-If a project grows large enough that coverage analysis becomes a memory bottleneck, it likely has deeper problems (test suite organization, monolith vs services architecture) that should be addressed at that level rather than by adding complexity to a coverage inspection tool.
+If a project grows large enough that coverage analysis becomes a memory
+bottleneck, it likely has deeper problems (test suite organization, monolith vs
+services architecture) that should be addressed at that level rather than by
+adding complexity to a coverage inspection tool.
 
 [⬆ Back to top](#table-of-contents)
 
 ### Model Cache Digest Reads
 
-The MCP model cache computes an MD5 digest of the coverage file on each fetch. This can look like unnecessary file I/O, but it is intentional.
+The MCP model cache computes an MD5 digest of the coverage file on each fetch.
+This can look like unnecessary file I/O, but it is intentional.
 
 **Why this is acceptable:**
 
-1. **Correctness over metadata shortcuts** – mtime/size/inode can miss changes (e.g., clock skew, restored files, or filesystem quirks). Hashing is the only reliable way to guarantee the content is unchanged.
-2. **Cheaper than parsing** – reading and hashing the file is far faster than parsing JSON into memory, so the cache still provides meaningful savings.
-3. **Shared by every mode** – the CLI, the library, and the MCP server all read through `ModelDataCache`; avoiding a full parse matters most for repeated MCP tool calls.
+1. **Correctness over metadata shortcuts** – mtime/size/inode can miss changes
+   (e.g., clock skew, restored files, or filesystem quirks). Hashing is the
+   only reliable way to guarantee the content is unchanged.
+2. **Cheaper than parsing** – reading and hashing the file is far faster than
+   parsing JSON into memory, so the cache still provides meaningful savings.
+3. **Shared by every mode** – the CLI, the library, and the MCP server all read
+   through `ModelDataCache`; avoiding a full parse matters most for repeated
+   MCP tool calls.
 
-**Guidance:** Do not flag this as a performance defect; it is a deliberate tradeoff for correctness.
+**Guidance:** Do not flag this as a performance defect; it is a deliberate
+tradeoff for correctness.
 
 [⬆ Back to top](#table-of-contents)
 
@@ -179,51 +295,91 @@ The MCP model cache computes an MD5 digest of the coverage file on each fetch. T
 
 ### RuboCop Metrics Cops Disabled
 
-All RuboCop Metrics cops (AbcSize, BlockLength, ClassLength, CyclomaticComplexity, MethodLength, ModuleLength, ParameterLists, PerceivedComplexity, BlockNesting) are intentionally disabled in `.rubocop-shared.yml`, which `.rubocop.yml` inherits.
+All RuboCop Metrics cops (AbcSize, BlockLength, ClassLength,
+CyclomaticComplexity, MethodLength, ModuleLength, ParameterLists,
+PerceivedComplexity, BlockNesting) are intentionally disabled in
+`.rubocop-shared.yml`, which `.rubocop.yml` inherits.
 
 **Why this is acceptable:**
 
-1. **Arbitrary thresholds don't account for domain complexity** – Some problems are inherently complex. SimpleCov coverage analysis involves edge cases (staleness checking, path resolution, coverage-file validation) that require comprehensive logic. Artificial method splitting can scatter cohesive logic and reduce clarity.
+1. **Arbitrary thresholds don't account for domain complexity** – Some problems
+   are inherently complex. SimpleCov coverage analysis involves edge cases
+   (staleness checking, path resolution, coverage-file validation) that require
+   comprehensive logic. Artificial method splitting can scatter cohesive logic
+   and reduce clarity.
 
-2. **Comprehensive error handling adds necessary lines** – This project prioritizes reliability through extensive error handling with context-rich messages. Error handling code is inherently verbose but critical for user experience across three modes (CLI, library, MCP).
+2. **Comprehensive error handling adds necessary lines** – This project
+   prioritizes reliability through extensive error handling with context-rich
+   messages. Error handling code is inherently verbose but critical for user
+   experience across three modes (CLI, library, MCP).
 
 3. **Quality maintained through other means** – The codebase achieves:
-   - High line coverage — check current numbers with `cov-loupe totals` rather than trusting a hardcoded figure here, since they shift with every commit
-   - Branch coverage is measured by SimpleCov (`spec/spec_helper.rb`); `cov-loupe` itself doesn't track branches, so check `coverage/coverage.json`'s `meta.branch_coverage` / per-file `branches` data or the HTML report directly — see [Migrating to v4](../../../docs/user/migrations/MIGRATING_TO_V4.md#removed-branch-only-coverage-support) for why
-   - Clean RuboCop run (all non-Metrics cops) — check with `bundle exec rubocop` rather than trusting a hardcoded count here, since it shifts with every commit
+   - High line coverage — check current numbers with `cov-loupe totals` rather
+     than trusting a hardcoded figure here, since they shift with every commit
+   - Branch coverage is measured by SimpleCov (`spec/spec_helper.rb`);
+     `cov-loupe` itself doesn't track branches, so check
+     `coverage/coverage.json`'s `meta.branch_coverage` / per-file `branches`
+     data or the HTML report directly — see [Migrating to
+     v4](../../../docs/user/migrations/MIGRATING_TO_V4.md#removed-branch-only-coverage-support)
+     for why
+   - Clean RuboCop run (all non-Metrics cops) — check with
+     `bundle exec rubocop` rather than trusting a hardcoded count here, since
+     it shifts with every commit
    - Comprehensive code review
    - Clear inline documentation for complex logic
    - Voluntary file size restraint (files are generally kept short)
 
-4. **Readability over arbitrary limits** – The project values clear, cohesive methods over arbitrary line limits. When a method's length accurately reflects its necessary complexity, splitting it just to meet a metric harms rather than helps. Key examples:
-   - `StalenessChecker#compute_file_staleness_details` handles complex edge cases with clear documentation
-   - `StalenessMessageFormatter#format_project_details` builds error messages through simple sequential operations
+4. **Readability over arbitrary limits** – The project values clear, cohesive
+   methods over arbitrary line limits. When a method's length accurately
+   reflects its necessary complexity, splitting it just to meet a metric harms
+   rather than helps. Key examples:
+   - `StalenessChecker#compute_file_staleness_details` handles complex edge
+     cases with clear documentation
+   - `StalenessMessageFormatter#format_project_details` builds error messages
+     through simple sequential operations
 
-**Evidence:** Manual review shows appropriate complexity for domain logic, with no god objects or unclear methods.
+**Evidence:** Manual review shows appropriate complexity for domain logic, with
+no god objects or unclear methods.
 
 [⬆ Back to top](#table-of-contents)
 
 ### Method Length and Complexity
 
-AI code analysis tools may flag methods as "too long" based on line count alone. However, **line count is not always a proxy for complexity**. Many long methods in this codebase are intentionally structured for clarity and maintainability.
+AI code analysis tools may flag methods as "too long" based on line count
+alone. However, **line count is not always a proxy for complexity**. Many long
+methods in this codebase are intentionally structured for clarity and
+maintainability.
 
 **When long methods are acceptable:**
 
-1. **Sequential data structure building** – Methods that build arrays or hashes through sequential operations are highly readable despite line count:
-   - `StalenessMessageFormatter#format_project_details` (in `lib/cov_loupe/staleness/staleness_message_formatter.rb`) – builds error message parts in an array through simple, similar operations
+1. **Sequential data structure building** – Methods that build arrays or hashes
+   through sequential operations are highly readable despite line count:
+   - `StalenessMessageFormatter#format_project_details` (in
+     `lib/cov_loupe/staleness/staleness_message_formatter.rb`) – builds error
+     message parts in an array through simple, similar operations
    - This pattern is far clearer than extracting fragmented helper methods
 
-2. **Comprehensive conditional handling** – Methods with extensive if-elsif-else chains that handle different cases clearly:
-   - `ErrorHandler#convert_standard_error` (in `lib/cov_loupe/errors/error_handler.rb`) – converts different error types with appropriate context
-   - Each branch is simple; complexity lies in coverage, not algorithmic difficulty
+2. **Comprehensive conditional handling** – Methods with extensive
+   if-elsif-else chains that handle different cases clearly:
+   - `ErrorHandler#convert_standard_error` (in
+     `lib/cov_loupe/errors/error_handler.rb`) – converts different error types
+     with appropriate context
+   - Each branch is simple; complexity lies in coverage, not algorithmic
+     difficulty
 
-3. **Well-documented edge case handling** – Methods handling multiple edge cases with clear inline documentation:
-   - `StalenessChecker#compute_file_staleness_details` (in `lib/cov_loupe/staleness/staleness_checker.rb`) – handles file existence, timestamps, and line count mismatches with inline explanations
+3. **Well-documented edge case handling** – Methods handling multiple edge
+   cases with clear inline documentation:
+   - `StalenessChecker#compute_file_staleness_details` (in
+     `lib/cov_loupe/staleness/staleness_checker.rb`) – handles file existence,
+     timestamps, and line count mismatches with inline explanations
    - Comments clarify intent; the logic itself remains straightforward
 
-4. **Coordinated multi-step operations** – Methods that orchestrate several well-defined steps in a logical flow:
-   - `CoverageModel#list` (`lib/cov_loupe/model/model.rb`) was shortened substantially by extracting helper methods
-   - This demonstrates that extraction makes sense when it improves clarity, not to meet arbitrary line limits
+4. **Coordinated multi-step operations** – Methods that orchestrate several
+   well-defined steps in a logical flow:
+   - `CoverageModel#list` (`lib/cov_loupe/model/model.rb`) was shortened
+     substantially by extracting helper methods
+   - This demonstrates that extraction makes sense when it improves clarity,
+     not to meet arbitrary line limits
 
 **When to refactor:**
 
@@ -238,16 +394,19 @@ Long methods warrant refactoring when they exhibit:
 Before flagging a long method, assess:
 - **What is it doing?** One cohesive thing, or mixing concerns?
 - **Would splitting improve readability?** Or just scatter related logic?
-- **What causes the length?** Data structures, error handling, or algorithmic complexity?
+- **What causes the length?** Data structures, error handling, or algorithmic
+  complexity?
 - **Is it well-documented?** Inline comments can make complex logic clear.
 
-Method length is a heuristic, not a rule. Judge methods by clarity, cohesion, and testability rather than line count alone.
+Method length is a heuristic, not a rule. Judge methods by clarity, cohesion,
+and testability rather than line count alone.
 
 [⬆ Back to top](#table-of-contents)
 
 ### RuboCop Cache and Sandboxed Environments
 
-RuboCop may crash in sandboxed environments (such as AI coding assistants with file system restrictions) when attempting to write cache files:
+RuboCop may crash in sandboxed environments (such as AI coding assistants with
+file system restrictions) when attempting to write cache files:
 
 ```
 Read-only file system @ rb_sysopen
@@ -257,7 +416,10 @@ Read-only file system @ rb_sysopen
 
 **Why this happens:**
 
-RuboCop runs in parallel mode by default, forking worker processes via the `parallel` gem. Each worker attempts to cache analysis results to `~/.cache/rubocop_cache/`. When sandbox restrictions prevent writes outside the project directory, the cache write fails and crashes the analysis.
+RuboCop runs in parallel mode by default, forking worker processes via the
+`parallel` gem. Each worker attempts to cache analysis results to
+`~/.cache/rubocop_cache/`. When sandbox restrictions prevent writes outside the
+project directory, the cache write fails and crashes the analysis.
 
 **Why this is not a code quality issue:**
 
@@ -266,23 +428,45 @@ run's results.
 
 **Workaround:**
 
-Use `bundle exec rubocop --cache false` in sandboxed environments. This adds approximately 5 seconds to execution time (3s → 8s) but ensures successful analysis. Cache performance benefits are modest for this project size, making the tradeoff acceptable.
+Use `bundle exec rubocop --cache false` in sandboxed environments. This adds
+approximately 5 seconds to execution time (3s → 8s) but ensures successful
+analysis. Cache performance benefits are modest for this project size, making
+the tradeoff acceptable.
 
 **Why caching is not disabled by default:**
 
-The 3-second speedup is valuable for frequent local development. Developers in non-sandboxed environments (the common case) benefit from faster linting. The issue only affects specific sandboxed AI tools and CI environments, which can use the `--cache false` flag when needed.
+The 3-second speedup is valuable for frequent local development. Developers in
+non-sandboxed environments (the common case) benefit from faster linting. The
+issue only affects specific sandboxed AI tools and CI environments, which can
+use the `--cache false` flag when needed.
 
 [⬆ Back to top](#table-of-contents)
 
 ### Duplicate-Looking Error and Skipped-Row Output
 
-Reviewers may flag two places where the same information appears to be printed twice.
+Reviewers may flag two places where the same information appears to be printed
+twice.
 
-**1. CLI user-facing errors (`CoverageCLI#handle_user_facing_error`).** With a log file target, `error_handler.handle_error` writes a log line (`Error in CLI: Class: message`) to the file, and the friendly message is printed to stderr with `warn`. These are different outputs for different audiences: the log line is a developer artifact controlled by `--error-mode` (`off` suppresses it, `debug` adds backtraces), while the friendly message is the user-facing text. With the default `stderr` target, the built-in handler skips the log line so the error appears only once; in debug mode the CLI prints the full backtrace itself. A custom error handler is always called.
+**1. CLI user-facing errors (`CoverageCLI#handle_user_facing_error`).** With a
+log file target, `error_handler.handle_error` writes a log line
+(`Error in CLI: Class: message`) to the file, and the friendly message is
+printed to stderr with `warn`. These are different outputs for different
+audiences: the log line is a developer artifact controlled by `--error-mode`
+(`off` suppresses it, `debug` adds backtraces), while the friendly message is
+the user-facing text. With the default `stderr` target, the built-in handler
+skips the log line so the error appears only once; in debug mode the CLI prints
+the full backtrace itself. A custom error handler is always called.
 
-**2. MCP `project_coverage` table output.** Skipped rows appear both in the "Files excluded from coverage" summary (as "Files skipped due to errors") and in the standalone "WARNING: N coverage rows skipped due to errors" block. The tool's specs assert both strings, so removing either changes the contract seen by MCP clients. The CLI table mode was deduplicated; the MCP output is deliberately left as is. The formatting code itself is not duplicated: both paths use `CovLoupe::Formatters::CoverageWarnings`.
+**2. MCP `project_coverage` table output.** Skipped rows appear both in the
+"Files excluded from coverage" summary (as "Files skipped due to errors") and
+in the standalone "WARNING: N coverage rows skipped due to errors" block. The
+tool's specs assert both strings, so removing either changes the contract seen
+by MCP clients. The CLI table mode was deduplicated; the MCP output is
+deliberately left as is. The formatting code itself is not duplicated: both
+paths use `CovLoupe::Formatters::CoverageWarnings`.
 
-**Guidance:** Do not report either as a defect. Changing them is a deliberate output-contract change, not a bug fix.
+**Guidance:** Do not report either as a defect. Changing them is a deliberate
+output-contract change, not a bug fix.
 
 [⬆ Back to top](#table-of-contents)
 
@@ -290,29 +474,63 @@ Reviewers may flag two places where the same information appears to be printed t
 
 ### No Coverage Floor or CI Gate
 
-Neither `spec/spec_helper.rb` nor `.github/workflows/test.yml` enforces a hard minimum-coverage gate: `SimpleCov.minimum_coverage` is never called, and the Codecov upload step (`.github/workflows/test.yml`) sets `fail_ci_if_error: false`. AI reviewers may flag this as a missing safeguard against coverage regressions.
+Neither `spec/spec_helper.rb` nor `.github/workflows/test.yml` enforces a hard
+minimum-coverage gate: `SimpleCov.minimum_coverage` is never called, and the
+Codecov upload step (`.github/workflows/test.yml`) sets
+`fail_ci_if_error: false`. AI reviewers may flag this as a missing safeguard
+against coverage regressions.
 
 **Why this is intentional:**
 
-1. **Self-reporting already exists** – `spec_helper.rb`'s `SimpleCov.at_exit` hook calls `CovLoupe::CoverageReporter.report(threshold: 80, count: 5)` and prints the result on every run, so any file dropping below 80% coverage is surfaced locally and in CI. This is deliberately a report, not a hard fail.
+1. **Self-reporting already exists** – `spec_helper.rb`'s `SimpleCov.at_exit`
+   hook calls `CovLoupe::CoverageReporter.report(threshold: 80, count: 5)` and
+   prints the result on every run, so any file dropping below 80% coverage is
+   surfaced locally and in CI. This is deliberately a report, not a hard fail.
 
-2. **100% line coverage is the real standard, and it's visible** – the project aims for 100% line coverage on every tracked file (check the current figure with `cov-loupe totals`), so any regression is a visible drop from 100%, not a slide within a tolerated band. A hard gate would mostly duplicate what reviewers already see in the PR diff and Codecov's PR comment.
+2. **100% line coverage is the real standard, and it's visible** – the project
+   aims for 100% line coverage on every tracked file (check the current figure
+   with `cov-loupe totals`), so any regression is a visible drop from 100%, not
+   a slide within a tolerated band. A hard gate would mostly duplicate what
+   reviewers already see in the PR diff and Codecov's PR comment.
 
-3. **`fail_ci_if_error: false` guards the upload step, not coverage regressions** – it prevents a transient Codecov outage, network hiccup, or token issue from failing the entire test matrix (4 Ruby versions on Linux, plus one each on Windows and macOS). That would be a false-positive CI failure, not a caught coverage regression.
+3. **`fail_ci_if_error: false` guards the upload step, not coverage
+   regressions** – it prevents a transient Codecov outage, network hiccup, or
+   token issue from failing the entire test matrix (4 Ruby versions on Linux,
+   plus one each on Windows and macOS). That would be a false-positive CI
+   failure, not a caught coverage regression.
 
-4. **A hard threshold is brittle at a 100% baseline** – with 100% as the target, `SimpleCov.minimum_coverage` would have to be set to 100, failing the build on any single untested line, including lines temporarily added mid-refactor within a PR. Reviewer judgment tolerates in-progress states that a hard gate would block outright.
+4. **A hard threshold is brittle at a 100% baseline** – with 100% as the
+   target, `SimpleCov.minimum_coverage` would have to be set to 100, failing
+   the build on any single untested line, including lines temporarily added
+   mid-refactor within a PR. Reviewer judgment tolerates in-progress states
+   that a hard gate would block outright.
 
-5. **Enforcement tooling exists for cov-loupe's users, not turned on here** – the `validate` command exists precisely so consumers of cov-loupe can build their own coverage gates. This project intentionally relies on reviewer discipline plus the existing SimpleCov/Codecov visibility rather than self-applying a hard gate in its own CI.
+5. **Enforcement tooling exists for cov-loupe's users, not turned on here** –
+   the `validate` command exists precisely so consumers of cov-loupe can build
+   their own coverage gates. This project intentionally relies on reviewer
+   discipline plus the existing SimpleCov/Codecov visibility rather than
+   self-applying a hard gate in its own CI.
 
-**Guidance:** Do not report the absence of `SimpleCov.minimum_coverage` or `fail_ci_if_error: false` as a missing safeguard. Both are deliberate; reviewer discipline plus the existing report step and Codecov visibility are the intended enforcement mechanism.
+**Guidance:** Do not report the absence of `SimpleCov.minimum_coverage` or
+`fail_ci_if_error: false` as a missing safeguard. Both are deliberate; reviewer
+discipline plus the existing report step and Codecov visibility are the
+intended enforcement mechanism.
 
 [⬆ Back to top](#table-of-contents)
 
 ### Getting Project Coverage Data
 
-The `coverage.json` files tracked in git (`spec/fixtures/**`, `docs/fixtures/**`) are test fixtures and say nothing about this project's own coverage. The project's real data is `coverage/coverage.json`, which is gitignored and generated by running the suite.
+The `coverage.json` files tracked in git (`spec/fixtures/**`,
+`docs/fixtures/**`) are test fixtures and say nothing about this project's own
+coverage. The project's real data is `coverage/coverage.json`, which is
+gitignored and generated by running the suite.
 
-**Guidance:** To report this project's coverage, run `bundle exec rspec` and then query `coverage/coverage.json` with cov-loupe (for example `bundle exec exe/cov-loupe totals`). Do not decline to report coverage on the grounds that the only tracked coverage files are fixtures. If the suite cannot be run in your environment, say so explicitly instead of reporting fixture data as project coverage.
+**Guidance:** To report this project's coverage, run `bundle exec rspec` and
+then query `coverage/coverage.json` with cov-loupe (for example
+`bundle exec exe/cov-loupe totals`). Do not decline to report coverage on the
+grounds that the only tracked coverage files are fixtures. If the suite cannot
+be run in your environment, say so explicitly instead of reporting fixture data
+as project coverage.
 
 [⬆ Back to top](#table-of-contents)
 
@@ -320,31 +538,47 @@ The `coverage.json` files tracked in git (`spec/fixtures/**`, `docs/fixtures/**`
 
 ### Documentation Dependencies: Version Ranges vs. Lock Files
 
-The project uses **both** `requirements.txt` (version ranges) and `requirements-lock.txt` (exact pins) for Python documentation build dependencies.
+The project uses **both** `requirements.txt` (version ranges) and
+`requirements-lock.txt` (exact pins) for Python documentation build
+dependencies.
 
 **Why version ranges are used in `requirements.txt`:**
 
-1. **Optional dependencies** - These Python packages are only needed for building documentation. They are NOT part of the Ruby gem or required for using cov-loupe as an MCP server.
+1. **Optional dependencies** - These Python packages are only needed for
+   building documentation. They are NOT part of the Ruby gem or required for
+   using cov-loupe as an MCP server.
 
-2. **Library compatibility** - Contributors may be working on multiple projects with different documentation tooling. Flexible ranges allow them to use compatible versions already in their environment without conflicts.
+2. **Library compatibility** - Contributors may be working on multiple projects
+   with different documentation tooling. Flexible ranges allow them to use
+   compatible versions already in their environment without conflicts.
 
-3. **Development flexibility** - Local documentation builds should work with any compatible version. Overly strict pinning would create unnecessary friction for contributors.
+3. **Development flexibility** - Local documentation builds should work with
+   any compatible version. Overly strict pinning would create unnecessary
+   friction for contributors.
 
 **Why lock files are used in CI (`requirements-lock.txt`):**
 
-1. **Reproducible builds** - CI documentation builds must be deterministic. The same commit should always produce the same documentation output.
+1. **Reproducible builds** - CI documentation builds must be deterministic. The
+   same commit should always produce the same documentation output.
 
-2. **Prevent drift** - Without locked versions, a new minor/patch release could silently change docs rendering, break the build, or introduce bugs.
+2. **Prevent drift** - Without locked versions, a new minor/patch release could
+   silently change docs rendering, break the build, or introduce bugs.
 
-3. **Standard practice** - This is the recommended pattern in Python: flexible ranges for development (`requirements.txt`/`requirements.in`), exact pins for deployment (`requirements-lock.txt`).
+3. **Standard practice** - This is the recommended pattern in Python: flexible
+   ranges for development (`requirements.txt`/`requirements.in`), exact pins
+   for deployment (`requirements-lock.txt`).
 
 **How it works:**
 
-- `bin/set-up-python-for-doc-server` and CI install `requirements-lock.txt` (reproducible)
-- `bin/update-docs-deps` resolves the ranges in `requirements.txt` and regenerates the lock file (flexible)
-- Users of the gem/MCP server are unaffected (these are Python-only doc dependencies)
+- `bin/set-up-python-for-doc-server` and CI install `requirements-lock.txt`
+  (reproducible)
+- `bin/update-docs-deps` resolves the ranges in `requirements.txt` and
+  regenerates the lock file (flexible)
+- Users of the gem/MCP server are unaffected (these are Python-only doc
+  dependencies)
 
-This dual-file approach is intentional and follows Python packaging best practices for applications with optional documentation tooling.
+This dual-file approach is intentional and follows Python packaging best
+practices for applications with optional documentation tooling.
 
 [⬆ Back to top](#table-of-contents)
 
@@ -352,32 +586,48 @@ This dual-file approach is intentional and follows Python packaging best practic
 
 ### MkDocs Include-Markdown Stubs
 
-Several files under `docs/` (such as `docs/contributing.md`, `docs/code_of_conduct.md`, `docs/license.md`, `docs/release_notes.md`, and `docs/index.md`) appear to be stubs of a few dozen bytes when examined directly. AI code analysis tools often flag these as missing or incomplete documentation.
+Several files under `docs/` (such as `docs/contributing.md`,
+`docs/code_of_conduct.md`, `docs/license.md`, `docs/release_notes.md`, and
+`docs/index.md`) appear to be stubs of a few dozen bytes when examined
+directly. AI code analysis tools often flag these as missing or incomplete
+documentation.
 
 **Why this is not an issue:**
 
-These files use MkDocs' `include-markdown` plugin to pull in comprehensive documentation from the repository root:
+These files use MkDocs' `include-markdown` plugin to pull in comprehensive
+documentation from the repository root:
 
 - `docs/contributing.md` → `{% include-markdown "../CONTRIBUTING.md" %}`
 - `docs/code_of_conduct.md` → `{% include-markdown "../CODE_OF_CONDUCT.md" %}`
-- `docs/license.md`, `docs/release_notes.md`, `docs/index.md`, and the two `docs/examples/` pages include `LICENSE`, `RELEASE_NOTES.md`, `README.md`, and the example READMEs the same way
+- `docs/license.md`, `docs/release_notes.md`, `docs/index.md`, and the two
+  `docs/examples/` pages include `LICENSE`, `RELEASE_NOTES.md`, `README.md`,
+  and the example READMEs the same way
 
 The actual comprehensive documentation exists at:
-- `CONTRIBUTING.md` - Full contributing guide with PR workflow, development setup, testing requirements, and release process
+- `CONTRIBUTING.md` - Full contributing guide with PR workflow, development
+  setup, testing requirements, and release process
 - `CODE_OF_CONDUCT.md` - Complete Contributor Covenant v2.1
 
 **Why this pattern is used:**
 
-1. **Single source of truth** - The actual content lives in standard locations (`CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` at repository root) where GitHub, developers, and tools expect to find them.
+1. **Single source of truth** - The actual content lives in standard locations
+   (`CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` at repository root) where
+   GitHub, developers, and tools expect to find them.
 
-2. **Documentation site integration** - MkDocs automatically includes these files in the generated documentation website without duplication or manual synchronization.
+2. **Documentation site integration** - MkDocs automatically includes these
+   files in the generated documentation website without duplication or manual
+   synchronization.
 
-3. **Standard practice** - This is the recommended approach in the MkDocs documentation for including existing project files in the documentation site.
+3. **Standard practice** - This is the recommended approach in the MkDocs
+   documentation for including existing project files in the documentation
+   site.
 
-AI tools analyzing file sizes directly will see stubs of a few dozen bytes, but the documentation is complete and properly structured.
+AI tools analyzing file sizes directly will see stubs of a few dozen bytes, but
+the documentation is complete and properly structured.
 
 [⬆ Back to top](#table-of-contents)
 
 ---
 
-*This document should be updated whenever design decisions are made that might appear problematic to automated analysis but are intentional and defensible.*
+*This document should be updated whenever design decisions are made that might
+appear problematic to automated analysis but are intentional and defensible.*
