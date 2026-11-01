@@ -3,9 +3,8 @@
 /.gemini/
 /opencode.json
 
-# Directory for untracked AI reports, of which there may be many
+# Directories for local AI reports (untracked/ ignores its own contents via untracked/.gitignore)
 /agent-council-reports/
-/untracked/
 /reports/
 
 # Bundler

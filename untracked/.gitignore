@@ -1,0 +1,4 @@
+# Output directory for reports written by agent prompts (see AGENTS.md).
+# Everything here is ignored except this file, which keeps the directory in the repo.
+*
+!.gitignore
