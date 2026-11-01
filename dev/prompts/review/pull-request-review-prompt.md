@@ -1,60 +1,114 @@
-# Pull Request Review
+# Review Pull Request
 
-Review the referenced pull request and report on its quality. Review only; do
-not edit files, push, comment on the PR, approve, or merge.
+Review the GitHub pull request for the branch checked out in the current
+working directory. Report only issues needing addressing.
 
-## Preconditions
+The user has checked out the PR's head branch (for example with
+`gh pr checkout <number>`) before starting this run. Use the local checkout
+for reading and searching code; use the `gh` CLI only for what exists only
+on GitHub.
 
-1. If you are not in the project root, inform the user, state your current
-   working directory, and wait for confirmation before proceeding.
-2. If no pull request (number, URL, or branch) was given, ask for one.
-3. Read [AGENTS.md](../../../AGENTS.md) and
-   [ai-code-evaluator-guidelines.md](../guidelines/ai-code-evaluator-guidelines.md).
-   Do not report the intentional design decisions the guidelines describe.
+## Gathering the PR
 
-## Gather Context
+- Run `gh pr view --json number,title,body,author,baseRefName,headRefName,headRefOid,files,reviews,reviewDecision,statusCheckRollup`
+  for the PR's metadata and review summaries, and `gh pr view --comments` for
+  its discussion. Read inline review comments with
+  `gh api --paginate repos/{owner}/{repo}/pulls/<number>/comments`; without
+  `--paginate` only the first 30 are returned. To tell resolved threads from
+  open ones, query `reviewThreads { isResolved comments { ... } }` with
+  `gh api graphql`; the REST endpoint does not report resolution.
+- Take the PR's changes from `gh pr diff`; it is authoritative even if the
+  local base branch is stale.
+- For failing checks, use `gh pr checks` and `gh run view <run-id> --log-failed`.
+- Compare `git rev-parse HEAD` with `headRefOid`. If they differ, or there
+  are uncommitted changes, say so at the top of the report: local files may
+  not match the PR.
+- If `gh` is missing, unauthenticated, or finds no PR for this branch, don't
+  review: report only that, with the command and its error. Reach GitHub
+  only through `gh`: no `curl`, `wget`, or other HTTP client against the API
+  or web pages, which unauthenticated allows only 60 requests an hour,
+  shared by all concurrent agents.
+- Do not run `gh pr checkout`, `git fetch`, `git pull`, or anything else that
+  changes git state, and do not post comments, reviews, or approvals.
 
-- Read the PR title, description, linked issues, and existing review comments
-  to establish its stated purpose.
-- Get the full diff against the PR's base branch (for example
-  `git --no-pager diff origin/main...<pr-branch>`), not just the latest commit.
-- Read enough of the surrounding code to judge each change in context.
-- Where feasible, check out the branch and run `bundle exec rubocop` and the
-  specs touching the changed code. `bundle exec rspec` rewrites
-  `coverage/coverage.json`; do not run it if other agents may be reading that
-  file. Say which checks you ran and which you skipped.
+## Evaluation
 
-## Evaluate
+Evaluate whether the changes are:
 
-- **Correctness:** Does it do what it claims, including edge cases and error
-  paths? Look for regressions in the CLI, MCP server, and library API, which
-  share one coverage model.
-- **Scope:** Does it change anything beyond its stated purpose? Unrelated
-  changes should be split out.
-- **Tests:** Do specs cover the new behavior and the failure modes, asserting
-  behavior rather than merely executing code? Specs belong in
-  `spec/**/*_spec.rb` mirroring the `lib/` path. Use cov-loupe (MCP server
-  preferred, CLI otherwise) for coverage of changed files.
-- **Compatibility:** Does it change public CLI options, MCP tools or
-  arguments, payload shapes, or `@api public` Ruby API? If so, is the change
-  noted in `RELEASE_NOTES.md` (under `### Breaking` if incompatible), and is
-  `SCHEMA_VERSION` bumped for incompatible payload changes?
-- **Documentation:** Are user and developer docs updated where behavior
-  changed? Are new classes and modules tagged `@api public` or `@api private`?
-- **Simplicity:** Is this the least complex solution? Is there duplication that
-  an existing helper already covers?
-- **Consistency and idiom:** Does it match the existing architecture, naming,
-  and Ruby idioms (Enumerable methods, early returns, clear names)?
+- Correct and complete, including edge cases and error paths.
+- As simple as practical.
+- Consistent with the PR's stated intent, with no unrelated changes.
+- Consistent with the code base's existing architecture, naming, and idioms.
+- Accompanied by appropriate tests and documentation updates.
+- Compatible: changes to public interfaces (CLI options, APIs, output
+  formats, configuration) are intended, and incompatible ones are recorded
+  where the project records them (changelog, release notes, version).
+
+The PR description may describe an implementation strategy rather than the
+underlying problem. Infer the intended outcome and assess whether a better
+solution would be appropriate.
+
+Also report:
+
+- Review comments that remain unaddressed by the current head.
+- Failing CI checks, with your assessment of whether this PR causes them.
+
+## Scope
+
+- Report only issues introduced by the PR. Do not report preexisting issues
+  unless the PR introduces or worsens them.
+- Don't review or report on files that git ignores, or on
+  `agent-council-reports/` (agent-council's output, which may not be
+  ignored).
+- You may suggest improvements to the PR title and description.
+- Follow the Project-Specific Instructions at the end, if any; they override
+  these general rules where they conflict.
+
+## Verification
+
+Investigate thoroughly before reaching conclusions.
+
+You are permitted and encouraged to inspect files, run Git commands, execute
+relevant tests and linters, and reproduce suspected defects.
+
+**DO NOT EDIT ANY CODE OR TRACKED FILES.**
+
+Tests and linters that generate temporary files or coverage data are
+permitted (builds are not); direct their output to your scratch
+directory where the tool allows it. Avoid unnecessary modifications to the
+working tree.
 
 ## Report
 
 Start with a one-line verdict: ready to merge, needs minor changes, or needs
 significant changes.
 
-Then list findings, most severe first. For each, give the `path:line`, what is
-wrong, why it matters, and a concrete fix. Mark each as blocking or
-non-blocking, and as verified (reproduced or confirmed in the code) or
-inferred.
+Then list the issues, most severe first, each marked blocking or
+non-blocking. For each issue, identify the affected file and location,
+explain the problem and its impact, and propose a fix. Say how you verified
+it (for example, a reproduction or a test run), or that it is unverified.
 
-Skip sections with nothing to report. Do not pad the review with praise or with
-alternatives that are no better than what the PR does.
+If you find no issues, say so, and mention any limits of the review.
+
+## Project-Specific Instructions
+
+Replace or delete this section when reusing this prompt in another project.
+
+- Read [AGENTS.md](../../../AGENTS.md) and
+  [ai-code-evaluator-guidelines.md](../guidelines/ai-code-evaluator-guidelines.md)
+  first, and do not report the intentional design decisions they describe.
+- The CLI, MCP server, and Ruby library share one coverage model; check that
+  a change behaves correctly in every mode it reaches.
+- Compatibility: public CLI options, MCP tools and arguments, payload shapes,
+  and `@api public` Ruby API changes belong in `RELEASE_NOTES.md`, under
+  `### Breaking` if incompatible. An incompatible payload change also needs a
+  `SCHEMA_VERSION` bump. New classes and modules need an `@api public` or
+  `@api private` tag.
+- Specs belong in `spec/**/*_spec.rb` mirroring the `lib/` path. Check
+  coverage of changed files with cov-loupe (MCP server preferred, CLI
+  otherwise).
+- Run `bundle exec rubocop` (add `--cache false` in a sandbox) and the specs
+  for the changed code. `bundle exec rspec` rewrites `coverage/coverage.json`;
+  do not run the full suite if other agents may be reading that file.
+- Migration guides (`docs/user/migrations/`) describe the release they were
+  written for; do not ask a PR to update older guides for its changes.

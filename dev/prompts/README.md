@@ -41,8 +41,8 @@ commit.
 - **Question answered:** "Are the docs right?"
 
 **[Pull Request Review](review/pull-request-review-prompt.md)**
-- **When:** Reviewing a pull request
-- **Output:** Verdict plus findings on correctness, scope, tests, compatibility, and docs (no changes made)
+- **When:** Reviewing a pull request (check out its head branch first, e.g. `gh pr checkout <number>`)
+- **Output:** Verdict plus findings on correctness, scope, tests, compatibility, docs, unaddressed review comments, and CI failures (no changes made)
 - **Question answered:** "Is this PR ready to merge?"
 
 **[Release Review](review/release-review.md)**
