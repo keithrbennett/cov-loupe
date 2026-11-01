@@ -96,7 +96,7 @@ commit and push in step 4; neither `release:bump` nor `bin/pre-release-check` ve
     - `*.txt` files (r.txt, rubocop.txt, todo.txt, etc.)
     - Experimental config files (`.rubocop.yml.new`, etc.)
     - Local notes (CODING_AGENT_NOTES.md, architecture_insights.md, etc.)
-    - Work-in-progress directories (screencast/, untracked-ai-reports/, etc.)
+    - Work-in-progress directories (screencast/, etc.)
 
 ### 4. Build Verification
 
