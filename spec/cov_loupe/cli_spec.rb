@@ -389,8 +389,7 @@ RSpec.describe CovLoupe::CoverageCLI do
       model_double = instance_double(
         CovLoupe::CoverageModel,
         format_table: "Coverage Table\n",
-        list:         { 'files' => [], 'timestamp_status' => status },
-        skipped_rows: []
+        list:         { 'files' => [], 'timestamp_status' => status }
       )
       allow(CovLoupe::CoverageModel).to receive(:new).and_return(model_double)
     end

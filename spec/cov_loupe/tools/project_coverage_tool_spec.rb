@@ -291,13 +291,8 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
   describe 'table format exclusions and warnings' do
     context 'with format: table' do
       it 'includes exclusions summary when tracked files are missing' do
-        model = instance_double(CovLoupe::CoverageModel)
+        model = instance_double(CovLoupe::CoverageModel, format_table: "Mock\nTable")
         allow(CovLoupe::CoverageModel).to receive(:new).and_return(model)
-
-        allow(model).to receive_messages(
-          skipped_rows: [],
-          format_table: "Mock\nTable"
-        )
 
         payload = {
           'files'                 => [{ 'file' => 'lib/foo.rb', 'percentage' => 100.0, 'covered' => 10,
@@ -339,13 +334,8 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
       end
 
       it 'includes timestamp warning when timestamps are missing' do
-        model = instance_double(CovLoupe::CoverageModel)
+        model = instance_double(CovLoupe::CoverageModel, format_table: "Mock\nTable")
         allow(CovLoupe::CoverageModel).to receive(:new).and_return(model)
-
-        allow(model).to receive_messages(
-          skipped_rows: [],
-          format_table: "Mock\nTable"
-        )
 
         payload = {
           'files'                 => [],

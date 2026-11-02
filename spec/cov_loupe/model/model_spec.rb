@@ -139,18 +139,10 @@ RSpec.describe CovLoupe::CoverageModel do
     it 'records skipped rows when coverage data errors occur' do
       abs_foo = File.expand_path('lib/foo.rb', root)
 
-      # Stub extract_lines_from_entry to return nil for foo.rb
-      # This will trigger to resolver fallback
-      # rubocop:disable RSpec/SubjectStub
-      allow(model).to receive(:extract_lines_from_entry).and_wrap_original do |method, entry|
-        if entry.is_a?(Hash) && entry['lines'].is_a?(Array)
-          # Return nil to force resolver fallback
-          nil
-        else
-          method.call(entry)
-        end
+      # Return nil for every well-formed entry to force the resolver fallback
+      allow(CovLoupe::ListRowBuilder).to receive(:lines_from_entry).and_wrap_original do |method, entry, **kw|
+        entry.is_a?(Hash) && entry['lines'].is_a?(Array) ? nil : method.call(entry, **kw)
       end
-      # rubocop:enable RSpec/SubjectStub
 
       allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:lookup_lines).and_wrap_original do
         |method, coverage_map, absolute, **kwargs|
@@ -839,32 +831,6 @@ end['covered']).to eq(3)
         'file'    => existing_file,
         'summary' => be_a(Hash)
       )
-    end
-  end
-
-  describe '#extract_lines_from_entry' do
-    let(:mock_logger) { instance_double(CovLoupe::Logger, safe_log: true) }
-    let(:model_with_logger) { described_class.new(root: root, logger: mock_logger) }
-
-    it 'returns nil for entries with non-integer/nil values in lines array (triggers resolver fallback)' do
-      bad_entry = { 'lines' => ['foo', 3.5, {}, nil] }
-
-      # extract_lines_from_entry silently returns nil to trigger resolver fallback
-      # The resolver will perform centralized validation and raise CoverageDataError
-      expect(model_with_logger.send(:extract_lines_from_entry, bad_entry)).to be_nil
-    end
-
-    it 'returns array for valid entries' do
-      good_entry = { 'lines' => [1, 0, nil, 2] }
-      expect(model_with_logger.send(:extract_lines_from_entry, good_entry)).to eq([1, 0, nil, 2])
-    end
-
-    it 'returns nil and logs warning when lines is not an array' do
-      bad_entry = { 'lines' => 'not an array' }
-
-      expect(mock_logger).to receive(:safe_log)
-        .with(/Invalid coverage lines encountered \(not an array\)/)
-      expect(model_with_logger.send(:extract_lines_from_entry, bad_entry)).to be_nil
     end
   end
 

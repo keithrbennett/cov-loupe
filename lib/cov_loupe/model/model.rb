@@ -15,6 +15,7 @@ require_relative '../paths/glob_utils'
 require_relative '../model/model_data_cache'
 require_relative '../model/project_totals_builder'
 require_relative '../model/coverage_row_sorter'
+require_relative '../model/list_row_builder'
 require_relative '../paths/path_utils'
 require_relative '../payload_schema'
 
@@ -38,10 +39,11 @@ module CovLoupe
   # - PathRelativizer for converting result paths to project-relative form
   # - ProjectTotalsBuilder for aggregating list results into project totals
   # - CoverageRowSorter for ordering rows by percentage and path
+  # - ListRowBuilder for turning the coverage map into list rows
   #
   # Thread safety: CoverageModel instances are NOT thread-safe. The shared
-  # ModelDataCache is thread-safe, but per-instance state like @skipped_rows
-  # is mutable and unsynchronized.
+  # ModelDataCache is thread-safe, but per-instance state such as the lazily
+  # resolved coverage file path is unsynchronized.
   #
   # @api public
   class CoverageModel
@@ -67,7 +69,7 @@ module CovLoupe
     attr_reader :root
 
     # @api private
-    attr_reader :relativizer, :skipped_rows, :volume_case_sensitive
+    attr_reader :relativizer, :volume_case_sensitive
 
     # Create a CoverageModel
     #
@@ -87,7 +89,6 @@ module CovLoupe
       @root = File.expand_path(root || '.')
       @coverage_file_arg = coverage_file
       @default_tracked_globs = tracked_globs
-      @skipped_rows = []
       @logger = logger || CovLoupe.logger
       @relativizer = PathRelativizer.new(
         root:        @root,
@@ -170,9 +171,7 @@ module CovLoupe
     #
     # @note Complexity: O(n log n) where n is the number of tracked files due to sorting.
     #   File I/O for staleness checks adds O(m) where m is the number of tracked source files.
-    # @note Thread-safety: Not thread-safe. This method relies on shared mutable state
-    #   (@skipped_rows, internal coverage_map) and should not be called concurrently
-    #   from multiple threads on the same CoverageModel instance.
+    # @note Thread-safety: Not thread-safe; see the class documentation.
     def list(sort_order: DEFAULT_SORT_ORDER,
       raise_on_stale: @default_raise_on_stale,
       tracked_globs: @default_tracked_globs)
@@ -181,35 +180,26 @@ module CovLoupe
     end
 
     private def unversioned_list(sort_order:, raise_on_stale:, tracked_globs:)
-      @skipped_rows = []
-      # Build rows in lenient mode to collect all data even if some files have errors
-      # This ensures staleness checking can examine all files, not just the ones before
-      # the first error. We'll re-raise any errors after staleness checking if needed.
-      rows, coverage_lines_by_path = build_list_rows(tracked_globs: tracked_globs)
+      # Rows are built leniently so that staleness checking covers every file; the first
+      # skipped row's error is raised only after that check.
+      listing = ListRowBuilder.new(coverage_map, root: @root,
+        volume_case_sensitive: volume_case_sensitive, logger: @logger).build
       project_staleness_details = project_staleness_report(
         tracked_globs:          tracked_globs,
-        raise_on_stale:         raise_on_stale, # Honor raise_on_stale for staleness checks
-        coverage_lines_by_path: coverage_lines_by_path
+        raise_on_stale:         raise_on_stale,
+        coverage_lines_by_path: listing.lines_by_path
       )
-
-      # If raise_on_stale is true and there were any skipped files with errors,
-      # raise the first error encountered after staleness checking is complete
-      if raise_on_stale && @skipped_rows.any?
-        first_error = @skipped_rows.first
-        error_class = Object.const_get(first_error['error_class'])
-        raise error_class, first_error['error']
-      end
+      raise listing.errors.values.first if raise_on_stale && listing.errors.any?
 
       file_statuses = project_staleness_details[:file_statuses] || {}
       length_mismatch_files = Array(project_staleness_details[:length_mismatch_files]).uniq
       unreadable_files = Array(project_staleness_details[:unreadable_files]).uniq
-      rows.each do |row|
-        row['stale'] = file_statuses.fetch(row['file'], StaleStatus::OK)
-      end
+      rows = filter_rows_by_globs(listing.rows, tracked_globs)
+      rows.each { |row| row['stale'] = file_statuses.fetch(row['file'], StaleStatus::OK) }
 
       {
         'files'                 => CoverageRowSorter.sort(rows, sort_order: sort_order, root: @root),
-        'skipped_files'         => filter_rows_by_globs(@skipped_rows, tracked_globs),
+        'skipped_files'         => filter_rows_by_globs(listing.skipped_rows, tracked_globs),
         'missing_tracked_files' => project_staleness_details[:missing_files],
         'newer_files'           => project_staleness_details[:newer_files],
         'deleted_files'         => project_staleness_details[:deleted_files],
@@ -314,51 +304,6 @@ module CovLoupe
       )
     end
 
-    private def build_list_rows(tracked_globs:)
-      coverage_lines_by_path = {}
-      rows = coverage_map.filter_map do |abs_path, entry|
-        # Extract lines directly from the entry to avoid O(n^2) resolver scans
-        coverage_lines = coverage_lines_for_listing(abs_path, entry)
-        next unless coverage_lines
-
-        coverage_lines_by_path[abs_path] = coverage_lines
-        summary = CoverageCalculator.summary(coverage_lines)
-        {
-          'file'       => abs_path,
-          'covered'    => summary['covered'],
-          'total'      => summary['total'],
-          'percentage' => summary['percentage'],
-
-          # We set 'stale' => StaleStatus::OK as a placeholder, then in list we overwrite it
-          # with the true status from the project report.
-          'stale'      => StaleStatus::OK,
-        }
-      end
-
-      [filter_rows_by_globs(rows, tracked_globs), coverage_lines_by_path]
-    end
-
-    private def coverage_lines_for_listing(abs_path, entry)
-      # Try to extract lines directly from the entry (O(1) operation)
-      # Only fall back to resolver if the entry is malformed
-      lines = extract_lines_from_entry(entry)
-      return lines if lines
-
-      # Fallback to resolver for malformed entries
-      Resolvers::ResolverHelpers.lookup_lines(coverage_map, abs_path, root: @root,
-        volume_case_sensitive: volume_case_sensitive)
-    rescue FileError, CoverageDataError => e
-      # Skip files with errors and report them in skipped_files; `list` re-raises the
-      # first one afterwards when raise_on_stale is set.
-      @logger.safe_log("Skipping coverage row for #{abs_path}: #{e.message}")
-      @skipped_rows << {
-        'file'        => abs_path,
-        'error'       => e.message,
-        'error_class' => e.class.name,
-      }
-      nil
-    end
-
     private def project_staleness_report(tracked_globs:, raise_on_stale:, coverage_lines_by_path:)
       # Filter coverage files to match the same scope as tracked_globs
       coverage_files = GlobUtils.filter_paths(coverage_map.keys, tracked_globs, root: @root)
@@ -430,29 +375,6 @@ module CovLoupe
       raise FileNotFoundError, "File not found: #{path}" if raise_on_stale
 
       [file_abs, coverage_lines]
-    end
-
-    # Extract coverage lines from a SimpleCov entry.
-    # Returns nil if the entry is not a valid Hash, does not contain a lines array,
-    # or contains invalid elements. Invalid entries trigger fallback to the resolver,
-    # which performs centralized validation and error handling.
-    #
-    # @param entry [Hash, Object] coverage entry from the coverage file
-    # @return [Array<Integer, nil>, nil] SimpleCov-style line coverage array or nil
-    private def extract_lines_from_entry(entry)
-      return unless entry.is_a?(Hash)
-
-      lines = entry['lines']
-      unless lines.is_a?(Array)
-        @logger.safe_log("Invalid coverage lines encountered (not an array): #{lines.class}") if lines
-        return nil
-      end
-
-      # Validate all elements - return nil to trigger resolver fallback on validation failure
-      # The resolver will raise CoverageDataError with a detailed message
-      return nil unless lines.all? { |v| v.nil? || v.is_a?(Integer) }
-
-      lines
     end
   end
 end

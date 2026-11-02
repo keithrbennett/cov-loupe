@@ -177,16 +177,16 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
     def stub_foo_entry_fallback
       foo_entry = model.send(:coverage_map)[foo_path]
 
-      allow(model).to receive(:extract_lines_from_entry).and_wrap_original do |method, entry|
-        entry.equal?(foo_entry) ? nil : method.call(entry)
+      allow(CovLoupe::ListRowBuilder).to receive(:lines_from_entry).and_wrap_original do |method, entry, **kw|
+        entry.equal?(foo_entry) ? nil : method.call(entry, **kw)
       end
     end
 
-    def stub_lookup_lines_error(exception_class, message)
+    def stub_lookup_lines_error(*error)
       allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:lookup_lines).and_call_original
       allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:lookup_lines)
         .with(anything, foo_path, any_args)
-        .and_raise(exception_class, message)
+        .and_raise(*error)
     end
 
     context 'when skipping rows in lenient mode' do
@@ -246,20 +246,16 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
         stub_foo_entry_fallback
       end
 
-      it 'raises FileError when file lookup fails' do
-        stub_lookup_lines_error(CovLoupe::FileError, 'Missing file')
+      [
+        CovLoupe::FileError.new('Missing file'),
+        CovLoupe::CorruptCoverageDataError.new('Corrupted coverage entry'),
+      ].each do |error|
+        it "re-raises the original #{error.class.name} from the failed lookup" do
+          stub_lookup_lines_error(error)
 
-        expect do
-          model.list(raise_on_stale: true)
-        end.to raise_error(CovLoupe::FileError, 'Missing file')
-      end
-
-      it 'raises CorruptCoverageDataError when data is corrupt' do
-        stub_lookup_lines_error(CovLoupe::CorruptCoverageDataError, 'Corrupted coverage entry')
-
-        expect do
-          model.list(raise_on_stale: true)
-        end.to raise_error(CovLoupe::CorruptCoverageDataError, 'Corrupted coverage entry')
+          expect { model.list(raise_on_stale: true) }
+            .to raise_error { |raised| expect(raised).to be(error) }
+        end
       end
     end
 

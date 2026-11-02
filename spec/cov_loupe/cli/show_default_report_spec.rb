@@ -39,13 +39,9 @@ RSpec.describe CovLoupe::CoverageCLI do
           model = method.call(**kwargs)
           foo_entry = model.send(:coverage_map)[foo_path]
 
-          allow(model).to receive(:extract_lines_from_entry).and_wrap_original do |m, entry|
-            # Only trigger resolver fallback for foo.rb by returning nil
-            if entry.equal?(foo_entry)
-              nil # Trigger resolver fallback for foo.rb
-            else
-              m.call(entry)
-            end
+          allow(CovLoupe::ListRowBuilder).to receive(:lines_from_entry).and_wrap_original do |m, entry, **kw|
+            # Return nil for foo.rb only, to trigger the resolver fallback
+            entry.equal?(foo_entry) ? nil : m.call(entry, **kw)
           end
 
           model
@@ -110,8 +106,8 @@ RSpec.describe CovLoupe::CoverageCLI do
         cli.config.format = :table
         # Allow the model to be created naturally, only mock the presenter
         allow(CovLoupe::Presenters::ProjectCoveragePresenter).to receive(:new) do |model:, **_opts|
-          # Stub model methods that are called in show_default_report
-          allow(model).to receive_messages(format_table: "table\n", skipped_rows: [])
+          # Stub the model method that show_default_report calls
+          allow(model).to receive(:format_table).and_return("table\n")
           presenter
         end
       end
