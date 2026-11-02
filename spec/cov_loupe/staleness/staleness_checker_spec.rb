@@ -419,6 +419,15 @@ RSpec.describe CovLoupe::StalenessChecker do
       expect(details[:unreadable_files]).to include('unreadable.rb')
     end
 
+    it 'reports a file once when both the project and per-file checks find it unreadable' do
+      create_test_file(test_file, "puts 'test'\n")
+      allow(File).to receive(:file?).and_call_original
+      allow(File).to receive(:file?).with(test_file).and_raise(Errno::EACCES.new('Permission denied'))
+
+      details = checker.check_project_with_lines!({ test_file => [1] }, coverage_files: [test_file])
+      expect(details[:unreadable_files]).to eq(['test.rb'])
+    end
+
     it 'handles File.mtime errors gracefully in compute_newer_and_deleted_files' do
       create_test_file(test_file, "puts 'test'\n")
       coverage_map = { test_file => [1] }

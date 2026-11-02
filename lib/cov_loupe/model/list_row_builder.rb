@@ -61,8 +61,6 @@ module CovLoupe
 
       rows = @coverage_map.filter_map do |abs_path, entry|
         lines = lines_for(abs_path, entry)
-        next unless lines
-
         lines_by_path[abs_path] = lines
         { 'file' => abs_path }.merge(CoverageCalculator.summary(lines))
       rescue FileError, CoverageDataError => e

@@ -157,6 +157,9 @@ module CovLoupe
         length_mismatch << rel(abs_path) if details[:len_mismatch] && details[:exists]
       end
 
+      # A file whose metadata and contents both fail to read is recorded twice above.
+      unreadable.uniq!
+
       # A file can be both newer than the coverage timestamp and otherwise broken (for
       # example unreadable or with a different line count). Keep the more actionable
       # per-file diagnosis and suppress the broader "newer" label to avoid duplicates.

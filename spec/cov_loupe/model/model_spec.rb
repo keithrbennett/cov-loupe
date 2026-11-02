@@ -52,14 +52,6 @@ RSpec.describe CovLoupe::CoverageModel do
   end
 
   describe 'resolve method error handling' do
-    it 'raises FileError when lookup_lines returns nil' do
-      allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:lookup_lines).and_return(nil)
-
-      expect do
-        model.summary_for('lib/nonexistent.rb')
-      end.to raise_error(CovLoupe::FileError, /No coverage data found for file/)
-    end
-
     it 'allows FileError from lookup_lines to propagate' do
       allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:lookup_lines)
         .and_raise(CovLoupe::FileError, 'No coverage entry found for lib/some_file.rb')
@@ -582,6 +574,7 @@ RSpec.describe CovLoupe::CoverageModel do
           missing_files:         [],
           deleted_files:         [],
           length_mismatch_files: [],
+          unreadable_files:      [],
           file_statuses:         {},
         }
       )

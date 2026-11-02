@@ -97,17 +97,7 @@ module CovLoupe
       )
       @default_raise_on_stale = raise_on_stale
       @resolved_coverage_file_path = nil # Resolved on first fetch
-
-      # Eagerly validate the coverage file exists and load initial data
-      # This matches original behavior and surfaces errors immediately
-      begin
-        data = fetch_data
-        @coverage_file_path = data.coverage_file_path
-      rescue CovLoupe::Error
-        raise # Re-raise our own errors as-is
-      rescue => e
-        raise ErrorHandler.new.convert_standard_error(e, context: :coverage_loading)
-      end
+      @coverage_file_path = load_coverage_file_path
 
       # Compute volume case sensitivity based on this model's root directory
       # Computed per model, since models sharing a coverage file may have roots on different
@@ -117,39 +107,30 @@ module CovLoupe
 
     # Returns { 'schema_version' => 1, 'file' => <relative_path>, 'lines' => [hits|nil,...] }
     def raw_for(path, raise_on_stale: @default_raise_on_stale)
-      file_abs, coverage_lines = coverage_data_for(path, raise_on_stale: raise_on_stale)
-      # relative_paths returns a deep copy, so callers can't mutate the cached lines array
-      relative_paths(PayloadSchema.add('file' => file_abs, 'lines' => coverage_lines))
+      # file_payload relativizes into a deep copy, so callers can't mutate the cached lines
+      file_payload(path, raise_on_stale) { |lines| { 'lines' => lines } }
     end
 
     # Returns { 'schema_version' => 1, 'file' => <relative_path>,
     #           'summary' => {'covered'=>, 'total'=>, 'percentage'=>} }
     def summary_for(path, raise_on_stale: @default_raise_on_stale)
-      file_abs, coverage_lines = coverage_data_for(path, raise_on_stale: raise_on_stale)
-      relative_paths(PayloadSchema.add('file' => file_abs,
-        'summary' => CoverageCalculator.summary(coverage_lines)))
+      file_payload(path, raise_on_stale) { |lines| { 'summary' => CoverageCalculator.summary(lines) } }
     end
 
     # Returns { 'schema_version' => 1, 'file' => <relative_path>, 'uncovered' => [line,...],
     #           'summary' => {...} }
     def uncovered_for(path, raise_on_stale: @default_raise_on_stale)
-      file_abs, coverage_lines = coverage_data_for(path, raise_on_stale: raise_on_stale)
-      relative_paths(PayloadSchema.add({
-        'file'      => file_abs,
-        'uncovered' => CoverageCalculator.uncovered(coverage_lines),
-        'summary'   => CoverageCalculator.summary(coverage_lines),
-      }))
+      file_payload(path, raise_on_stale) do |lines|
+        { 'uncovered' => CoverageCalculator.uncovered(lines), 'summary' => CoverageCalculator.summary(lines) }
+      end
     end
 
     # Returns { 'schema_version' => 1, 'file' => <relative_path>,
     #           'lines' => [{'line'=>,'hits'=>,'covered'=>},...], 'summary' => {...} }
     def detailed_for(path, raise_on_stale: @default_raise_on_stale)
-      file_abs, coverage_lines = coverage_data_for(path, raise_on_stale: raise_on_stale)
-      relative_paths(PayloadSchema.add({
-        'file'    => file_abs,
-        'lines'   => CoverageCalculator.detailed(coverage_lines),
-        'summary' => CoverageCalculator.summary(coverage_lines),
-      }))
+      file_payload(path, raise_on_stale) do |lines|
+        { 'lines' => CoverageCalculator.detailed(lines), 'summary' => CoverageCalculator.summary(lines) }
+      end
     end
 
     # Returns a list of coverage data for all tracked files.
@@ -192,8 +173,6 @@ module CovLoupe
       raise listing.errors.values.first if raise_on_stale && listing.errors.any?
 
       file_statuses = project_staleness_details[:file_statuses] || {}
-      length_mismatch_files = Array(project_staleness_details[:length_mismatch_files]).uniq
-      unreadable_files = Array(project_staleness_details[:unreadable_files]).uniq
       rows = filter_rows_by_globs(listing.rows, tracked_globs)
       rows.each { |row| row['stale'] = file_statuses.fetch(row['file'], StaleStatus::OK) }
 
@@ -203,8 +182,8 @@ module CovLoupe
         'missing_tracked_files' => project_staleness_details[:missing_files],
         'newer_files'           => project_staleness_details[:newer_files],
         'deleted_files'         => project_staleness_details[:deleted_files],
-        'length_mismatch_files' => length_mismatch_files,
-        'unreadable_files'      => unreadable_files,
+        'length_mismatch_files' => project_staleness_details[:length_mismatch_files],
+        'unreadable_files'      => project_staleness_details[:unreadable_files],
         'timestamp_status'      => project_staleness_details[:timestamp_status],
       }
     end
@@ -225,8 +204,7 @@ module CovLoupe
 
     def staleness_for(path)
       file_abs = File.expand_path(path, @root)
-      coverage_lines = Resolvers::ResolverHelpers.lookup_lines(coverage_map, file_abs, root: @root,
-        volume_case_sensitive: volume_case_sensitive)
+      coverage_lines = lookup_lines(file_abs)
       build_staleness_checker(raise_on_stale: false, tracked_globs: nil)
         .file_staleness_status(file_abs, coverage_lines)
     rescue => e
@@ -272,14 +250,33 @@ module CovLoupe
       ModelDataCache.instance.get(resolved_coverage_file_path, root: @root, logger: @logger)
     end
 
-    # Returns the coverage map by delegating to ModelDataCache.
-    # The cache automatically reloads if the coverage file has changed.
+    # Loads the data eagerly so that a missing or invalid coverage file fails at construction.
+    # Errors other than our own are converted to CovLoupe errors.
+    private def load_coverage_file_path
+      fetch_data.coverage_file_path
+    rescue CovLoupe::Error
+      raise
+    rescue => e
+      raise ErrorHandler.new.convert_standard_error(e, context: :coverage_loading)
+    end
+
+    # @return [Array<Integer, nil>] coverage lines for an absolute path
+    # @raise [FileError] if no entry, or more than one entry, matches the path
+    private def lookup_lines(file_abs)
+      Resolvers::ResolverHelpers.lookup_lines(coverage_map, file_abs, root: @root,
+        volume_case_sensitive: volume_case_sensitive)
+    end
+
+    # Builds a file query payload: 'file' plus the entries the block derives from the lines.
+    private def file_payload(path, raise_on_stale)
+      file_abs, lines = coverage_data_for(path, raise_on_stale: raise_on_stale)
+      relative_paths(PayloadSchema.add({ 'file' => file_abs }.merge(yield(lines))))
+    end
+
     private def coverage_map
       fetch_data.coverage_map
     end
 
-    # Returns the timestamp by delegating to ModelDataCache.
-    # The cache automatically reloads if the coverage file has changed.
     private def coverage_timestamp
       fetch_data.timestamp
     end
@@ -349,17 +346,12 @@ module CovLoupe
     #
     # @param path [String] relative or absolute file path
     # @return [Array(String, Array)] tuple of [absolute_path, coverage_lines]
-    # @raise [FileError] if no coverage data exists for the file
+    # @raise [FileError] if no coverage data exists for the file, or it matches several entries
     # @raise [FileNotFoundError] if the file does not exist and raise_on_stale is true
     # @raise [CoverageDataStaleError] if staleness checking is enabled and data is stale
     private def coverage_data_for(path, raise_on_stale: @default_raise_on_stale)
       file_abs = File.expand_path(path, @root)
-      coverage_lines = Resolvers::ResolverHelpers.lookup_lines(coverage_map, file_abs, root: @root,
-        volume_case_sensitive: volume_case_sensitive)
-
-      if coverage_lines.nil?
-        raise FileError, "No coverage data found for file: #{path}"
-      end
+      coverage_lines = lookup_lines(file_abs)
 
       # When raise_on_stale is false, allow deleted files to return coverage data
       # The staleness status will be added by the presenter via staleness_for
