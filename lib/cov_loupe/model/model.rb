@@ -14,6 +14,7 @@ require_relative '../resolvers/resolver_helpers'
 require_relative '../paths/glob_utils'
 require_relative '../model/model_data_cache'
 require_relative '../model/project_totals_builder'
+require_relative '../model/coverage_row_sorter'
 require_relative '../paths/path_utils'
 require_relative '../payload_schema'
 
@@ -36,6 +37,7 @@ module CovLoupe
   # - CoverageLineResolver for looking up files in the coverage map
   # - PathRelativizer for converting result paths to project-relative form
   # - ProjectTotalsBuilder for aggregating list results into project totals
+  # - CoverageRowSorter for ordering rows by percentage and path
   #
   # Thread safety: CoverageModel instances are NOT thread-safe. The shared
   # ModelDataCache is thread-safe, but per-instance state like @skipped_rows
@@ -206,7 +208,7 @@ module CovLoupe
       end
 
       {
-        'files'                 => sort_rows(rows, sort_order: sort_order),
+        'files'                 => CoverageRowSorter.sort(rows, sort_order: sort_order, root: @root),
         'skipped_files'         => filter_rows_by_globs(@skipped_rows, tracked_globs),
         'missing_tracked_files' => project_staleness_details[:missing_files],
         'newer_files'           => project_staleness_details[:newer_files],
@@ -371,56 +373,16 @@ module CovLoupe
       ).check_project_with_lines!(scoped_coverage_lines, coverage_files: coverage_files)
     end
 
+    # Rows computed here come from list, already sorted and glob-filtered; supplied rows
+    # still need both.
     private def prepare_rows(rows, sort_order:, raise_on_stale:, tracked_globs:)
-      files = rows || list(sort_order: sort_order, raise_on_stale: raise_on_stale,
-        tracked_globs: tracked_globs)['files']
-
-      files = sort_rows(files.dup, sort_order: sort_order)
-      filter_rows_by_globs(files, tracked_globs)
-    end
-
-    private def sort_rows(rows, sort_order: :descending)
-      # Two-level comparator: primary sort by coverage percentage, secondary by file path.
-      # Nil percentages (e.g., files with no coverable lines) are grouped at one end:
-      #   - Descending mode: nil files sort first (before 100%)
-      #   - Ascending mode: nil files sort last (after 100%)
-      # Ties break on absolute path, as in list; expand lazily since only ties need it.
-      abs_paths = Hash.new { |cache, file| cache[file] = PathUtils.expand_from_root(file, @root) }
-
-      percent_comparator = sort_order == :descending \
-        ? ->(left, right) { right <=> left }
-        : ->(left, right) { left <=> right }
-
-      nil_comparator = ->(left, right) do
-        left_nil = left['percentage'].nil?
-        right_nil = right['percentage'].nil?
-        return 0 if left_nil == right_nil
-
-        # Keep rows without a computed percentage grouped at one end of the table.
-        # In descending mode nil-percentage files (for example, files with no coverable
-        # lines) sort first; in ascending mode they sort last.
-        if sort_order == :descending
-          left_nil ? -1 : 1
-        else
-          left_nil ? 1 : -1
-        end
+      unless rows
+        return list(sort_order: sort_order, raise_on_stale: raise_on_stale,
+          tracked_globs: tracked_globs)['files']
       end
 
-      comparator = ->(a, b) do
-        nil_comparison = nil_comparator.call(a, b)
-        return nil_comparison unless nil_comparison.zero?
-
-        if !a['percentage'].nil? && !b['percentage'].nil?
-          percent_comp_result = percent_comparator.(a['percentage'], b['percentage'])
-          return percent_comp_result if percent_comp_result != 0
-        end
-
-        # Stable tiebreaker: alphabetical by absolute path, so relative rows from list
-        # sort the same way as the absolute rows used internally.
-        abs_paths[a['file']] <=> abs_paths[b['file']]
-      end
-
-      rows.sort { |a, b| comparator.(a, b) }
+      sorted = CoverageRowSorter.sort(rows, sort_order: sort_order, root: @root)
+      filter_rows_by_globs(sorted, tracked_globs)
     end
 
     # Filters coverage rows to only include files matching the given glob patterns.
