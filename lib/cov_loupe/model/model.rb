@@ -13,6 +13,7 @@ require_relative '../coverage/coverage_calculator'
 require_relative '../resolvers/resolver_helpers'
 require_relative '../paths/glob_utils'
 require_relative '../model/model_data_cache'
+require_relative '../model/project_totals_builder'
 require_relative '../paths/path_utils'
 require_relative '../payload_schema'
 
@@ -34,6 +35,7 @@ module CovLoupe
   # - StalenessChecker for time-based and line-count staleness detection
   # - CoverageLineResolver for looking up files in the coverage map
   # - PathRelativizer for converting result paths to project-relative form
+  # - ProjectTotalsBuilder for aggregating list results into project totals
   #
   # Thread safety: CoverageModel instances are NOT thread-safe. The shared
   # ModelDataCache is thread-safe, but per-instance state like @skipped_rows
@@ -224,26 +226,9 @@ module CovLoupe
     )
       list_result = unversioned_list(sort_order: :ascending, raise_on_stale: raise_on_stale,
         tracked_globs: tracked_globs)
-
-      rows = list_result['files']
-
-      included_rows = rows.reject { |row| StaleStatus.stale?(row['stale']) }
-      line_totals = line_totals_from_rows(included_rows).merge(
-        'included_files' => included_rows.length,
-        'excluded_files' => rows.length - included_rows.length
+      PayloadSchema.add(
+        ProjectTotalsBuilder.new(root: @root).build(list_result, tracked_globs: tracked_globs)
       )
-
-      tracking = tracking_payload(tracked_globs)
-      with_coverage = with_coverage_payload(rows)
-      without_coverage = without_coverage_payload(list_result, tracking['enabled'])
-      files = files_payload(with_coverage, without_coverage)
-
-      PayloadSchema.add({
-        'lines'            => line_totals,
-        'tracking'         => tracking,
-        'files'            => files,
-        'timestamp_status' => list_result['timestamp_status'],
-      })
     end
 
     def staleness_for(path)
@@ -483,96 +468,6 @@ module CovLoupe
       raise FileNotFoundError, "File not found: #{path}" if raise_on_stale
 
       [file_abs, coverage_lines]
-    end
-
-    private def line_totals_from_rows(rows)
-      CoverageCalculator.aggregate(rows)
-    end
-
-    private def tracking_payload(tracked_globs)
-      patterns = GlobUtils.normalize_patterns(tracked_globs)
-      {
-        'enabled' => patterns.any?,
-        'globs'   => patterns,
-      }
-    end
-
-    private def with_coverage_payload(rows)
-      breakdown = stale_breakdown(rows)
-      stale_by_type = breakdown[:stale_by_type]
-      stale_total = stale_by_type.values.sum
-
-      {
-        'total' => rows.length,
-        'ok'    => breakdown[:ok],
-        'stale' => {
-          'total'   => stale_total,
-          'by_type' => stale_by_type,
-        },
-      }
-    end
-
-    private def without_coverage_payload(list_result, tracking_enabled)
-      return nil unless tracking_enabled
-
-      missing_from_coverage = Array(list_result['missing_tracked_files']).length
-      skipped = Array(list_result['skipped_files']).length
-      unreadable = unreadable_without_row(list_result)
-      by_type = {
-        StaleStatus::MISSING_FROM_COVERAGE => missing_from_coverage,
-        StaleStatus::UNREADABLE            => unreadable,
-        StaleStatus::SKIPPED               => skipped,
-      }
-      {
-        'total'   => by_type.values.sum,
-        'by_type' => by_type,
-      }
-    end
-
-    # Unreadable files that already appear as a coverage row (counted under with_coverage)
-    # or as a skipped file must not be counted again in the without-coverage bucket.
-    private def unreadable_without_row(list_result)
-      accounted = (list_result['files'] + Array(list_result['skipped_files'])).to_set { |r| r['file'] }
-      Array(list_result['unreadable_files']).count do |path|
-        !accounted.include?(PathUtils.expand_from_root(path, @root))
-      end
-    end
-
-    private def files_payload(with_coverage, without_coverage)
-      total = with_coverage['total']
-      total += without_coverage['total'] if without_coverage
-
-      files = {
-        'total'         => total,
-        'with_coverage' => with_coverage,
-      }
-      files['without_coverage'] = without_coverage if without_coverage
-      files
-    end
-
-    private def stale_breakdown(rows)
-      stale_by_type = {
-        StaleStatus::DELETED         => 0,
-        StaleStatus::NEWER           => 0,
-        StaleStatus::LENGTH_MISMATCH => 0,
-        StaleStatus::UNREADABLE      => 0,
-      }
-      ok_files = 0
-
-      rows.each do |row|
-        # Per-file stale values double as the by_type keys.
-        status = row['stale']
-        if status == StaleStatus::OK
-          ok_files += 1
-        elsif stale_by_type.key?(status)
-          stale_by_type[status] += 1
-        end
-      end
-
-      {
-        ok:            ok_files,
-        stale_by_type: stale_by_type,
-      }
     end
 
     # Extract coverage lines from a SimpleCov entry.

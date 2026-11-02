@@ -103,7 +103,7 @@ before { setup_mcp_response_stub }
 
 **MCP tools:** Create `*_tool.rb` in `lib/cov_loupe/tools/`, require it in `lib/cov_loupe/loaders/all_mcp.rb`, add it to `MCPServer::TOOLSET` in `mcp_server.rb`, and add an entry to `HelpTool::TOOL_GUIDE` (`spec/cov_loupe/mcp_server_spec.rb` checks that the two match). A tool that runs client-supplied code must override `executes_code?` to return true, so that it is registered only with `--allow-code-predicates`.
 
-**Coverage features:** Add core data operations to `CoverageModel` in `lib/cov_loupe/model/model.rb` or pure line-counting logic to `CoverageCalculator` in `lib/cov_loupe/coverage/coverage_calculator.rb`.
+**Coverage features:** Add core data operations to `CoverageModel` in `lib/cov_loupe/model/model.rb`, payload assembly that depends only on explicit arguments (not on a `CoverageModel` instance) to a helper class beside it (such as `ProjectTotalsBuilder`), or pure line-counting logic to `CoverageCalculator` in `lib/cov_loupe/coverage/coverage_calculator.rb`.
 
 ## Documentation Development
 

@@ -142,6 +142,7 @@ On case-insensitive volumes, comparisons are case-normalized; on case-sensitive 
     ```
 2. **Committing:**
     - **Agent-created branches:** If you created the current branch yourself (for example, Claude Code on the web working on a branch it was assigned or created for the session), you are permitted and requested to commit your changes there, with clear, descriptive commit messages, and to push that branch when your work is complete.
+    - **History rewrites:** On a branch you created, you may amend, squash, or rebase your own commits and push with `git push --force-with-lease` when the user asks. Never rewrite history on any other branch, and never force-push `main`.
     - **All other branches:** Never execute `git commit` directly. Instead, stage changes with `git add` and propose a clear, concise commit message for the user to use.
     - **No AI attribution:** Do not add AI or agent credit lines (e.g., `Co-Authored-By: Claude ...`, `Claude-Session: ...`, "Generated with ...") to commit messages or PR descriptions.
 3. **Selective Staging:** Never assume that all uncommitted files are intended to be committed. Do not use `git add .` or similar catch-all commands. Explicitly stage only the files relevant to the current task.

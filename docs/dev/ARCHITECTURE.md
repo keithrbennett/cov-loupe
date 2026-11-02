@@ -107,7 +107,7 @@ Comprehensive test coverage exists:
 
 ## Extending the System With a New Tool or Metric
 
-1. Add or update data processing inside `CoverageModel` or `CoverageCalculator` when a new metric is needed.
+1. Add or update data processing inside `CoverageModel`, a helper class beside it in `lib/cov_loupe/model/` (such as `ProjectTotalsBuilder`) for payload assembly that depends only on explicit arguments, or `CoverageCalculator` for pure line-counting logic.
 2. Surface that metric through all interfaces: add a CLI option/subcommand, create an MCP tool, and expose a library helper method.
 3. Register the new tool in `MCPServer` and update CLI option parsing in `CoverageCLI`. If the tool runs client-supplied code, override `executes_code?` to return true (see the MCP layer notes above).
 4. Provide tests under `spec/` mirroring the lib path (`spec/cov_loupe/..._spec.rb`).
