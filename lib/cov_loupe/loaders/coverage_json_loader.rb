@@ -42,7 +42,7 @@ module CovLoupe
       # JSON is always UTF-8. 'UTF-8:UTF-8' reads it as UTF-8 and keeps it UTF-8; otherwise a
       # non-ASCII path is tagged with the locale's encoding, or transcoded to
       # Encoding.default_internal when that is set, and fails to load or is misread.
-      raw = JSON.parse(File.read(@resolved_coverage_file, encoding: 'UTF-8:UTF-8'))
+      raw = parse_json(File.read(@resolved_coverage_file, encoding: 'UTF-8:UTF-8'))
       unless raw.is_a?(Hash) && raw['coverage'].is_a?(Hash) && raw['meta'].is_a?(Hash)
         raise CoverageDataError,
           'Not a SimpleCov coverage.json document (expected top-level "coverage" and "meta"): ' \
@@ -54,6 +54,19 @@ module CovLoupe
         coverage_map: normalize_coverage_map(raw['coverage']),
         timestamp:    normalize_timestamp(raw['meta']['timestamp'])
       )
+    end
+
+    # JSON::ParserError messages quote the text that failed to parse. When the caller names the
+    # wrong file, that text could be a secret, so report only the path and, when the parser sets
+    # them, the line and column. Whether it does depends on the json gem's version and platform,
+    # so neither attribute is assumed. The message is never
+    # read: it can itself contain "line N column N", or be invalid UTF-8 for a binary file. The
+    # original error is kept for its backtrace in debug logs.
+    private def parse_json(text)
+      JSON.parse(text)
+    rescue JSON::ParserError => e
+      location = " (at line #{e.line} column #{e.column})" if e.respond_to?(:line) && e.line
+      raise CoverageDataError.new("Coverage file is not valid JSON#{location}: #{@resolved_coverage_file}", e)
     end
 
     # meta.schema_version is the version of SimpleCov's coverage.json format

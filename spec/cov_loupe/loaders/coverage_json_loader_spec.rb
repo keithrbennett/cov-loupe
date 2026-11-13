@@ -161,19 +161,27 @@ RSpec.describe CovLoupe::CoverageJsonLoader do
         .to raise_error(Errno::ENOENT)
     end
 
-    # A truncated write or a wrong -c path can hand the loader non-JSON content.
-    [
-      { desc: 'malformed JSON', content: '{ "invalid": json }' },
-      { desc: 'an empty file', content: '' },
-      { desc: 'a whitespace-only file', content: "   \n\t  " },
-    ].each do |tc|
-      it "raises JSON::ParserError for #{tc[:desc]}" do
+    # A truncated write or a wrong -c path can hand the loader non-JSON content, which may be a
+    # secret, so the error names the file but never quotes its content.
+    # The location is optional: whether the parser reports it depends on the json version.
+    {
+      'malformed JSON'         => "{\n  \"key\": secret-token-abc123\n}",
+      'an empty file'          => '',
+      'a whitespace-only file' => "   \n\t  ",
+      'a binary file'          => "\x89PNG\r\n\x1A\n\x00\xFFsecret".b,
+    }.each do |desc, content|
+      it "raises CoverageDataError without quoting content for #{desc}" do
         Dir.mktmpdir do |dir|
           path = File.join(dir, 'coverage.json')
-          File.write(path, tc[:content])
+          File.binwrite(path, content)
 
           expect { described_class.load(resolved_coverage_file: path, logger: logger) }
-            .to raise_error(JSON::ParserError)
+            .to raise_error(CovLoupe::CoverageDataError) { |error|
+              expect(error.message).to match(
+                /\ACoverage file is not valid JSON(?: \(at line \d+ column \d+\))?: #{Regexp.escape(path)}\z/
+              )
+              expect(error.original_error).to be_a(JSON::ParserError)
+            }
         end
       end
     end

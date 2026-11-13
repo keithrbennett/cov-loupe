@@ -88,10 +88,11 @@ RSpec.describe CovLoupe::ErrorHandler do
     end
   end
 
-  it 'maps JSON::ParserError to CoverageDataError' do
-    e = handler.convert_standard_error(JSON::ParserError.new('unexpected token'))
+  it 'maps JSON::ParserError to CoverageDataError without quoting its message' do
+    e = handler.convert_standard_error(JSON::ParserError.new("unexpected token at 'secret'"))
     expect(e).to be_a(CovLoupe::CoverageDataError)
     expect(e.user_friendly_message).to include('Invalid coverage data format')
+    expect(e.user_friendly_message).not_to include('secret')
   end
 
   it 'maps an unexpected ArgumentError to UnknownError, keeping the original' do

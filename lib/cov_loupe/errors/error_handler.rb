@@ -64,7 +64,9 @@ module CovLoupe
       when Errno::EROFS
         FilePermissionError.new(error.message, error)
       when JSON::ParserError
-        CoverageDataError.new("Invalid coverage data format: #{error.message}", error)
+        # The parser's message quotes the unparsable text, which could be a secret. The loader
+        # raises its own CoverageDataError; this is a safety net that does not quote it either.
+        CoverageDataError.new('Invalid coverage data format: not valid JSON', error)
       when EncodingError
         convert_encoding_error(error, context)
       when RangeError

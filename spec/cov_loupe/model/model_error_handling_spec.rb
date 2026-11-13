@@ -16,13 +16,19 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
       coverage_json_document(coverage: {}).merge('coverage' => 'not_a_hash') # Should be a hash
     end
 
-    it 'raises CoverageDataError with message detail for invalid JSON format' do
-      mock_json_parse_error(JSON::ParserError.new('unexpected token'))
+    # Whether the parser sets line and column depends on the json version, so the location is optional.
+    { [2, 7] => ' (at line 2 column 7)', [nil, nil] => '' }.each do |(line, column), location|
+      it "raises CoverageDataError naming the file, not quoting it, when line is #{line.inspect}" do
+        parse_error = JSON::ParserError.new("unexpected character: 'secret' at line 9 column 9")
+        allow(parse_error).to receive_messages(line: line, column: column)
+        mock_json_parse_error(parse_error)
 
-      expect do
-        described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH)
-      end.to raise_error(CovLoupe::CoverageDataError) do |error|
-        expect(error.message).to include('Invalid coverage data format', 'unexpected token')
+        expect do
+          described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH)
+        end.to raise_error(CovLoupe::CoverageDataError) do |error|
+          expect(error.message)
+            .to eq("Coverage file is not valid JSON#{location}: #{FIXTURE_PROJECT1_COVERAGE_PATH}")
+        end
       end
     end
 
@@ -76,17 +82,6 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
       end
     end
 
-    it 'preserves error context in JSON::ParserError messages' do
-      mock_json_parse_error(JSON::ParserError.new('765: unexpected token at line 3, column 5'))
-
-      expect do
-        described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH)
-      end.to raise_error(CovLoupe::CoverageDataError) do |error|
-        # Verify the original error message details are preserved
-        expect(error.message).to include('765', 'line 3')
-      end
-    end
-
     it 'provides helpful error for permission issues with file path' do
       # Mock to raise permission error with actual file path
       coverage_file_path = File.join(root, 'coverage', 'coverage.json')
@@ -102,16 +97,6 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
   end
 
   describe 'error context preservation' do
-    it 'includes original exception message for JSON::ParserError' do
-      mock_json_parse_error(JSON::ParserError.new('unexpected character at byte 42'))
-
-      expect do
-        described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH)
-      end.to raise_error(CovLoupe::CoverageDataError) do |error|
-        expect(error.message).to include('unexpected character at byte 42')
-      end
-    end
-
     it 'includes original exception message for Errno::EACCES' do
       coverage_file_path = File.join(root, 'coverage', 'coverage.json')
       mock_file_read_error(Errno::EACCES.new(coverage_file_path), path_matcher: coverage_file_path)

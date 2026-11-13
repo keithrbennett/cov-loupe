@@ -51,9 +51,10 @@ terminal; a spec that needs another encoding sets it explicitly (see `with_defau
 **Error handling uses custom exceptions from `lib/cov_loupe/errors/errors.rb`:**
 ```ruby
 rescue Errno::ENOENT => e
-  raise FileError.new("Coverage data not found: #{e.message}")
+  raise FileError.new("Coverage data not found: #{e.message}", e)
 rescue JSON::ParserError => e
-  raise CoverageDataError.new("Invalid coverage format: #{e.message}")
+  # Never interpolate a parser's message: it quotes the input, which may be a secret.
+  raise CoverageDataError.new("Coverage file is not valid JSON: #{coverage_file_path}", e)
 ```
 
 **MCP tools extend `BaseTool` and follow this pattern:**

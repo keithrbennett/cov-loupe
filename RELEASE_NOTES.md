@@ -182,6 +182,12 @@
 
 ### Other Changes
 
+- **Invalid JSON errors no longer quote the file.** When the coverage file is not valid JSON,
+  the error now reads `Coverage file is not valid JSON: <path>` (with ` (at line L column C)`
+  before the colon when the parser reports a position) instead of including the parser's
+  message, which quoted the text where parsing failed. A wrong `-c` or MCP `coverage_file`
+  could otherwise show the start of an unrelated file, such as a token, to whoever made the
+  call.
 - **A filesystem root (`/`) works as the project root.** With `--root /` (or `root: "/"`),
   no path counted as inside the root, so result paths were reported absolute. Paths under
   `/` are now inside it and reported relative to it, with their casing preserved on
