@@ -262,6 +262,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
         presenter = instance_double(CovLoupe::Presenters::ProjectCoveragePresenter)
         allow(CovLoupe::Presenters::ProjectCoveragePresenter).to receive(:new).and_return(presenter)
         allow(presenter).to receive(:payload).and_return(test_payload)
+        allow(presenter).to receive(:root_warning)
       end
     end
 
@@ -309,6 +310,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
         allow(CovLoupe::Presenters::ProjectCoveragePresenter).to receive(:new).and_return(presenter)
         allow(presenter).to receive_messages(
           relative_files:                 payload['files'],
+          root_warning:                   nil,
           relative_skipped_files:         [],
           relative_missing_tracked_files: ['lib/missing.rb'],
           relative_newer_files:           [],
@@ -351,6 +353,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
         allow(CovLoupe::Presenters::ProjectCoveragePresenter).to receive(:new).and_return(presenter)
         allow(presenter).to receive_messages(
           relative_files:                 [],
+          root_warning:                   nil,
           relative_skipped_files:         [],
           relative_missing_tracked_files: [],
           relative_newer_files:           [],
@@ -388,6 +391,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
       presenter = instance_double(CovLoupe::Presenters::ProjectCoveragePresenter)
       allow(CovLoupe::Presenters::ProjectCoveragePresenter).to receive(:new).and_return(presenter)
       allow(presenter).to receive(:payload).and_return(test_payload)
+      allow(presenter).to receive(:root_warning)
 
       output = described_class.call(root: root, server_context: server_context).content.first['text']
       data = JSON.parse(output)
@@ -400,6 +404,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
     let(:presenter_stubs) do
       {
         relative_files:                 [],
+        root_warning:                   nil,
         relative_skipped_files:         [],
         relative_missing_tracked_files: [],
         relative_newer_files:           [],
@@ -559,6 +564,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
       presenter = instance_double(CovLoupe::Presenters::ProjectCoveragePresenter)
       allow(CovLoupe::Presenters::ProjectCoveragePresenter).to receive(:new).and_return(presenter)
       allow(presenter).to receive(:payload).and_return(test_payload)
+      allow(presenter).to receive(:root_warning)
 
       described_class.call(root: root, raise_on_stale: true, server_context: server_context)
 

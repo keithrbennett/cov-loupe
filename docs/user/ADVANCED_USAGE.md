@@ -189,7 +189,7 @@ Check your coverage tool configuration to ensure timestamps are recorded.
 - **CLI table format:** On stderr, written after the `list` or `totals` output (when stdout and stderr share a file or pipe, buffering can make it appear first)
 - **CLI JSON and other structured formats:** On stderr, and in the `timestamp_status` field
 - **MCP mode:** In `project_coverage` output with format=table after the exclusions summary
-- **MCP structured formats:** In the `timestamp_status` field of `project_coverage` (every non-table format) and `project_coverage_totals` responses, plus a `warnings` array holding the warning lines
+- **MCP structured formats:** In the `timestamp_status` field of `project_coverage` (every non-table format) and `project_coverage_totals` responses, plus a `warnings` array holding the warning lines (the array can also hold a [wrong-root warning](TROUBLESHOOTING.md#the-project-root-may-be-wrong))
 
 **How to fix:**
 

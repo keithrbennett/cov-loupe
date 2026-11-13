@@ -342,6 +342,7 @@ RSpec.describe CovLoupe::CoverageCLI do
         relative_unreadable_files:      ['unreadable.rb'],
         relative_missing_tracked_files: [],
         relative_deleted_files:         [],
+        root_warning:                   nil,
         relative_skipped_files:         [],
         relative_files:                 [],
         timestamp_status:               'ok'
@@ -371,6 +372,7 @@ RSpec.describe CovLoupe::CoverageCLI do
         relative_unreadable_files:      [],
         relative_missing_tracked_files: [],
         relative_deleted_files:         [],
+        root_warning:                   nil,
         relative_skipped_files:         [],
         relative_files:                 [],
         timestamp_status:               status,

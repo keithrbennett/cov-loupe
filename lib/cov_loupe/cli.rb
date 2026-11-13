@@ -143,6 +143,7 @@ module CovLoupe
       end
 
       warn_report_text(Formatters::CoverageWarnings.timestamp_warning(presenter))
+      warn_report_text(Formatters::CoverageWarnings.root_warning(presenter))
     end
 
     private def warn_report_text(text)

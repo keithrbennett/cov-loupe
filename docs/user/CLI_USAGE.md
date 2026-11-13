@@ -502,7 +502,9 @@ For a detailed explanation of how to configure the coverage file location, inclu
 
 ### `-R, --root PATH`
 
-Project root directory (default: current directory).
+Project root directory (default: current directory). The project-level commands warn when most
+files in the coverage data are not found under it; see
+[Troubleshooting](TROUBLESHOOTING.md#the-project-root-may-be-wrong).
 
 ```sh
 clp -R /path/to/project  # -R = --root

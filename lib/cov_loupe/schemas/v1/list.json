@@ -18,7 +18,7 @@
     "length_mismatch_files": {"$ref": "#/$defs/paths", "description": "Files whose source line count differs from coverage data."},
     "unreadable_files": {"$ref": "#/$defs/paths", "description": "Source files that could not be read."},
     "timestamp_status": {"type": "string", "enum": ["ok", "missing"], "description": "Whether the coverage timestamp is available."},
-    "warnings": {"type": "array", "items": {"type": "string"}, "description": "Timestamp warnings; present only in MCP output when timestamp_status is missing."}
+    "warnings": {"type": "array", "items": {"type": "string"}, "description": "Optional MCP warnings when timestamps are missing or most files were not found under the project root."}
   },
   "$defs": {
     "file_row": {

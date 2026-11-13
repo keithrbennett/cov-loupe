@@ -85,6 +85,20 @@ If you only care about a subset of files, supply `-g` / `--tracked-globs` (CLI) 
 **Note:** If you see warnings about missing timestamps, time-based staleness checks may be skipped.
 See [Timestamp Warnings](ADVANCED_USAGE.md#timestamp-warnings) for details.
 
+### "The project root may be wrong"
+
+Coverage paths are project-relative, so cov-loupe looks for each source file under the project
+root, which defaults to the current directory. It warns when more than half of the files with
+coverage rows are not found there (rows skipped as malformed are not counted), for example when
+`--coverage-file` points into another project while the root is still the current directory.
+The same condition also fits source files that really were removed, or coverage generated on
+another machine. With tracked globs, the count covers only the files the globs match.
+
+Set the root with `--root PATH` (CLI) or the `root` argument (MCP, Ruby). The warning does not
+change the exit status; with `--raise-on-stale true`, the project-level commands (`list`,
+`totals`, and the default report) exit non-zero and show the same message after the staleness
+summary.
+
 ### "No coverage entry found for ..."
 
 The model looks up files by absolute path, then by relative path (stripping the project root). If you still hit this error:

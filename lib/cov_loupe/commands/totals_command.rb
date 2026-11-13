@@ -18,7 +18,7 @@ module CovLoupe
         )
         payload = presenter.payload
         if maybe_output_structured_format?(payload)
-          warn_timestamp_status(presenter)
+          warn_about_data_quality(presenter)
           return
         end
 
@@ -52,12 +52,14 @@ module CovLoupe
           #{without_breakdown_line}
         BREAKDOWN
 
-        warn_timestamp_status(presenter)
+        warn_about_data_quality(presenter)
       end
 
-      private def warn_timestamp_status(presenter)
-        text = Formatters::CoverageWarnings.timestamp_warning(presenter)
-        warn text unless text.empty?
+      private def warn_about_data_quality(presenter)
+        [
+          Formatters::CoverageWarnings.timestamp_warning(presenter),
+          Formatters::CoverageWarnings.root_warning(presenter),
+        ].each { |text| warn text unless text.empty? }
       end
 
       private def format_with_coverage_line(with_coverage)

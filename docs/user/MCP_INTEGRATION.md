@@ -550,8 +550,8 @@ Lines SimpleCov marked `"ignored"` (excluded with `nocov` blocks or directive co
 - Parameters: the [common parameters](#common-parameters), plus `sort_order` (`ascending`|`descending`, default `descending`), `tracked_globs` (array), `format` (`json`|`pretty_json`|`yaml`|`amazing_print`|`inspect`|`puts`|`pretty_print`|`table`)
 - Default format: `json`
 - Returns (format dependent):
-  - `json`/`pretty_json`: a JSON object; `yaml`/`amazing_print`/`inspect`/`puts`/`pretty_print`: the same data rendered in that format, not JSON. The data is `{"schema_version": 1, "files": [...], "skipped_files": [...], "missing_tracked_files": [...], "newer_files": [...], "deleted_files": [...], "length_mismatch_files": [...], "unreadable_files": [...], "timestamp_status": "ok|missing", "warnings": [...]}` (`warnings` is present only when `timestamp_status` is `"missing"`)
-  - Table: Plain text table with box-drawing characters (ASCII with `output_chars: "ascii"`)
+  - `json`/`pretty_json`: a JSON object; `yaml`/`amazing_print`/`inspect`/`puts`/`pretty_print`: the same data rendered in that format, not JSON. The data is `{"schema_version": 1, "files": [...], "skipped_files": [...], "missing_tracked_files": [...], "newer_files": [...], "deleted_files": [...], "length_mismatch_files": [...], "unreadable_files": [...], "timestamp_status": "ok|missing", "warnings": [...]}` (`warnings` is present only when `timestamp_status` is `"missing"` or [most files were not found under the project root](TROUBLESHOOTING.md#the-project-root-may-be-wrong))
+  - Table: Plain text table with box-drawing characters (ASCII with `output_chars: "ascii"`), followed by any exclusion, timestamp, skipped-row, and wrong-root warnings
   - Each entry in `files` is `{"file", "covered", "uncovered", "total", "percentage", "stale"}`, the same shape as a `file_coverage_summary` result without `schema_version`; `percentage` is `null` when the file has no coverable lines (shown as `n/a` in the table).
 
 **`project_coverage_totals`** - Aggregated line totals
@@ -560,7 +560,7 @@ Lines SimpleCov marked `"ignored"` (excluded with `nocov` blocks or directive co
 - Returns: `{"schema_version":1,"covered":N,"uncovered":N,"total":N,"percentage":Float|null,"tracking":{"enabled":Boolean,"globs":[String]},"file_counts":{"total":N,"with_coverage":{"total":N,"ok":N,"stale":{"total":N,"by_type":{"deleted":N,"newer":N,"length_mismatch":N,"unreadable":N}}},"without_coverage":{"total":N,"by_type":{"missing_tracked":N,"unreadable":N,"skipped":N}}},"timestamp_status":"ok|missing","warnings":[String]}`
 - The line metrics count fresh files only; `file_counts.with_coverage.ok` is how many.
 - `without_coverage` is only present when tracking is enabled (tracked globs provided).
-- `warnings` is present when `timestamp_status` is `"missing"`.
+- `warnings` is present when `timestamp_status` is `"missing"` or [most files were not found under the project root](TROUBLESHOOTING.md#the-project-root-may-be-wrong).
 
 #### Policy Validation Tools
 

@@ -16,7 +16,7 @@ module CovLoupe
         Inputs: optional project root, alternate coverage file path, raise_on_stale flag, tracked_globs, error mode, and output_chars.
         Output: JSON {"schema_version":Integer,"covered","uncovered","total","percentage","tracking":{"enabled","globs"},"file_counts":{"total","with_coverage","without_coverage"?},"timestamp_status":"ok"|"missing","warnings"?:[string,...]}.
         The line metrics ("covered", "uncovered", "total", "percentage") count only fresh files; file_counts.with_coverage.ok is how many.
-        "without_coverage" is present only when tracked_globs are set; "warnings" only when timestamp_status is "missing".
+        "without_coverage" is present only when tracked_globs are set; "warnings" only when timestamp_status is "missing" or most files were not found under the project root.
         "percentage" is a number, or null when no lines are measurable (no coverable lines, or every file stale).
         When raise_on_stale is enabled, the tool will raise an error immediately if any files have coverage data errors or staleness issues.
         "timestamp_status" indicates whether coverage timestamps are available for time-based staleness checks.
@@ -50,9 +50,8 @@ module CovLoupe
             )
             payload = presenter.payload
 
-            if payload['timestamp_status'] == 'missing'
-              payload['warnings'] = Formatters::CoverageWarnings::TIMESTAMP_WARNING_LINES.dup
-            end
+            warnings = Formatters::CoverageWarnings.payload_warnings(presenter)
+            payload['warnings'] = warnings if warnings.any?
 
             respond_json(payload, pretty: true, output_chars: output_chars_sym)
           end

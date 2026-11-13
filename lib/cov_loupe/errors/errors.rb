@@ -207,6 +207,9 @@ module CovLoupe
   class CoverageDataProjectStaleError < CoverageDataError
     include StalenessFormatterMixin
 
+    # @api private
+    DEFAULT_MESSAGE = 'Coverage data appears stale for project'
+
     attr_reader :cov_timestamp, :newer_files, :missing_files, :deleted_files,
       :length_mismatch_files, :unreadable_files, :coverage_file_path
 
@@ -235,7 +238,7 @@ module CovLoupe
     end
 
     private def default_message
-      'Coverage data appears stale for project'
+      DEFAULT_MESSAGE
     end
   end
 

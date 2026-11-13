@@ -21,7 +21,8 @@ module CovLoupe
         Output format depends on the format parameter:
         - json (default): JSON object with schema_version, files, skipped_files, etc.
           Each file row has "file", "covered", "uncovered", "total", "percentage", and "stale";
-          "percentage" is null if the file has no coverable lines.
+          "percentage" is null if the file has no coverable lines. An optional "warnings" array
+          appears when timestamps are missing or most files were not found under the project root.
         - pretty_json: Multi-line, indented JSON
         - yaml: YAML format
         - amazing_print: Ruby object formatting via AmazingPrint
@@ -95,6 +96,7 @@ module CovLoupe
           table += Formatters::CoverageWarnings.exclusions_summary(presenter)
           table += Formatters::CoverageWarnings.timestamp_warning(presenter)
           table += Formatters::CoverageWarnings.skipped_rows_warning(presenter)
+          table += Formatters::CoverageWarnings.root_warning(presenter)
 
           ::MCP::Tool::Response.new([{ 'type' => 'text', 'text' => table }])
         end
@@ -102,9 +104,8 @@ module CovLoupe
         private def respond_with_formatted_payload(presenter, format_sym, output_chars_sym)
           payload = presenter.payload
 
-          if payload['timestamp_status'] == 'missing'
-            payload['warnings'] = Formatters::CoverageWarnings::TIMESTAMP_WARNING_LINES.dup
-          end
+          warnings = Formatters::CoverageWarnings.payload_warnings(presenter)
+          payload['warnings'] = warnings if warnings.any?
 
           formatted = Formatters.format(PayloadSchema.add(payload), format_sym,
             output_chars: output_chars_sym)

@@ -182,6 +182,14 @@
 
 ### Other Changes
 
+- **A wrong project root no longer goes unnoticed.** When more than half of the files with
+  coverage rows are not found under the project root, the root is probably wrong, because
+  coverage paths are project-relative. `list` and `totals` now warn on stderr, and the MCP
+  `project_coverage` and `project_coverage_totals` tools add the warning to `warnings` (or,
+  for `project_coverage` with `format: table`, to the table output). The exit status stays 0.
+  With `--raise-on-stale true` they still fail, and `CoverageDataProjectStaleError#message`
+  now adds the same hint after its summary. The default root is unchanged. See
+  [Troubleshooting](docs/user/TROUBLESHOOTING.md#the-project-root-may-be-wrong).
 - **New Test Coverage Analysis prompt.** The
   [Test Coverage Analysis prompt](docs/user/prompts/test-coverage-analysis-prompt.md) has an
   AI agent use cov-loupe to report coverage by logical area (down to individual classes and

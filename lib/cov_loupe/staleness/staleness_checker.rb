@@ -3,6 +3,7 @@
 require 'time'
 require_relative '../errors/errors'
 require_relative 'stale_status'
+require_relative 'root_mismatch'
 require_relative '../resolvers/resolver_helpers'
 require_relative '../paths/path_utils'
 
@@ -107,6 +108,7 @@ module CovLoupe
       }
 
       if @mode == :error && (newer.any? || missing.any? || deleted.any? || unreadable.any?)
+        # Without rows, malformed entries cannot be told apart, so no wrong-root hint.
         raise CoverageDataProjectStaleError.new(
           nil,
           nil,
@@ -178,7 +180,7 @@ module CovLoupe
 
       if @mode == :error && [newer, missing, deleted, length_mismatch, unreadable].any?(&:any?)
         raise CoverageDataProjectStaleError.new(
-          nil,
+          project_stale_message(deleted, coverage_lines_by_path.keys),
           nil,
           cov_timestamp:         ts,
           newer_files:           newer,
@@ -191,6 +193,15 @@ module CovLoupe
       end
 
       staleness_details
+    end
+
+    # Appends the wrong-root hint to the default summary; nil keeps the default alone.
+    # readable_files are the files with coverage rows in scope, the base the presenters use.
+    private def project_stale_message(deleted, readable_files)
+      readable_deleted = deleted & readable_files.map { |abs| rel(abs) }
+      hint = RootMismatch.message(deleted_count: readable_deleted.length,
+        total_count: readable_files.length, root: @root)
+      "#{CoverageDataProjectStaleError::DEFAULT_MESSAGE}. #{hint}" if hint
     end
 
     private def compute_newer_and_deleted_files(coverage_files, timestamp)

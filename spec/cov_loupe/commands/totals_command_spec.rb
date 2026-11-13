@@ -35,6 +35,7 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
         # Mock the presenter to return data with stale and without coverage counts
         presenter_double = instance_double(CovLoupe::Presenters::ProjectTotalsPresenter)
         allow(presenter_double).to receive_messages(
+          root_warning:     nil,
           payload:          {
             'total'       => 6,
             'covered'     => 3,
@@ -88,6 +89,7 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
       it 'handles nil percentage gracefully' do
         presenter_double = instance_double(CovLoupe::Presenters::ProjectTotalsPresenter)
         allow(presenter_double).to receive_messages(
+          root_warning:     nil,
           payload:          {
             'total' => 0, 'covered' => 0, 'uncovered' => 0, 'percentage' => nil,
             'tracking' => { 'enabled' => false, 'globs' => [] },
@@ -141,6 +143,7 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
         payload = base_payload.merge('timestamp_status' => timestamp_status)
         presenter_double = instance_double(CovLoupe::Presenters::ProjectTotalsPresenter)
         allow(presenter_double).to receive_messages(
+          root_warning:     nil,
           payload:          payload,
           timestamp_status: timestamp_status
         )

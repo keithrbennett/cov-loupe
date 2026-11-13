@@ -2,6 +2,9 @@
 
 require_relative 'payload_caching'
 
+require_relative '../staleness/stale_status'
+require_relative '../staleness/root_mismatch'
+
 module CovLoupe
   module Presenters
     # Presenter for project-wide coverage summaries (list/coverage table).
@@ -61,6 +64,16 @@ module CovLoupe
       # Can be 'ok' (timestamps available) or 'missing' (no timestamps, staleness checks skipped).
       def timestamp_status
         payload['timestamp_status']
+      end
+
+      # Returns a warning when most files were not found under the project root, otherwise nil.
+      # Counts only rows with coverage, as ProjectTotalsPresenter#root_warning does.
+      def root_warning
+        RootMismatch.message(
+          deleted_count: relative_files.count { |row| row['stale'] == StaleStatus::DELETED },
+          total_count:   relative_files.length,
+          root:          model.root
+        )
       end
 
       private def compute_payload
