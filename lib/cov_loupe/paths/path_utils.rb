@@ -285,8 +285,8 @@ module CovLoupe
       # AND ensure we have proper path boundary (either exact match or followed by separator)
       return false unless normalized_path.start_with?(normalized_prefix)
 
-      # If exact match, return true
-      return true if normalized_path == normalized_prefix
+      # If exact match, or the prefix already ends at a separator (a filesystem root), return true
+      return true if normalized_path == normalized_prefix || normalized_prefix.end_with?('/')
 
       # Otherwise, ensure character after prefix is a path separator
       # (normalize converts all backslashes to forward slashes, so only check for /)

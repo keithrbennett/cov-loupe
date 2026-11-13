@@ -557,6 +557,10 @@ RSpec.describe CovLoupe::PathUtils do
       expect(described_class.within_root?('/home/user/project-backup/file.rb', root)).to be false
     end
 
+    it 'returns true for any absolute path when root is the filesystem root' do
+      expect(described_class.within_root?('/tmp/external.rb', '/')).to be true
+    end
+
     context 'with case-insensitive volumes' do
       before do
         allow(CovLoupe::VolumeCaseSensitivity).to receive(:volume_case_sensitive?).and_return(false)
