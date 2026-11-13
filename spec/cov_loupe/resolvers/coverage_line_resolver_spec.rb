@@ -31,18 +31,19 @@ RSpec.describe CovLoupe::Resolvers::CoverageLineResolver do
     end
 
     context 'with root stripping fallback' do
-      it 'finds relative path when absolute path includes root' do
-        root = '/project'
-        relative_path = 'lib/bar.rb'
-        abs_path = File.join(root, relative_path)
-        cov_data = {
-          relative_path => { 'lines' => [1, 0, 1] },
-        }
+      ['/project', '/'].each do |root|
+        it "finds relative path when absolute path includes root #{root}" do
+          relative_path = 'lib/bar.rb'
+          abs_path = File.join(root, relative_path)
+          cov_data = {
+            relative_path => { 'lines' => [1, 0, 1] },
+          }
 
-        resolver = described_class.new(cov_data, root: root, volume_case_sensitive: true)
-        lines = resolver.lookup_lines(abs_path)
+          resolver = described_class.new(cov_data, root: root, volume_case_sensitive: true)
+          lines = resolver.lookup_lines(abs_path)
 
-        expect(lines).to eq([1, 0, 1])
+          expect(lines).to eq([1, 0, 1])
+        end
       end
 
       it 'raises FileError when absolute path does not start with root and no exact match' do

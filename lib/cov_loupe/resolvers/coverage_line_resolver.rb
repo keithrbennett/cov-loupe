@@ -56,10 +56,9 @@ module CovLoupe
         return unless @root
 
         normalized_file = normalize_path(file_abs)
-        return unless normalized_file.start_with?(normalized_root_with_slash)
+        return unless normalized_file.start_with?(normalized_root_prefix)
 
-        relative_path = normalized_file[(normalized_root.length + 1)..]
-        fetch_lines_for_path(relative_path)
+        fetch_lines_for_path(normalized_file.delete_prefix(normalized_root_prefix))
       end
 
       # Fetch lines for a path, resolving normalized separators when needed.
@@ -82,10 +81,9 @@ module CovLoupe
         @normalized_root ||= normalize_path(resolution_root)
       end
 
-      private def normalized_root_with_slash
-        return unless normalized_root
-
-        @normalized_root_with_slash ||= "#{normalized_root}/"
+      # The root with one trailing separator, so a filesystem root such as "/" is not doubled.
+      private def normalized_root_prefix
+        @normalized_root_prefix ||= PathUtils.root_prefix(normalized_root)
       end
 
       # Resolve the coverage key that matches a path (including normalized variants).

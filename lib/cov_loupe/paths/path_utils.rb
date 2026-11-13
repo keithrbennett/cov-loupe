@@ -143,7 +143,7 @@ module CovLoupe
       # Pathname computes the relative path from the normalized strings, which may all be
       # lowercase on case-insensitive volumes. Rebuild the result from abs_path so reports
       # keep the casing the user actually sees on disk.
-      relative = preserve_original_casing(relative, abs_path, abs_root) if !case_sensitive && relative != '.'
+      relative = preserve_original_casing(relative, abs_path) if !case_sensitive && relative != '.'
       protect_tilde(relative)
     rescue ArgumentError
       # Path is on a different drive or cannot be made relative
@@ -234,26 +234,14 @@ module CovLoupe
     #
     # @param relative_path [String] normalized relative path
     # @param source_path [String] original source path with original casing
-    # @param root_path [String] root path
     # @return [String] relative path with original casing preserved
-    def self.preserve_original_casing(relative_path, source_path, root_path)
-      # Split paths into components
-      relative_components = relative_path.split('/')
-      source_components = normalize(source_path, normalize_case: false, root: root_path).split('/')
-      root_components = normalize(root_path, normalize_case: false, root: root_path).split('/')
-
-      # Skip root components to get to the relative part
-      relative_start_index = root_components.length
-
-      # relative_path and the tail of source_path have the same component count because
-      # relative_path was derived from source_path relative to root_path just above.
-      # Map each normalized component back to its original casing
-      original_components = relative_components.map.with_index do |_component, index|
-        source_index = relative_start_index + index
-        source_components[source_index] || relative_components[index]
-      end
-
-      original_components.join('/')
+    def self.preserve_original_casing(relative_path, source_path)
+      # relative_path was derived from source_path relative to a root, so it has the same
+      # components as the tail of source_path, differing only in case. Taking the tail, rather
+      # than skipping the root's components, also works for a filesystem root such as "/",
+      # whose split yields no components.
+      relative_count = relative_path.split('/').length
+      normalize(source_path, normalize_case: false).split('/').last(relative_count).join('/')
     end
 
     # Checks if a path starts with a prefix using normalized comparison
@@ -285,8 +273,8 @@ module CovLoupe
       # AND ensure we have proper path boundary (either exact match or followed by separator)
       return false unless normalized_path.start_with?(normalized_prefix)
 
-      # If exact match, return true
-      return true if normalized_path == normalized_prefix
+      # If exact match, or the prefix already ends at a separator (a filesystem root), return true
+      return true if normalized_path == normalized_prefix || normalized_prefix.end_with?('/')
 
       # Otherwise, ensure character after prefix is a path separator
       # (normalize converts all backslashes to forward slashes, so only check for /)

@@ -137,6 +137,24 @@ RSpec.describe CovLoupe::PathUtils do
       end
     end
 
+    # A filesystem root has no components of its own, so the whole path below it is relative.
+    [true, false].each do |case_sensitive|
+      context "with the filesystem root as root on a case-#{case_sensitive ? '' : 'in'}sensitive volume" do
+        before do
+          allow(CovLoupe::VolumeCaseSensitivity).to receive(:volume_case_sensitive?)
+            .and_return(case_sensitive)
+        end
+
+        {
+          '/Tmp/X.rb' => 'Tmp/X.rb', '/foo.rb' => 'foo.rb', '/a/B/c.rb' => 'a/B/c.rb'
+        }.each do |path, expected|
+          it "relativizes #{path} to #{expected}" do
+            expect(described_class.relativize(path, '/')).to eq(expected)
+          end
+        end
+      end
+    end
+
     context 'with case-insensitive volumes' do
       before do
         allow(CovLoupe::VolumeCaseSensitivity).to receive(:volume_case_sensitive?).and_return(false)
@@ -557,6 +575,10 @@ RSpec.describe CovLoupe::PathUtils do
       expect(described_class.within_root?('/home/user/project-backup/file.rb', root)).to be false
     end
 
+    it 'returns true for any absolute path when root is the filesystem root' do
+      expect(described_class.within_root?('/tmp/external.rb', '/')).to be true
+    end
+
     context 'with case-insensitive volumes' do
       before do
         allow(CovLoupe::VolumeCaseSensitivity).to receive(:volume_case_sensitive?).and_return(false)
@@ -662,6 +684,10 @@ RSpec.describe CovLoupe::PathUtils do
 
     it 'keeps separator if present' do
       expect(described_class.root_prefix("/path#{File::SEPARATOR}")).to eq("/path#{File::SEPARATOR}")
+    end
+
+    it 'returns the filesystem root unchanged' do
+      expect(described_class.root_prefix('/')).to eq('/')
     end
   end
 

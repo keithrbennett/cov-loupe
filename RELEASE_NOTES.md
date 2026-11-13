@@ -182,6 +182,11 @@
 
 ### Other Changes
 
+- **A filesystem root (`/`) works as the project root.** With `--root /` (or `root: "/"`),
+  no path counted as inside the root, so result paths were reported absolute. Paths under
+  `/` are now inside it and reported relative to it, with their casing preserved on
+  case-insensitive volumes. The wrong-root warning is unaffected: it still fires when most
+  covered files are not found under `/`.
 - **A wrong project root no longer goes unnoticed.** When more than half of the files with
   coverage rows are not found under the project root, the root is probably wrong, because
   coverage paths are project-relative. `list` and `totals` now warn on stderr, and the MCP

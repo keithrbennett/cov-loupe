@@ -80,7 +80,7 @@ Path comparison uses a **normalize-for-comparison-only** approach rather than no
 
 - **Original paths are preserved** - `PathUtils.expand` preserves the original case to avoid corrupting displayed file paths
 - **Normalization happens at comparison time** - The `normalized_start_with?` helper method normalizes both paths internally for comparison but doesn't modify the originals
-- **Boundary checking** - Prevents false matches where a path starts with a prefix string but isn't actually within that directory (e.g., `/home/user/project` should not match `/home/user/project-backup/file.rb`)
+- **Boundary checking** - Prevents false matches where a path starts with a prefix string but isn't actually within that directory (e.g., `/home/user/project` should not match `/home/user/project-backup/file.rb`). A prefix that already ends with a separator, such as the filesystem root `/`, contains every path below it.
 
 This approach ensures:
 
