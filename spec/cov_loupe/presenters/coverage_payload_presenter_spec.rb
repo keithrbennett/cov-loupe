@@ -11,10 +11,9 @@ RSpec.describe CovLoupe::Presenters::CoveragePayloadPresenter do
       model_method:   :summary_for,
       payload:        {
         'file'    => 'lib/foo.rb',
-        'summary' => { 'covered' => 8, 'total' => 10, 'percentage' => 80.0 },
+        'covered' => 8, 'uncovered' => 2, 'total' => 10, 'percentage' => 80.0
       },
       stale:          'ok',
-      expected_keys:  ['summary'],
     },
     {
       name:           'raw payloads',
@@ -25,7 +24,6 @@ RSpec.describe CovLoupe::Presenters::CoveragePayloadPresenter do
         'lines' => [1, 0, nil, 2],
       },
       stale:          'length_mismatch',
-      expected_keys:  ['lines'],
     },
     {
       name:           'detailed payloads',
@@ -37,22 +35,20 @@ RSpec.describe CovLoupe::Presenters::CoveragePayloadPresenter do
           { 'line' => 1, 'hits' => 1, 'covered' => true },
           { 'line' => 2, 'hits' => 0, 'covered' => false },
         ],
-        'summary' => { 'covered' => 1, 'total' => 2, 'percentage' => 50.0 },
+        'covered' => 1, 'uncovered' => 1, 'total' => 2, 'percentage' => 50.0
       },
       stale:          'length_mismatch',
-      expected_keys:  %w[lines summary],
     },
     {
       name:           'uncovered payloads',
       payload_method: :uncovered_for,
       model_method:   :uncovered_for,
       payload:        {
-        'file'      => 'lib/foo.rb',
-        'uncovered' => [2, 4],
-        'summary'   => { 'covered' => 2, 'total' => 4, 'percentage' => 50.0 },
+        'file' => 'lib/foo.rb',
+        'uncovered_lines' => [2, 4],
+        'covered' => 2, 'uncovered' => 2, 'total' => 4, 'percentage' => 50.0
       },
       stale:          'deleted',
-      expected_keys:  %w[uncovered summary],
     },
   ].each do |config|
     context "when building #{config.fetch(:name)}" do

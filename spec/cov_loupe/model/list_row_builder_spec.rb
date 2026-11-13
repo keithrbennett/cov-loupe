@@ -42,7 +42,7 @@ RSpec.describe CovLoupe::ListRowBuilder do
     it 'builds summary rows and lines for readable entries' do
       aggregate_failures do
         expect(result.rows).to eq([
-          { 'file' => good_path, 'covered' => 1, 'total' => 2, 'percentage' => 50.0 },
+          { 'file' => good_path, 'covered' => 1, 'uncovered' => 1, 'total' => 2, 'percentage' => 50.0 },
         ])
         expect(result.lines_by_path).to eq(good_path => [1, 0, nil])
       end

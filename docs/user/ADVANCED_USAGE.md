@@ -487,7 +487,7 @@ For GitHub Actions and GitLab CI examples, see [CI/CD Integration](examples/ci-c
 **Two purposes of tracked globs:**
 
 1. **Exclude unwanted results** - Only show files from the coverage file that match the patterns
-2. **Include files with or without coverage** - Report files that match the patterns but aren't in the coverage file (reported in `missing_tracked_files` for `list`, `missing_from_coverage` for `totals`)
+2. **Include files with or without coverage** - Report files that match the patterns but aren't in the coverage file (reported in `missing_tracked_files` for `list`, `missing_tracked` for `totals`)
 
 **Best practice:** Set `COV_LOUPE_OPTS` to match your SimpleCov `cover` globs so `list`, `totals`, and missing-file reports use the same scope. See [`--tracked-globs`](CLI_USAGE.md#tracked-globs) for the canonical setup example.
 

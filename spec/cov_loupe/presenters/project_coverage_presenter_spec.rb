@@ -21,6 +21,7 @@ RSpec.describe CovLoupe::Presenters::ProjectCoveragePresenter do
       {
         'file'       => 'lib/foo.rb',
         'covered'    => 5,
+        'uncovered'  => 1,
         'total'      => 6,
         'percentage' => 83.33,
         'stale'      => 'ok',
@@ -28,36 +29,39 @@ RSpec.describe CovLoupe::Presenters::ProjectCoveragePresenter do
       {
         'file'       => 'lib/bar.rb',
         'covered'    => 1,
+        'uncovered'  => 5,
         'total'      => 6,
         'percentage' => 16.67,
         'stale'      => 'length_mismatch',
       },
     ]
   end
+  let(:list_payload) do
+    {
+      'schema_version'        => CovLoupe::SCHEMA_VERSION,
+      'files'                 => files,
+      'skipped_files'         => [
+        { 'file' => 'lib/skipped.rb', 'error' => 'boom' },
+      ],
+      'missing_tracked_files' => ['lib/missing.rb'],
+      'newer_files'           => [],
+      'deleted_files'         => ['lib/deleted.rb'],
+      'length_mismatch_files' => ['lib/bad_length.rb'],
+      'unreadable_files'      => ['lib/unreadable.rb'],
+      'timestamp_status'      => 'ok',
+    }
+  end
 
 
   before do
     allow(model).to receive(:list).with(sort_order: sort_order, raise_on_stale: raise_on_stale,
-      tracked_globs: tracked_globs).and_return({
-        'files'                 => files,
-        'skipped_files'         => [
-          { 'file' => 'lib/skipped.rb', 'error' => 'boom' },
-        ],
-        'missing_tracked_files' => ['lib/missing.rb'],
-        'newer_files'           => [],
-        'deleted_files'         => ['lib/deleted.rb'],
-        'length_mismatch_files' => ['lib/bad_length.rb'],
-        'unreadable_files'      => ['lib/unreadable.rb'],
-        'timestamp_status'      => 'ok',
-      })
+      tracked_globs: tracked_globs).and_return(list_payload)
   end
 
-  describe '#payload' do
-    it 'returns files and counts with stale metadata' do
-      payload = presenter.payload
 
-      expect(payload['files']).to eq(files)
-      expect(payload['counts']).to eq({ 'total' => 2, 'ok' => 1, 'stale' => 1 })
+  describe '#payload' do
+    it 'returns the model list payload unchanged' do
+      expect(presenter.payload).to eq(list_payload)
     end
 
     it 'includes timestamp_status in the payload' do
@@ -77,12 +81,6 @@ RSpec.describe CovLoupe::Presenters::ProjectCoveragePresenter do
   describe '#relative_files' do
     it 'returns the file list' do
       expect(presenter.relative_files.map { |f| f['file'] }).to eq(%w[lib/foo.rb lib/bar.rb])
-    end
-  end
-
-  describe '#relative_counts' do
-    it 'returns the counts hash' do
-      expect(presenter.relative_counts).to eq({ 'total' => 2, 'ok' => 1, 'stale' => 1 })
     end
   end
 

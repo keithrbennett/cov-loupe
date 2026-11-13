@@ -22,11 +22,10 @@ module CovLoupe
           return
         end
 
-        lines = payload['lines']
-        files = payload['files']
+        file_counts = payload['file_counts']
         tracking = payload['tracking']
-        with_coverage = files['with_coverage']
-        without_coverage = files['without_coverage']
+        with_coverage = file_counts['with_coverage']
+        without_coverage = file_counts['without_coverage']
 
         if tracking && tracking['enabled']
           puts 'Tracked globs:'
@@ -36,9 +35,9 @@ module CovLoupe
         end
         puts
 
-        puts "Lines (#{lines['included_files']} ok files): " \
-          "#{lines['total']} total, #{lines['covered']} covered, " \
-          "#{lines['uncovered']} uncovered (#{format_percentage(lines['percentage'])})"
+        puts "Lines (#{with_coverage['ok']} ok files): " \
+          "#{payload['total']} total, #{payload['covered']} covered, " \
+          "#{payload['uncovered']} uncovered (#{format_percentage(payload['percentage'])})"
         with_coverage_line = format_with_coverage_line(with_coverage)
         stale_line = format_stale_breakdown(with_coverage['stale']['by_type'])
         without_coverage_line, without_breakdown_line =
@@ -80,7 +79,7 @@ module CovLoupe
         without_by_type = without_coverage['by_type']
         without_coverage_line = "  Without coverage: #{without_coverage['total']} total"
         without_breakdown_line = '    Missing from coverage = ' \
-          "#{without_by_type[StaleStatus::MISSING_FROM_COVERAGE]}, " \
+          "#{without_by_type[StaleStatus::MISSING_TRACKED]}, " \
           "unreadable = #{without_by_type[StaleStatus::UNREADABLE]}, " \
           "skipped (errors) = #{without_by_type[StaleStatus::SKIPPED]}"
         [without_coverage_line, without_breakdown_line]

@@ -16,16 +16,10 @@ module CovLoupe
     #
     # @param coverage_lines [Array<Integer, nil>] SimpleCov coverage array where each element
     #   represents a line: Integer for hit count, nil for non-code lines
-    # @return [Hash] summary with 'covered', 'total', and 'percentage' keys
+    # @return [Hash] line metrics: 'covered', 'uncovered', 'total', and 'percentage'
     def self.summary(coverage_lines)
-      total = 0
-      covered = 0
-      coverage_lines.compact.each do |hits|
-        total += 1
-        covered += 1 if hits.to_i > 0
-      end
-      percentage = truncated_percentage(covered, total)
-      { 'covered' => covered, 'total' => total, 'percentage' => percentage }
+      hits = coverage_lines.compact
+      metrics(hits.count { |h| h.to_i.positive? }, hits.length)
     end
 
     # Identifies uncovered line numbers from a coverage array.
@@ -61,20 +55,21 @@ module CovLoupe
     # Aggregates coverage summaries from multiple files.
     #
     # @param file_summaries [Array<Hash>] array of hashes with 'covered' and 'total' keys
-    # @return [Hash] aggregated summary with 'covered', 'uncovered', 'total', and 'percentage' keys
+    # @return [Hash] aggregated line metrics with the same keys as summary
     def self.aggregate(file_summaries)
-      covered = file_summaries.sum { |row| row['covered'].to_i }
-      total = file_summaries.sum { |row| row['total'].to_i }
-      uncovered = total - covered
-      percentage = truncated_percentage(covered, total)
+      metrics(file_summaries.sum { |row| row.fetch('covered') },
+        file_summaries.sum { |row| row.fetch('total') })
+    end
 
+    def self.metrics(covered, total)
       {
         'covered'    => covered,
-        'uncovered'  => uncovered,
+        'uncovered'  => total - covered,
         'total'      => total,
-        'percentage' => percentage,
+        'percentage' => truncated_percentage(covered, total),
       }
     end
+    private_class_method :metrics
 
     # Truncates (rather than rounds) to two decimals so incomplete coverage never reports 100.0.
     # Integer arithmetic avoids float error before the final division.

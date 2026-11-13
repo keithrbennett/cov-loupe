@@ -35,7 +35,7 @@ RSpec.describe 'examples/success_predicates' do
   { 84.9 => false, 85.0 => true }.each do |percentage, expected|
     it "project_coverage_minimum_predicate.rb returns #{expected} for a #{percentage}% project total" do
       model = instance_double(CovLoupe::CoverageModel,
-        project_totals: { 'lines' => { 'percentage' => percentage } })
+        project_totals: { 'percentage' => percentage })
 
       expect(evaluate('project_coverage_minimum_predicate.rb', model)).to be(expected)
     end

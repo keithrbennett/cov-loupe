@@ -3,21 +3,13 @@
   "$id": "urn:cov-loupe:schema:v1:totals",
   "title": "cov-loupe v1 project coverage totals",
   "type": "object",
-  "required": ["schema_version", "lines", "tracking", "files", "timestamp_status"],
+  "required": ["schema_version", "covered", "uncovered", "total", "percentage", "tracking", "file_counts", "timestamp_status"],
   "properties": {
     "schema_version": {"const": 1, "description": "Version of this payload shape."},
-    "lines": {
-      "type": "object",
-      "required": ["covered", "uncovered", "total", "percentage", "included_files", "excluded_files"],
-      "properties": {
-        "covered": {"type": "integer", "minimum": 0, "description": "Covered lines in included files."},
-        "uncovered": {"type": "integer", "minimum": 0, "description": "Uncovered lines in included files."},
-        "total": {"type": "integer", "minimum": 0, "description": "Coverable lines in included files."},
-        "percentage": {"type": ["number", "null"], "minimum": 0, "maximum": 100, "description": "Line coverage percent (covered / coverable lines across included, non-stale files), truncated to two decimals; null when there are no included coverable lines."},
-        "included_files": {"type": "integer", "minimum": 0, "description": "Fresh files counted in line totals."},
-        "excluded_files": {"type": "integer", "minimum": 0, "description": "Stale files excluded from line totals."}
-      }
-    },
+    "covered": {"type": "integer", "minimum": 0, "description": "Covered lines in fresh files (stale files are excluded)."},
+    "uncovered": {"type": "integer", "minimum": 0, "description": "Uncovered lines in fresh files."},
+    "total": {"type": "integer", "minimum": 0, "description": "Coverable lines in fresh files."},
+    "percentage": {"type": ["number", "null"], "minimum": 0, "maximum": 100, "description": "Line coverage percent (covered / coverable lines across fresh files), truncated to two decimals; null when there are no such lines."},
     "tracking": {
       "type": "object",
       "required": ["enabled", "globs"],
@@ -26,7 +18,7 @@
         "globs": {"type": "array", "items": {"type": "string"}, "description": "Active tracked glob patterns."}
       }
     },
-    "files": {
+    "file_counts": {
       "type": "object",
       "required": ["total", "with_coverage"],
       "properties": {
@@ -36,7 +28,7 @@
       }
     },
     "timestamp_status": {"type": "string", "enum": ["ok", "missing"], "description": "Whether the coverage timestamp is available."},
-    "warnings": {"type": "array", "items": {"type": "string"}, "description": "Optional MCP warnings when timestamps are missing."}
+    "warnings": {"type": "array", "items": {"type": "string"}, "description": "Timestamp warnings; present only in MCP output when timestamp_status is missing."}
   },
   "$defs": {
     "with_coverage": {
@@ -71,9 +63,9 @@
         "total": {"type": "integer", "minimum": 0, "description": "Tracked files without usable coverage."},
         "by_type": {
           "type": "object",
-          "required": ["missing_from_coverage", "unreadable", "skipped"],
+          "required": ["missing_tracked", "unreadable", "skipped"],
           "properties": {
-            "missing_from_coverage": {"type": "integer", "minimum": 0, "description": "Tracked files absent from coverage data."},
+            "missing_tracked": {"type": "integer", "minimum": 0, "description": "Tracked files absent from coverage data."},
             "unreadable": {"type": "integer", "minimum": 0, "description": "Tracked files that could not be read."},
             "skipped": {"type": "integer", "minimum": 0, "description": "Files skipped because coverage data was invalid."}
           }

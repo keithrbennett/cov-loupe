@@ -306,9 +306,9 @@ RSpec.describe CovLoupe::CoverageModel do
     stale_totals = stale_model.project_totals
 
     expect(tracked_list['missing_tracked_files']).not_to be_empty
-    expect(tracked_totals['files']).to have_key('without_coverage')
+    expect(tracked_totals['file_counts']).to have_key('without_coverage')
     expect(stale_list['files'].first['stale']).to eq('length_mismatch')
-    expect(stale_totals['lines']['percentage']).to be_nil
+    expect(stale_totals['percentage']).to be_nil
     expect_schema_valid('list', tracked_list)
     expect_schema_valid('totals', tracked_totals)
     expect_schema_valid('list', stale_list)
@@ -320,17 +320,15 @@ RSpec.describe CovLoupe::CoverageModel do
       totals = model.project_totals
 
       aggregate_failures do
-        expect(totals['lines']).to include(
-          'total'          => 6,
-          'covered'        => 3,
-          'uncovered'      => 3,
-          'percentage'     => be_within(0.01).of(50.0),
-          'included_files' => 2,
-          'excluded_files' => 0
+        expect(totals).to include(
+          'total'      => 6,
+          'covered'    => 3,
+          'uncovered'  => 3,
+          'percentage' => be_within(0.01).of(50.0)
         )
         expect(totals['tracking']).to include('enabled' => false, 'globs' => [])
-        expect(totals['files']).to include('total' => 2)
-        expect(totals['files']['with_coverage']).to include('total' => 2, 'ok' => 2)
+        expect(totals['file_counts']).to include('total' => 2)
+        expect(totals['file_counts']['with_coverage']).to include('total' => 2, 'ok' => 2)
       end
     end
 
@@ -348,18 +346,16 @@ RSpec.describe CovLoupe::CoverageModel do
       totals = model.project_totals
 
       aggregate_failures do
-        expect(totals['lines']).to include(
-          'total'          => 3,
-          'covered'        => 2,
-          'uncovered'      => 1,
-          'percentage'     => be_within(0.01).of(66.66),
-          'included_files' => 1,
-          'excluded_files' => 1
+        expect(totals).to include(
+          'total'      => 3,
+          'covered'    => 2,
+          'uncovered'  => 1,
+          'percentage' => be_within(0.01).of(66.66)
         )
-        expect(totals['files']).to include('total' => 2)
-        expect(totals['files']['with_coverage']).to include('total' => 2, 'ok' => 1)
-        expect(totals['files']['with_coverage']['stale']).to include('total' => 1)
-        expect(totals['files']['with_coverage']['stale']['by_type']).to include('newer' => 1)
+        expect(totals['file_counts']).to include('total' => 2)
+        expect(totals['file_counts']['with_coverage']).to include('total' => 2, 'ok' => 1)
+        expect(totals['file_counts']['with_coverage']['stale']).to include('total' => 1)
+        expect(totals['file_counts']['with_coverage']['stale']['by_type']).to include('newer' => 1)
       end
     end
 
@@ -379,17 +375,15 @@ RSpec.describe CovLoupe::CoverageModel do
       totals = model.project_totals
 
       aggregate_failures do
-        expect(totals['lines']).to include(
-          'total'          => 0,
-          'covered'        => 0,
-          'uncovered'      => 0,
-          'percentage'     => nil,
-          'included_files' => 0,
-          'excluded_files' => 2
+        expect(totals).to include(
+          'total'      => 0,
+          'covered'    => 0,
+          'uncovered'  => 0,
+          'percentage' => nil
         )
-        expect(totals['files']).to include('total' => 2)
-        expect(totals['files']['with_coverage']['stale']).to include('total' => 2)
-        expect(totals['files']['with_coverage']['stale']['by_type']).to include(
+        expect(totals['file_counts']).to include('total' => 2)
+        expect(totals['file_counts']['with_coverage']['stale']).to include('total' => 2)
+        expect(totals['file_counts']['with_coverage']['stale']['by_type']).to include(
           'length_mismatch' => 1,
           'unreadable'      => 1
         )
@@ -399,24 +393,24 @@ RSpec.describe CovLoupe::CoverageModel do
     it 'respects tracked_globs filtering' do
       totals = model.project_totals(tracked_globs: ['lib/foo.rb'])
 
-      expect(totals['lines']).to include(
+      expect(totals).to include(
         'total'      => 3,
         'covered'    => 2,
         'uncovered'  => 1,
         'percentage' => be_within(0.01).of(66.66)
       )
       expect(totals['tracking']).to include('enabled' => true, 'globs' => ['lib/foo.rb'])
-      expect(totals['files']).to include('total' => 1)
-      expect(totals['files']['with_coverage']).to include('total' => 1, 'ok' => 1)
+      expect(totals['file_counts']).to include('total' => 1)
+      expect(totals['file_counts']['with_coverage']).to include('total' => 1, 'ok' => 1)
     end
 
     it 'includes without_coverage data when tracking is enabled' do
       totals = model.project_totals(tracked_globs: ['lib/**/*.rb'])
 
       expect(totals['tracking']).to include('enabled' => true)
-      expect(totals['files']['without_coverage']).to include('total' => 1)
-      expect(totals['files']['without_coverage']['by_type'])
-        .to include('missing_from_coverage' => 1)
+      expect(totals['file_counts']['without_coverage']).to include('total' => 1)
+      expect(totals['file_counts']['without_coverage']['by_type'])
+        .to include('missing_tracked' => 1)
     end
 
     it 'counts a missing file matched by overlapping tracked globs once' do
@@ -424,7 +418,7 @@ RSpec.describe CovLoupe::CoverageModel do
       totals = model.project_totals(tracked_globs: globs)
 
       expect(model.list(tracked_globs: globs)['missing_tracked_files']).to eq(['lib/uncovered_file.rb'])
-      expect(totals['files']['without_coverage']['by_type']).to include('missing_from_coverage' => 1)
+      expect(totals['file_counts']['without_coverage']['by_type']).to include('missing_tracked' => 1)
     end
 
     it 'counts unreadable tracked files in without_coverage breakdown' do
@@ -438,8 +432,8 @@ RSpec.describe CovLoupe::CoverageModel do
 
       aggregate_failures do
         expect(totals['tracking']).to include('enabled' => true)
-        expect(totals['files']['without_coverage']).to include('total' => 1)
-        expect(totals['files']['without_coverage']['by_type'])
+        expect(totals['file_counts']['without_coverage']).to include('total' => 1)
+        expect(totals['file_counts']['without_coverage']['by_type'])
           .to include('unreadable' => 1)
       end
     end
@@ -455,8 +449,8 @@ RSpec.describe CovLoupe::CoverageModel do
       totals = model.project_totals(tracked_globs: ['lib/**/*.rb'])
 
       aggregate_failures do
-        expect(totals['files']['with_coverage']['stale']['by_type']).to include('unreadable' => 1)
-        expect(totals['files']['without_coverage']['by_type']).to include('unreadable' => 0)
+        expect(totals['file_counts']['with_coverage']['stale']['by_type']).to include('unreadable' => 1)
+        expect(totals['file_counts']['without_coverage']['by_type']).to include('unreadable' => 0)
       end
     end
 
@@ -472,7 +466,7 @@ RSpec.describe CovLoupe::CoverageModel do
 
       totals = model.project_totals
 
-      expect(totals['files']['with_coverage']['stale']['by_type']).to include(
+      expect(totals['file_counts']['with_coverage']['stale']['by_type']).to include(
         'deleted' => 1
       )
     end
@@ -485,7 +479,53 @@ RSpec.describe CovLoupe::CoverageModel do
         coverage_file: File.dirname(FIXTURE_PROJECT1_COVERAGE_PATH)
       )
       data = model.summary_for('lib/foo.rb')
-      expect(data['summary']).to include('total' => 3, 'covered' => 2)
+      expect(data).to include('total' => 3, 'covered' => 2)
+    end
+  end
+
+  describe 'file queries' do
+    let(:metrics) do
+      { 'covered' => 2, 'uncovered' => 1, 'total' => 3, 'percentage' => 66.66, 'stale' => 'ok' }
+    end
+
+    {
+      summary_for:   ['summary', {}],
+      uncovered_for: ['uncovered', { 'uncovered_lines' => [4] }],
+      detailed_for:  ['detailed', { 'lines' => [
+        { 'line' => 3, 'hits' => 1, 'covered' => true },
+        { 'line' => 4, 'hits' => 0, 'covered' => false },
+        { 'line' => 6, 'hits' => 2, 'covered' => true },
+      ] }],
+    }.each do |method, (schema, specific)|
+      it "#{method} returns flat line metrics and staleness" do
+        result = model.public_send(method, 'lib/foo.rb')
+
+        expect(result).to eq({ 'schema_version' => 1, 'file' => 'lib/foo.rb' }.merge(specific, metrics))
+        expect(result.keys.last).to eq('stale')
+        expect_schema_valid(schema, result)
+      end
+    end
+
+    it 'raw_for returns the lines and staleness' do
+      result = model.raw_for('lib/foo.rb')
+
+      expect(result).to eq('schema_version' => 1, 'file' => 'lib/foo.rb',
+        'lines' => [nil, nil, 1, 0, nil, 2], 'stale' => 'ok')
+      expect_schema_valid('raw', result)
+    end
+
+    it 'returns a summary_for payload identical to the list row' do
+      row = model.list['files'].find { |r| r['file'] == 'lib/foo.rb' }
+
+      expect(model.summary_for('lib/foo.rb').except('schema_version')).to eq(row)
+    end
+
+    it 'reports ok without a second staleness check when raise_on_stale is true' do
+      strict_model = described_class.new(root: root)
+      allow(strict_model).to receive(:file_staleness).and_call_original
+
+      expect(strict_model.summary_for('lib/foo.rb', raise_on_stale: true)).to include('stale' => 'ok')
+      expect(strict_model).not_to have_received(:file_staleness)
     end
   end
 
@@ -619,6 +659,21 @@ RSpec.describe CovLoupe::CoverageModel do
     end
   end
 
+  describe 'file query staleness failure' do
+    %i[raw_for summary_for uncovered_for detailed_for].each do |method|
+      it "#{method} marks the file 'unreadable' and logs when the staleness check fails" do
+        logger = instance_double(CovLoupe::Logger, safe_log: nil)
+        model_with_logger = described_class.new(root: root, logger: logger)
+        checker = instance_double(CovLoupe::StalenessChecker, off?: true)
+        allow(checker).to receive(:file_staleness_status).and_raise(StandardError, 'Test error')
+        allow(model_with_logger).to receive(:build_staleness_checker).and_return(checker)
+
+        expect(model_with_logger.public_send(method, 'lib/foo.rb')['stale']).to eq('unreadable')
+        expect(logger).to have_received(:safe_log).with(/Failed to check staleness/)
+      end
+    end
+  end
+
   describe 'sort tiebreaker' do
     it 'sorts by filename when percentages are equal' do
       # Create a fixture with files having identical coverage percentages
@@ -745,7 +800,7 @@ list2.find do |f|
 end['covered']).to eq(3)
       # Verify summary_for also gets fresh data
       summary = long_lived_model.summary_for(first_file_path)
-      expect(summary['summary']['covered']).to eq(3)
+      expect(summary['covered']).to eq(3)
     end
 
     it 'picks up new files added to the coverage file' do
@@ -814,16 +869,14 @@ end['covered']).to eq(3)
       fake_checker = instance_double(CovLoupe::StalenessChecker, off?: false)
       allow(fake_checker).to receive(:check_file!).with(existing_file_abs, anything)
         .and_raise(Errno::ENOENT, 'No such file or directory')
+      allow(fake_checker).to receive(:file_staleness_status).and_return('deleted')
 
       allow(model_with_logger).to receive(:build_staleness_checker).and_return(fake_checker)
 
       # summary_for should return coverage data without raising
       result = model_with_logger.summary_for(existing_file, raise_on_stale: false)
 
-      expect(result).to include(
-        'file'    => existing_file,
-        'summary' => be_a(Hash)
-      )
+      expect(result).to include('file' => existing_file, 'total' => be_a(Integer), 'stale' => 'deleted')
     end
   end
 
@@ -856,16 +909,16 @@ end['covered']).to eq(3)
           # summary_for
           summary = model_with_deleted.summary_for('lib/deleted.rb')
           expect(summary).to include(
-            'file'    => 'lib/deleted.rb',
-            'summary' => include('total' => 3, 'covered' => 2)
+            'file' => 'lib/deleted.rb',
+            'total' => 3, 'covered' => 2, 'stale' => 'deleted'
           )
 
           # detailed_for
           detailed = model_with_deleted.detailed_for('lib/deleted.rb')
           expect(detailed).to include(
-            'file'    => 'lib/deleted.rb',
-            'lines'   => be_an(Array),
-            'summary' => include('total' => 3)
+            'file'  => 'lib/deleted.rb',
+            'lines' => be_an(Array),
+            'total' => 3
           )
 
           # raw_for
@@ -878,9 +931,9 @@ end['covered']).to eq(3)
           # uncovered_for
           uncovered = model_with_deleted.uncovered_for('lib/deleted.rb')
           expect(uncovered).to include(
-            'file'      => 'lib/deleted.rb',
-            'uncovered' => [2],
-            'summary'   => include('total' => 3)
+            'file'            => 'lib/deleted.rb',
+            'uncovered_lines' => [2],
+            'total'           => 3
           )
         end
       end
@@ -968,13 +1021,13 @@ end['covered']).to eq(3)
         # Mock staleness checker to return OK status
         stub_checker = instance_double(CovLoupe::StalenessChecker, off?: true)
         allow(CovLoupe::StalenessChecker).to receive(:new).and_return(stub_checker)
-        allow(stub_checker).to receive(:check_file!).and_return(nil)
+        allow(stub_checker).to receive_messages(check_file!: nil, file_staleness_status: 'ok')
 
         aggregate_failures do
           # Default (raise_on_stale: false)
           normal_model = described_class.new(root: root, coverage_file: temp_coverage_file)
           summary = normal_model.summary_for('lib/existing.rb')
-          expect(summary).to include('summary' => include('total' => 3, 'covered' => 2))
+          expect(summary).to include('total' => 3, 'covered' => 2)
 
           # Strict (raise_on_stale: true)
           strict_model = described_class.new(
@@ -983,7 +1036,7 @@ end['covered']).to eq(3)
             raise_on_stale: true
           )
           summary_strict = strict_model.summary_for('lib/existing.rb')
-          expect(summary_strict).to include('summary' => include('total' => 3, 'covered' => 2))
+          expect(summary_strict).to include('total' => 3, 'covered' => 2)
         end
       end
     end

@@ -61,14 +61,14 @@ FILE_BASED_TOOL_CONFIGS = {
   summary:   {
     tool_class:             CovLoupe::Tools::FileCoverageSummaryTool,
     model_method:           :summary_for,
-    expected_keys:          %w[file summary stale],
+    expected_keys:          %w[file covered uncovered total percentage stale],
     description:            'coverage summary data',
     mock_data:              {
       'file'    => '/abs/path/lib/foo.rb',
-      'summary' => { 'covered' => 10, 'total' => 12, 'percentage' => 83.33 },
+      'covered' => 10, 'uncovered' => 2, 'total' => 12, 'percentage' => 83.33
     },
     additional_validations: ->(data, _item) {
-      expect(data['summary']).to include('covered', 'total', 'percentage')
+      expect(data).to include('covered', 'uncovered', 'total', 'percentage')
     },
     tool_specific_examples: {
       'includes percentage in summary data' => ->(config) {
@@ -83,7 +83,7 @@ FILE_BASED_TOOL_CONFIGS = {
           server_context: null_server_context)
         data, = expect_mcp_text_json(response)
 
-        expect(data['summary']['percentage']).to be_a(Float)
+        expect(data['percentage']).to be_a(Float)
       },
     },
   },
@@ -105,18 +105,18 @@ FILE_BASED_TOOL_CONFIGS = {
   uncovered: {
     tool_class:             CovLoupe::Tools::FileUncoveredLinesTool,
     model_method:           :uncovered_for,
-    expected_keys:          %w[file uncovered summary stale],
+    expected_keys:          %w[file uncovered_lines covered uncovered total percentage stale],
     description:            'uncovered lines data',
     mock_data:              {
-      'file'      => '/abs/path/lib/foo.rb',
-      'uncovered' => [5, 9, 12],
-      'summary'   => { 'covered' => 10, 'total' => 12, 'percentage' => 83.33 },
+      'file' => '/abs/path/lib/foo.rb',
+      'uncovered_lines' => [5, 9, 12],
+      'covered' => 10, 'uncovered' => 2, 'total' => 12, 'percentage' => 83.33
     },
     additional_validations: ->(data, _item) {
-      expect(data['uncovered']).to eq([5, 9, 12])
+      expect(data['uncovered_lines']).to eq([5, 9, 12])
     },
     tool_specific_examples: {
-      'includes both uncovered lines and summary' => ->(config) {
+      'includes both uncovered lines and line metrics' => ->(config) {
         stub_coverage_model(
           model_method: :uncovered_for,
           mock_data:    config[:mock_data],
@@ -128,8 +128,8 @@ FILE_BASED_TOOL_CONFIGS = {
           server_context: null_server_context)
         data, = expect_mcp_text_json(response)
 
-        expect(data['uncovered']).to be_an(Array)
-        expect(data['summary']).to include('covered', 'total', 'percentage')
+        expect(data['uncovered_lines']).to be_an(Array)
+        expect(data).to include('covered', 'uncovered', 'total', 'percentage')
       },
     },
   },
@@ -137,7 +137,7 @@ FILE_BASED_TOOL_CONFIGS = {
   detailed:  {
     tool_class:             CovLoupe::Tools::FileCoverageDetailedTool,
     model_method:           :detailed_for,
-    expected_keys:          %w[file lines summary stale],
+    expected_keys:          %w[file lines covered uncovered total percentage stale],
     description:            'detailed coverage data',
     mock_data:              {
       'file'    => '/abs/path/lib/foo.rb',
@@ -145,7 +145,7 @@ FILE_BASED_TOOL_CONFIGS = {
         { 'line' => 1, 'hits' => 1, 'covered' => true },
         { 'line' => 2, 'hits' => 0, 'covered' => false },
       ],
-      'summary' => { 'covered' => 1, 'total' => 2, 'percentage' => 50.0 },
+      'covered' => 1, 'uncovered' => 1, 'total' => 2, 'percentage' => 50.0
     },
     additional_validations: ->(data, _item) {
       expect(data['lines']).to be_an(Array)

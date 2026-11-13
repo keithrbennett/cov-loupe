@@ -36,19 +36,15 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
         presenter_double = instance_double(CovLoupe::Presenters::ProjectTotalsPresenter)
         allow(presenter_double).to receive_messages(
           payload:          {
-            'lines'    => {
-              'total'          => 6,
-              'covered'        => 3,
-              'uncovered'      => 3,
-              'percentage'     => 50.0,
-              'included_files' => 2,
-              'excluded_files' => 1,
-            },
-            'tracking' => {
+            'total'       => 6,
+            'covered'     => 3,
+            'uncovered'   => 3,
+            'percentage'  => 50.0,
+            'tracking'    => {
               'enabled' => true,
               'globs'   => ['lib/**/*.rb'],
             },
-            'files'    => {
+            'file_counts' => {
               'total'            => 4,
               'with_coverage'    => {
                 'total' => 3,
@@ -66,9 +62,9 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
               'without_coverage' => {
                 'total'   => 1,
                 'by_type' => {
-                  'missing_from_coverage' => 1,
-                  'unreadable'            => 0,
-                  'skipped'               => 0,
+                  'missing_tracked' => 1,
+                  'unreadable'      => 0,
+                  'skipped'         => 0,
                 },
               },
             },
@@ -93,12 +89,11 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
         presenter_double = instance_double(CovLoupe::Presenters::ProjectTotalsPresenter)
         allow(presenter_double).to receive_messages(
           payload:          {
-            'lines'    => { 'total' => 0, 'covered' => 0, 'uncovered' => 0, 'percentage' => nil,
-                         'included_files' => 0, 'excluded_files' => 0 },
+            'total' => 0, 'covered' => 0, 'uncovered' => 0, 'percentage' => nil,
             'tracking' => { 'enabled' => false, 'globs' => [] },
-            'files'    => { 'total'         => 0,
-                            'with_coverage' => { 'total' => 0, 'ok' => 0,
-                                              'stale' => { 'total' => 0, 'by_type' => {} } } },
+            'file_counts' => { 'total'         => 0,
+                               'with_coverage' => { 'total' => 0, 'ok' => 0,
+                                              'stale' => { 'total' => 0, 'by_type' => {} } } }
           },
           timestamp_status: 'ok'
         )
@@ -110,7 +105,7 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
       end
     end
 
-    it_behaves_like 'a command with formatted output', [], %w[lines tracking files]
+    it_behaves_like 'a command with formatted output', [], %w[percentage tracking file_counts]
 
     it 'raises when unexpected arguments are provided' do
       expect do
@@ -121,10 +116,9 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
     shared_examples 'timestamp warning display' do |timestamp_status, should_warn|
       let(:base_payload) do
         {
-          'lines'    => { 'total' => 0, 'covered' => 0, 'uncovered' => 0, 'percentage' => 0,
-                       'included_files' => 0, 'excluded_files' => 0 },
+          'total' => 0, 'covered' => 0, 'uncovered' => 0, 'percentage' => 0,
           'tracking' => { 'enabled' => false, 'globs' => [] },
-          'files'    => {
+          'file_counts' => {
             'total'         => 0,
             'with_coverage' => {
               'total' => 0,
@@ -139,7 +133,7 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
                 },
               },
             },
-          },
+          }
         }
       end
 

@@ -15,6 +15,11 @@ module CovLoupe
       'docs-local' => LOCAL_README_PATH,
     }.freeze
 
+    # The resource map with snake_case keys, as payload keys are (e.g. 'docs_local').
+    def self.payload_map
+      RESOURCE_MAP.transform_keys { |name| name.tr('-', '_') }
+    end
+
     def self.cli_url_for(name)
       RESOURCE_MAP[name] || (raise UsageError,
         "Unknown resource: '#{name}'. Valid resources: #{RESOURCE_MAP.keys.sort.join(', ')}")

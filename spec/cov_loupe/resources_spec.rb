@@ -24,6 +24,16 @@ RSpec.describe CovLoupe::Resources do
     end
   end
 
+  describe '.payload_map' do
+    it 'uses snake_case keys with the RESOURCE_MAP values' do
+      expect(described_class.payload_map).to eq(
+        'repo'       => described_class::RESOURCE_MAP['repo'],
+        'docs'       => described_class::RESOURCE_MAP['docs'],
+        'docs_local' => described_class::RESOURCE_MAP['docs-local']
+      )
+    end
+  end
+
   describe 'RESOURCE_MAP' do
     subject(:result) { described_class::RESOURCE_MAP }
 

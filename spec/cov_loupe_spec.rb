@@ -175,7 +175,7 @@ RSpec.describe CovLoupe do
           mcp_result = JSON.parse(mcp_out)['result']
           expect(mcp_result['isError']).to be(false), mcp_out
           expect(JSON.parse(mcp_result.dig('content', 0, 'text'))).to include(
-            'file' => 'lib/café.rb', 'summary' => include('percentage' => 100.0))
+            'file' => 'lib/café.rb', 'percentage' => 100.0)
         end
       end
     end

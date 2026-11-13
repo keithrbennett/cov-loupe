@@ -24,8 +24,9 @@ RSpec.describe CovLoupe::CoverageCLI do
       payload = JSON.parse(output)
 
       expect(payload['files']).to be_an(Array)
-      expect(payload['files'].first['file']).to eq('lib/bar.rb').or eq('lib/foo.rb')
-      expect(payload['counts']).to include('total', 'ok', 'stale')
+      percentages = payload['files'].map { |row| row['percentage'] }
+      expect(percentages).to eq(percentages.sort)
+      expect(payload).not_to have_key('counts')
     end
 
     context 'when coverage rows are skipped due to errors' do

@@ -75,12 +75,13 @@ RSpec.describe 'File-based MCP Tools' do
       setup_mcp_response_stub
     end
 
-    it 'tools that include summary data return consistent summary format' do
-      summary_tools = FILE_BASED_TOOL_CONFIGS.select do |_, config|
-        config[:expected_keys].include?('summary')
+    it 'tools that include line metrics return them in the same format' do
+      metric_tools = FILE_BASED_TOOL_CONFIGS.select do |_, config|
+        config[:expected_keys].include?('percentage')
       end
+      expect(metric_tools.keys).to contain_exactly(:summary, :uncovered, :detailed)
 
-      summary_tools.each_value do |config|
+      metric_tools.each_value do |config|
         stub_coverage_model(
           model_method: config[:model_method],
           mock_data:    config[:mock_data],
@@ -90,10 +91,8 @@ RSpec.describe 'File-based MCP Tools' do
         response = config[:tool_class].call(path: 'lib/foo.rb', server_context: server_context)
         data = JSON.parse(response.content.first['text'])
 
-        if data.key?('summary')
-          expect(data['summary']).to include('covered', 'total', 'percentage')
-          expect(data['summary']['percentage']).to be_a(Numeric)
-        end
+        expect(data).to include('covered', 'uncovered', 'total', 'percentage')
+        expect(data['percentage']).to be_a(Numeric)
       end
     end
   end

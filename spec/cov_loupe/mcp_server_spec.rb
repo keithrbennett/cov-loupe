@@ -36,8 +36,9 @@ RSpec.describe CovLoupe::MCPServer do
     expect(fake_server).not_to be_nil
 
     expect(fake_server.params[:name]).to eq('cov-loupe')
-    # Ensure instructions mention the README path
-    expect(fake_server.params[:instructions]).to include('README.md')
+    # Ensure instructions mention the README path under the payload resource names
+    expect(fake_server.params[:instructions]).to include('README.md', '"docs_local"')
+    expect(fake_server.params[:instructions]).not_to include('docs-local')
     # Ensure expected tools are registered
     tool_names = fake_server.params[:tools].map { |t| t.name.split('::').last }
     expect(tool_names).to include(

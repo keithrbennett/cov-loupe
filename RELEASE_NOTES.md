@@ -7,6 +7,30 @@
 
 ### Breaking
 
+- **Payload keys reshaped for schema v1.** Line metrics now have one flat shape everywhere,
+  and keys whose names meant different things in different payloads were renamed. This
+  applies to library hashes, structured CLI output, and MCP tool payloads; `schema_version`
+  stays `1`, and pre-release 7.0 payloads that already reported `1` used the old shapes.
+    - File payloads (`summary_for`, `uncovered_for`, `detailed_for`; CLI `summary`,
+      `uncovered`, `detailed`; the matching MCP tools) replace the `summary` object with
+      top-level `covered`, `uncovered`, `total`, and `percentage`. A `summary_for` result is
+      now the file's `list` row plus `schema_version`.
+    - `list` rows keep their keys and gain an `uncovered` count.
+    - `uncovered_for` renames its line-number array `uncovered` to `uncovered_lines`.
+    - `project_totals` (CLI `totals`, MCP `project_coverage_totals`) replaces the `lines`
+      object with top-level line metrics, drops `included_files` and `excluded_files` (use
+      `file_counts.with_coverage.ok` and `.stale.total`), renames `files` to `file_counts`,
+      and renames the `without_coverage` count `missing_from_coverage` to `missing_tracked`.
+    - The CLI and MCP `list`/`project_coverage` payloads no longer include `counts`.
+    - Library file queries (`summary_for`, `uncovered_for`, `detailed_for`, `raw_for`) now
+      include `stale`, as CLI and MCP output already did.
+    - The MCP `help` payload and server instructions name the `docs-local` resource
+      `docs_local`; the CLI's `--path-for docs-local` is unchanged.
+
+  The JSON Schemas under `lib/cov_loupe/schemas/v1/`, the docs, the examples, and the MCP
+  tool descriptions are updated. The Library API docs now state the compatibility rules for
+  later branch or method coverage. See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#payload-keys-reshaped).
 - **`off` disables logging.** `--log-file off` (any case, surrounding whitespace ignored),
   `COV_LOUPE_OPTS`, and the Ruby API now treat `off` as the reserved word that disables
   logging, like `stderr` is reserved. The old `':off'` spelling is no longer recognized and
@@ -240,7 +264,7 @@
 - **The MCP `help` and `version` tools describe the common arguments.** `help` now lists `error_mode`/`output_chars` among every tool's inputs, and the `version` tool no longer says it takes no arguments.
 - **Fixed `CoverageReporter.report` with an absolute `SimpleCov.coverage_dir`.** The default coverage location joined the directory onto `SimpleCov.root` even when it was absolute; it is now expanded against the root, as SimpleCov does. An explicit `root:` now also sets where that directory is looked for; it used to be looked for under `SimpleCov.root`.
 - **Documentation links work in the installed gem and on GitHub.** Links now point to real files (`README.md`, `LICENSE`, `examples/*/README.md`, ...) rather than to the documentation site's wrapper pages, and the gem now includes the developer docs (`docs/dev/`) they link to. The gem no longer includes `AGENTS.md` or `CLAUDE.md`, which are instructions for agents working in the repository.
-- **Fixed duplicate missing tracked files.** A file matched by more than one `--tracked-globs` pattern (for example `lib/**/*.rb` and `lib/*.rb`) was listed twice in `missing_tracked_files` and counted twice in the `totals` `missing_from_coverage` count; it is now listed and counted once.
+- **Fixed duplicate missing tracked files.** A file matched by more than one `--tracked-globs` pattern (for example `lib/**/*.rb` and `lib/*.rb`) was listed twice in `missing_tracked_files` and counted twice in the `totals` `missing_tracked` count; it is now listed and counted once.
 - **Fixed the `--tracked-globs` help text.** It now points to SimpleCov's `cover` globs; `track_files` is deprecated in SimpleCov 1.x.
 - **Fixed `NoMethodError` message rewriting on Ruby 3.4+.** Ruby 3.4 quotes the method name in `NoMethodError#message` as `'name'` instead of the pre-3.4 `` `name' ``, so the friendly "missing method '...' on ..." rewrite silently failed to apply on 3.4+. Both quote styles are now recognized.
 

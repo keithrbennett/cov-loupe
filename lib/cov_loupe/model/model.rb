@@ -28,6 +28,10 @@ module CovLoupe
   # Coverage data is keyed by absolute path internally. Query results report paths
   # relative to the project root; paths outside the root stay absolute.
   #
+  # File queries return 'schema_version', 'file', their own entries, and 'stale' (a
+  # StaleStatus value; always 'ok' with raise_on_stale). Line metrics are 'covered',
+  # 'uncovered', 'total', and 'percentage'.
+  #
   # Construction eagerly validates that the coverage file exists and loads initial data
   # via ModelDataCache. Subsequent data accesses check the cache on every call and
   # auto-reload if the coverage file has changed (based on mtime + MD5 digest).
@@ -105,31 +109,31 @@ module CovLoupe
       @volume_case_sensitive = PathUtils.volume_case_sensitive?(@root)
     end
 
-    # Returns { 'schema_version' => 1, 'file' => <relative_path>, 'lines' => [hits|nil,...] }
+    # Returns { 'schema_version' => 1, 'file' => <relative_path>, 'lines' => [hits|nil,...],
+    #           'stale' => <status> }
     def raw_for(path, raise_on_stale: @default_raise_on_stale)
       # file_payload relativizes into a deep copy, so callers can't mutate the cached lines
       file_payload(path, raise_on_stale) { |lines| { 'lines' => lines } }
     end
 
-    # Returns { 'schema_version' => 1, 'file' => <relative_path>,
-    #           'summary' => {'covered'=>, 'total'=>, 'percentage'=>} }
+    # Returns { 'schema_version' => 1, 'file' => <relative_path>, <line metrics>, 'stale' => <status> }
     def summary_for(path, raise_on_stale: @default_raise_on_stale)
-      file_payload(path, raise_on_stale) { |lines| { 'summary' => CoverageCalculator.summary(lines) } }
+      file_payload(path, raise_on_stale) { |lines| CoverageCalculator.summary(lines) }
     end
 
-    # Returns { 'schema_version' => 1, 'file' => <relative_path>, 'uncovered' => [line,...],
-    #           'summary' => {...} }
+    # Returns { 'schema_version' => 1, 'file' => <relative_path>, 'uncovered_lines' => [line,...],
+    #           <line metrics>, 'stale' => <status> }
     def uncovered_for(path, raise_on_stale: @default_raise_on_stale)
       file_payload(path, raise_on_stale) do |lines|
-        { 'uncovered' => CoverageCalculator.uncovered(lines), 'summary' => CoverageCalculator.summary(lines) }
+        { 'uncovered_lines' => CoverageCalculator.uncovered(lines) }.merge(CoverageCalculator.summary(lines))
       end
     end
 
     # Returns { 'schema_version' => 1, 'file' => <relative_path>,
-    #           'lines' => [{'line'=>,'hits'=>,'covered'=>},...], 'summary' => {...} }
+    #           'lines' => [{'line'=>,'hits'=>,'covered'=>},...], <line metrics>, 'stale' => <status> }
     def detailed_for(path, raise_on_stale: @default_raise_on_stale)
       file_payload(path, raise_on_stale) do |lines|
-        { 'lines' => CoverageCalculator.detailed(lines), 'summary' => CoverageCalculator.summary(lines) }
+        { 'lines' => CoverageCalculator.detailed(lines) }.merge(CoverageCalculator.summary(lines))
       end
     end
 
@@ -202,11 +206,10 @@ module CovLoupe
       )
     end
 
+    # file_staleness handles a failed check; this rescue covers a failed lookup.
     def staleness_for(path)
       file_abs = File.expand_path(path, @root)
-      coverage_lines = lookup_lines(file_abs)
-      build_staleness_checker(raise_on_stale: false, tracked_globs: nil)
-        .file_staleness_status(file_abs, coverage_lines)
+      file_staleness(file_abs, lookup_lines(file_abs))
     rescue => e
       @logger.safe_log("Failed to check staleness for #{path}: #{e.message}")
       StaleStatus::UNREADABLE
@@ -267,10 +270,20 @@ module CovLoupe
         volume_case_sensitive: volume_case_sensitive)
     end
 
-    # Builds a file query payload: 'file' plus the entries the block derives from the lines.
+    # Builds a file query payload: 'file', the entries the block derives from the lines, and
+    # 'stale'. With raise_on_stale, coverage_data_for has already raised for any stale file.
     private def file_payload(path, raise_on_stale)
       file_abs, lines = coverage_data_for(path, raise_on_stale: raise_on_stale)
-      relative_paths(PayloadSchema.add({ 'file' => file_abs }.merge(yield(lines))))
+      stale = raise_on_stale ? StaleStatus::OK : file_staleness(file_abs, lines)
+      relative_paths(PayloadSchema.add({ 'file' => file_abs }.merge(yield(lines), 'stale' => stale)))
+    end
+
+    private def file_staleness(file_abs, lines)
+      build_staleness_checker(raise_on_stale: false, tracked_globs: nil)
+        .file_staleness_status(file_abs, lines)
+    rescue => e
+      @logger.safe_log("Failed to check staleness for #{file_abs}: #{e.message}")
+      StaleStatus::UNREADABLE
     end
 
     private def coverage_map
@@ -353,8 +366,7 @@ module CovLoupe
       file_abs = File.expand_path(path, @root)
       coverage_lines = lookup_lines(file_abs)
 
-      # When raise_on_stale is false, allow deleted files to return coverage data
-      # The staleness status will be added by the presenter via staleness_for
+      # When raise_on_stale is false, deleted files still return coverage data, marked stale
       if raise_on_stale && !File.file?(file_abs)
         raise FileNotFoundError, "File not found: #{path}"
       end

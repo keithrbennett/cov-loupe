@@ -45,8 +45,8 @@ RSpec.describe CovLoupe::Commands::SummaryCommand do
         allow(presenter_double).to receive_messages(
           payload:       {
             'file'    => 'lib/empty.rb',
-            'summary' => { 'covered' => 0, 'total' => 0, 'percentage' => nil },
-            'stale'   => 'ok',
+            'covered' => 0, 'total' => 0, 'percentage' => nil,
+            'stale'   => 'ok'
           },
           relative_path: 'lib/empty.rb'
         )
@@ -78,7 +78,7 @@ RSpec.describe CovLoupe::Commands::SummaryCommand do
       before { stub_staleness_check('length_mismatch') }
 
       it_behaves_like 'a command with formatted output', ['lib/foo.rb'],
-        %w[file summary stale]
+        %w[file percentage stale]
     end
 
     it 'rejects extra arguments after path' do

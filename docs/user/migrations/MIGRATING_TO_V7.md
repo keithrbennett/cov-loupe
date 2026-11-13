@@ -8,6 +8,7 @@ This document describes the breaking changes introduced in version 7.0.0.
 
 - [Ruby 3.3 or Later Required](#ruby-33-or-later-required)
 - [Structured Output Has a Schema Version](#structured-output-has-a-schema-version)
+- [Payload Keys Reshaped](#payload-keys-reshaped)
 - [Logging Defaults, Target Probing, and Lazy File Creation](#logging-defaults-target-probing-and-lazy-file-creation)
 - [Only `coverage.json` Is Read; SimpleCov 1.x Output Is Required](#only-coveragejson-is-read-simplecov-10-is-required)
 - [`resultset` Names Removed from the CLI, MCP Tools, and Library API](#resultset-names-removed-from-the-cli-mcp-tools-and-library-api)
@@ -38,6 +39,34 @@ Every hash returned by a public `CoverageModel` coverage method, successful stru
 Library methods such as `CoverageModel#summary_for`, `#list`, and `#project_totals` now include this field, so saved JSON, YAML, or Marshal output carries the marker automatically. Table and text output, MCP `version` text, and error responses are unchanged. This version is separate from the gem version and from SimpleCov's `schema_version` in the input `coverage.json` file. See [Schema Version](../LIBRARY_API.md#schema-version) for the compatibility rules.
 
 **Migration:** If a consumer compares exact top-level key sets or iterates every top-level key, account for `schema_version` before processing the coverage fields. Check that its value is `1` when reading saved payloads, and ignore other unknown keys.
+
+## Payload Keys Reshaped
+
+Line metrics now have one flat shape in every payload, and keys that meant different things in different payloads were renamed. This applies to library hashes, structured CLI output, and MCP tool payloads. `list` rows keep every key they had, so code that reads `list['files']` is unaffected. Elsewhere, an old key now reads as `nil`, which usually raises an error, but code that converts it (`.to_f`, `.to_i`), uses `dig`, or supplies a `fetch` default gets `0` or `nil` silently, so search your code and saved predicates for the old names.
+
+| Payload | 6.x | 7.0 |
+|---|---|---|
+| `summary_for`, `uncovered_for`, `detailed_for` (CLI `summary`/`uncovered`/`detailed`, MCP `file_coverage_summary`/`file_uncovered_lines`/`file_coverage_detailed`) | `'summary' => { 'covered', 'total', 'percentage' }` | top-level `'covered'`, `'uncovered'`, `'total'`, `'percentage'` |
+| `uncovered_for` | `'uncovered' => [line numbers]` | `'uncovered_lines' => [line numbers]`; `'uncovered'` is now the count |
+| `project_totals` (CLI `totals`, MCP `project_coverage_totals`) | `'lines' => { 'covered', 'uncovered', 'total', 'percentage', 'included_files', 'excluded_files' }` | top-level `'covered'`, `'uncovered'`, `'total'`, `'percentage'`; use `file_counts.with_coverage.ok` and `.stale.total` for the file counts |
+| `project_totals` | `'files' => { ... }` | `'file_counts' => { ... }` (same contents) |
+| `project_totals` | `without_coverage.by_type.missing_from_coverage` | `without_coverage.by_type.missing_tracked` |
+| `list` rows | `'covered'`, `'total'`, `'percentage'`, `'stale'` | unchanged, plus `'uncovered'` |
+| CLI and MCP `list` / `project_coverage` | `'counts' => { 'total', 'ok', 'stale' }` | removed; count the rows, or use `project_totals['file_counts']['with_coverage']` |
+| Library `summary_for`, `uncovered_for`, `detailed_for`, `raw_for` | no `'stale'` (the CLI and MCP added it) | `'stale'` included, as in CLI and MCP output |
+| MCP `help` `resources` | `"docs-local"` | `"docs_local"`; the CLI's `--path-for docs-local` is unchanged |
+
+A `summary_for` result is now the file's `list` row plus `schema_version`.
+
+**Migration:**
+
+- Replace `result['summary']['percentage']` (and `covered`/`total`) with `result['percentage']`.
+- Replace `project_totals['lines']['percentage']` with `project_totals['percentage']`, for example in a `validate` predicate: `->(m) { m.project_totals['percentage'].to_f >= 85 }`.
+- Replace `uncovered_for(path)['uncovered']` with `['uncovered_lines']`.
+- Replace `totals['files']` with `totals['file_counts']`, and `missing_from_coverage` with `missing_tracked`.
+- Replace `lines['included_files']` with `file_counts['with_coverage']['ok']`, and `lines['excluded_files']` with `file_counts['with_coverage']['stale']['total']`.
+- If you read `counts` from `list` JSON, count `files` rows by their `stale` value instead.
+- Drop separate `model.staleness_for(path)` calls made only to complete a file query; read its `'stale'` key.
 
 ## Logging Defaults, Target Probing, and Lazy File Creation
 
@@ -320,12 +349,12 @@ Staleness states now have one name everywhere. The per-file `stale` value and th
 |---|---|---|
 | Per-file `stale` value (deleted source) | `"missing"` | `"deleted"` |
 | Per-file `stale` value (unreadable source or failed check) | `"error"` | `"unreadable"` |
-| Totals `files.with_coverage.stale.by_type` key | `missing_from_disk` | `deleted` |
+| Totals `with_coverage.stale.by_type` key (under `file_counts` in 7.0; see [Payload Keys Reshaped](#payload-keys-reshaped)) | `missing_from_disk` | `deleted` |
 | `totals` text output | `Stale: missing on disk = N` | `Stale: deleted = N` |
 | `list` table legend | `Staleness: error, missing, newer, length_mismatch` | `Staleness: deleted, newer, length_mismatch, unreadable` |
 | Library code testing for a deleted source | `StaleStatus::MISSING_FROM_DISK` | the string `"deleted"` (`StaleStatus` is internal) |
 
-`"ok"`, `"newer"`, and `"length_mismatch"` are unchanged. "Missing" now only means absent coverage data (`missing_tracked_files`, `missing_from_coverage`) or an absent coverage timestamp (`timestamp_status: "missing"`). `CoverageModel#staleness_for` returns `"unreadable"` (was `"error"`) when the staleness check itself fails. `StaleStatus.normalize` now rejects `"missing"` and `"error"`.
+`"ok"`, `"newer"`, and `"length_mismatch"` are unchanged. "Missing" now only means absent coverage data (`missing_tracked_files`, counted as `missing_tracked` in totals) or an absent coverage timestamp (`timestamp_status: "missing"`). `CoverageModel#staleness_for` returns `"unreadable"` (was `"error"`) when the staleness check itself fails. `StaleStatus.normalize` now rejects `"missing"` and `"error"`.
 
 This applies to library hashes, CLI output in all formats, and MCP tool payloads.
 

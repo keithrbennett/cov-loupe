@@ -3,7 +3,7 @@
   "$id": "urn:cov-loupe:schema:v1:raw",
   "title": "cov-loupe v1 raw file coverage",
   "type": "object",
-  "required": ["schema_version", "file", "lines"],
+  "required": ["schema_version", "file", "lines", "stale"],
   "properties": {
     "schema_version": {"const": 1, "description": "Version of this payload shape."},
     "file": {"type": "string", "description": "Source path relative to the project root; absolute if the file is outside it."},
@@ -12,6 +12,6 @@
       "items": {"type": ["integer", "null"], "minimum": 0},
       "description": "SimpleCov hit counts; null denotes a non-code line."
     },
-    "stale": {"type": "string", "enum": ["ok", "deleted", "newer", "length_mismatch", "unreadable"], "description": "File staleness, present in CLI and MCP output."}
+    "stale": {"type": "string", "enum": ["ok", "deleted", "newer", "length_mismatch", "unreadable"], "description": "File staleness."}
   }
 }

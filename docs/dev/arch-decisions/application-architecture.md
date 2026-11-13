@@ -130,8 +130,7 @@ Canonical identifiers:
 Both interfaces now consume this same map:
 
 - CLI uses `--path-for=NAME` (short: `-p NAME`; `NAME` is required) and prints the mapped value.
-- `help` returns `resources` with the same canonical keys.
-- MCP server startup instructions serialize the same resource map for discoverability.
+- `help` returns `resources`, and MCP server startup instructions serialize the map, with the keys in snake_case like every other payload key (`docs_local`); see `Resources.payload_map`. The CLI accepts only the canonical hyphenated names, so `-p docs_local` is rejected.
 
 ### Consequences
 
@@ -144,7 +143,8 @@ Both interfaces now consume this same map:
 #### Negative
 
 1. Renaming or removing resource keys is a cross-surface API change
-2. `docs-local` is a path, not a URL, so wording must stay precise in docs/help text
+2. Multi-word names are spelled differently on the two surfaces (`docs-local` in the CLI, `docs_local` in payloads), so `Resources.payload_map` must translate them
+3. `docs-local` is a path, not a URL, so wording must stay precise in docs/help text
 
 ### References
 

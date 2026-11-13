@@ -13,7 +13,7 @@ module CovLoupe
   # The same names are used as project totals stale.by_type keys (DELETED, NEWER,
   # LENGTH_MISMATCH, UNREADABLE) and match the list payload's *_files arrays.
   # "Missing" is reserved for "no coverage data":
-  #   - MISSING_FROM_COVERAGE → tracked file not found in coverage data
+  #   - MISSING_TRACKED      → tracked file not found in coverage data (missing_tracked_files)
   #   - SKIPPED              → file skipped due to processing error
   #
   # @api private
@@ -24,7 +24,7 @@ module CovLoupe
     LENGTH_MISMATCH = 'length_mismatch'
     UNREADABLE = 'unreadable'
     VALID_STATUSES = [OK, DELETED, NEWER, LENGTH_MISMATCH, UNREADABLE].freeze
-    MISSING_FROM_COVERAGE = 'missing_from_coverage'
+    MISSING_TRACKED = 'missing_tracked'
     SKIPPED = 'skipped'
 
     module_function def stale?(value)

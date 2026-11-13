@@ -386,7 +386,7 @@ Successful structured payloads begin with integer `schema_version`. Library cove
 ```json
 {
   "type": "text",
-  "text": "{\n  \"schema_version\": 1,\n  \"file\": \"lib/foo.rb\",\n  \"summary\": {\n    \"covered\": 2,\n    \"total\": 3,\n    \"percentage\": 66.66\n  },\n  \"stale\": \"ok\"\n}"
+  "text": "{\n  \"schema_version\": 1,\n  \"file\": \"lib/foo.rb\",\n  \"covered\": 2,\n  \"uncovered\": 1,\n  \"total\": 3,\n  \"percentage\": 66.66,\n  \"stale\": \"ok\"\n}"
 }
 ```
 
@@ -515,23 +515,24 @@ The file tools and the project tools (`project_coverage`, `project_coverage_tota
 
 #### Per-File Tools
 
-These tools analyze individual files. All require `path` parameter. In the `summary` returned by
-`file_coverage_summary`, `file_uncovered_lines` and `file_coverage_detailed`, `percentage` is `null`
-when a file has no coverable lines (for example, a file containing only comments).
+These tools analyze individual files. All require `path` parameter. `file_coverage_summary`,
+`file_uncovered_lines` and `file_coverage_detailed` return the same line metrics as top-level keys:
+`covered`, `uncovered` (a count), `total` (coverable lines), and `percentage`, which is `null` when a
+file has no coverable lines (for example, a file containing only comments).
 
 **`file_coverage_summary`** - Covered/total/percentage summary
 ```json
-{"schema_version": 1, "file": "...", "summary": {"covered": 12, "total": 14, "percentage": 85.71}, "stale": "ok"}
+{"schema_version": 1, "file": "...", "covered": 12, "uncovered": 2, "total": 14, "percentage": 85.71, "stale": "ok"}
 ```
 
 **`file_uncovered_lines`** - List uncovered line numbers
 ```json
-{"schema_version": 1, "file": "...", "uncovered": [5, 9, 12], "summary": {...}, "stale": "ok"}
+{"schema_version": 1, "file": "...", "uncovered_lines": [5, 9, 12], "covered": 11, "uncovered": 3, "total": 14, "percentage": 78.57, "stale": "ok"}
 ```
 
 **`file_coverage_detailed`** - Per-line hit counts
 ```json
-{"schema_version": 1, "file": "...", "lines": [{"line": 1, "hits": 1, "covered": true}, ...], "summary": {...}, "stale": "ok"}
+{"schema_version": 1, "file": "...", "lines": [{"line": 1, "hits": 1, "covered": true}, ...], "covered": 12, "uncovered": 2, "total": 14, "percentage": 85.71, "stale": "ok"}
 ```
 
 **`file_coverage_raw`** - Raw SimpleCov lines array
@@ -549,14 +550,15 @@ Lines SimpleCov marked `"ignored"` (excluded with `nocov` blocks or directive co
 - Parameters: the [common parameters](#common-parameters), plus `sort_order` (`ascending`|`descending`, default `descending`), `tracked_globs` (array), `format` (`json`|`pretty_json`|`yaml`|`amazing_print`|`inspect`|`puts`|`pretty_print`|`table`)
 - Default format: `json`
 - Returns (format dependent):
-  - `json`/`pretty_json`: a JSON object; `yaml`/`amazing_print`/`inspect`/`puts`/`pretty_print`: the same data rendered in that format, not JSON. The data is `{"schema_version": 1, "files": [...], "counts": {"total": N, "ok": N, "stale": N}, "skipped_files": [...], "missing_tracked_files": [...], "newer_files": [...], "deleted_files": [...], "length_mismatch_files": [...], "unreadable_files": [...], "timestamp_status": "ok|missing", "warnings": [...]}` (`warnings` is present only when `timestamp_status` is `"missing"`)
+  - `json`/`pretty_json`: a JSON object; `yaml`/`amazing_print`/`inspect`/`puts`/`pretty_print`: the same data rendered in that format, not JSON. The data is `{"schema_version": 1, "files": [...], "skipped_files": [...], "missing_tracked_files": [...], "newer_files": [...], "deleted_files": [...], "length_mismatch_files": [...], "unreadable_files": [...], "timestamp_status": "ok|missing", "warnings": [...]}` (`warnings` is present only when `timestamp_status` is `"missing"`)
   - Table: Plain text table with box-drawing characters (ASCII with `output_chars: "ascii"`)
-  - Each entry in `files` has a `percentage` that is `null` when the file has no coverable lines (shown as `n/a` in the table).
+  - Each entry in `files` is `{"file", "covered", "uncovered", "total", "percentage", "stale"}`, the same shape as a `file_coverage_summary` result without `schema_version`; `percentage` is `null` when the file has no coverable lines (shown as `n/a` in the table).
 
 **`project_coverage_totals`** - Aggregated line totals
 
 - Parameters: the [common parameters](#common-parameters), plus `tracked_globs` (array)
-- Returns: `{"schema_version":1,"lines":{"total":N,"covered":N,"uncovered":N,"percentage":Float|null,"included_files":N,"excluded_files":N},"tracking":{"enabled":Boolean,"globs":[String]},"files":{"total":N,"with_coverage":{"total":N,"ok":N,"stale":{"total":N,"by_type":{"deleted":N,"newer":N,"length_mismatch":N,"unreadable":N}}},"without_coverage":{"total":N,"by_type":{"missing_from_coverage":N,"unreadable":N,"skipped":N}}},"timestamp_status":"ok|missing","warnings":[String]}`
+- Returns: `{"schema_version":1,"covered":N,"uncovered":N,"total":N,"percentage":Float|null,"tracking":{"enabled":Boolean,"globs":[String]},"file_counts":{"total":N,"with_coverage":{"total":N,"ok":N,"stale":{"total":N,"by_type":{"deleted":N,"newer":N,"length_mismatch":N,"unreadable":N}}},"without_coverage":{"total":N,"by_type":{"missing_tracked":N,"unreadable":N,"skipped":N}}},"timestamp_status":"ok|missing","warnings":[String]}`
+- The line metrics count fresh files only; `file_counts.with_coverage.ok` is how many.
 - `without_coverage` is only present when tracking is enabled (tracked globs provided).
 - `warnings` is present when `timestamp_status` is `"missing"`.
 
@@ -587,7 +589,7 @@ It is off by default because the predicate is Ruby written by the MCP client, us
 - `resources` - canonical shared resource values:
     - `repo` (public GitHub URL)
     - `docs` (public docs URL)
-    - `docs-local` (absolute path to local README)
+    - `docs_local` (absolute path to local README; the CLI spells it `--path-for docs-local`)
 
 Example `help` payload excerpt:
 ```json
@@ -596,7 +598,7 @@ Example `help` payload excerpt:
   "resources": {
     "repo": "https://github.com/keithrbennett/cov-loupe",
     "docs": "https://keithrbennett.github.io/cov-loupe/",
-    "docs-local": "/abs/path/to/README.md"
+    "docs_local": "/abs/path/to/README.md"
   }
 }
 ```

@@ -3,6 +3,7 @@
 require_relative '../model/model'
 require_relative '../base_tool'
 require_relative '../presenters/project_totals_presenter'
+require_relative '../formatters/coverage_warnings'
 
 module CovLoupe
   module Tools
@@ -13,7 +14,8 @@ module CovLoupe
         Use this when you want aggregated coverage counts for the entire project.
         It reports covered/total lines, uncovered line counts, and the overall percentage (covered lines / coverable lines across included, non-stale files).
         Inputs: optional project root, alternate coverage file path, raise_on_stale flag, tracked_globs, error mode, and output_chars.
-        Output: JSON {"schema_version":Integer,"lines":{"total","covered","uncovered","percentage","included_files","excluded_files"},"tracking":{"enabled","globs"},"files":{"total","with_coverage","without_coverage"?},"timestamp_status":"ok"|"missing","warnings"?:[string,...]}.
+        Output: JSON {"schema_version":Integer,"covered","uncovered","total","percentage","tracking":{"enabled","globs"},"file_counts":{"total","with_coverage","without_coverage"?},"timestamp_status":"ok"|"missing","warnings"?:[string,...]}.
+        The line metrics ("covered", "uncovered", "total", "percentage") count only fresh files; file_counts.with_coverage.ok is how many.
         "without_coverage" is present only when tracked_globs are set; "warnings" only when timestamp_status is "missing".
         "percentage" is a number, or null when no lines are measurable (no coverable lines, or every file stale).
         When raise_on_stale is enabled, the tool will raise an error immediately if any files have coverage data errors or staleness issues.
@@ -48,13 +50,8 @@ module CovLoupe
             )
             payload = presenter.payload
 
-            # Add warnings array if timestamp_status is missing
             if payload['timestamp_status'] == 'missing'
-              payload['warnings'] = [
-                'Coverage timestamps are missing. Time-based staleness checks were skipped.',
-                'Files may appear "ok" even if source code is newer than the coverage data.',
-                'Check your coverage tool configuration to ensure timestamps are recorded.',
-              ]
+              payload['warnings'] = Formatters::CoverageWarnings::TIMESTAMP_WARNING_LINES.dup
             end
 
             respond_json(payload, pretty: true, output_chars: output_chars_sym)

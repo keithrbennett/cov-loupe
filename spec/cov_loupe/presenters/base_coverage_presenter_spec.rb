@@ -26,20 +26,15 @@ RSpec.describe CovLoupe::Presenters::BaseCoveragePresenter do
         # Provide a concrete implementation of the abstract build_payload method
         # for testing the BaseCoveragePresenter functionality
         def build_payload
-          { 'file' => path, 'data' => 'test' }
+          { 'file' => path, 'data' => 'test', 'stale' => 'ok' }
         end
       end
     end
     let(:presenter) { concrete_class.new(model: model, path: path) }
 
-    before do
-      allow(model).to receive(:staleness_for).with(path).and_return('ok')
-    end
-
     describe '#payload' do
-      it 'merges stale status into payload' do
-        expect(presenter.payload).to include('stale' => 'ok')
-        expect(presenter.payload).to include('data' => 'test')
+      it 'returns the built payload' do
+        expect(presenter.payload).to eq('file' => path, 'data' => 'test', 'stale' => 'ok')
       end
 
       it 'caches the result' do

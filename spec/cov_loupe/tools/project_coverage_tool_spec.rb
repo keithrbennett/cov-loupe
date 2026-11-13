@@ -23,13 +23,13 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
         output = run_with_default_format
         data = JSON.parse(output)
         expect(data).to have_key('files')
-        expect(data).to have_key('counts')
+        expect(data).not_to have_key('counts')
       end
 
       it 'includes all expected keys in JSON output' do
         output = run_with_default_format
         data = JSON.parse(output)
-        expected_keys = %w[files counts skipped_files missing_tracked_files newer_files
+        expected_keys = %w[files skipped_files missing_tracked_files newer_files
           deleted_files length_mismatch_files unreadable_files timestamp_status]
         expected_keys.each do |key|
           expect(data).to have_key(key), "Expected key '#{key}' to be present"
@@ -61,7 +61,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
         output = run_with_yaml
         expect(output).to start_with('---')
         expect(output).to include('files:')
-        expect(output).to include('counts:')
+        expect(output).to include('timestamp_status:')
       end
     end
 
@@ -74,7 +74,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
       it 'returns AmazingPrint-formatted output' do
         output = run_with_amazing_print
         expect(output).to include('files')
-        expect(output).to include('counts')
+        expect(output).to include('timestamp_status')
       end
     end
 
@@ -250,7 +250,6 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
 
         test_payload = {
           'files'                 => [],
-          'counts'                => { 'total' => 0, 'ok' => 0, 'stale' => 0 },
           'skipped_files'         => [],
           'missing_tracked_files' => [],
           'newer_files'           => [],
@@ -377,7 +376,6 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
 
       test_payload = {
         'files'                 => [],
-        'counts'                => { 'total' => 0, 'ok' => 0, 'stale' => 0 },
         'skipped_files'         => [],
         'missing_tracked_files' => [],
         'newer_files'           => [],
@@ -549,7 +547,6 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
 
       test_payload = {
         'files'                 => [],
-        'counts'                => { 'total' => 0, 'ok' => 0, 'stale' => 0 },
         'skipped_files'         => [],
         'missing_tracked_files' => [],
         'newer_files'           => [],

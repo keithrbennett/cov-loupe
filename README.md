@@ -167,10 +167,10 @@ model = CovLoupe::CoverageModel.new
 list_result = model.list
 # => { "schema_version" => 1, "files" => [...], ... }
 files = list_result["files"]
-# => [{ "file" => "lib/my_app/order.rb", "covered" => 114, "total" => 118, "percentage" => 96.61, "stale" => "ok" }, ...]
+# => [{ "file" => "lib/my_app/order.rb", "covered" => 114, "uncovered" => 4, "total" => 118, "percentage" => 96.61, "stale" => "ok" }, ...]
 
 summary = model.summary_for("lib/my_app/order.rb")
-# => { "schema_version" => 1, "file" => "lib/my_app/order.rb", "summary" => { "covered" => 114, "total" => 118, "percentage" => 96.61 } }
+# => { "schema_version" => 1, "file" => "lib/my_app/order.rb", "covered" => 114, "uncovered" => 4, "total" => 118, "percentage" => 96.61, "stale" => "ok" }
 ```
 
 Library payloads report file paths relative to the project root, like the CLI and MCP output; files outside the root keep absolute paths. See [Library API](docs/user/LIBRARY_API.md#schema-version) for the payload compatibility rules.

@@ -113,7 +113,7 @@ the `:default` output character mode draw Unicode table borders.)
 
 The hash returned by each public coverage query (`list`, `summary_for`, `uncovered_for`, `detailed_for`, `raw_for`, and `project_totals`) starts with `'schema_version' => CovLoupe::SCHEMA_VERSION`. The value is currently `1`. The key stays with the hash when you serialize it to JSON, YAML, or Marshal. It is independent of the gem's `CovLoupe::VERSION` and of SimpleCov's `schema_version` in the input `coverage.json` file. Methods returning text or status values do not add the key.
 
-The shipped [JSON Schema files](https://github.com/keithrbennett/cov-loupe/tree/main/lib/cov_loupe/schemas/v1) define the eight v1 payload shapes: `summary`, `raw`, `uncovered`, `detailed`, `list`, `totals`, `validate_result`, and `help`. Each file uses JSON Schema draft 2020-12. `CovLoupe::PayloadSchema.schema_path('list', version: 1)` returns the installed file path; an unknown name or version raises `ArgumentError`. Library `list` and CLI/MCP project coverage share `list.json`: presentation-only `counts` and `warnings` are optional. The schema IDs use URNs until stable public schema URLs are available.
+The shipped [JSON Schema files](https://github.com/keithrbennett/cov-loupe/tree/main/lib/cov_loupe/schemas/v1) define the eight v1 payload shapes: `summary`, `raw`, `uncovered`, `detailed`, `list`, `totals`, `validate_result`, and `help`. Each file uses JSON Schema draft 2020-12. `CovLoupe::PayloadSchema.schema_path('list', version: 1)` returns the installed file path; an unknown name or version raises `ArgumentError`. Library, CLI, and MCP payloads are the same, except two optional keys: `source`, added to file payloads by the CLI's `--source` option, and `warnings`, added to `list` and `totals` by the MCP tools when `timestamp_status` is `missing`. The schema IDs use URNs until stable public schema URLs are available.
 
 For a previously saved JSON result, load the schema matching the result's own version before using its coverage fields. Add `json_schemer` to your application's dependencies for this example:
 
@@ -130,11 +130,15 @@ raise 'Invalid saved coverage payload' unless schema.valid?(saved)
 files = saved.fetch('files')
 ```
 
-The schema version increments when a key is removed, renamed, or moved, or when a value's type or meaning changes. An incompatible change gets a new `vN` directory copied from the previous version and then edited; earlier version directories are never modified. Adding a key is compatible: add it to the current version's schema file without bumping the version. Consumers must ignore unknown keys so compatible additions remain readable; avoid relying on an exact top-level key set or processing every top-level key as coverage data.
+The schema version increments when a key is removed, renamed, or moved, or when a value's type or meaning changes. An incompatible change gets a new `vN` directory copied from the previous version and then edited; earlier version directories are never modified. Adding an optional key is compatible: add it to the current version's schema file without bumping the version. Consumers must ignore unknown keys at every level, not only the top level, so compatible additions remain readable; avoid relying on an exact key set or processing every key as coverage data. These rules apply from the 7.0.0 release; 7.0 pre-releases reported `schema_version` 1 with earlier payload shapes, so do not rely on payloads saved by a pre-release.
 
-`percentage` always means line coverage: covered lines divided by coverable lines, truncated (not rounded) to two decimals, or `nil` when there are no coverable lines. If other metrics such as branch coverage are added later, they will get their own keys rather than changing what `percentage` means.
+Line metrics have one shape everywhere: `covered`, `uncovered`, `total` (coverable lines), and `percentage`, as top-level keys of the file payloads (`summary_for`, `uncovered_for`, `detailed_for`), of each `list` row, and of `project_totals`. A `summary_for` payload is therefore a `list` row plus `schema_version`. `percentage` always means line coverage: covered lines divided by coverable lines, truncated (not rounded) to two decimals, or `nil` when there are no coverable lines.
 
-Staleness values share one vocabulary across payloads. A per-file `stale` value is one of `"ok"`, `"deleted"`, `"newer"`, `"length_mismatch"`, or `"unreadable"`. The non-`"ok"` values are also the `project_totals` `stale.by_type` keys and match the `list` arrays `deleted_files`, `newer_files`, `length_mismatch_files`, and `unreadable_files`. "Missing" refers only to absent coverage data (`missing_tracked_files`, `missing_from_coverage`) or an absent coverage timestamp (`timestamp_status`).
+If branch or method coverage is added later, it will arrive as optional objects beside the line metrics, named with a `_coverage` suffix (for example `branch_coverage: { covered, uncovered, total, percentage }`), and will be absent, not `null`, when the coverage file has no such data. Per-item data keeps plain plural names (`branches` beside `lines`, `uncovered_branches` beside `uncovered_lines`). The existing line metric keys will keep their meaning.
+
+Some names recur at different levels with different values, and are unambiguous within their parent: a file's `covered` count versus `detailed_for` rows' `covered` boolean; `raw_for` `lines` (hit counts) versus `detailed_for` `lines` (row objects); the per-file `stale` string versus the `project_totals` `file_counts.with_coverage.stale` object; `total` coverable lines versus `file_counts` file totals; and `skipped_files` rows (objects) versus the other `*_files` path arrays.
+
+Staleness values share one vocabulary across payloads. A per-file `stale` value is one of `"ok"`, `"deleted"`, `"newer"`, `"length_mismatch"`, or `"unreadable"`. The non-`"ok"` values are also the `project_totals` `stale.by_type` keys and match the `list` arrays `deleted_files`, `newer_files`, `length_mismatch_files`, and `unreadable_files`. "Missing" refers only to absent coverage data (the `list` array `missing_tracked_files`, counted as `missing_tracked` in `project_totals`) or an absent coverage timestamp (`timestamp_status`).
 
 File paths in payloads (`file` values and the `list` path arrays) are relative to the project root, such as `'lib/foo.rb'`. A file outside the root keeps its absolute path. A relative path whose first directory starts with `~` gets a `./` prefix, so expanding it never resolves to a home directory. Library, CLI, and MCP payloads report the same paths. If you need absolute paths, expand them against the model's root: `File.expand_path(row['file'], model.root)`. `model.root` is the absolute project root, resolved when the model was created.
 
@@ -159,7 +163,7 @@ Returns coverage summary for all files in the coverage file.
 list_result = model.list
 # => { 'schema_version' => 1, 'files' => [...], ... }
 files = list_result['files']
-# => [ { 'file' => 'lib/foo.rb', 'covered' => 12, 'total' => 14, 'percentage' => 85.71, 'stale' => "ok" }, ... ]
+# => [ { 'file' => 'lib/foo.rb', 'covered' => 12, 'uncovered' => 2, 'total' => 14, 'percentage' => 85.71, 'stale' => "ok" }, ... ]
 
 # Get worst coverage first
 worst_files = model.list(sort_order: :ascending)['files'].first(10)
@@ -184,10 +188,11 @@ Returns coverage summary for a specific file.
 **Example:**
 ```ruby
 summary = model.summary_for(target)
-# => { 'schema_version' => 1, 'file' => 'lib/foo.rb', 'summary' => {'covered'=>12, 'total'=>14, 'percentage'=>85.71} }
+# => { 'schema_version' => 1, 'file' => 'lib/foo.rb', 'covered' => 12, 'uncovered' => 2,
+#      'total' => 14, 'percentage' => 85.71, 'stale' => 'ok' }
 ```
 
-**Note:** `CoverageModel#summary_for` returns the schema version, file path, and summary. The CLI and MCP tools add a `stale` field; if you need staleness in library code, call `model.staleness_for(path)` separately.
+Every file query includes the file's `stale` value, as the CLI and MCP tools do. With `raise_on_stale: true` it is always `"ok"`, since a stale file raises instead.
 
 ### `uncovered_for(path, raise_on_stale: model default)`
 
@@ -205,7 +210,8 @@ Returns list of uncovered line numbers for a specific file.
 **Example:**
 ```ruby
 uncovered = model.uncovered_for("lib/foo.rb")
-# => { 'schema_version' => 1, 'file' => 'lib/foo.rb', 'uncovered' => [5, 9, 12], 'summary' => { ... } }
+# => { 'schema_version' => 1, 'file' => 'lib/foo.rb', 'uncovered_lines' => [5, 9, 12],
+#      'covered' => 11, 'uncovered' => 3, 'total' => 14, 'percentage' => 78.57, 'stale' => 'ok' }
 ```
 
 ### `detailed_for(path, raise_on_stale: model default)`
@@ -224,7 +230,9 @@ Returns per-line coverage details with hit counts.
 **Example:**
 ```ruby
 detailed = model.detailed_for("lib/foo.rb")
-# => { 'schema_version' => 1, 'file' => 'lib/foo.rb', 'lines' => [{'line' => 1, 'hits' => 1, 'covered' => true}, ...], 'summary' => { ... } }
+# => { 'schema_version' => 1, 'file' => 'lib/foo.rb',
+#      'lines' => [{'line' => 1, 'hits' => 1, 'covered' => true}, ...],
+#      'covered' => 12, 'uncovered' => 2, 'total' => 14, 'percentage' => 85.71, 'stale' => 'ok' }
 ```
 
 ### `raw_for(path, raise_on_stale: model default)`
@@ -243,7 +251,7 @@ Returns raw SimpleCov lines array for a specific file. Lines SimpleCov marked `"
 **Example:**
 ```ruby
 raw = model.raw_for("lib/foo.rb")
-# => { 'schema_version' => 1, 'file' => 'lib/foo.rb', 'lines' => [nil, 1, 0, 3, ...] }
+# => { 'schema_version' => 1, 'file' => 'lib/foo.rb', 'lines' => [nil, 1, 0, 3, ...], 'stale' => 'ok' }
 ```
 
 ### `format_table(rows = nil, sort_order: :descending, raise_on_stale: model default, tracked_globs: model default, output_chars: :default)`
@@ -288,16 +296,17 @@ Returns aggregated coverage totals across all files.
 totals = model.project_totals
 # => {
 #      'schema_version' => 1,
-#      'lines' => { 'total' => 123, 'covered' => 100, 'uncovered' => 23, 'percentage' => 81.3 },
+#      'covered' => 100, 'uncovered' => 23, 'total' => 123, 'percentage' => 81.3,
 #      'tracking' => { 'enabled' => false, 'globs' => [] },
-#      'files' => { 'total' => 4, 'with_coverage' => { 'total' => 4, 'ok' => 4, 'stale' => { ... } } }
+#      'file_counts' => { 'total' => 4, 'with_coverage' => { 'total' => 4, 'ok' => 4, 'stale' => { ... } } },
+#      'timestamp_status' => 'ok'
 #    }
 
 # Filter to specific directory
 lib_totals = model.project_totals(tracked_globs: 'lib/**/*.rb')
 ```
 
-When `raise_on_stale: true` is set, the method raises on stale coverage instead of returning totals. Otherwise, totals exclude stale files (with staleness indicators `"deleted"`, `"newer"`, `"length_mismatch"`, `"unreadable"`) from line counts and report stale breakdowns under `files['with_coverage']['stale']`.
+When `raise_on_stale: true` is set, the method raises on stale coverage instead of returning totals. Otherwise, totals exclude stale files (with staleness indicators `"deleted"`, `"newer"`, `"length_mismatch"`, `"unreadable"`) from line counts and report stale breakdowns under `file_counts['with_coverage']['stale']`. `file_counts['with_coverage']['ok']` is the number of files the line counts include.
 
 Note: The `without_coverage` hash is present only when `tracked_globs` is non-empty.
 
@@ -360,7 +369,8 @@ Returns `Hash` with file data and staleness metadata:
     {
       'file' => String,       # Project-relative path (absolute if outside the root)
       'covered' => Integer,   # Number of covered lines
-      'total' => Integer,     # Total relevant lines
+      'uncovered' => Integer, # Number of coverable lines with no hits
+      'total' => Integer,     # Number of coverable lines
       'percentage' => Float | nil, # Line coverage percentage (0.00-100.00); nil if no coverable lines
       'stale' => String       # Staleness indicator: "ok", "deleted", "newer", "length_mismatch", or "unreadable"
     }
@@ -383,15 +393,15 @@ Returns `Hash`:
 {
   'schema_version' => Integer, # Currently 1; first top-level key
   'file' => String,       # Project-relative path (absolute if outside the root)
-  'summary' => {
-    'covered' => Integer, # Number of covered lines
-    'total' => Integer,   # Total relevant lines
-    'percentage' => Float | nil # Line coverage percentage (0.00-100.00); nil if no coverable lines
-  }
+  'covered' => Integer,   # Number of covered lines
+  'uncovered' => Integer, # Number of coverable lines with no hits
+  'total' => Integer,     # Number of coverable lines
+  'percentage' => Float | nil, # Line coverage percentage (0.00-100.00); nil if no coverable lines
+  'stale' => String       # "ok", "deleted", "newer", "length_mismatch", or "unreadable"
 }
 ```
 
-The CLI and MCP responses add a `'stale'` field with values `"ok"`, `"deleted"`, `"newer"`, `"length_mismatch"`, or `"unreadable"`.
+This is the same hash as the file's `list` row, plus `schema_version`.
 
 ### `uncovered_for`
 
@@ -401,12 +411,12 @@ Returns `Hash`:
 {
   'schema_version' => Integer, # Currently 1; first top-level key
   'file' => String,       # Project-relative path (absolute if outside the root)
-  'uncovered' => Array<Integer>,  # Line numbers that are not covered
-  'summary' => {
-    'covered' => Integer,
-    'total' => Integer,
-    'percentage' => Float | nil
-  }
+  'uncovered_lines' => Array<Integer>, # Line numbers that are not covered
+  'covered' => Integer,   # Line metrics, as in summary_for
+  'uncovered' => Integer, # Count of uncovered_lines
+  'total' => Integer,
+  'percentage' => Float | nil,
+  'stale' => String       # "ok", "deleted", "newer", "length_mismatch", or "unreadable"
 }
 ```
 
@@ -419,11 +429,11 @@ Returns `Hash`:
   'schema_version' => Integer, # Currently 1; first top-level key
   'file' => String,       # Project-relative path (absolute if outside the root)
   'lines' => Array<Hash>, # Per-line coverage details
-  'summary' => {
-    'covered' => Integer,
-    'total' => Integer,
-    'percentage' => Float | nil
-  }
+  'covered' => Integer,   # Line metrics, as in summary_for
+  'uncovered' => Integer,
+  'total' => Integer,
+  'percentage' => Float | nil,
+  'stale' => String       # "ok", "deleted", "newer", "length_mismatch", or "unreadable"
 }
 ```
 
@@ -444,7 +454,8 @@ Returns `Hash`:
 {
   'schema_version' => Integer, # Currently 1; first top-level key
   'file' => String,              # Project-relative path (absolute if outside the root)
-  'lines' => Array<Integer | nil>   # SimpleCov lines array (nil = irrelevant, 0 = uncovered, >0 = hit count)
+  'lines' => Array<Integer | nil>,  # SimpleCov lines array (nil = irrelevant, 0 = uncovered, >0 = hit count)
+  'stale' => String       # "ok", "deleted", "newer", "length_mismatch", or "unreadable"
 }
 ```
 
@@ -455,23 +466,19 @@ Returns `Hash`:
 ```ruby
 {
   'schema_version' => Integer, # Currently 1; first top-level key
-  'lines' => {
-    'total' => Integer,            # Total relevant lines across all files
-    'covered' => Integer,          # Total covered lines
-    'uncovered' => Integer,        # Total uncovered lines
-    'percentage' => Float | nil,   # Overall line coverage percent; nil if no measurable lines
-    'included_files' => Integer,   # Non-stale files included in line totals
-    'excluded_files' => Integer    # Stale files excluded from line totals
-  },
+  'covered' => Integer,            # Covered lines in fresh (non-stale) files
+  'uncovered' => Integer,          # Uncovered lines in fresh files
+  'total' => Integer,              # Coverable lines in fresh files
+  'percentage' => Float | nil,     # Overall line coverage percent; nil if no measurable lines
   'tracking' => {
     'enabled' => Boolean,          # Whether tracked_globs are active
     'globs' => Array<String>       # Active tracked globs (empty when disabled)
   },
-  'files' => {
+  'file_counts' => {
     'total' => Integer,          # Total number of files (with + without coverage; without only when tracking is enabled)
     'with_coverage' => {
       'total' => Integer,        # Files with coverage entries (skipped rows excluded)
-      'ok' => Integer,           # Fresh coverage entries
+      'ok' => Integer,           # Fresh coverage entries (the files the line metrics include)
       'stale' => {
         'total' => Integer,      # Stale coverage entries
         'by_type' => {
@@ -485,7 +492,7 @@ Returns `Hash`:
     'without_coverage' => {
       'total' => Integer,        # Tracked files missing, unreadable, or skipped
       'by_type' => {
-        'missing_from_coverage' => Integer,
+        'missing_tracked' => Integer, # Count of the list's missing_tracked_files
         'unreadable' => Integer,
         'skipped' => Integer
       }
@@ -528,7 +535,7 @@ require "cov_loupe"
 begin
   model = CovLoupe::CoverageModel.new
   summary = model.summary_for("lib/foo.rb")
-  percentage = summary['summary']['percentage']
+  percentage = summary['percentage']
   puts "Coverage: #{percentage ? "#{percentage}%" : 'n/a'}"
 rescue CovLoupe::CoverageFileNotFoundError => e # subclass of FileError, so rescue it first
   puts "Coverage data not found: #{e.message}"
@@ -588,7 +595,7 @@ summary = find_coverage(model, [
 ])
 
 if summary
-  percentage = summary['summary']['percentage']
+  percentage = summary['percentage']
   puts "Coverage: #{percentage ? "#{percentage}%" : 'n/a'}"
 else
   puts "File not found in coverage data"
@@ -616,8 +623,8 @@ results = files_to_check.map do |path|
     summary = model.summary_for(path)
     {
       file: path,
-      coverage: summary['summary']['percentage'],
-      status: summary['summary']['percentage'].nil? || summary['summary']['percentage'] >= 80 ? :ok : :low
+      coverage: summary['percentage'],
+      status: summary['percentage'].nil? || summary['percentage'] >= 80 ? :ok : :low
     }
   rescue CovLoupe::FileError
     {
@@ -710,10 +717,10 @@ directory_stats = patterns.map do |pattern|
 
   {
     directory: pattern,
-    files: totals['files']['total'],
-    coverage: totals['lines']['percentage']&.round(2),
-    covered: totals['lines']['covered'],
-    total: totals['lines']['total']
+    files: totals['file_counts']['total'],
+    coverage: totals['percentage']&.round(2),
+    covered: totals['covered'],
+    total: totals['total']
   }
 end
 
@@ -819,11 +826,11 @@ class MarkdownCoverageReport
     totals = @model.project_totals
 
     # Overall stats
-    overall_percentage = totals['lines']['percentage']
+    overall_percentage = totals['percentage']
     overall_display = overall_percentage ? "#{overall_percentage}%" : 'n/a'
-    total_lines = totals['lines']['total']
-    covered_lines = totals['lines']['covered']
-    total_files = totals['files']['total']
+    total_lines = totals['total']
+    covered_lines = totals['covered']
+    total_files = totals['file_counts']['total']
 
     # Files below threshold
     threshold = 80.0
@@ -832,9 +839,7 @@ class MarkdownCoverageReport
     # Build low coverage table
     low_coverage_section = if low_coverage.any?
       rows = low_coverage.sort_by { |file| file['percentage'] }.map do |file|
-        uncovered = @model.uncovered_for(file['file'])
-        missing_count = uncovered['uncovered'].length
-        "| #{file['file']} | #{file['percentage']}% | #{missing_count} |"
+        "| #{file['file']} | #{file['percentage']}% | #{file['uncovered']} |"
       end.join("\n")
 
       <<~LOW_COVERAGE_TABLE
@@ -932,15 +937,13 @@ model = CovLoupe::CoverageModel.new
 
 ## Staleness Detection
 
-The `list` method returns a `'stale'` field for each file with one of these values:
+The `list` rows and the per-file methods (`summary_for`, `uncovered_for`, `detailed_for`, `raw_for`) return a `'stale'` field with one of these values:
 
 - `"ok"` - Coverage data is current
 - `"deleted"` - **Deleted**: File no longer exists on disk
 - `"newer"` - **Timestamp**: File modified more recently than coverage data
 - `"length_mismatch"` - **Length**: Source file line count differs from coverage data
 - `"unreadable"` - **Unreadable**: Source file could not be read, or its staleness check failed
-
-**Note:** Per-file methods (`summary_for`, `uncovered_for`, `detailed_for`, `raw_for`) do not include staleness information in their return values. To check staleness for an individual file, call `model.staleness_for(path)`.
 
 When `raise_on_stale: true` is enabled in `CoverageModel.new`, the model raises `CovLoupe::CoverageDataStaleError` from per-file methods and `CovLoupe::CoverageDataProjectStaleError` from project-level methods (`list`, `project_totals`) when stale files are detected. A per-file method raises `CovLoupe::FileNotFoundError` instead for a deleted file and `CovLoupe::FileError` for an unreadable one.
 

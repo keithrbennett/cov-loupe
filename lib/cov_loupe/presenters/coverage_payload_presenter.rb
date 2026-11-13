@@ -6,8 +6,8 @@ module CovLoupe
   module Presenters
     # Presenter for single-file coverage queries (summary, raw, detailed, uncovered).
     #
-    # Delegates to a CoverageModel method (specified by payload_method) and adds
-    # staleness status. Used by both CLI commands and MCP tools.
+    # Delegates to a CoverageModel method (specified by payload_method), whose payload
+    # already includes staleness status. Used by both CLI commands and MCP tools.
     #
     # @api private
     class CoveragePayloadPresenter < BaseCoveragePresenter

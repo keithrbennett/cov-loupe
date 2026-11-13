@@ -18,14 +18,13 @@ module CovLoupe
           break if emit_structured_format_with_optional_source?(data, model, path)
 
           relative_path = presenter.relative_path
-          summary = data['summary']
           puts "File: #{relative_path}"
-          puts "Coverage: #{summary['covered']}/#{summary['total']} lines " \
-               "(#{format_percentage(summary['percentage'])})"
+          puts "Coverage: #{data['covered']}/#{data['total']} lines " \
+               "(#{format_percentage(data['percentage'])})"
           puts "Stale: #{data['stale']}" if StaleStatus.stale?(data['stale'])
           puts
 
-          if summary['total'].zero?
+          if data['total'].zero?
             puts 'No coverable lines.'
           else
             # Table format with box-drawing

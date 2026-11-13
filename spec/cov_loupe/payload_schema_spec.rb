@@ -7,19 +7,19 @@ RSpec.describe CovLoupe::PayloadSchema do
 
   describe '.add' do
     it 'puts the version first without mutating the input' do
-      payload = { 'file' => 'lib/foo.rb', 'summary' => { 'covered' => 2 } }
+      payload = { 'file' => 'lib/foo.rb', 'covered' => 2 }
       result = described_class.add(payload)
 
-      expect(result.keys).to eq(%w[schema_version file summary])
+      expect(result.keys).to eq(%w[schema_version file covered])
       expect(result['schema_version']).to eq(CovLoupe::SCHEMA_VERSION)
-      expect(payload.keys).to eq(%w[file summary])
+      expect(payload.keys).to eq(%w[file covered])
     end
 
     it 'is idempotent when the input already contains schema_version' do
-      payload = { 'file' => 'lib/foo.rb', 'schema_version' => 999, 'summary' => {} }
+      payload = { 'file' => 'lib/foo.rb', 'schema_version' => 999, 'covered' => 2 }
       result = described_class.add(described_class.add(payload))
 
-      expect(result.keys).to eq(%w[schema_version file summary])
+      expect(result.keys).to eq(%w[schema_version file covered])
       expect(result['schema_version']).to eq(CovLoupe::SCHEMA_VERSION)
       expect(payload['schema_version']).to eq(999)
     end
@@ -76,11 +76,11 @@ RSpec.describe CovLoupe::PayloadSchema do
 
     it 'rejects missing required keys and wrong value types in strict mode' do
       payload = described_class.add('file' => 'lib/foo.rb',
-        'summary' => { 'covered' => 1, 'total' => 2, 'percentage' => 50.0 })
+        'covered' => 1, 'uncovered' => 1, 'total' => 2, 'percentage' => 50.0, 'stale' => 'ok')
       schemer = JSONSchemer.schema(strict_payload_schema('summary'))
 
       expect(schemer).to be_valid(payload)
-      expect(schemer).not_to be_valid(payload.except('summary'))
+      expect(schemer).not_to be_valid(payload.except('percentage'))
       expect(schemer).not_to be_valid(payload.merge('file' => 123))
       expect(schemer).not_to be_valid(payload.merge('unexpected' => true))
     end

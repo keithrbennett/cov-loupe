@@ -55,7 +55,7 @@ clp -fJ t
 # Evaluate coverage policy ('validate' or 'v')
 clp validate examples/success_predicates/project_coverage_minimum_predicate.rb
 clp v examples/success_predicates/project_coverage_minimum_predicate.rb
-clp v -i '->(m) { m.project_totals["lines"]["percentage"].to_f >= 85 }'
+clp v -i '->(m) { m.project_totals["percentage"].to_f >= 85 }'
 # validate prints no result (only what the predicate itself prints); check the exit code (0 pass, 3 fail). On the demo fixture
 # (80.85% total) these minimum-85% checks fail, so they exit 3.
 echo $?
@@ -121,13 +121,13 @@ Files: total 7, ok 7, stale 0
 {
   "schema_version": 1,
   "files": [
-    { "file": "app/models/user.rb", "covered": 6, "total": 6, "percentage": 100.0, "stale": "ok" },
-    { "file": "lib/api/client.rb", "covered": 8, "total": 9, "percentage": 88.88, "stale": "ok" },
-    { "file": "app/models/order.rb", "covered": 6, "total": 7, "percentage": 85.71, "stale": "ok" },
-    { "file": "lib/ops/jobs/report_job.rb", "covered": 4, "total": 5, "percentage": 80.0, "stale": "ok" },
-    { "file": "lib/payments/processor.rb", "covered": 4, "total": 5, "percentage": 80.0, "stale": "ok" },
-    { "file": "app/controllers/orders_controller.rb", "covered": 7, "total": 10, "percentage": 70.0, "stale": "ok" },
-    { "file": "lib/payments/refund_service.rb", "covered": 3, "total": 5, "percentage": 60.0, "stale": "ok" }
+    { "file": "app/models/user.rb", "covered": 6, "uncovered": 0, "total": 6, "percentage": 100.0, "stale": "ok" },
+    { "file": "lib/api/client.rb", "covered": 8, "uncovered": 1, "total": 9, "percentage": 88.88, "stale": "ok" },
+    { "file": "app/models/order.rb", "covered": 6, "uncovered": 1, "total": 7, "percentage": 85.71, "stale": "ok" },
+    { "file": "lib/ops/jobs/report_job.rb", "covered": 4, "uncovered": 1, "total": 5, "percentage": 80.0, "stale": "ok" },
+    { "file": "lib/payments/processor.rb", "covered": 4, "uncovered": 1, "total": 5, "percentage": 80.0, "stale": "ok" },
+    { "file": "app/controllers/orders_controller.rb", "covered": 7, "uncovered": 3, "total": 10, "percentage": 70.0, "stale": "ok" },
+    { "file": "lib/payments/refund_service.rb", "covered": 3, "uncovered": 2, "total": 5, "percentage": 60.0, "stale": "ok" }
   ],
   "skipped_files": [],
   "missing_tracked_files": [],
@@ -135,8 +135,7 @@ Files: total 7, ok 7, stale 0
   "deleted_files": [],
   "length_mismatch_files": [],
   "unreadable_files": [],
-  "timestamp_status": "ok",
-  "counts": { "total": 7, "ok": 7, "stale": 0 }
+  "timestamp_status": "ok"
 }
 ```
 
@@ -182,11 +181,10 @@ clp -s full s app/models/order.rb  # -s = --source
 {
   "schema_version": 1,
   "file": "app/models/order.rb",
-  "summary": {
-    "covered": 6,
-    "total": 7,
-    "percentage": 85.71
-  },
+  "covered": 6,
+  "uncovered": 1,
+  "total": 7,
+  "percentage": 85.71,
   "stale": "ok"
 }
 ```
@@ -234,8 +232,8 @@ Coverage: 70.00% (7/10 lines)
 {
   "schema_version": 1,
   "file": "app/controllers/orders_controller.rb",
-  "uncovered": [14, 15, 20],
-  "summary": { "covered": 7, "total": 10, "percentage": 70.0 },
+  "uncovered_lines": [14, 15, 20],
+  "covered": 7, "uncovered": 3, "total": 10, "percentage": 70.0,
   "stale": "ok"
 }
 ```
@@ -333,11 +331,10 @@ Coverage: 6/7 lines (85.71%)
     { "line": 15, "hits": 1, "covered": true },
     { "line": 16, "hits": 0, "covered": false }
   ],
-  "summary": {
-    "covered": 6,
-    "total": 7,
-    "percentage": 85.71
-  },
+  "covered": 6,
+  "uncovered": 1,
+  "total": 7,
+  "percentage": 85.71,
   "stale": "ok"
 }
 ```
@@ -445,16 +442,12 @@ File breakdown:
 ```json
 {
   "schema_version": 1,
-  "lines": {
-    "covered": 38,
-    "uncovered": 9,
-    "total": 47,
-    "percentage": 80.85,
-    "included_files": 7,
-    "excluded_files": 0
-  },
+  "covered": 38,
+  "uncovered": 9,
+  "total": 47,
+  "percentage": 80.85,
   "tracking": { "enabled": false, "globs": [] },
-  "files": {
+  "file_counts": {
     "total": 7,
     "with_coverage": {
       "total": 7,
@@ -476,8 +469,7 @@ File breakdown:
 
 **Notes:**
 
-- `lines` are based on fresh coverage entries only.
-- `lines.included_files` is the count of non-stale files included in the line totals; `lines.excluded_files` is the count of stale files excluded.
+- The line metrics (`covered`, `uncovered`, `total`, `percentage`) count fresh coverage entries only; `file_counts.with_coverage.ok` is how many files they include, and `file_counts.with_coverage.stale.total` how many stale files they exclude.
 - `with_coverage.stale.by_type` keys match the per-file `stale` values: `deleted`, `newer`,
   `length_mismatch`, `unreadable`.
 - `without_coverage` is only present when tracking is enabled (tracked globs provided).
@@ -524,7 +516,7 @@ Supported names:
 
 - `repo` - public GitHub repository URL
 - `docs` - public documentation site URL
-- `docs-local` - absolute path to local `README.md`
+- `docs-local` - absolute path to local `README.md` (the MCP `help` payload names this resource `docs_local`)
 
 ```sh
 clp -p repo
@@ -942,11 +934,10 @@ Every structured CLI format and library coverage hash has integer `schema_versio
 {
   "schema_version": 1,
   "file": "app/models/order.rb",
-  "summary": {
-    "covered": 6,
-    "total": 7,
-    "percentage": 85.71
-  },
+  "covered": 6,
+  "uncovered": 1,
+  "total": 7,
+  "percentage": 85.71,
   "stale": "ok"
 }
 ```

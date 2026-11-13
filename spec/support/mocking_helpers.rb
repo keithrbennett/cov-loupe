@@ -54,8 +54,7 @@ module MockingHelpers
     relativizer = create_test_relativizer(root: root)
     # Accept any keyword arguments (like raise_on_stale) in addition to the file path
     allow(model).to receive(model_method).with(file_path, any_args)
-      .and_return(relativizer.relativize(mock_data))
-    allow(model).to receive(:staleness_for).with(file_path).and_return(staleness)
+      .and_return(relativizer.relativize(mock_data.merge('stale' => staleness)))
 
     model
   end

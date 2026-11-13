@@ -134,7 +134,7 @@ This allows:
 - `project_totals` excludes any stale files ("deleted", "newer", "length_mismatch", "unreadable") from aggregate counts.
 - Totals include a `with_coverage` breakdown, plus a `without_coverage` breakdown when tracked globs are set, so callers can reconcile what was omitted.
 - The `without_coverage` payload includes counts for three categories:
-    - `missing_from_coverage`: Tracked files that have no coverage data in the coverage file
+    - `missing_tracked`: Tracked files that have no coverage data in the coverage file
     - `unreadable`: Files that exist but could not be read (e.g., due to permission errors, I/O issues, or staleness check failures)
     - `skipped`: Files that were skipped during list processing due to coverage data errors (e.g., malformed entries)
 - The `unreadable` count comes from `list_result['unreadable_files']` (collected during staleness checking when files exist but cannot be accessed or validated), excluding files that already appear as a coverage row or a skipped row, so no file is counted twice.

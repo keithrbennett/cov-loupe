@@ -17,7 +17,6 @@ module CovLoupe
           break if emit_structured_format_with_optional_source?(data, model, path)
 
           relative_path = presenter.relative_path
-          summary = data['summary']
 
           # Table format with box-drawing
           headers = ['File', '%', 'Covered', 'Total', 'Stale']
@@ -25,9 +24,9 @@ module CovLoupe
 
           rows = [[
             relative_path,
-            format_percentage(summary['percentage']),
-            summary['covered'].to_s,
-            summary['total'].to_s,
+            format_percentage(data['percentage']),
+            data['covered'].to_s,
+            data['total'].to_s,
             stale_marker,
           ]]
 

@@ -5,4 +5,4 @@
 # percentage is nil when no lines can be measured (no coverable lines, or all files stale);
 # `to_f` turns that into 0.0 so the check fails rather than passing vacuously.
 
-->(model) { model.project_totals['lines']['percentage'].to_f >= 85.0 }
+->(model) { model.project_totals['percentage'].to_f >= 85.0 }

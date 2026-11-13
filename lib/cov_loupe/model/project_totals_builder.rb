@@ -25,28 +25,21 @@ module CovLoupe
 
     # @param list_result [Hash] unversioned list result with absolute paths
     # @param tracked_globs [Array<String>, String, nil] glob patterns for tracked files
-    # @return [Hash] 'lines', 'tracking', 'files', and 'timestamp_status' entries
+    # @return [Hash] line metrics ('covered', 'uncovered', 'total', 'percentage') for fresh
+    #   files, then 'tracking', 'file_counts', and 'timestamp_status' entries
     def build(list_result, tracked_globs:)
       patterns = GlobUtils.normalize_patterns(tracked_globs)
       without = without_coverage(list_result) if patterns.any?
+      fresh_rows = list_result['files'].reject { |row| StaleStatus.stale?(row['stale']) }
 
-      {
-        'lines'            => line_totals(list_result['files']),
+      CoverageCalculator.aggregate(fresh_rows).merge(
         'tracking'         => { 'enabled' => patterns.any?, 'globs' => patterns },
-        'files'            => files(with_coverage(list_result['files']), without),
-        'timestamp_status' => list_result['timestamp_status'],
-      }
-    end
-
-    private def line_totals(rows)
-      included_rows = rows.reject { |row| StaleStatus.stale?(row['stale']) }
-      CoverageCalculator.aggregate(included_rows).merge(
-        'included_files' => included_rows.length,
-        'excluded_files' => rows.length - included_rows.length
+        'file_counts'      => file_counts(with_coverage(list_result['files']), without),
+        'timestamp_status' => list_result['timestamp_status']
       )
     end
 
-    private def files(with, without)
+    private def file_counts(with, without)
       {
         'total'            => with['total'] + (without&.fetch('total') || 0),
         'with_coverage'    => with,
@@ -67,9 +60,9 @@ module CovLoupe
 
     private def without_coverage(list_result)
       by_type = {
-        StaleStatus::MISSING_FROM_COVERAGE => Array(list_result['missing_tracked_files']).length,
-        StaleStatus::UNREADABLE            => unreadable_without_row(list_result),
-        StaleStatus::SKIPPED               => Array(list_result['skipped_files']).length,
+        StaleStatus::MISSING_TRACKED => Array(list_result['missing_tracked_files']).length,
+        StaleStatus::UNREADABLE      => unreadable_without_row(list_result),
+        StaleStatus::SKIPPED         => Array(list_result['skipped_files']).length,
       }
       { 'total' => by_type.values.sum, 'by_type' => by_type }
     end

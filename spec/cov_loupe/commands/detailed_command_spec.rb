@@ -58,7 +58,7 @@ RSpec.describe CovLoupe::Commands::DetailedCommand do
       before { stub_staleness_check('length_mismatch') }
 
       it_behaves_like 'a command with formatted output', ['lib/foo.rb'],
-        { 'file' => 'lib/foo.rb', 'lines' => nil, 'summary' => nil, 'stale' => 'length_mismatch' }
+        { 'file' => 'lib/foo.rb', 'lines' => nil, 'percentage' => nil, 'stale' => 'length_mismatch' }
     end
   end
 end

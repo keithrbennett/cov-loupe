@@ -62,14 +62,14 @@ RSpec.describe CovLoupe::CoverageCLI do
     end
 
     [
-      { cmd: 'summary', args: ['lib/foo.rb'], key: 'summary', check: ->(d) {
-        d['summary']['covered'] == 2
+      { cmd: 'summary', args: ['lib/foo.rb'], key: 'percentage', check: ->(d) {
+        d['covered'] == 2
       } },
       { cmd: 'raw', args: ['lib/foo.rb'], key: 'lines', check: ->(d) {
         d['lines'] == [nil, nil, 1, 0, nil, 2]
       } },
-      { cmd: 'uncovered', args: ['lib/foo.rb'], key: 'uncovered', check: ->(d) {
-        d['uncovered'] == [4]
+      { cmd: 'uncovered', args: ['lib/foo.rb'], key: 'uncovered_lines', check: ->(d) {
+        d['uncovered_lines'] == [4]
       } },
       { cmd: 'detailed', args: ['lib/foo.rb'], key: 'lines', check: ->(d) {
         d['lines'].is_a?(Array)
@@ -84,15 +84,15 @@ RSpec.describe CovLoupe::CoverageCLI do
 
     it 'prints totals as JSON' do
       with_json_output('totals') do |data|
-        expect(data['lines']).to include(
+        expect(data).to include(
           'total'      => 6,
           'covered'    => 3,
           'uncovered'  => 3,
           'percentage' => be_within(0.01).of(50.0)
         )
         expect(data['tracking']).to include('enabled' => false)
-        expect(data['files']).to include('total' => 2)
-        expect(data['files']['with_coverage']).to include('total' => 2, 'ok' => 2)
+        expect(data['file_counts']).to include('total' => 2)
+        expect(data['file_counts']['with_coverage']).to include('total' => 2, 'ok' => 2)
       end
     end
   end
@@ -165,13 +165,8 @@ RSpec.describe CovLoupe::CoverageCLI do
     expect(asc['files']).to be_an(Array)
     expect(asc['files'].first['file']).to end_with('lib/bar.rb')
 
-    # Includes counts for total/ok/stale and they are consistent
-    expect(asc['counts']).to include('total', 'ok', 'stale')
-    total = asc['counts']['total']
-    ok = asc['counts']['ok']
-    stale = asc['counts']['stale']
-    expect(total).to eq(asc['files'].length)
-    expect(ok + stale).to eq(total)
+    expect(asc['files'].map { |row| row['percentage'] }).to eq([33.33, 66.66])
+    expect(asc['files'].map { |row| row['uncovered'] }).to eq([2, 1])
 
     output = run_cli(
       '--format', 'json', '--sort-order', 'd', 'list'
@@ -220,7 +215,7 @@ RSpec.describe CovLoupe::CoverageCLI do
     %w[list totals].each do |command|
       data = JSON.parse(run_cli('--format', 'json', '--tracked-globs', 'lib/**/*.rb', command))
 
-      expect(data.dig('files', 'without_coverage')).not_to be_nil if command == 'totals'
+      expect(data.dig('file_counts', 'without_coverage')).not_to be_nil if command == 'totals'
       expect(data['missing_tracked_files']).not_to be_empty if command == 'list'
       expect_schema_valid(command, data)
     end
@@ -379,7 +374,7 @@ RSpec.describe CovLoupe::CoverageCLI do
         relative_skipped_files:         [],
         relative_files:                 [],
         timestamp_status:               status,
-        payload:                        { 'files' => [], 'counts' => {} }
+        payload:                        { 'files' => [] }
       )
       allow(CovLoupe::Presenters::ProjectCoveragePresenter)
         .to receive(:new).and_return(presenter_double)
@@ -449,7 +444,7 @@ RSpec.describe CovLoupe::CoverageCLI do
         # This confirms that global option parsing (in ConfigParser) does not
         # strip subcommand-specific options like -i.
         _stdout, _stderr, status = run_fixture_full_cli_with_status(subcommand, '-i',
-          '->(m) { m.project_totals["lines"]["percentage"] >= 10 }')
+          '->(m) { m.project_totals["percentage"] >= 10 }')
         expect(status).to eq(0)
       end
     end

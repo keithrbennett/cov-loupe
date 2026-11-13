@@ -349,17 +349,17 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
           # Verify coverage-specific fields
           case method
           when :summary_for
-            expect(result['summary']).to include('covered', 'total', 'percentage')
+            expect(result).to include('covered', 'total', 'percentage')
           when :raw_for
             expect(result['lines']).to eq([1, 0, 1, nil])
           when :uncovered_for
-            expect(result['uncovered']).to be_an(Array)
+            expect(result['uncovered_lines']).to be_an(Array)
             # summary counts non-nil elements only: [1, 0, 1, nil] => total: 3
-            expect(result['summary']).to include('total' => 3)
+            expect(result).to include('total' => 3)
           when :detailed_for
             expect(result['lines']).to be_an(Array)
             # summary counts non-nil elements only: [1, 0, 1, nil] => total: 3
-            expect(result['summary']).to include('total' => 3)
+            expect(result).to include('total' => 3)
           end
 
           # Verify staleness_for returns 'deleted' for the file

@@ -29,6 +29,6 @@ RSpec.describe CovLoupe::Commands::ListCommand do
       end.to raise_error(CovLoupe::UsageError, /Unexpected argument.*extra args/)
     end
 
-    it_behaves_like 'a command with formatted output', [], %w[files counts]
+    it_behaves_like 'a command with formatted output', [], %w[files timestamp_status]
   end
 end

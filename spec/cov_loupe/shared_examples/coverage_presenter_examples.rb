@@ -10,37 +10,23 @@ RSpec.shared_examples 'a coverage presenter' do |config|
   end
 
   let(:model) { instance_double(CovLoupe::CoverageModel) }
-  let(:raw_payload) { config.fetch(:payload) }
   let(:stale_value) { config.fetch(:stale) }
+  let(:raw_payload) { config.fetch(:payload).merge('stale' => stale_value) }
 
   before do
     allow(model).to receive(config.fetch(:model_method)).with(config.fetch(:path,
       'lib/foo.rb')).and_return(raw_payload)
-    allow(model).to receive(:staleness_for).with(config.fetch(:path,
-      'lib/foo.rb')).and_return(stale_value)
   end
 
   describe '#payload' do
-    it 'returns data with stale metadata' do
-      result = presenter.payload
-
-      expect(result).to include('file' => raw_payload['file'])
-      Array(config.fetch(:expected_keys)).each do |key|
-        expect(result).to include(key => raw_payload[key])
-      end
-      expect(result['stale']).to eq(stale_value)
-    end
-
-    it 'does not mutate the underlying model data' do
-      presenter.payload
-      expect(raw_payload).not_to have_key('stale')
+    it 'returns the model payload unchanged' do
+      expect(presenter.payload).to eq(raw_payload)
     end
 
     it 'only fetches model data once across calls' do
       presenter.payload
       presenter.payload
       expect(model).to have_received(config.fetch(:model_method)).once
-      expect(model).to have_received(:staleness_for).once
     end
   end
 

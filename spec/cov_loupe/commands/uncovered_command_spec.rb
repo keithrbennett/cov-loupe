@@ -29,9 +29,9 @@ RSpec.describe CovLoupe::Commands::UncoveredCommand do
         mock_presenter(
           CovLoupe::Presenters::CoveragePayloadPresenter,
           payload:       {
-            'file'      => 'lib/perfect.rb',
-            'uncovered' => [],
-            'summary'   => { 'covered' => 10, 'total' => 10, 'percentage' => 100.0 },
+            'file' => 'lib/perfect.rb',
+            'uncovered_lines' => [],
+            'covered' => 10, 'total' => 10, 'percentage' => 100.0
           },
           relative_path: 'lib/perfect.rb'
         )
@@ -49,7 +49,7 @@ RSpec.describe CovLoupe::Commands::UncoveredCommand do
       before { stub_staleness_check('length_mismatch') }
 
       it_behaves_like 'a command with formatted output', ['lib/foo.rb'],
-        %w[file uncovered summary stale]
+        %w[file uncovered_lines uncovered percentage stale]
     end
   end
 end

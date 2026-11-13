@@ -19,8 +19,9 @@ module CovLoupe
         Inputs: optional project root, alternate coverage file path, sort order, raise_on_stale flag,
         tracked_globs, error mode, output_chars, and format (default: json).
         Output format depends on the format parameter:
-        - json (default): JSON object with schema_version, files, counts, skipped_files, etc.
-          Each file's "percentage" is null if the file has no coverable lines.
+        - json (default): JSON object with schema_version, files, skipped_files, etc.
+          Each file row has "file", "covered", "uncovered", "total", "percentage", and "stale";
+          "percentage" is null if the file has no coverable lines.
         - pretty_json: Multi-line, indented JSON
         - yaml: YAML format
         - amazing_print: Ruby object formatting via AmazingPrint

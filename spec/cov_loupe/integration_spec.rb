@@ -33,10 +33,10 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
         expect(raw['lines']).to eq([nil, nil, 1, 0, nil, 2])
 
         summary = model.summary_for('lib/foo.rb')
-        expect(summary['summary']).to include('covered' => 2, 'total' => 3)
+        expect(summary).to include('covered' => 2, 'total' => 3)
 
         uncovered = model.uncovered_for('lib/foo.rb')
-        expect(uncovered['uncovered']).to eq([4])
+        expect(uncovered['uncovered_lines']).to eq([4])
 
         detailed = model.detailed_for('lib/foo.rb')
         expect(detailed['lines']).to include({ 'line' => 4, 'hits' => 0, 'covered' => false })
@@ -82,8 +82,8 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
             args:         ['--format', 'json', 'summary', 'lib/foo.rb'],
             expectations: ->(output) {
               json_data = JSON.parse(output)
-              expect(json_data).to include('file', 'summary')
-              expect(json_data['summary']).to include('covered' => 2, 'total' => 3)
+              expect(json_data).to include('file', 'percentage', 'stale')
+              expect(json_data).to include('covered' => 2, 'total' => 3)
             },
           },
         ].each do |tc|
@@ -119,8 +119,10 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
           {
             tool:          CovLoupe::Tools::FileCoverageSummaryTool,
             args:          { path: 'lib/foo.rb', root: project_root, coverage_file: coverage_dir },
-            expected_keys: %w[file summary],
-            check:         ->(data) { expect(data['summary']).to include('covered' => 2, 'total' => 3) },
+            expected_keys: %w[file percentage stale],
+            check:         ->(data) {
+              expect(data).to include('covered' => 2, 'uncovered' => 1, 'total' => 3)
+            },
           },
           {
             tool:          CovLoupe::Tools::FileCoverageRawTool,
@@ -131,10 +133,10 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
           {
             tool:          CovLoupe::Tools::ProjectCoverageTool,
             args:          { root: project_root, coverage_file: coverage_dir },
-            expected_keys: %w[files counts],
+            expected_keys: %w[files timestamp_status],
             check:         ->(data) {
-              expect(data['files'].length).to eq(2)
-              expect(data['counts']['total']).to eq(2)
+              expect(data['files'].map { |row| row['percentage'] }).to eq([66.66, 33.33])
+              expect(data).not_to have_key('counts')
             },
           },
           {
@@ -177,8 +179,8 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
           )
         )
 
-        expect(summary_data['summary']).to include('covered' => 2, 'total' => 3)
-        expect(detailed_data['summary']).to include('covered' => 2, 'total' => 3)
+        expect(summary_data).to include('covered' => 2, 'total' => 3)
+        expect(detailed_data).to include('covered' => 2, 'total' => 3)
         expect(detailed_data['lines'].count { |l| l['covered'] }).to eq(2)
       end
     end
@@ -279,7 +281,7 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
             id:    3,
             name:  'file_coverage_summary',
             args:  { path: 'lib/foo.rb', root: project_root, coverage_file: coverage_dir },
-            check: ->(data) { expect(data['summary']).to include('covered' => 2, 'total' => 3) },
+            check: ->(data) { expect(data).to include('covered' => 2, 'total' => 3) },
           },
           {
             id:    4,
@@ -291,7 +293,7 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
             id:    5,
             name:  'file_uncovered_lines',
             args:  { path: 'lib/foo.rb', root: project_root, coverage_file: coverage_dir },
-            check: ->(data) { expect(data['uncovered']).to eq([4]) },
+            check: ->(data) { expect(data['uncovered_lines']).to eq([4]) },
           },
         ].each do |tc|
           resp = jsonrpc_tool_call(tc[:id], tc[:name], tc[:args])

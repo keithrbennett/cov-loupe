@@ -14,17 +14,15 @@ RSpec.describe CovLoupe::Presenters::ProjectTotalsPresenter do
   let(:model) { instance_double(CovLoupe::CoverageModel) }
   let(:raw_totals) do
     {
-      'lines'            => {
-        'total'      => 100,
-        'covered'    => 80,
-        'uncovered'  => 20,
-        'percentage' => 80.0,
-      },
+      'total'            => 100,
+      'covered'          => 80,
+      'uncovered'        => 20,
+      'percentage'       => 80.0,
       'tracking'         => {
         'enabled' => true,
         'globs'   => ['lib/**/*.rb'],
       },
-      'files'            => {
+      'file_counts'      => {
         'total'            => 12,
         'with_coverage'    => {
           'total' => 10,
@@ -42,9 +40,9 @@ RSpec.describe CovLoupe::Presenters::ProjectTotalsPresenter do
         'without_coverage' => {
           'total'   => 2,
           'by_type' => {
-            'missing_from_coverage' => 2,
-            'unreadable'            => 0,
-            'skipped'               => 0,
+            'missing_tracked' => 2,
+            'unreadable'      => 0,
+            'skipped'         => 0,
           },
         },
       },
@@ -68,17 +66,7 @@ RSpec.describe CovLoupe::Presenters::ProjectTotalsPresenter do
 
   describe '#payload' do
     it 'returns project totals from the model' do
-      result = presenter.payload
-
-      expect(result).to include('lines', 'tracking', 'files')
-      expect(result['lines']).to include(
-        'total'      => 100,
-        'covered'    => 80,
-        'uncovered'  => 20,
-        'percentage' => 80.0
-      )
-      expect(result['tracking']).to include('enabled' => true)
-      expect(result['files']).to include('total' => 12)
+      expect(presenter.payload).to eq(raw_totals)
     end
 
     it 'caches the result on subsequent calls' do

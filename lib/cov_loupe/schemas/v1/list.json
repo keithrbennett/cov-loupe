@@ -18,16 +18,16 @@
     "length_mismatch_files": {"$ref": "#/$defs/paths", "description": "Files whose source line count differs from coverage data."},
     "unreadable_files": {"$ref": "#/$defs/paths", "description": "Source files that could not be read."},
     "timestamp_status": {"type": "string", "enum": ["ok", "missing"], "description": "Whether the coverage timestamp is available."},
-    "counts": {"$ref": "#/$defs/counts", "description": "Optional CLI/MCP summary; absent from the library list."},
-    "warnings": {"type": "array", "items": {"type": "string"}, "description": "Optional MCP warnings when timestamps are missing."}
+    "warnings": {"type": "array", "items": {"type": "string"}, "description": "Timestamp warnings; present only in MCP output when timestamp_status is missing."}
   },
   "$defs": {
     "file_row": {
       "type": "object",
-      "required": ["file", "covered", "total", "percentage", "stale"],
+      "required": ["file", "covered", "uncovered", "total", "percentage", "stale"],
       "properties": {
         "file": {"type": "string", "description": "Source path relative to the project root; absolute if the file is outside it."},
         "covered": {"type": "integer", "minimum": 0, "description": "Lines with at least one hit."},
+        "uncovered": {"type": "integer", "minimum": 0, "description": "Coverable lines with no hits."},
         "total": {"type": "integer", "minimum": 0, "description": "Coverable lines."},
         "percentage": {"type": ["number", "null"], "minimum": 0, "maximum": 100, "description": "Line coverage percent (covered / coverable lines), truncated to two decimals; null when there are no coverable lines."},
         "stale": {"type": "string", "enum": ["ok", "deleted", "newer", "length_mismatch", "unreadable"], "description": "File staleness."}
@@ -42,15 +42,6 @@
         "error_class": {"type": "string", "description": "Ruby exception class name."}
       }
     },
-    "paths": {"type": "array", "items": {"type": "string", "description": "Source path relative to the project root; absolute if the file is outside it."}},
-    "counts": {
-      "type": "object",
-      "required": ["total", "ok", "stale"],
-      "properties": {
-        "total": {"type": "integer", "minimum": 0, "description": "Number of rows in files; skipped rows are not counted."},
-        "ok": {"type": "integer", "minimum": 0, "description": "Fresh rows."},
-        "stale": {"type": "integer", "minimum": 0, "description": "Stale rows."}
-      }
-    }
+    "paths": {"type": "array", "items": {"type": "string", "description": "Source path relative to the project root; absolute if the file is outside it."}}
   }
 }

@@ -73,7 +73,7 @@ A file with no coverable lines (for example, one containing only comments) has a
 `percentage`. Comparing `nil` raises an error, so check for it first. These examples treat such
 files as passing; use `f['percentage'].to_f` instead if you want them to fail.
 
-`project_totals['lines']['percentage']` is also `nil` when no lines can be measured, either
+`project_totals['percentage']` is also `nil` when no lines can be measured, either
 because nothing is coverable or because every file is stale. Project-level examples use `to_f`
 so that case fails instead of passing vacuously.
 
@@ -120,7 +120,7 @@ The `model` parameter provides:
 ```ruby
 # Get all files
 files = model.list['files']
-# => [{ "file" => "...", "covered" => 12, "total" => 14, "percentage" => 85.71, "stale" => "ok" }, ...]
+# => [{ "file" => "...", "covered" => 12, "uncovered" => 2, "total" => 14, "percentage" => 85.71, "stale" => "ok" }, ...]
 
 # Filter by globs
 api_files = model.list(tracked_globs: ['lib/api/**/*.rb'])['files']

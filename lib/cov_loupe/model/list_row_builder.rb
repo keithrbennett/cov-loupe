@@ -13,7 +13,8 @@ module CovLoupe
   # @api private
   class ListRowBuilder
     # @!attribute [r] rows
-    #   @return [Array<Hash>] 'file', 'covered', 'total', and 'percentage' per readable entry
+    #   @return [Array<Hash>] 'file', 'covered', 'uncovered', 'total', and 'percentage' per
+    #     readable entry
     # @!attribute [r] lines_by_path
     #   @return [Hash{String => Array<Integer, nil>}] coverage lines per readable entry
     # @!attribute [r] errors

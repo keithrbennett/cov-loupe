@@ -3,7 +3,7 @@
   "$id": "urn:cov-loupe:schema:v1:detailed",
   "title": "cov-loupe v1 detailed file coverage",
   "type": "object",
-  "required": ["schema_version", "file", "lines", "summary"],
+  "required": ["schema_version", "file", "lines", "covered", "uncovered", "total", "percentage", "stale"],
   "properties": {
     "schema_version": {"const": 1, "description": "Version of this payload shape."},
     "file": {"type": "string", "description": "Source path relative to the project root; absolute if the file is outside it."},
@@ -20,17 +20,12 @@
       },
       "description": "Coverable lines and hit counts."
     },
-    "summary": {
-      "type": "object",
-      "required": ["covered", "total", "percentage"],
-      "properties": {
-        "covered": {"type": "integer", "minimum": 0, "description": "Lines with at least one hit."},
-        "total": {"type": "integer", "minimum": 0, "description": "Coverable lines."},
-        "percentage": {"type": ["number", "null"], "minimum": 0, "maximum": 100, "description": "Line coverage percent (covered / coverable lines), truncated to two decimals; null when there are no coverable lines."}
-      }
-    },
-    "stale": {"type": "string", "enum": ["ok", "deleted", "newer", "length_mismatch", "unreadable"], "description": "File staleness, present in CLI and MCP output."},
-    "source": {"$ref": "#/$defs/source", "description": "Optional annotated source rows from CLI --source."}
+    "covered": {"type": "integer", "minimum": 0, "description": "Lines with at least one hit."},
+    "uncovered": {"type": "integer", "minimum": 0, "description": "Coverable lines with no hits."},
+    "total": {"type": "integer", "minimum": 0, "description": "Coverable lines."},
+    "percentage": {"type": ["number", "null"], "minimum": 0, "maximum": 100, "description": "Line coverage percent (covered / coverable lines), truncated to two decimals; null when there are no coverable lines."},
+    "stale": {"type": "string", "enum": ["ok", "deleted", "newer", "length_mismatch", "unreadable"], "description": "File staleness."},
+    "source": {"$ref": "#/$defs/source", "description": "Annotated source rows; present only in CLI output with --source."}
   },
   "$defs": {
     "source": {

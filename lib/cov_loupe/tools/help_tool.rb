@@ -10,7 +10,7 @@ module CovLoupe
       tool_name 'help'
       description <<~DESC
         Returns help describing the other registered tools, including: use_when, avoid_when, inputs.
-        Also returns documentation resources (repo, docs, docs-local) under "resources".
+        Also returns documentation resources (repo, docs, docs_local) under "resources".
       DESC
 
       input_schema(
@@ -95,7 +95,7 @@ module CovLoupe
               .select { |guide| guide[:tool].available_in?(server_context) }
               .map { |guide| format_entry(guide) }
 
-            respond_json({ tools: entries, resources: Resources::RESOURCE_MAP },
+            respond_json({ tools: entries, resources: Resources.payload_map },
               output_chars: output_chars_sym)
           end
         end

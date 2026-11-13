@@ -23,11 +23,11 @@
     },
     "resources": {
       "type": "object",
-      "required": ["repo", "docs", "docs-local"],
+      "required": ["repo", "docs", "docs_local"],
       "properties": {
         "repo": {"type": "string", "description": "Public repository URL."},
         "docs": {"type": "string", "description": "Public documentation URL."},
-        "docs-local": {"type": "string", "description": "Absolute path to the local README."}
+        "docs_local": {"type": "string", "description": "Absolute path to the local README."}
       }
     }
   }

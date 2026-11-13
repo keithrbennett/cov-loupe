@@ -7,8 +7,8 @@ module CovLoupe
     # Shared presenter behavior for single-file coverage payloads.
     #
     # Subclasses must implement #build_payload, which calls a CoverageModel
-    # method (e.g., :summary_for, :raw_for) for the given file path.
-    # The base class enriches the payload with staleness status from model.staleness_for.
+    # method (e.g., :summary_for, :raw_for) for the given file path. The model payload
+    # already includes the file's staleness status.
     #
     # @api private
     class BaseCoveragePresenter
@@ -32,7 +32,7 @@ module CovLoupe
       end
 
       private def compute_payload
-        build_payload.merge('stale' => model.staleness_for(path))
+        build_payload
       end
 
       private def build_payload
