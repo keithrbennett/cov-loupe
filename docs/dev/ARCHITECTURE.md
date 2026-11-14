@@ -8,6 +8,7 @@ cov-loupe is organized around a single coverage data model that feeds three deli
 
 - **Executable** – `exe/cov-loupe` bootstraps the gem, enforces Ruby >= 3.3, and delegates to `CovLoupe.run(ARGV)`.
 - **Mode Negotiation** – `CovLoupe.run` inspects environment defaults from `COV_LOUPE_OPTS` and parses the `-m/--mode` flag. It defaults to CLI mode and instantiates `CovLoupe::CoverageCLI`. When `-m mcp` or `--mode mcp` is specified, it instantiates `CovLoupe::MCPServer` for MCP protocol communication over STDIO.
+- **Status-Returning Entry** – `CovLoupe.execute` runs the same code as `CovLoupe.run` but rescues `CovLoupe::CliExit`, the `SystemExit` subclass the CLI raises to end with a status, and returns that status instead of ending the process.
 - **Embedded Usage** – Applications embed the gem by instantiating `CovLoupe::CoverageModel` directly, optionally wrapping work in `CovLoupe.with_context` to scope a log target to that work.
 
 ## Coverage Data Pipeline

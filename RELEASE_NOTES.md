@@ -203,6 +203,12 @@
   root (`meta.root`, written by SimpleCov 1.x) that differs from the current one and is a
   directory on this machine, the warning also names it. The default root is unchanged. See
   [Troubleshooting](docs/user/TROUBLESHOOTING.md#the-project-root-may-be-wrong).
+- **New `CovLoupe.execute` returns the exit code.** It runs the CLI like `CovLoupe.run`, but
+  returns the [exit code](docs/user/CLI_USAGE.md#exit-codes) instead of ending the process,
+  for Ruby code that embeds cov-loupe and needs to carry on afterwards. `CovLoupe.run` still
+  ends the process wherever it did; when it returns, it now returns `0` (it used to return an
+  unspecified value). See
+  [Running the CLI from Ruby](docs/user/ADVANCED_USAGE.md#running-the-cli-from-ruby).
 - **A coverage file without line coverage fails clearly.** When SimpleCov ran with line
   coverage disabled (`disable_coverage :line`), every file was skipped as corrupt, `list`
   printed "No coverage data found", and `totals` reported `0 total`, both exiting 0. Loading

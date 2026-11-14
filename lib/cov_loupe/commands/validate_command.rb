@@ -49,7 +49,7 @@ module CovLoupe
           PredicateEvaluator.evaluate_file(code, model)
         end
 
-        exit(result ? ExitCodes::SUCCESS : ExitCodes::VALIDATION_FAILED)
+        raise CliExit, result ? ExitCodes::SUCCESS : ExitCodes::VALIDATION_FAILED
       end
     end
   end

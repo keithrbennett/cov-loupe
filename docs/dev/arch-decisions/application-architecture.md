@@ -262,7 +262,7 @@ end
 1. Catches all exceptions in the main run loop
 2. Uses the `for_cli` handler to log errors to a log file target (not to the default `stderr` target, where the message is already printed); a custom handler is called for every error except invalid options, which are reported during option parsing
 3. Displays `user_friendly_message` to the user
-4. Exits with the code from `CoverageCLI#exit_code_for` (see `CovLoupe::ExitCodes`): 1 runtime error, 2 usage or configuration error, 4 predicate error. The one exception is `validate`, which exits directly with 0 (pass) or 3 (validation failed) when the predicate runs to completion, since that outcome is not an error
+4. Raises `CliExit` with the code from `CoverageCLI#exit_code_for` (see `CovLoupe::ExitCodes`): 1 runtime error, 2 usage or configuration error, 4 predicate error. The one exception is `validate`, which raises `CliExit` directly with 0 (pass) or 3 (validation failed) when the predicate runs to completion, since that outcome is not an error. `CovLoupe.run` lets `CliExit` end the process; `CovLoupe.execute` returns its status
 
 **MCP Server Mode** (`lib/cov_loupe/base_tool.rb`):
 

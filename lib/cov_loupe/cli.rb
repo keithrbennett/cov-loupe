@@ -318,7 +318,7 @@ module CovLoupe
         backtrace = backtrace.first(5) if CovLoupe.logger.file_target?
         warn backtrace.join("\n")
       end
-      exit(exit_code_for(error))
+      raise CliExit, exit_code_for(error)
     end
 
     # Errors are always printed to stderr for the user, so the built-in handler does not log them

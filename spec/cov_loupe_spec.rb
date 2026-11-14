@@ -105,6 +105,62 @@ RSpec.describe CovLoupe do
     end
   end
 
+  describe '.run and .execute' do
+    codes = CovLoupe::ExitCodes
+
+    # [description, argv, expected status, whether run ends the process]
+    [
+      ['a successful command', %w[totals], codes::SUCCESS, false],
+      ['--help', %w[--help], codes::SUCCESS, true],
+      ['--version', %w[--version], codes::SUCCESS, true],
+      ['--path-for', %w[--path-for repo], codes::SUCCESS, true],
+      ['an unknown --path-for name', %w[--path-for nope], codes::USAGE, true],
+      ['a passing validate', ['validate', '-i', '->(_m) { true }'], codes::SUCCESS, true],
+      ['a failing validate', ['validate', '-i', '->(_m) { false }'], codes::VALIDATION_FAILED, true],
+      ['an invalid option', %w[--no-such-option], codes::USAGE, true],
+      ['an invalid mode', %w[--mode nope], codes::USAGE, true],
+      ['a runtime error', %w[summary lib/missing.rb], codes::ERROR, true],
+    ].each do |desc, argv, status, exits|
+      it "execute returns #{status} for #{desc}" do
+        result, = capture_io { described_class.execute(fixture_cli_args(*argv)) }
+
+        expect(result).to eq(status)
+      end
+
+      it "run #{exits ? "exits with #{status}" : 'returns 0'} for #{desc}" do
+        result, = capture_io(swallow_exit: true) { described_class.run(fixture_cli_args(*argv)) }
+
+        if exits
+          expect(result).to be_a(SystemExit).and(have_attributes(status: status))
+        else
+          expect(result).to eq(status)
+        end
+      end
+    end
+
+    it 'returns 0 from execute when the MCP server shuts down' do
+      allow(described_class::MCPServer).to receive(:new)
+        .and_return(instance_double(described_class::MCPServer, run: nil))
+
+      expect(described_class.execute(%w[--mode mcp])).to eq(described_class::ExitCodes::SUCCESS)
+    end
+
+    it 'keeps SystemExit behavior for an exit status, with the same message' do
+      error = described_class::CliExit.new(2)
+
+      expect(error).to have_attributes(status: 2, message: 'exit')
+    end
+
+    it 'lets an exit from elsewhere, such as a validate predicate, end the process' do
+      argv = fixture_cli_args('validate', '-i', '->(_m) { exit 7 }')
+
+      expect { capture_io { described_class.execute(argv) } }.to raise_error(SystemExit) { |error|
+        expect(error).not_to be_a(described_class::CliExit)
+        expect(error.status).to eq(7)
+      }
+    end
+  end
+
   describe 'default context' do
     it 'keeps the internal default context quiet for library callers' do
       expect(described_class.context.mode).to eq(:library)

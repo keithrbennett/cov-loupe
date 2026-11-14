@@ -63,8 +63,31 @@ module CovLoupe
     # then dispatches accordingly. Environment options from COV_LOUPE_OPTS are
     # prepended before parsing so CLI arguments always take precedence.
     #
+    # Ends the process with an ExitCodes status when an option is invalid, after --help,
+    # --version, or --path-for, and in CLI mode when a command fails and after validate. MCP
+    # tool failures are isError results instead. Use execute to get the status without exiting.
+    #
+    # @param argv [Array<String>] command-line arguments
+    # @return [Integer] ExitCodes::SUCCESS when it returns
     # @api public
     def run(argv)
+      dispatch(argv)
+      ExitCodes::SUCCESS
+    end
+
+    # Runs like run, but returns the exit status instead of ending the process. Only cov-loupe's
+    # own exits are caught; an exit from elsewhere, such as a validate predicate, still ends it.
+    #
+    # @param argv [Array<String>] command-line arguments
+    # @return [Integer] an ExitCodes status
+    # @api public
+    def execute(argv)
+      run(argv)
+    rescue CliExit => e
+      e.status
+    end
+
+    private def dispatch(argv)
       # Parse config to determine mode
       require_relative 'cov_loupe/config/config_parser'
 
@@ -83,7 +106,7 @@ module CovLoupe
       rescue ConfigurationError, UsageError => e
         warn "Error: #{e.message}"
         warn "Run 'cov-loupe --help' for usage information."
-        exit ExitCodes::USAGE
+        raise CliExit, ExitCodes::USAGE
       end
 
       if config.mode == :cli

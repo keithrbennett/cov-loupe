@@ -19,15 +19,9 @@ module CLITestHelpers
     run_cli_with_status(*fixture_cli_args(*argv))
   end
 
-  # Run the full CovLoupe.run entry point (including global ConfigParser)
+  # Run the full entry point (including global ConfigParser) via CovLoupe.execute
   def run_full_cli_with_status(*argv)
-    status = nil
-    _result, out_str, err_str = capture_io do
-      CovLoupe.run(argv.flatten)
-      status = 0
-    rescue SystemExit => e
-      status = e.status
-    end
+    status, out_str, err_str = capture_io { CovLoupe.execute(argv.flatten) }
     [out_str, err_str, status]
   end
 

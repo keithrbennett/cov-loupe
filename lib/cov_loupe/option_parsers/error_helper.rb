@@ -28,7 +28,7 @@ module CovLoupe
           end
         end
         warn usage_hint
-        exit ExitCodes::USAGE
+        raise CliExit, ExitCodes::USAGE
       end
 
       private def extract_invalid_option(message)

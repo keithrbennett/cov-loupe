@@ -108,7 +108,7 @@ module CovLoupe
       end
       parser.on('-h', '--help', 'Show help') do
         puts parser
-        exit ExitCodes::SUCCESS
+        raise CliExit, ExitCodes::SUCCESS
       end
       parser.on('-l', '--log-file PATH', String,
         'Log target (default stderr, use a file path for persistent logging, off to disable)') do |value|
@@ -140,15 +140,15 @@ module CovLoupe
       end
       parser.on('-v', '--version', 'Print version and exit.') do
         puts CovLoupe::VERSION
-        exit ExitCodes::SUCCESS
+        raise CliExit, ExitCodes::SUCCESS
       end
       parser.on('-p', '--path-for NAME', String,
         'Print resource path/URL and exit. NAME: repo, docs, docs-local.') do |value|
         puts Resources.cli_url_for(value)
-        exit ExitCodes::SUCCESS
+        raise CliExit, ExitCodes::SUCCESS
       rescue UsageError => e
         warn e.user_friendly_message
-        exit ExitCodes::USAGE
+        raise CliExit, ExitCodes::USAGE
       end
     end
 

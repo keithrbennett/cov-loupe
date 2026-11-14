@@ -26,7 +26,7 @@ Starting with 7.0, cov-loupe follows [Semantic Versioning](https://semver.org/) 
 
 The public API is:
 
-- **Ruby library**: the classes, modules, methods, and constants tagged `@api public` in the source. The tags, not a list in these docs, define it. In outline, it is the `CovLoupe` entry methods (such as `run`, `create_context`, and `with_context`), the classes and modules `CoverageModel`, `CoverageReporter`, `PayloadSchema`, and `ExitCodes`, the [exception classes](#exception-types), and the context objects returned by `create_context`; the tags give the exact members. Of a public method's arguments, only those documented in these guides or in its doc comment are public. To see the tags without reading the source, run `yard doc --api public` from the root of a cov-loupe source checkout (YARD is not a cov-loupe dependency; install it with `gem install yard`) and open `doc/index.html` for a reference containing only the public API, or browse the gem on [RubyDoc.info](https://www.rubydoc.info/gems/cov-loupe), which marks internal items as part of a private API.
+- **Ruby library**: the classes, modules, methods, and constants tagged `@api public` in the source. The tags, not a list in these docs, define it. In outline, it is the `CovLoupe` entry methods (such as `run`, `execute`, `create_context`, and `with_context`), the classes and modules `CoverageModel`, `CoverageReporter`, `PayloadSchema`, and `ExitCodes`, the [exception classes](#exception-types), and the context objects returned by `create_context`; the tags give the exact members. Of a public method's arguments, only those documented in these guides or in its doc comment are public. To see the tags without reading the source, run `yard doc --api public` from the root of a cov-loupe source checkout (YARD is not a cov-loupe dependency; install it with `gem install yard`) and open `doc/index.html` for a reference containing only the public API, or browse the gem on [RubyDoc.info](https://www.rubydoc.info/gems/cov-loupe), which marks internal items as part of a private API.
 - **Structured output**, **CLI**, and **MCP server** behavior, as described below.
 - **`validate` predicates**: a predicate is any object responding to `call`; it receives a `CoverageModel` and returns truthy to pass.
 
@@ -508,7 +508,7 @@ Note: The `without_coverage` hash is present only when `tracked_globs` is non-em
 
 ### Exception Types
 
-All cov-loupe exceptions inherit from `CovLoupe::Error`, which provides `user_friendly_message` and `original_error`. Rescue a parent class to handle all of its subclasses, and list a subclass before its parent when rescuing both.
+All public cov-loupe exceptions inherit from `CovLoupe::Error`, which provides `user_friendly_message` and `original_error`. Rescue a parent class to handle all of its subclasses, and list a subclass before its parent when rescuing both.
 
 - **`CovLoupe::Error`** - Base class
   - **`ConfigurationError`** - Invalid configuration

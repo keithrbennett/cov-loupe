@@ -300,12 +300,26 @@ end
 
 ### Running the CLI from Ruby
 
-To run the CLI from Ruby, call `CovLoupe.run` with the same arguments you would pass on the
-command line. Control error logging and stack traces with `--error-mode` and `--log-file`
-in those arguments or in `COV_LOUPE_OPTS`. `CovLoupe.run` may call `exit`. Unlike the
-`cov-loupe` executable, it does not install `INT`/`TERM` handlers, check the Ruby version,
-treat `-v`/`--version` anywhere in the arguments as a version request (as a global option,
-before any subcommand, it still prints the version), or set
+To run the CLI from Ruby, call `CovLoupe.run` or `CovLoupe.execute` with the same arguments
+you would pass on the command line. Control error logging and stack traces with `--error-mode`
+and `--log-file` in those arguments or in `COV_LOUPE_OPTS`.
+
+- `CovLoupe.run` behaves like the executable. In CLI mode it ends the process with an
+  [exit code](CLI_USAGE.md#exit-codes) when a command fails or an option is invalid, after
+  `--help`, `--version`, or `--path-for`, and after `validate`, whether it passes or fails.
+  Otherwise, including when an MCP server shuts down, it returns `0`.
+- `CovLoupe.execute` runs the same way but returns the exit code instead of ending the
+  process. An `exit` that does not come from cov-loupe, such as one in a `validate`
+  predicate, still ends it.
+
+```ruby
+status = CovLoupe.execute(%w[validate coverage_policy.rb])
+warn 'Coverage policy failed' unless status.zero?
+```
+
+Unlike the `cov-loupe` executable, neither method installs `INT`/`TERM` handlers, checks the
+Ruby version, treats `-v`/`--version` anywhere in the arguments as a version request (as a
+global option, before any subcommand, it still prints the version), or sets
 `Encoding.default_external` to UTF-8 under the C locale (see
 [Library API](LIBRARY_API.md#quick-start) for why that matters for non-ASCII paths).
 
