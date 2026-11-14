@@ -68,6 +68,13 @@ command line instead.
 - **CLI-only options:** source display (`-s`/`--source`, `-n`/`--context-lines`), ANSI color
   (`-C`/`--color`), and resource lookup (`-p`/`--path-for`). The MCP server lists the same
   resources in its server instructions.
+- **Code predicates:** When started with `--allow-code-predicates`, the MCP server offers
+  `project_validate`, which runs client-supplied Ruby; without the flag, the tool is not
+  registered. The CLI's `validate` needs no flag, because you see and approve each command an
+  agent runs. Keep this in mind when setting up your harness's permissions: although
+  cov-loupe is mostly read-only, `validate` runs arbitrary Ruby, so a rule letting an agent
+  run any `cov-loupe` command without asking also lets it run any Ruby. Allow only the
+  subcommands the agent needs instead, such as `cov-loupe list` and `cov-loupe totals`.
 
 ## Related Documentation
 
