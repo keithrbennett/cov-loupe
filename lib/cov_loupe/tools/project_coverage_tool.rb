@@ -30,6 +30,8 @@ module CovLoupe
         - puts: Ruby Kernel#puts output
         - pretty_print: Ruby stdlib PP.pp output
         - table: Plain text table with headers and percentages (matching CLI --format table)
+        Files are listed highest coverage first by default; pass sort_order "ascending" to list
+        the worst-covered files first, so they survive if a long result is cut short.
         Examples: "Show repo coverage"; "List files with lowest coverage"; "Get coverage as YAML".
       DESC
       input_schema(**coverage_schema(
