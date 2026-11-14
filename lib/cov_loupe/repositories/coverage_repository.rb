@@ -102,13 +102,9 @@ module CovLoupe
           # Expand to absolute path first
           expanded_key = PathUtils.expand_from_root(original_key, @root)
 
-          # Then apply case normalization for collision detection only
-          # Pass root to ensure case-sensitivity is derived from root's volume
-          normalized_key = PathUtils.normalize(
-            expanded_key,
-            normalize_case: !@volume_case_sensitive,
-            root:           @root
-          )
+          # Then apply case normalization for collision detection only, using the
+          # case-sensitivity detected for the root's volume
+          normalized_key = PathUtils.normalize(expanded_key, normalize_case: !@volume_case_sensitive)
 
           provided_paths_by_normalized_path[normalized_key] << original_key
           # Store using expanded key (preserves original case) for display purposes

@@ -260,60 +260,23 @@ RSpec.describe CovLoupe::PathUtils do
     end
 
     context 'when case sensitivity detection fails in relativize' do
-      it 'handles SystemCallError when detecting case sensitivity (line 115)' do
-        # This test covers the rescue block at line 115 in relativize method
-        # When volume_case_sensitive? raises SystemCallError, it should default to
-        # case-insensitive (false) and continue with relativization
+      # relativize probes the root's volume twice: once in normalized_start_with? and once for
+      # its own normalization. A failure in the second probe must fall back to case-insensitive
+      # (via case_insensitive_volume?) and still relativize.
+      [Errno::EACCES.new('Permission denied'), IOError.new('IO error')].each do |error|
+        it "relativizes when the second probe raises #{error.class}" do
+          call_count = 0
+          allow(CovLoupe::VolumeCaseSensitivity).to receive(:volume_case_sensitive?)
+            .and_wrap_original do |original, *args|
+              call_count += 1
+              raise error if call_count > 1
 
-        # Count calls to understand the flow
-        call_count = 0
+              original.call(*args)
+            end
 
-        # Set up the error to be raised on the second call (from relativize method)
-        # The first call is from normalized_start_with?, which has its own error handling
-        allow(CovLoupe::VolumeCaseSensitivity).to receive(
-          :volume_case_sensitive?
-        ).and_wrap_original do |m, *args|
-          call_count += 1
-          if call_count > 1
-            # Second call is from relativize method at line 115
-            raise Errno::EACCES, 'Permission denied'
-          else
-            # First call from normalized_start_with? returns normally
-            m.call(*args)
-          end
+          result = described_class.relativize('/home/user/project/lib/file.rb', '/home/user/project')
+          expect(result).to eq('lib/file.rb')
         end
-
-        # Call relativize - it should handle the error gracefully
-        result = described_class.relativize('/home/user/project/lib/file.rb', '/home/user/project')
-        expect(result).to eq('lib/file.rb')
-      end
-
-      it 'handles IOError when detecting case sensitivity (line 115)' do
-        # This test covers the rescue block at line 115 in relativize method
-        # When volume_case_sensitive? raises IOError, it should default to
-        # case-insensitive (false) and continue with relativization
-
-        # Count calls to understand the flow
-        call_count = 0
-
-        # Set up the error to be raised on the second call (from relativize method)
-        # The first call is from normalized_start_with?, which has its own error handling
-        allow(CovLoupe::VolumeCaseSensitivity).to receive(
-          :volume_case_sensitive?
-        ).and_wrap_original do |m, *args|
-          call_count += 1
-          if call_count > 1
-            # Second call is from relativize method at line 115
-            raise IOError, 'IO error'
-          else
-            # First call from normalized_start_with? returns normally
-            m.call(*args)
-          end
-        end
-
-        # Call relativize - it should handle the error gracefully
-        result = described_class.relativize('/home/user/project/lib/file.rb', '/home/user/project')
-        expect(result).to eq('lib/file.rb')
       end
     end
 
@@ -450,10 +413,21 @@ RSpec.describe CovLoupe::PathUtils do
         expect(result).to eq('/PATH/TO/FILE')
       end
 
-      it 'respects explicit normalize_case option' do
-        allow(CovLoupe::VolumeCaseSensitivity).to receive(:volume_case_sensitive?).and_return(true)
-        result = described_class.normalize('/PATH/TO/FILE', normalize_case: true)
-        expect(result).to eq('/path/to/file')
+      it 'derives case-sensitivity from the root volume when root is given' do
+        allow(CovLoupe::VolumeCaseSensitivity).to receive(:volume_case_sensitive?) { |path| path != '/root' }
+
+        expect(described_class.normalize('/PATH/TO/FILE', root: '/root')).to eq('/path/to/file')
+      end
+
+      [[true, '/path/to/file'], [false, '/PATH/TO/FILE']].product([{}, { root: '/root' }])
+        .each do |(normalize_case, expected), root_option|
+        it "respects normalize_case: #{normalize_case} without probing the volume (#{root_option})" do
+          allow(CovLoupe::VolumeCaseSensitivity).to receive(:volume_case_sensitive?)
+
+          result = described_class.normalize('/PATH/TO/FILE', normalize_case: normalize_case, **root_option)
+          expect(result).to eq(expected)
+          expect(CovLoupe::VolumeCaseSensitivity).not_to have_received(:volume_case_sensitive?)
+        end
       end
 
       it 'handles IOError when detecting case sensitivity and defaults to case-insensitive' do

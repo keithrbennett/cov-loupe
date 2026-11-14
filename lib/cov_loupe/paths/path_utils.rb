@@ -37,7 +37,8 @@ module CovLoupe
     # @param path [String, Pathname] path to normalize
     # @param options [Hash] normalization options
     # @option options [Boolean] :normalize_case (true on case-insensitive volumes)
-    # @option options [String] :root (nil) root directory for determining volume case-sensitivity
+    # @option options [String] :root (nil) directory whose volume's case-sensitivity sets the
+    #   default when :normalize_case is absent (the working directory's when nil)
     # @return [String] normalized path
     def self.normalize(path, options = {})
       return path if path.nil? || path.empty?
@@ -47,22 +48,8 @@ module CovLoupe
       # Always normalize slashes on Windows (Pathname#cleanpath does this anyway)
       result = result.tr('\\', '/') if windows?
 
-      # Handle case normalization for case-insensitive volumes
-      # If root is provided, derive case-sensitivity from root's volume
-      root = options[:root]
-      begin
-        default_normalize_case = if root
-          !VolumeCaseSensitivity.volume_case_sensitive?(root)
-        else
-          !VolumeCaseSensitivity.volume_case_sensitive?
-        end
-      rescue SystemCallError, IOError
-        # If we can't detect case sensitivity, assume case-insensitive to be conservative
-        default_normalize_case = true
-      end
-      if options.fetch(:normalize_case, default_normalize_case)
-        result = result.downcase
-      end
+      # An explicit normalize_case skips the filesystem probe for the volume's case-sensitivity
+      result = result.downcase if options.fetch(:normalize_case) { case_insensitive_volume?(options[:root]) }
 
       # Clean path components
       Pathname.new(result).cleanpath.to_s
@@ -86,6 +73,14 @@ module CovLoupe
       else
         base ? File.expand_path(path, base) : File.expand_path(path)
       end
+    end
+
+    # Derives case-sensitivity from root's volume, or the working directory's without a root.
+    # Detection failures assume case-insensitive, to be conservative.
+    private_class_method def self.case_insensitive_volume?(root)
+      !VolumeCaseSensitivity.volume_case_sensitive?(root)
+    rescue SystemCallError, IOError
+      true
     end
 
     # Prefixes './' to a relative path starting with '~' so File.expand_path treats it as a
@@ -127,14 +122,9 @@ module CovLoupe
       # Normalize paths before relative_path_from so Pathname can compute the relative path
       # regardless of mixed separators or case differences. Case-sensitivity is derived from
       # root's volume.
-      case_sensitive = begin
-        VolumeCaseSensitivity.volume_case_sensitive?(abs_root)
-      rescue SystemCallError, IOError
-        # If we can't detect case sensitivity, assume case-insensitive to be conservative
-        false
-      end
-      normalized_path = normalize(abs_path, normalize_case: !case_sensitive, root: abs_root)
-      normalized_root = normalize(abs_root, normalize_case: !case_sensitive, root: abs_root)
+      case_insensitive = case_insensitive_volume?(abs_root)
+      normalized_path = normalize(abs_path, normalize_case: case_insensitive)
+      normalized_root = normalize(abs_root, normalize_case: case_insensitive)
 
       relative = Pathname.new(normalized_path)
         .relative_path_from(Pathname.new(normalized_root))
@@ -143,7 +133,7 @@ module CovLoupe
       # Pathname computes the relative path from the normalized strings, which may all be
       # lowercase on case-insensitive volumes. Rebuild the result from abs_path so reports
       # keep the casing the user actually sees on disk.
-      relative = preserve_original_casing(relative, abs_path) if !case_sensitive && relative != '.'
+      relative = preserve_original_casing(relative, abs_path) if case_insensitive && relative != '.'
       protect_tilde(relative)
     rescue ArgumentError
       # Path is on a different drive or cannot be made relative
@@ -256,18 +246,9 @@ module CovLoupe
 
       # Normalize both paths for comparison (case + separators)
       # If root is provided, derive case-sensitivity from root's volume
-      case_sensitive = begin
-        if root
-          VolumeCaseSensitivity.volume_case_sensitive?(root)
-        else
-          VolumeCaseSensitivity.volume_case_sensitive?
-        end
-      rescue SystemCallError, IOError
-        # If we can't detect case sensitivity, assume case-insensitive to be conservative
-        false
-      end
-      normalized_path = normalize(path, normalize_case: !case_sensitive, root: root)
-      normalized_prefix = normalize(prefix, normalize_case: !case_sensitive, root: root)
+      case_insensitive = case_insensitive_volume?(root)
+      normalized_path = normalize(path, normalize_case: case_insensitive)
+      normalized_prefix = normalize(prefix, normalize_case: case_insensitive)
 
       # Check if normalized path starts with normalized prefix
       # AND ensure we have proper path boundary (either exact match or followed by separator)
