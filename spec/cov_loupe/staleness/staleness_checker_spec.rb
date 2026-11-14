@@ -400,6 +400,9 @@ RSpec.describe CovLoupe::StalenessChecker do
         timestamp: checker_timestamp)
     end
 
+    # Examples stub File.file? for one path; every other call must reach the real method.
+    before { allow(File).to receive(:file?).and_call_original }
+
     def create_test_file(path, content)
       File.write(path, content)
     end
@@ -412,7 +415,6 @@ RSpec.describe CovLoupe::StalenessChecker do
 
       coverage_map = { file1 => [1], file2 => [1] }
 
-      allow(File).to receive(:file?).and_call_original
       allow(File).to receive(:file?).with(file2).and_raise(Errno::EACCES.new('Permission denied'))
 
       details = checker.check_project!(coverage_map)
@@ -421,7 +423,6 @@ RSpec.describe CovLoupe::StalenessChecker do
 
     it 'reports a file once when both the project and per-file checks find it unreadable' do
       create_test_file(test_file, "puts 'test'\n")
-      allow(File).to receive(:file?).and_call_original
       allow(File).to receive(:file?).with(test_file).and_raise(Errno::EACCES.new('Permission denied'))
 
       details = checker.check_project_with_lines!({ test_file => [1] }, coverage_files: [test_file])
@@ -468,16 +469,6 @@ RSpec.describe CovLoupe::StalenessChecker do
       end.to raise_error(CovLoupe::CoverageDataProjectStaleError) { |error|
         expect(error.unreadable_files).to include('test.rb')
       }
-    end
-
-    it 'does not crash in non-error mode when files are unreadable' do
-      create_test_file(test_file, "line1\nline2\n")
-      coverage_map = { test_file => [1, 1] }
-
-      allow(File).to receive(:file?).with(test_file)
-        .and_raise(Errno::EACCES.new('Permission denied'))
-
-      expect { checker.check_project!(coverage_map) }.not_to raise_error
     end
   end
 
