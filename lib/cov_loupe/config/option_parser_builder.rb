@@ -6,6 +6,7 @@ require_relative '../resources'
 require_relative 'boolean_type'
 require_relative '../errors/errors'
 require_relative '../exit_codes'
+require_relative 'glob_list_splitter'
 
 module CovLoupe
   # @api private
@@ -99,12 +100,22 @@ module CovLoupe
           "Accepts: #{BooleanType::BOOLEAN_VALUES_DISPLAY_STRING}") do |value|
         config.raise_on_stale = BooleanType.parse(value)
       end
-      parser.on('-g', '--tracked-globs x,y,z', Array,
-        'Used to exclude unwanted results and/or include files with or without coverage data',
-        'Default: [] (shows all files in the coverage file)',
-        'Best practice: match your SimpleCov cover globs',
-        "Example: --tracked-globs 'lib/**/*.rb,app/**/*.rb'") do |value|
-        config.tracked_globs = value
+      # Not OptionParser's Array type: Array splits on every comma, which breaks brace patterns
+      # such as 'app/{models,controllers}/**/*.rb' into two invalid globs. GlobListSplitter
+      # splits only on commas outside {...} and [...]. Object passes the raw value through;
+      # String would reject an empty value (-g ''), which Array accepted as no globs.
+      parser.on('-g', '--tracked-globs PATTERNS', Object,
+        'Limit project-level results (list, totals, default report, validate predicates) to',
+        'files matching these comma-separated globs, and report matching files on disk that',
+        'have no coverage data (e.g. files added since the last test run)',
+        'In MCP mode, the default for project tools whose call passes no tracked_globs',
+        'Default: [] (every file in the coverage file, as SimpleCov reported it)',
+        'When set, use the files you expect covered, normally your SimpleCov cover globs',
+        'Commas inside {...} or [...] belong to their pattern',
+        'An unclosed {, or an unclosed [ outside braces, is an error',
+        'Write a literal comma as [,], a literal [ as [[], and a literal { as a quoted \{ (not on Windows)',
+        "Example: --tracked-globs 'lib/**/*.rb,app/{models,controllers}/**/*.rb'") do |value|
+        config.tracked_globs = GlobListSplitter.split(value)
       end
       parser.on('-h', '--help', 'Show help') do
         puts parser

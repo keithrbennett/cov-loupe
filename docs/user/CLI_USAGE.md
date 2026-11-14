@@ -96,7 +96,7 @@ Default sort order is descending (highest coverage first) so the lowest-coverage
 | Short  | Long                     | Description                                           |
 |--------|--------------------------|-------------------------------------------------------|
 | `-o`   | `--sort-order`           | Sort by coverage percentage (ascending or descending) |
-| `-g`   | `--tracked-globs`        | Filter to specific file patterns                      |
+| `-g`   | `--tracked-globs`        | Limit results to matching files; report matching files with no coverage |
 | `-S`   | `--raise-on-stale BOOLEAN` | Raise error if coverage is stale, a tracked file (with `-g`) is missing, or a row is skipped (default false) |
 | `-f`   | `--format`               | Output format, e.g. `J` (pretty JSON), `j`, `y`, `a`; see [Output Formats](#output-formats) |
 
@@ -667,12 +667,13 @@ clp --raise-on-stale false
 
 ### `-g, --tracked-globs PATTERNS`
 
-Comma-separated glob patterns for files that should be tracked.
+Comma-separated glob patterns. They limit results to matching files, and report matching files on disk that have no coverage data at all.
 
 - Put all patterns in one `-g` value; a repeated `-g` replaces the earlier one.
-- The value is split on every comma, including commas inside braces, so a brace pattern such as `lib/{models,controllers}/**/*.rb` matches no files and the output lists none, without an error. List the alternatives separately instead (see [Advanced Filtering](ADVANCED_USAGE.md#advanced-filtering-glob-patterns)).
+- The value is split only on commas outside `{...}` and `[...]`, so brace alternatives and character classes stay whole: `-g 'app/{models,controllers}/**/*.rb,lib/**/*.rb'` is two patterns. To write a literal comma in a pattern, use `[,]`, which works everywhere. A comma escaped with a backslash (`\,`) also does not split, except on Windows, where a backslash is a path separator. A doubled backslash (`\\`) is an escaped backslash, so a comma after it does split. The backslash must reach cov-loupe, so quote it (`-g 'a\,b.rb,c.rb'`): Unix shells and `COV_LOUPE_OPTS` both remove an unquoted backslash. In `COV_LOUPE_OPTS` the quotes go inside the value: `COV_LOUPE_OPTS="-g 'a\,b.rb,c.rb'"`. Empty items, as in `'a,,b'` or a trailing comma, are ignored, so a value with no patterns at all, such as `''` or `','`, means no tracked globs. One contrived case is not followed: a `[` that opens inside braces and closes after them, as in `{a[1,2},b]`, is split at the comma after `}`, giving `{a[1,2}` and `b]`.
+- An unclosed `{`, or an unclosed `[` outside braces, is a usage error (exit 2) for every command, including the per-file ones that otherwise ignore `-g`, and at MCP server startup. A bad value in `COV_LOUPE_OPTS` is parsed before the command line, so it fails every command even when the command line passes its own `-g`; the message does not say which one it came from. CRuby matches no files for such a pattern; JRuby reads an unmatched `{` literally, but it is rejected there too, so a value means the same on every engine. To match a literal `[`, write `[[]` (or `\[`, except on Windows). To match a literal `{`, escape it as `\{`, quoted like `\,` above so the backslash reaches cov-loupe; on Windows, where a backslash is a path separator, a literal `{` cannot be written in `-g`. See [Advanced Filtering](ADVANCED_USAGE.md#advanced-filtering-glob-patterns).
 
-**Default:** `[]` (empty - shows all files in the coverage file)
+**Default:** `[]` (empty - shows every file in the coverage file)
 
 **Why no default patterns?**
 
@@ -680,9 +681,9 @@ Comma-separated glob patterns for files that should be tracked.
 2. **Avoids false positives** - Broad patterns like `**/*.rb` flag migrations, bin scripts, etc. as "missing"
 3. **Project variety** - Coverage patterns vary by project structure (lib/, app/, src/, config/, etc.)
 
-**Important:** Files never loaded during tests appear in the coverage file only if SimpleCov's `cover` globs include them (SimpleCov then records them at 0%). Otherwise they won't be visible with the default empty array; to detect them, set `--tracked-globs` to match the files you expect to have coverage.
+**Important:** Files that are not in the coverage file are not visible with the default empty array. That includes files added since the last test run, and files never loaded during tests unless SimpleCov's `cover` globs include them (SimpleCov then records them at 0%).
 
-**Best practice:** Match your SimpleCov configuration by setting `COV_LOUPE_OPTS`:
+**When to set it:** leave it unset to see what SimpleCov reported. Set it to also catch files with no coverage data. Use patterns that describe the files you expect to be covered, normally the globs you give SimpleCov's `cover`, so files outside them are not reported as missing. Files that SimpleCov's `skip` filters remove still match the globs, though, and are reported as missing; narrow the globs to leave them out. For example, with this SimpleCov setup, set the matching globs in `COV_LOUPE_OPTS` so every project-level command uses them:
 
 ```ruby
 # In spec_helper.rb or similar
@@ -718,7 +719,7 @@ clp -g "lib/**/*.rb,app/**/*.rb" -fJ list > coverage-report.json
 
 **Use cases:**
 
-- **Exclude unwanted results** - Narrow focus to a subsystem or layer
+- **Limit results** - Narrow focus to a subsystem or layer
 - **Include files without coverage** - Report files that should be tracked but aren't in the coverage file
 - **CI validation** - Use with `-S true`/`--raise-on-stale true` to catch coverage gaps
 

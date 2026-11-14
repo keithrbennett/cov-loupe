@@ -145,6 +145,19 @@ RSpec.describe CovLoupe do
       expect(described_class.execute(%w[--mode mcp])).to eq(described_class::ExitCodes::SUCCESS)
     end
 
+    # The server is stubbed so that, if the check ever stopped firing, the spec would fail
+    # instead of waiting on stdin.
+    it 'does not start the MCP server when --tracked-globs has an unclosed bracket' do
+      allow(described_class::MCPServer).to receive(:new)
+        .and_return(instance_double(described_class::MCPServer, run: nil))
+
+      _stdout, stderr, status = run_full_cli_with_status('--mode', 'mcp', '-g', 'lib/[ab')
+
+      expect(status).to eq(described_class::ExitCodes::USAGE)
+      expect(stderr).to include(%q(Unclosed '[' in --tracked-globs value: "lib/[ab"))
+      expect(described_class::MCPServer).not_to have_received(:new)
+    end
+
     it 'keeps SystemExit behavior for an exit status, with the same message' do
       error = described_class::CliExit.new(2)
 

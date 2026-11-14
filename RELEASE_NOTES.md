@@ -179,6 +179,20 @@
   do not match the UTF-8 coverage data). UTF-8 files, which are Ruby's default, are
   unaffected. See
   [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#source-and-predicate-files-are-read-as-utf-8).
+- **`--tracked-globs` keeps brace patterns whole; an unclosed `{` or `[` is a usage error.**
+  The CLI split the value on every comma, so `-g 'app/{models,controllers}/**/*.rb'`
+  became two invalid globs that matched nothing, without an error. It now splits only on
+  commas outside `{...}` and `[...]` and, except on Windows, not on a backslash-escaped comma
+  (`\,`). An unclosed `{`, or an unclosed `[` outside braces, is now a usage error (exit 2)
+  for every command, including in `COV_LOUPE_OPTS` and at MCP server startup. Such a value
+  used to run with exit 0: it was split at every comma, the fragment holding the bracket
+  matched nothing on CRuby (JRuby read an unmatched `{` literally), and the other
+  fragments still applied. Empty items (`-g 'a,,b'`) are ignored; they used to make
+  project-level commands such as `list` and `totals` fail with "no implicit conversion of
+  nil into String". Other values without braces, brackets, or backslashes split as before.
+  The `-g` help now says what the option limits and reports, and how to write literal
+  brackets. See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#tracked-globs-split-outside-braces-and-brackets).
 
 ### Other Changes
 
@@ -300,7 +314,6 @@
 - **Fixed `CoverageReporter.report` with an absolute `SimpleCov.coverage_dir`.** The default coverage location joined the directory onto `SimpleCov.root` even when it was absolute; it is now expanded against the root, as SimpleCov does. An explicit `root:` now also sets where that directory is looked for; it used to be looked for under `SimpleCov.root`.
 - **Documentation links work in the installed gem and on GitHub.** Links now point to real files (`README.md`, `LICENSE`, `examples/*/README.md`, ...) rather than to the documentation site's wrapper pages, and the gem now includes the developer docs (`docs/dev/`) they link to. The gem no longer includes `AGENTS.md` or `CLAUDE.md`, which are instructions for agents working in the repository.
 - **Fixed duplicate missing tracked files.** A file matched by more than one `--tracked-globs` pattern (for example `lib/**/*.rb` and `lib/*.rb`) was listed twice in `missing_tracked_files` and counted twice in the `totals` `missing_tracked` count; it is now listed and counted once.
-- **Fixed the `--tracked-globs` help text.** It now points to SimpleCov's `cover` globs; `track_files` is deprecated in SimpleCov 1.x.
 - **Fixed `NoMethodError` message rewriting on Ruby 3.4+.** Ruby 3.4 quotes the method name in `NoMethodError#message` as `'name'` instead of the pre-3.4 `` `name' ``, so the friendly "missing method '...' on ..." rewrite silently failed to apply on 3.4+. Both quote styles are now recognized.
 
 ## v6.1.0

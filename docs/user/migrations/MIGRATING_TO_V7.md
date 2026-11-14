@@ -23,6 +23,7 @@ This document describes the breaking changes introduced in version 7.0.0.
 - [Public API Declared](#public-api-declared)
 - [`--output-chars ascii` No Longer Changes Data](#output-chars-ascii-no-longer-changes-data)
 - [Source and Predicate Files Are Read as UTF-8](#source-and-predicate-files-are-read-as-utf-8)
+- [`--tracked-globs` Split Outside Braces and Brackets](#tracked-globs-split-outside-braces-and-brackets)
 
 ---
 
@@ -424,3 +425,13 @@ In 6.x, source files (for source display with `--source`) and `validate` predica
 In 7.0 they are always read as UTF-8, Ruby's default source encoding, whatever the locale. Non-ASCII UTF-8 files now work under every locale, including `LANG=C`. A file in another encoding is no longer decoded with the locale: source display shows its non-ASCII bytes raw in the table and escaped (such as `\xE9`) in the other text formats, JSON or YAML source output fails with `Source file is not valid UTF-8`, and a predicate file fails to evaluate if it has non-ASCII characters outside comments, such as in string literals.
 
 **Migration:** if your source or predicate files are UTF-8 (or ASCII), no change is needed. Otherwise convert them to UTF-8, for example with `iconv -f ISO-8859-1 -t UTF-8`. A magic comment such as `# encoding: ISO-8859-1` lets a predicate file parse, but its non-ASCII strings are then in that encoding and do not match the UTF-8 paths in the coverage data, so converting is the reliable fix.
+
+<a id="tracked-globs-split-outside-braces-and-brackets"></a>
+
+## `--tracked-globs` Split Outside Braces and Brackets
+
+In 6.x, the CLI split the `-g`/`--tracked-globs` value on every comma. A brace pattern such as `-g 'app/{models,controllers}/**/*.rb'` became two invalid globs that matched nothing, without an error, and an empty item (`-g 'a,,b'`) made project-level commands such as `list` and `totals` fail with `no implicit conversion of nil into String`.
+
+In 7.0, the value is split only on commas outside `{...}` and `[...]` and, except on Windows, not on a backslash-escaped comma (`\,`). Empty items are ignored. An unclosed `{`, or an unclosed `[` outside braces, is a usage error (exit 2) for every command, the per-file ones included, whether the value comes from the command line or `COV_LOUPE_OPTS`, and it stops the MCP server from starting. Such a value used to run with exit 0: it was split at every comma, the fragment holding the bracket matched nothing on CRuby (JRuby read an unmatched `{` literally), and the other fragments still applied. The MCP `tracked_globs` argument and the Ruby API are unchanged.
+
+**Migration:** values without braces, brackets, or backslashes need no change. Fix any unclosed `{` or `[` the new error reports. To match a literal `[`, write `[[]` (or `\[`, except on Windows); to match a literal `{`, write `\{`, quoted so the shell keeps the backslash (not possible on Windows). If a value relied on splitting at a comma inside braces or brackets, or after a backslash, write those patterns separately. See [`--tracked-globs`](../CLI_USAGE.md#tracked-globs).

@@ -211,6 +211,54 @@ RSpec.describe CovLoupe::CoverageCLI do
     end
   end
 
+  # The comma inside the braces belongs to the first pattern; only the top-level comma
+  # separates the two patterns.
+  it 'keeps brace alternatives together in --tracked-globs' do
+    demo_root = File.expand_path('../../docs/fixtures/demo_project', __dir__)
+    stdout, _stderr, status = run_cli_with_status('--root', demo_root, '--format', 'json',
+      '--tracked-globs', 'app/{models,controllers}/**/*.rb,lib/api/*.rb', 'list')
+    data = JSON.parse(stdout)
+
+    expect(status).to eq(0)
+    expect(data['files'].map { |row| row['file'] }).to contain_exactly(
+      'app/models/order.rb', 'app/models/user.rb', 'app/controllers/orders_controller.rb',
+      'lib/api/client.rb'
+    )
+    expect(data['missing_tracked_files']).to eq(['app/controllers/admin/audit_logs_controller.rb'])
+  end
+
+  # Through the full entry point, which parses global options before the CLI does.
+  [['lib/{a,b/*.rb', '{'], ['lib/[ab,c.rb', '[']].each do |glob, bracket|
+    it "reports an unclosed '#{bracket}' in --tracked-globs as a usage error" do
+      _stdout, stderr, status = run_fixture_full_cli_with_status('--tracked-globs', glob, 'list')
+
+      expect(status).to eq(CovLoupe::ExitCodes::USAGE)
+      expect(stderr).to include("Unclosed '#{bracket}' in --tracked-globs value: #{glob.inspect}")
+    end
+  end
+
+  # OptionParser's String type would reject an empty value; -g '' must still mean no globs,
+  # giving the same list as no -g at all.
+  it 'accepts an empty --tracked-globs value as no globs' do
+    expect(CovLoupe::ConfigParser.parse(['-g', '']).tracked_globs).to eq([])
+
+    baseline, = run_fixture_full_cli_with_status('-f', 'json', 'list')
+    stdout, _stderr, status = run_fixture_full_cli_with_status('-f', 'json', '-g', '', 'list')
+
+    expect(status).to eq(0)
+    expect(JSON.parse(stdout)['files']).to eq(JSON.parse(baseline)['files'])
+  end
+
+  # Empty items used to reach the staleness check as nil and raise a TypeError there.
+  it 'ignores empty --tracked-globs items' do
+    stdout, _stderr, status =
+      run_fixture_full_cli_with_status('-f', 'json', '-g', 'lib/foo.rb,,lib/bar.rb,', 'list')
+    files = JSON.parse(stdout)['files'].map { |row| row['file'] }
+
+    expect(status).to eq(0)
+    expect(files).to contain_exactly('lib/foo.rb', 'lib/bar.rb')
+  end
+
   it 'validates structured list and totals with missing tracked files' do
     %w[list totals].each do |command|
       data = JSON.parse(run_cli('--format', 'json', '--tracked-globs', 'lib/**/*.rb', command))

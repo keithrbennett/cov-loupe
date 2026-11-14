@@ -496,14 +496,14 @@ For GitHub Actions and GitLab CI examples, see [CI/CD Integration](examples/ci-c
 - **Meaningful validation** - `missing_tracked_files` only flags files you explicitly expect to have coverage
 - **Project flexibility** - Different projects use different directory structures
 
-**Important:** Files never loaded during tests appear in the coverage file only if SimpleCov's `cover` globs include them (SimpleCov then records them at 0%). Otherwise they won't be visible with the default empty array; to detect them, set `--tracked-globs` to match the files you expect to have coverage.
+**Important:** Files that are not in the coverage file are not visible with the default empty array. That includes files added since the last test run, and files never loaded during tests unless SimpleCov's `cover` globs include them (SimpleCov then records them at 0%).
 
 **Two purposes of tracked globs:**
 
-1. **Exclude unwanted results** - Only show files from the coverage file that match the patterns
+1. **Limit results** - Only show files from the coverage file that match the patterns
 2. **Include files with or without coverage** - Report files that match the patterns but aren't in the coverage file (reported in `missing_tracked_files` for `list`, `missing_tracked` for `totals`)
 
-**Best practice:** Set `COV_LOUPE_OPTS` to match your SimpleCov `cover` globs so `list`, `totals`, and missing-file reports use the same scope. See [`--tracked-globs`](CLI_USAGE.md#tracked-globs) for the canonical setup example.
+**When to set them:** with no tracked globs you see what SimpleCov reported. Set them to also catch files with no coverage data, using patterns for the files you expect to be covered (normally the globs you give SimpleCov's `cover`; files that its `skip` filters remove still match them and are reported as missing, so narrow the globs to leave those out). See [`--tracked-globs`](CLI_USAGE.md#tracked-globs) for the canonical setup example.
 
 ### Pattern Syntax
 
@@ -529,12 +529,15 @@ clp -fJ list | ruby -r json -e '
 # Rexe alternative:
 clp -fJ list | rexe -ij -mb -oJ 'self["files"].reject { |f| f["file"].include?("ops") }'
 
+# Brace alternatives (a comma inside {...} or [...] belongs to its pattern)
+-g "app/{models,controllers}/**/*.rb"
+-g "app/{models,controllers}/**/*.rb,lib/**/*.rb"
+
 # Complex patterns
--g "app/models/**/*.rb,app/controllers/**/*.rb"
 -g "app/**/concerns/*.rb"
 ```
 
-**Note:** The CLI splits `--tracked-globs` on every comma, including commas inside braces, so a brace pattern such as `lib/{models,controllers}/**/*.rb` breaks into two invalid globs that match nothing. On the CLI, list the alternatives separately (`-g "lib/models/**/*.rb,lib/controllers/**/*.rb"`). The Ruby API and MCP `tracked_globs` take arrays, so brace patterns work there.
+The CLI's `-g` value (on the command line or in `COV_LOUPE_OPTS`, including when it starts the MCP server) is split only on commas outside `{...}` and `[...]`, and an unclosed `{`, or an unclosed `[` outside braces, is a usage error. [`--tracked-globs`](CLI_USAGE.md#tracked-globs) gives the full rules, including literal commas and brackets, backslash escapes, and quoting in `COV_LOUPE_OPTS`. The MCP `tracked_globs` tool argument takes an array of patterns, and the Ruby API an array or a single pattern string; neither splits on commas or checks for unclosed brackets, so such a pattern there matches no files on CRuby (JRuby reads an unmatched `{` literally).
 
 ### Use Cases
 

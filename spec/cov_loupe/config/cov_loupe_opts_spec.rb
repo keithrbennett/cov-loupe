@@ -159,6 +159,42 @@ RSpec.describe 'COV_LOUPE_OPTS Environment Variable' do
     end
   end
 
+  describe 'tracked globs from COV_LOUPE_OPTS' do
+    # COV_LOUPE_OPTS is split with Shellwords, then -g goes through the same brace-aware
+    # splitter as on the command line.
+    it 'keeps a brace pattern whole' do
+      ENV['COV_LOUPE_OPTS'] = "-f json -g 'lib/{foo,bar}.rb'"
+      stdout, _stderr, status = run_fixture_full_cli_with_status('list')
+
+      expect(status).to eq(0)
+      files = JSON.parse(stdout)['files'].map { |row| row['file'] }
+      expect(files).to contain_exactly('lib/foo.rb', 'lib/bar.rb')
+    end
+
+    # An unclosed bracket is a usage error even for a per-file command, which ignores -g.
+    it 'reports an unclosed bracket as a usage error for every command' do
+      ENV['COV_LOUPE_OPTS'] = "-g 'lib/[ab'"
+      _stdout, stderr, status = run_fixture_full_cli_with_status('summary', 'lib/foo.rb')
+
+      expect(status).to eq(CovLoupe::ExitCodes::USAGE)
+      expect(stderr).to include(%q(Unclosed '[' in --tracked-globs value: "lib/[ab"))
+    end
+
+    # Shellwords removes an unquoted backslash, so the docs say to quote an escaped comma there.
+    [
+      ["-g 'a\\,b.rb,c.rb'", ['a\\,b.rb', 'c.rb']],
+      ['-g a\\,b.rb,c.rb', %w[a b.rb c.rb]],
+    ].each do |opts, globs|
+      it "parses #{opts} into #{globs}" do
+        # Off Windows, where a backslash would be a path separator rather than an escape.
+        allow(CovLoupe).to receive(:windows?).and_return(false)
+        ENV['COV_LOUPE_OPTS'] = opts
+
+        expect(CovLoupe::ConfigParser.parse(CovLoupe.send(:extract_env_opts)).tracked_globs).to eq(globs)
+      end
+    end
+  end
+
   describe 'integration with actual CLI usage' do
     it 'works end-to-end with --coverage-file option' do
       test_coverage_file = File.join(Dir.tmpdir, 'test_coverage', 'coverage.json')
