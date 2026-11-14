@@ -94,10 +94,12 @@ coverage rows are not found there (rows skipped as malformed are not counted), f
 The same condition also fits source files that really were removed, or coverage generated on
 another machine. With tracked globs, the count covers only the files the globs match.
 
-Set the root with `--root PATH` (CLI) or the `root` argument (MCP, Ruby). The warning does not
-change the exit status; with `--raise-on-stale true`, the project-level commands (`list`,
-`totals`, and the default report) exit non-zero and show the same message after the staleness
-summary.
+Set the root with `--root PATH` (CLI) or the `root` argument (MCP, Ruby). When `coverage.json`
+records an absolute root (`meta.root`, written by SimpleCov 1.x) that differs from the current
+one and is a directory on this machine, the warning names it as a suggestion; cov-loupe never
+switches to it on its own. The warning does not change the exit status; with
+`--raise-on-stale true`, the project-level commands (`list`, `totals`, and the default report)
+exit non-zero and show the same message after the staleness summary.
 
 ### "No coverage entry found for ..."
 

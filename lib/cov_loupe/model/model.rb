@@ -75,6 +75,12 @@ module CovLoupe
     # @api private
     attr_reader :relativizer, :volume_case_sensitive
 
+    # The project root recorded in coverage.json (meta.root), or nil when absent.
+    # @api private
+    def recorded_root
+      fetch_data.recorded_root
+    end
+
     # Create a CoverageModel
     #
     # Params:
@@ -290,10 +296,6 @@ module CovLoupe
       fetch_data.coverage_map
     end
 
-    private def coverage_timestamp
-      fetch_data.timestamp
-    end
-
     # Clears the resolved coverage file path to allow re-resolution.
     # ModelDataCache automatically handles coverage file changes on each access,
     # so explicit refresh is rarely needed. This method is primarily for testing.
@@ -305,12 +307,14 @@ module CovLoupe
     end
 
     private def build_staleness_checker(raise_on_stale:, tracked_globs:)
+      data = fetch_data
       StalenessChecker.new(
         root:          @root,
         coverage_file: resolved_coverage_file_path,
         mode:          raise_on_stale ? :error : :off,
         tracked_globs: tracked_globs,
-        timestamp:     coverage_timestamp
+        timestamp:     data.timestamp,
+        recorded_root: data.recorded_root
       )
     end
 

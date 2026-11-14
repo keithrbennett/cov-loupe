@@ -228,7 +228,7 @@ end
 **Migration:**
 
 - Replace every name in the left column with the one on the right. `--resultset` on the command line (including in `COV_LOUPE_OPTS` and MCP server `args`) now fails as an unknown option; the `resultset` MCP tool argument is rejected as an unexpected argument.
-- `ResultsetLoader.load(resultset_path:)` and `ResultsetLoader.new(resultset_path:, logger:)` become `CoverageJsonLoader.load(resolved_coverage_file:)` and `CoverageJsonLoader.new(resolved_coverage_file:, logger:)`. They return a `Result` with `coverage_map` and `timestamp` only. The `suite_names` member of the old `ResultsetLoader::Result` is gone, since `coverage.json` is a single merged result.
+- `ResultsetLoader.load(resultset_path:)` and `ResultsetLoader.new(resultset_path:, logger:)` become `CoverageJsonLoader.load(resolved_coverage_file:)` and `CoverageJsonLoader.new(resolved_coverage_file:, logger:)`. They return a `Result` with `coverage_map`, `timestamp`, and `recorded_root` (`meta.root`). The `suite_names` member of the old `ResultsetLoader::Result` is gone, since `coverage.json` is a single merged result.
 
 <a id="short-options--c-and--n-reassigned"></a>
 

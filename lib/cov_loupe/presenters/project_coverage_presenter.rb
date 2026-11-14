@@ -73,7 +73,7 @@ module CovLoupe
           deleted_count: relative_files.count { |row| row['stale'] == StaleStatus::DELETED },
           total_count:   relative_files.length,
           root:          model.root
-        )
+        ) { model.recorded_root }
       end
 
       private def compute_payload

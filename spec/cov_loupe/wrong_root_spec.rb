@@ -52,6 +52,35 @@ RSpec.describe 'running against the wrong project root' do
     expect(mcp_text(CovLoupe::Tools::ProjectCoverageTool, format: 'table')).to include(warning)
   end
 
+  context 'when coverage.json records an existing root' do
+    let(:project_root) { File.dirname(FIXTURE_PROJECT1_COVERAGE_PATH, 2) }
+    let(:coverage_file) do
+      document = JSON.parse(File.read(FIXTURE_PROJECT1_COVERAGE_PATH))
+      document['meta']['root'] = project_root
+      File.join(wrong_root, 'coverage.json').tap { |path| File.write(path, JSON.generate(document)) }
+    end
+    let(:suggestion) { "The coverage file was generated with root #{project_root}." }
+
+    %w[list totals].each do |command|
+      it "suggests the recorded root for #{command}" do
+        expect(run_cli_with_status(*cli_args(command))[1]).to include(warning, suggestion)
+      end
+    end
+
+    it 'suggests the recorded root when --raise-on-stale fails' do
+      _stdout, stderr, status = run_cli_with_status(*cli_args('--raise-on-stale', 'true', 'list'))
+
+      expect(stderr).to include(warning, suggestion)
+      expect(status).to eq(1)
+    end
+
+    it 'suggests the recorded root in the MCP warnings array' do
+      warnings = JSON.parse(mcp_text(CovLoupe::Tools::ProjectCoverageTool)).fetch('warnings')
+
+      expect(warnings).to contain_exactly(a_string_including(suggestion))
+    end
+  end
+
   it 'keeps the staleness summary in the error message' do
     model = CovLoupe::CoverageModel.new(root: wrong_root, coverage_file: coverage_file)
 

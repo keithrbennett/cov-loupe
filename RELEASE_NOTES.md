@@ -142,7 +142,7 @@
     - Lines marked `"ignored"` by SimpleCov (`:nocov:` regions and `# simplecov:disable` directives) are treated as non-executable, so cov-loupe's percentages match SimpleCov's own report.
     - The not-found message is now `Could not find coverage.json under "<root>"`, and stale-coverage errors label the file `Coverage file - <path>`.
     - Projects that cannot upgrade SimpleCov should stay on cov-loupe 6.x. See [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md).
-- **The `resultset` names are replaced by `coverage_file` names.** The `--coverage-file` option (`-c`; see below), the `coverage_file` MCP tool argument, `CoverageModel.new(coverage_file:)`, `#coverage_file_path`, `CoverageReporter.report(coverage_file:)`, `CovLoupe::CoverageFileNotFoundError`, and `Resolvers::CoverageFilePathResolver` are the only spellings. `--resultset`, the `resultset` tool argument, `resultset:` keywords, `#resultset_path`, `ResultsetNotFoundError`, `ResultsetPathResolver`, `ResolverHelpers.find_resultset`, and `AppConfig#resultset` are gone, with no deprecation period. `ResultsetLoader` is replaced by `CoverageJsonLoader`, whose `Result` has `coverage_map` and `timestamp` only.
+- **The `resultset` names are replaced by `coverage_file` names.** The `--coverage-file` option (`-c`; see below), the `coverage_file` MCP tool argument, `CoverageModel.new(coverage_file:)`, `#coverage_file_path`, `CoverageReporter.report(coverage_file:)`, `CovLoupe::CoverageFileNotFoundError`, and `Resolvers::CoverageFilePathResolver` are the only spellings. `--resultset`, the `resultset` tool argument, `resultset:` keywords, `#resultset_path`, `ResultsetNotFoundError`, `ResultsetPathResolver`, `ResolverHelpers.find_resultset`, and `AppConfig#resultset` are gone, with no deprecation period. `ResultsetLoader` is replaced by `CoverageJsonLoader`, whose `Result` has `coverage_map`, `timestamp`, and `recorded_root` (`meta.root`).
     - `ResolverHelpers.create_resultset_resolver` and its `candidates:` keyword are removed. Instantiate `CoverageFilePathResolver.new(root:)` directly.
     - Direct callers of `CoverageRepository` and `CoverageJsonLoader` must also update `resultset_path:` to `coverage_file:` and `resolved_coverage_file:` respectively; `CoverageRepository#resultset_path` is now `#resolved_coverage_file`.
     - `CoverageFilePathResolver`, `ResolverHelpers`, `CoverageRepository`, `CoverageJsonLoader`, and `AppConfig` are internal as of 7.0 and may change in any release.
@@ -199,7 +199,9 @@
   `project_coverage` and `project_coverage_totals` tools add the warning to `warnings` (or,
   for `project_coverage` with `format: table`, to the table output). The exit status stays 0.
   With `--raise-on-stale true` they still fail, and `CoverageDataProjectStaleError#message`
-  now adds the same hint after its summary. The default root is unchanged. See
+  now adds the same hint after its summary. When `coverage.json` records an absolute
+  root (`meta.root`, written by SimpleCov 1.x) that differs from the current one and is a
+  directory on this machine, the warning also names it. The default root is unchanged. See
   [Troubleshooting](docs/user/TROUBLESHOOTING.md#the-project-root-may-be-wrong).
 - **New Test Coverage Analysis prompt.** The
   [Test Coverage Analysis prompt](docs/user/prompts/test-coverage-analysis-prompt.md) has an

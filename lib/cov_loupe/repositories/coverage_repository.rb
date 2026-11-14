@@ -18,11 +18,12 @@ module CovLoupe
     #
     # @attr_reader coverage_map [Hash] A map of absolute file paths to coverage data.
     # @attr_reader timestamp [Integer] The coverage run timestamp in epoch seconds.
+    # @attr_reader recorded_root [String, nil] The project root recorded in meta.root, if any.
     # @attr_reader resolved_coverage_file [String] The resolved absolute path to the coverage file.
     #
     # @api private
     class CoverageRepository
-      attr_reader :coverage_map, :timestamp, :resolved_coverage_file
+      attr_reader :coverage_map, :timestamp, :recorded_root, :resolved_coverage_file
 
       def initialize(root:, coverage_file: nil, logger: nil)
         @root = root
@@ -41,6 +42,7 @@ module CovLoupe
           # 4. Normalize keys to absolute paths
           @coverage_map = normalize_paths(loaded_data.coverage_map)
           @timestamp = loaded_data.timestamp
+          @recorded_root = loaded_data.recorded_root
         rescue CovLoupe::Error
           raise # Re-raise our own errors as-is
         rescue => e

@@ -40,7 +40,8 @@ The parts cov-loupe reads:
     "schema_version": "1.0",
     "simplecov_version": "1.0.3",
     "command_name": "RSpec",
-    "timestamp": "2026-07-01T12:00:00.000+00:00"
+    "timestamp": "2026-07-01T12:00:00.000+00:00",
+    "root": "/home/me/my_project"
   },
   "coverage": {
     "lib/foo.rb": {
@@ -54,6 +55,7 @@ The parts cov-loupe reads:
 - `lines` is an array where index N describes source line N+1: `null` = not executable, `0` = not covered, `>0` = hit count, `"ignored"` = excluded via `:nocov:` or `simplecov:disable` (mapped to `null` on load so excluded lines stay out of the counts).
 - `meta.schema_version` is the version of the `coverage.json` format, not of the SimpleCov gem. It is required: any 1.x is accepted, and a missing value or another major version is rejected on load (see [No SimpleCov Gem Dependency](#no-simplecov-gem-dependency)). `meta.simplecov_version` is optional and only quoted in that error.
 - `meta.timestamp` is when the coverage was collected, normalized to epoch seconds for staleness checks. A missing or unparseable value becomes 0, which disables time-based checks.
+- `meta.root` is the absolute project root the tests ran under. It never sets the root: when the wrong-root warning fires and this path is a directory here, other than the current root, the warning suggests it. A missing, relative, or otherwise invalid value is ignored.
 
 Other keys (`$schema`, `total`, `groups`, `errors`, `branches`, `methods`, source text) are ignored.
 

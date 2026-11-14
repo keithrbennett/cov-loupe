@@ -44,6 +44,20 @@ RSpec.describe CovLoupe::CoverageJsonLoader do
       end
     end
 
+    [
+      ['/ci/checkout', '/ci/checkout'], [nil, nil], ['', nil], [42, nil], ['.', nil],
+      ['ci/checkout', nil], ['~/checkout', nil], ['~nosuchuser/x', nil], ["/ci/\0x", nil]
+    ].each do |value, expected|
+      it "reads meta.root #{value.inspect} as the recorded root #{expected.inspect}" do
+        Dir.mktmpdir do |dir|
+          document = coverage_json_document(coverage: {})
+          document['meta']['root'] = value
+
+          expect(write_and_load(dir, document).recorded_root).to eq(expected)
+        end
+      end
+    end
+
     it 'accepts an epoch number as the timestamp' do
       Dir.mktmpdir do |dir|
         document = coverage_json_document(coverage: {})

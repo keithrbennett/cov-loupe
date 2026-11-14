@@ -34,7 +34,7 @@ module CovLoupe
           deleted_count: with_coverage['stale']['by_type'][StaleStatus::DELETED],
           total_count:   with_coverage['total'],
           root:          model.root
-        )
+        ) { model.recorded_root }
       end
 
       private def compute_payload

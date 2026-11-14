@@ -4,6 +4,7 @@ require 'json'
 require 'time'
 
 require_relative '../errors/errors'
+require_relative '../paths/path_utils'
 
 module CovLoupe
   # Reads and parses a SimpleCov coverage.json file: the JSON formatter
@@ -18,9 +19,12 @@ module CovLoupe
   # integer epoch seconds. A missing or unparseable timestamp becomes 0, which
   # disables time-based staleness checks.
   #
+  # meta.root, the absolute project root SimpleCov ran under, is kept only to
+  # suggest a root in the wrong-root warning; any other value becomes nil.
+  #
   # @api private
   class CoverageJsonLoader
-    Result = Struct.new(:coverage_map, :timestamp)
+    Result = Struct.new(:coverage_map, :timestamp, :recorded_root)
 
     # Sentinel the JSON formatter writes for lines excluded from coverage.
     IGNORED_LINE = 'ignored'
@@ -51,8 +55,9 @@ module CovLoupe
       validate_format_version(raw['meta'])
 
       Result.new(
-        coverage_map: normalize_coverage_map(raw['coverage']),
-        timestamp:    normalize_timestamp(raw['meta']['timestamp'])
+        coverage_map:  normalize_coverage_map(raw['coverage']),
+        timestamp:     normalize_timestamp(raw['meta']['timestamp']),
+        recorded_root: recorded_root(raw['meta']['root'])
       )
     end
 
@@ -102,6 +107,14 @@ module CovLoupe
 
         entry.merge('lines' => lines.map { |hits| hits == IGNORED_LINE ? nil : hits })
       end
+    end
+
+    # SimpleCov 1.x records the absolute project root it ran under. It is used only to
+    # suggest a root when the current one looks wrong, never to pick one. Anything else is
+    # dropped: a relative or '~' value would expand against this process's directory, and a
+    # NUL byte makes File methods raise.
+    private def recorded_root(value)
+      value if value.is_a?(String) && !value.include?("\0") && PathUtils.absolute?(value)
     end
 
     # SimpleCov writes an ISO 8601 string. Epoch numbers are accepted too,

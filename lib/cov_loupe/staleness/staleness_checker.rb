@@ -30,12 +30,14 @@ module CovLoupe
   class StalenessChecker
     MODES = %i[off error].freeze
 
-    def initialize(root:, coverage_file:, mode: :off, tracked_globs: nil, timestamp: nil)
+    def initialize(root:, coverage_file:, mode: :off, tracked_globs: nil, timestamp: nil,
+      recorded_root: nil)
       @root = File.expand_path(root || '.')
       @coverage_file = coverage_file
       @mode = (mode || :off).to_sym
       @tracked_globs = tracked_globs
       @cov_timestamp = timestamp
+      @recorded_root = recorded_root
       @coverage_file_path = nil
     end
 
@@ -200,7 +202,7 @@ module CovLoupe
     private def project_stale_message(deleted, readable_files)
       readable_deleted = deleted & readable_files.map { |abs| rel(abs) }
       hint = RootMismatch.message(deleted_count: readable_deleted.length,
-        total_count: readable_files.length, root: @root)
+        total_count: readable_files.length, root: @root) { @recorded_root }
       "#{CoverageDataProjectStaleError::DEFAULT_MESSAGE}. #{hint}" if hint
     end
 

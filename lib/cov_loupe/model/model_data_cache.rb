@@ -105,6 +105,7 @@ module CovLoupe
       ModelData.new(
         coverage_map:       repo.coverage_map,
         timestamp:          repo.timestamp,
+        recorded_root:      repo.recorded_root,
         coverage_file_path: coverage_file_path
       )
     end

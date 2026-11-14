@@ -29,7 +29,7 @@ require_relative 'cov_loupe/coverage/coverage_reporter'
 # Data flow for a typical request:
 #   1. CoverageJsonLoader reads coverage.json
 #   2. CoverageRepository normalizes keys to absolute paths
-#   3. ModelDataCache stores the resulting ModelData (coverage_map + timestamp)
+#   3. ModelDataCache stores the resulting ModelData (coverage_map, timestamp, recorded_root)
 #   4. CoverageModel queries the cache and applies staleness/glob filters
 #   5. Presenters wrap the model output (already project-relative) for display
 #   6. CLI commands or MCP tools format the presenter output for the user
