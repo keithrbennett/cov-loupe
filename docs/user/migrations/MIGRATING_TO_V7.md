@@ -139,6 +139,8 @@ When `meta.simplecov_version` is present, the message also includes it.
 
 This also rejects `coverage.json` files written for SimpleCov 0.x by the separate `simplecov_json_formatter` gem, which have no `schema_version`. Upgrade SimpleCov to 1.x to produce a supported file.
 
+A `coverage.json` that lists files but has line data for none of them, as written when SimpleCov runs with `disable_coverage :line`, is also rejected on load with `CorruptCoverageDataError`, so the CLI exits non-zero. Previously every file was skipped and `list` and `totals` exited 0. Re-enable line coverage (`enable_coverage :line`) to read it.
+
 **Rationale:**
 
 - A load-time check of the file validates what cov-loupe actually reads; a gem dependency only constrained the SimpleCov installed alongside cov-loupe, which need not be the one that wrote the file, and forced SimpleCov into bundles that only inspect coverage.

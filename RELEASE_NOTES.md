@@ -203,6 +203,14 @@
   root (`meta.root`, written by SimpleCov 1.x) that differs from the current one and is a
   directory on this machine, the warning also names it. The default root is unchanged. See
   [Troubleshooting](docs/user/TROUBLESHOOTING.md#the-project-root-may-be-wrong).
+- **A coverage file without line coverage fails clearly.** When SimpleCov ran with line
+  coverage disabled (`disable_coverage :line`), every file was skipped as corrupt, `list`
+  printed "No coverage data found", and `totals` reported `0 total`, both exiting 0. Loading
+  such a file (a non-empty coverage map where no entry has a `lines` array) now raises `CorruptCoverageDataError`,
+  the class a single file without usable lines already raised, with a message saying line
+  coverage is missing and how to re-enable it. The CLI exits non-zero and MCP tools return
+  `isError: true`. See
+  [Troubleshooting](docs/user/TROUBLESHOOTING.md#coverage-file-has-no-line-coverage).
 - **New Test Coverage Analysis prompt.** The
   [Test Coverage Analysis prompt](docs/user/prompts/test-coverage-analysis-prompt.md) has an
   AI agent use cov-loupe to report coverage by logical area (down to individual classes and

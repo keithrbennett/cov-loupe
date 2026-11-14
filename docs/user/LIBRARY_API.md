@@ -523,7 +523,7 @@ All cov-loupe exceptions inherit from `CovLoupe::Error`, which provides `user_fr
     - **`NotAFileError`** - Path is a directory, not a file
     - **`CoverageFileNotFoundError`** - `coverage.json` not found
   - **`CoverageDataError`** - Coverage data cannot be used: invalid JSON, an unsupported `meta.schema_version`, or a bad structure
-    - **`CorruptCoverageDataError`** - A file's coverage entry has no usable `lines` array
+    - **`CorruptCoverageDataError`** - A file's coverage entry has no usable `lines` array; raised on load when a non-empty coverage map has no entry with one (line coverage disabled)
     - **`CoverageDataStaleError`** - A file's coverage is stale (only with `raise_on_stale: true`)
     - **`CoverageDataProjectStaleError`** - Project coverage is stale (only with `raise_on_stale: true`)
 

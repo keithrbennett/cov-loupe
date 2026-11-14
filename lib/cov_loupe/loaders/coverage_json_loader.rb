@@ -53,6 +53,7 @@ module CovLoupe
           "#{@resolved_coverage_file}"
       end
       validate_format_version(raw['meta'])
+      validate_line_coverage(raw['coverage'])
 
       Result.new(
         coverage_map:  normalize_coverage_map(raw['coverage']),
@@ -90,6 +91,23 @@ module CovLoupe
       raise CoverageDataError,
         "Unsupported coverage.json format (#{found}) in #{@resolved_coverage_file}; " \
         'cov-loupe requires format 1.x (written by SimpleCov 1.0 and later)'
+    end
+
+    # A run with line coverage disabled (`disable_coverage :line`) writes entries with
+    # branches or methods but no "lines" key. Without this check every file would be skipped
+    # as malformed and the project would report no coverage, with a success exit status.
+    # When only some entries lack a lines array, the per-file skip reports them instead. An
+    # empty coverage map is valid: the run simply tracked no files.
+    #
+    # Raises CorruptCoverageDataError, the class a single file without usable lines raises.
+    private def validate_line_coverage(coverage)
+      return if coverage.empty?
+      return if coverage.each_value.any? { |entry| entry.is_a?(Hash) && entry['lines'].is_a?(Array) }
+
+      raise CorruptCoverageDataError,
+        "Coverage file has no line coverage (no entry has a lines array): #{@resolved_coverage_file}; " \
+        'cov-loupe reports line coverage only. If SimpleCov ran with `disable_coverage :line`, ' \
+        're-enable it with `enable_coverage :line`'
     end
 
     # The JSON formatter marks lines that SimpleCov excluded (via nocov blocks

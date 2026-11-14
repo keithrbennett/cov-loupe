@@ -199,5 +199,38 @@ RSpec.describe CovLoupe::CoverageJsonLoader do
         end
       end
     end
+
+    describe 'line coverage check' do
+      [
+        ['no entry has lines', { 'lib/a.rb' => { 'branches' => [] }, 'lib/b.rb' => {} }],
+        ['no entry has a lines array',
+          { 'lib/a.rb' => { 'lines' => 'bad' }, 'lib/b.rb' => { 'lines' => nil } }],
+      ].each do |desc, coverage|
+        it "raises CorruptCoverageDataError when #{desc}" do
+          Dir.mktmpdir do |dir|
+            path = File.join(dir, 'coverage.json')
+
+            expect { write_and_load(dir, coverage_json_document(coverage: coverage)) }
+              .to raise_error(CovLoupe::CorruptCoverageDataError,
+                /has no line coverage.*#{Regexp.escape(path)}.*enable_coverage :line/)
+          end
+        end
+      end
+
+      [
+        ['an empty coverage map', {}],
+        # SimpleCov writes an empty lines array for a tracked file with no executable lines.
+        ['entries with empty lines arrays', { 'lib/a.rb' => { 'lines' => [] } }],
+        ['some entries with lines', { 'lib/a.rb' => { 'lines' => [1] }, 'lib/b.rb' => { 'lines' => 'bad' } }],
+      ].each do |desc, coverage|
+        it "loads #{desc}" do
+          Dir.mktmpdir do |dir|
+            result = write_and_load(dir, coverage_json_document(coverage: coverage))
+
+            expect(result.coverage_map).to eq(coverage)
+          end
+        end
+      end
+    end
   end
 end

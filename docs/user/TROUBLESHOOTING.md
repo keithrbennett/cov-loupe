@@ -71,6 +71,21 @@ The `meta.simplecov_version` part appears only when the file records it.
   not read. Upgrade cov-loupe if a newer release supports it, or pin SimpleCov to a version
   that writes format 1.x.
 
+### Coverage file has no line coverage
+
+cov-loupe reports line coverage only. If SimpleCov ran with line coverage turned off
+(`disable_coverage :line`, keeping only branch or method coverage), `coverage.json` lists
+files but none has a `lines` array, and loading fails with (the CLI adds the
+`Corrupt coverage data:` prefix):
+
+```
+Corrupt coverage data: Coverage file has no line coverage (no entry has a lines array): <path>; cov-loupe reports line coverage only. If SimpleCov ran with `disable_coverage :line`, re-enable it with `enable_coverage :line`
+```
+
+Re-enable line coverage in your SimpleCov configuration (it can run alongside branch and
+method coverage) and re-run the test suite. A `coverage.json` that lists no files at all still
+loads, and reports no coverage data.
+
 ### Stale Coverage Errors
 
 `--raise-on-stale true` (or `-S true`, or `raise_on_stale: true`) compares file mtimes and line counts

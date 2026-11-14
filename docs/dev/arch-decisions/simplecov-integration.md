@@ -57,6 +57,8 @@ The parts cov-loupe reads:
 - `meta.timestamp` is when the coverage was collected, normalized to epoch seconds for staleness checks. A missing or unparseable value becomes 0, which disables time-based checks.
 - `meta.root` is the absolute project root the tests ran under. It never sets the root: when the wrong-root warning fires and this path is a directory here, other than the current root, the warning suggests it. A missing, relative, or otherwise invalid value is ignored.
 
+A non-empty `coverage` map whose entries all lack a `lines` array (SimpleCov run with `disable_coverage :line`) is rejected on load (an empty map, with no tracked files, still loads), since cov-loupe reports line coverage only; without the check, every file would be skipped and the project would report no coverage with a success status.
+
 Other keys (`$schema`, `total`, `groups`, `errors`, `branches`, `methods`, source text) are ignored.
 
 ## No SimpleCov Gem Dependency
@@ -73,7 +75,7 @@ A gem dependency (`>= 1.0`) was considered as a guard against SimpleCov 0.x, whi
 
 ### Decision
 
-`CoverageJsonLoader` checks `meta.schema_version`, SimpleCov's output format version (e.g. `"1.0"`). Any 1.x is accepted. A missing value or another major version raises `CoverageDataError` naming the file, the value found, and `meta.simplecov_version` when present.
+`CoverageJsonLoader` checks `meta.schema_version`, SimpleCov's output format version (e.g. `"1.0"`). Any 1.x is accepted. A missing value or another major version raises `CoverageDataError` naming the file, the value found, and `meta.simplecov_version` when present. A non-empty `coverage` map in which no entry has a `lines` array raises `CorruptCoverageDataError`, since cov-loupe reports line coverage only.
 
 ### Consequences
 

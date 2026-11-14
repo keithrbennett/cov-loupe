@@ -326,7 +326,7 @@ See [docs/dev/DEVELOPMENT.md](docs/dev/DEVELOPMENT.md) for more.
 
 ## SimpleCov Compatibility
 
-`cov-loupe` does not depend on the `simplecov` gem and never loads it. It reads `coverage.json` written by SimpleCov 1.x, which is already merged across suites. On load it checks the file's `meta.schema_version` (SimpleCov's output format version, e.g. `"1.0"`) and rejects a missing value or a major version other than 1 with an error naming the file and the value found. That includes `coverage.json` files written for SimpleCov 0.x by the separate `simplecov_json_formatter` gem, which carry no `schema_version`.
+`cov-loupe` does not depend on the `simplecov` gem and never loads it. It reads `coverage.json` written by SimpleCov 1.x, which is already merged across suites. On load it checks the file's `meta.schema_version` (SimpleCov's output format version, e.g. `"1.0"`) and rejects a missing value or a major version other than 1 with an error naming the file and the value found. That includes `coverage.json` files written for SimpleCov 0.x by the separate `simplecov_json_formatter` gem, which carry no `schema_version`. It also rejects a file that lists source files but has line coverage for none of them, as written when SimpleCov runs with `disable_coverage :line`, since cov-loupe reports line coverage only.
 
 ## Contributing
 
