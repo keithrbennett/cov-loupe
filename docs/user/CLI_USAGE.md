@@ -527,6 +527,8 @@ clp --path-for docs
 clp --path-for docs-local
 ```
 
+An unknown name is a usage error (exit 2) that lists the valid names.
+
 This option is designed for shell composition and prints only the value:
 
 ```sh
@@ -671,7 +673,7 @@ Comma-separated glob patterns. They limit results to matching files, and report 
 
 - Put all patterns in one `-g` value; a repeated `-g` replaces the earlier one.
 - The value is split only on commas outside `{...}` and `[...]`, so brace alternatives and character classes stay whole: `-g 'app/{models,controllers}/**/*.rb,lib/**/*.rb'` is two patterns. To write a literal comma in a pattern, use `[,]`, which works everywhere. A comma escaped with a backslash (`\,`) also does not split, except on Windows, where a backslash is a path separator. A doubled backslash (`\\`) is an escaped backslash, so a comma after it does split. The backslash must reach cov-loupe, so quote it (`-g 'a\,b.rb,c.rb'`): Unix shells and `COV_LOUPE_OPTS` both remove an unquoted backslash. In `COV_LOUPE_OPTS` the quotes go inside the value: `COV_LOUPE_OPTS="-g 'a\,b.rb,c.rb'"`. Empty items, as in `'a,,b'` or a trailing comma, are ignored, so a value with no patterns at all, such as `''` or `','`, means no tracked globs. One contrived case is not followed: a `[` that opens inside braces and closes after them, as in `{a[1,2},b]`, is split at the comma after `}`, giving `{a[1,2}` and `b]`.
-- An unclosed `{`, or an unclosed `[` outside braces, is a usage error (exit 2) for every command, including the per-file ones that otherwise ignore `-g`, and at MCP server startup. A bad value in `COV_LOUPE_OPTS` is parsed before the command line, so it fails every command even when the command line passes its own `-g`; the message does not say which one it came from. CRuby matches no files for such a pattern; JRuby reads an unmatched `{` literally, but it is rejected there too, so a value means the same on every engine. To match a literal `[`, write `[[]` (or `\[`, except on Windows). To match a literal `{`, escape it as `\{`, quoted like `\,` above so the backslash reaches cov-loupe; on Windows, where a backslash is a path separator, a literal `{` cannot be written in `-g`. See [Advanced Filtering](ADVANCED_USAGE.md#advanced-filtering-glob-patterns).
+- An unclosed `{`, or an unclosed `[` outside braces, is a usage error (exit 2) for every command, including the per-file ones that otherwise ignore `-g`, and at MCP server startup. A bad value in `COV_LOUPE_OPTS` is parsed before the command line, so it fails every command even when the command line passes its own `-g`; see [`COV_LOUPE_OPTS`](#cov_loupe_opts) for how such errors are reported. CRuby matches no files for such a pattern; JRuby reads an unmatched `{` literally, but it is rejected there too, so a value means the same on every engine. To match a literal `[`, write `[[]` (or `\[`, except on Windows). To match a literal `{`, escape it as `\{`, quoted like `\,` above so the backslash reaches cov-loupe; on Windows, where a backslash is a path separator, a literal `{` cannot be written in `-g`. See [Advanced Filtering](ADVANCED_USAGE.md#advanced-filtering-glob-patterns).
 
 **Default:** `[]` (empty - shows every file in the coverage file)
 
@@ -974,6 +976,18 @@ export COV_LOUPE_OPTS="-fJ"
 clp summary lib/api/client.rb  # Uses JSON (from env)
 clp -f table summary lib/api/client.rb  # Explicit override to table format
 ```
+
+**Parsing:** `COV_LOUPE_OPTS` is parsed on its own, before the command line, into the same settings, so it must be complete: an option at its end that needs a value is an error there, rather than taking the first command-line argument. An option that fails to parse in `COV_LOUPE_OPTS` fails every command, even one that passes the same option correctly. A setting that is invalid only as a final value, such as `--log-file stdout`, can be overridden on the command line. A word in `COV_LOUPE_OPTS` that is not an option, or a `--`, ends the options, so the command line is then not read for options.
+
+**Errors:** an option's error message does not say whether the option came from `COV_LOUPE_OPTS` or the command line. When it is in `COV_LOUPE_OPTS` (an option or value there fails to parse, or a final setting is invalid because of it), the error is followed by a line saying so, with the value:
+
+```text
+Error: Unclosed '[' in --tracked-globs value: "lib/[ab". To match a literal '[', write '[[]'
+The error is in COV_LOUPE_OPTS ("-g 'lib/[ab'"), which is read before the command line.
+Run 'cov-loupe --help' for usage information.
+```
+
+A `COV_LOUPE_OPTS` that cannot be split into arguments, such as one with an unclosed quote, gets no such line, because its message already names it (`Error: Invalid COV_LOUPE_OPTS format: ...`). Errors in the command line get no such line either, unless `COV_LOUPE_OPTS` has the same error, as when both set `--log-file stdout`. Neither do errors found after the options are parsed, such as a `-c` path that does not exist or an unknown subcommand, even when a value from `COV_LOUPE_OPTS` caused them.
 
 **Examples:**
 ```sh

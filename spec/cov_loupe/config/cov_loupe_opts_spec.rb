@@ -159,6 +159,162 @@ RSpec.describe 'COV_LOUPE_OPTS Environment Variable' do
     end
   end
 
+  # The error message cannot say whether a bad global option came from COV_LOUPE_OPTS or the
+  # command line, so the line after it names COV_LOUPE_OPTS when the error is there.
+  describe 'usage errors with COV_LOUPE_OPTS set' do
+    def note(opts)
+      "The error is in COV_LOUPE_OPTS (#{opts.inspect}), which is read before the command line."
+    end
+
+    # Each case: the error, COV_LOUPE_OPTS, and the command line before 'list' (or the whole
+    # command line, when it ends with nil).
+    [
+      ['an invalid option argument', '-f bogus', []],
+      ['an attached invalid option argument', '-fbogus', []],
+      ['an invalid long-form option argument', '--format bogus', []],
+      ['an invalid --opt=value argument', '--format=bogus', []],
+      ['an invalid option argument overridden on the command line', '-f bogus', %w[-f json]],
+      ['a usage error raised by an option', "-g 'lib/[ab'", []],
+      ['an unknown --path-for name', '-p bogus', []],
+      ['an invalid --log-file', '--log-file stdout', []],
+      ['an invalid --log-file also on the command line', '--log-file stdout', %w[-l stdout]],
+      # COV_LOUPE_OPTS is parsed on its own first, so a trailing option there that needs a
+      # value is missing it, rather than taking the first command-line argument.
+      ['a trailing option, with no command line', '-f', [nil]],
+      ['a trailing option, before a command-line option', '-f', %w[-x]],
+      ['a trailing option, before a command-line value', '-f', %w[json -x]],
+      ['a trailing --log-file, before a command-line value', '--log-file', [nil, 'stdout']],
+    ].each do |desc, opts, argv|
+      it "names COV_LOUPE_OPTS once, before the help line, for #{desc}" do
+        ENV['COV_LOUPE_OPTS'] = opts
+        args = argv.first.nil? ? argv.compact : [*argv, 'list']
+        _stdout, stderr, status = run_full_cli_with_status(*args)
+
+        expect(status).to eq(CovLoupe::ExitCodes::USAGE)
+        expect(stderr.scan('COV_LOUPE_OPTS (').size).to eq(1)
+        expect(stderr.lines.last(2).map(&:chomp))
+          .to eq [note(opts), "Run 'cov-loupe --help' for usage information."]
+      end
+    end
+
+    it 'lets the command line override an invalid --log-file in COV_LOUPE_OPTS' do
+      ENV['COV_LOUPE_OPTS'] = '--log-file stdout'
+      _stdout, stderr, status = run_fixture_full_cli_with_status('-l', 'stderr', 'list')
+
+      expect(status).to eq(CovLoupe::ExitCodes::SUCCESS)
+      expect(stderr).not_to include('COV_LOUPE_OPTS (')
+    end
+
+    [
+      ['COV_LOUPE_OPTS is unset', nil, %w[-o zzz]],
+      ['COV_LOUPE_OPTS is empty', '', %w[-o zzz]],
+      ['COV_LOUPE_OPTS is not splittable', "-g 'x", %w[-o zzz]],
+      ['an unknown option is on the command line', '-f json', %w[--formt json]],
+      ['an invalid value is on the command line', '-f json', %w[-o zzz]],
+      ['an invalid value for an option also in COV_LOUPE_OPTS is on the command line',
+        '-f json', %w[-f bogus]],
+      ['a usage error raised by an option is on the command line', '-f json', ['-g', 'lib/[ab']],
+      ['an unknown --path-for name is on the command line', '-f json', %w[-p bogus]],
+      ['an invalid --log-file is on the command line', '-f json', %w[--log-file stdout]],
+      ['an argument on the command line is not valid UTF-8', '-f json', ["lib/\xFF.rb"]],
+      # COV_LOUPE_OPTS fails only validation, which a parse error on the command line precedes.
+      ['a parse error is on the command line and --log-file stdout in COV_LOUPE_OPTS',
+        '--log-file stdout', %w[-o zzz]],
+      ['a usage error raised by an option is on the command line and --log-file stdout in ' \
+       'COV_LOUPE_OPTS', '--log-file stdout', ['-g', 'lib/[ab']],
+      ['--log-file stdout in COV_LOUPE_OPTS is overridden and a parse error follows',
+        '--log-file stdout', %w[-l stderr -o zzz]],
+    ].each do |desc, opts, argv|
+      it "adds no note when #{desc}" do
+        ENV['COV_LOUPE_OPTS'] = opts
+        _stdout, stderr, status = run_full_cli_with_status(*argv, 'list')
+
+        expect(status).to eq(CovLoupe::ExitCodes::USAGE)
+        expect(stderr).not_to include('COV_LOUPE_OPTS (')
+      end
+    end
+
+    # The server is stubbed so that the spec fails rather than waits on stdin.
+    it 'names COV_LOUPE_OPTS when it stops the MCP server from starting' do
+      allow(CovLoupe::MCPServer).to receive(:new)
+      ENV['COV_LOUPE_OPTS'] = "-g 'lib/[ab'"
+      _stdout, stderr, status = run_full_cli_with_status('--mode', 'mcp')
+
+      expect(status).to eq(CovLoupe::ExitCodes::USAGE)
+      expect(stderr).to include(note("-g 'lib/[ab'"))
+      expect(CovLoupe::MCPServer).not_to have_received(:new)
+    end
+
+    # A subcommand or '--' in COV_LOUPE_OPTS ends the options, as in one parse of both, so the
+    # command line's options are not run; the CLI then reports them as misplaced or unknown.
+    [
+      ['list', %w[-f json], 'Global option(s) must come BEFORE the subcommand'],
+      ['list', %w[-m mcp], 'Global option(s) must come BEFORE the subcommand'],
+      ['--', %w[-h], "Unknown subcommand: '-h'"],
+      ['--', %w[-m mcp], "Unknown subcommand: '-m'"],
+      ['-f json --', %w[-v], "Unknown subcommand: '-v'"],
+    ].each do |opts, argv, message|
+      it "does not parse #{argv.join(' ')} on the command line after #{opts.inspect} in COV_LOUPE_OPTS" do
+        allow(CovLoupe::MCPServer).to receive(:new)
+        ENV['COV_LOUPE_OPTS'] = opts
+        stdout, stderr, status = run_full_cli_with_status(*argv, 'list')
+
+        expect(status).to eq(CovLoupe::ExitCodes::USAGE)
+        expect(stdout).to eq('')
+        expect(stderr).to include(message)
+        expect(stderr).not_to include('COV_LOUPE_OPTS (')
+        expect(CovLoupe::MCPServer).not_to have_received(:new)
+      end
+    end
+
+    # Options that print and exit must not run while the error's source is worked out: here
+    # the bad command-line argument is rejected before COV_LOUPE_OPTS is parsed.
+    ['-h', '-v', '-p repo'].each do |opts|
+      it "does not run #{opts} from COV_LOUPE_OPTS when a command-line argument is not valid UTF-8" do
+        ENV['COV_LOUPE_OPTS'] = opts
+        stdout, stderr, status = run_full_cli_with_status("lib/\xFF.rb", 'list')
+
+        expect(status).to eq(CovLoupe::ExitCodes::USAGE)
+        expect(stdout).to eq('')
+        expect(stderr).to include('is not valid UTF-8 text')
+        expect(stderr).not_to include('COV_LOUPE_OPTS (')
+      end
+    end
+
+    # Only the global options are checked; later errors, even ones COV_LOUPE_OPTS caused, are not.
+    it 'adds no note to an error found after the options are parsed' do
+      ENV['COV_LOUPE_OPTS'] = '-c /no/such/coverage.json'
+      _stdout, stderr, status = run_full_cli_with_status('list')
+
+      expect(status).to eq(CovLoupe::ExitCodes::ERROR)
+      expect(stderr).not_to include('COV_LOUPE_OPTS (')
+    end
+
+    # Under a non-UTF-8 locale ENV values arrive as binary; they are shown as text, like the
+    # arguments, rather than as escaped bytes.
+    it 'shows a non-ASCII COV_LOUPE_OPTS value as text' do
+      value = "-g 'café/[ab'"
+      allow(ENV).to receive(:[]).and_call_original
+      allow(ENV).to receive(:[]).with('COV_LOUPE_OPTS').and_return(value.b)
+      _stdout, stderr, _status = run_fixture_full_cli_with_status('list')
+
+      expect(stderr).to include(note(value))
+    end
+
+    # --path-for exists to print only a value, so its error must leave stdout empty.
+    it 'reports an unknown --path-for name like other usage errors' do
+      ENV['COV_LOUPE_OPTS'] = nil
+      stdout, stderr, status = run_full_cli_with_status('-p', 'bogus')
+
+      expect(status).to eq(CovLoupe::ExitCodes::USAGE)
+      expect(stdout).to eq('')
+      expect(stderr).to eq(
+        "Error: Unknown resource: 'bogus'. Valid resources: docs, docs-local, repo\n" \
+        "Run 'cov-loupe --help' for usage information.\n"
+      )
+    end
+  end
+
   describe 'tracked globs from COV_LOUPE_OPTS' do
     # COV_LOUPE_OPTS is split with Shellwords, then -g goes through the same brace-aware
     # splitter as on the command line.

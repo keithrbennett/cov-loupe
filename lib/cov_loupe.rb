@@ -60,8 +60,8 @@ module CovLoupe
     private_constant :THREAD_CONTEXT_KEY
 
     # Primary entry point. Parses argv to determine mode (CLI or MCP server),
-    # then dispatches accordingly. Environment options from COV_LOUPE_OPTS are
-    # prepended before parsing so CLI arguments always take precedence.
+    # then dispatches accordingly. Options from COV_LOUPE_OPTS are parsed first,
+    # so the command line's options take precedence.
     #
     # Ends the process with an ExitCodes status when an option is invalid, after --help,
     # --version, or --path-for, and in CLI mode when a command fails and after validate. MCP
@@ -91,28 +91,13 @@ module CovLoupe
       # Parse config to determine mode
       require_relative 'cov_loupe/config/config_parser'
 
-      begin
-        # Prepend environment options once at entry point
-        env_argv = extract_env_opts
-        full_argv = (env_argv + argv).map { |arg| utf8_arg(arg) }
-        full_argv.each { |arg| validate_arg_encoding(arg) }
-        config = ConfigParser.parse(full_argv.dup)
-      rescue OptionParser::ParseError => e
-        # Loaded only on this error path to keep normal startup light.
-        require_relative 'cov_loupe/subcommands'
-        require_relative 'cov_loupe/option_parsers/error_helper'
-        OptionParsers::ErrorHelper.new(SUBCOMMANDS)
-          .handle_option_parser_error(e, argv: full_argv)
-      rescue ConfigurationError, UsageError => e
-        warn "Error: #{e.message}"
-        warn "Run 'cov-loupe --help' for usage information."
-        raise CliExit, ExitCodes::USAGE
-      end
+      env_argv, cli_argv = global_argv(argv)
+      config = parse_global_options(env_argv, cli_argv)
 
       if config.mode == :cli
         # CLI mode: load CLI components only
         require_relative 'cov_loupe/loaders/all_cli'
-        CoverageCLI.new.run(full_argv, env_arg_count: env_argv.size)
+        CoverageCLI.new.run(env_argv + cli_argv, env_arg_count: env_argv.size)
       else
         # MCP server mode: load MCP server components only
         require_relative 'cov_loupe/loaders/all_mcp'
@@ -261,6 +246,84 @@ module CovLoupe
     private def extract_env_opts
       require_relative 'cov_loupe/option_parsers/env_options_parser'
       OptionParsers::EnvOptionsParser.new.parse_env_opts
+    end
+
+    # Returns COV_LOUPE_OPTS split into arguments, and the command line, both retagged as
+    # UTF-8, after checking that every argument is valid text. COV_LOUPE_OPTS text that is
+    # not valid in its encoding (such as non-UTF-8 bytes under a UTF-8 locale) fails to
+    # split; under LANG=C it arrives as binary, which is always valid. So an invalid argument
+    # here is from the command line, and its message names it.
+    private def global_argv(argv)
+      env_argv = extract_env_opts.map { |arg| utf8_arg(arg) }
+      cli_argv = argv.map { |arg| utf8_arg(arg) }
+      (env_argv + cli_argv).each { |arg| validate_arg_encoding(arg) }
+      [env_argv, cli_argv]
+    rescue ConfigurationError, UsageError => e
+      # An unsplittable COV_LOUPE_OPTS gets no note: its message already names COV_LOUPE_OPTS.
+      report_global_usage_error(e, from_env: false)
+    end
+
+    # Parses COV_LOUPE_OPTS, then the command line, into one config, so an error is known to
+    # be in one or the other; the error message itself cannot say which. A word in
+    # COV_LOUPE_OPTS that is not an option (a subcommand), or a '--', ends the options, as it
+    # would in a single parse of both, so the command line is then not parsed for options.
+    private def parse_global_options(env_argv, cli_argv)
+      parser = ConfigParser.new
+      parse_options_from(parser, env_argv, from_env: true)
+      # The settings from COV_LOUPE_OPTS alone. A shallow copy is enough: the option
+      # handlers replace values rather than change them.
+      env_config = parser.config.dup
+      parse_options_from(parser, cli_argv, from_env: false) unless parser.options_ended?
+
+      begin
+        parser.config.validate!
+      rescue ConfigurationError => e
+        # validate! sees each option's last value, so the error is in COV_LOUPE_OPTS when its
+        # settings alone are invalid: the command line did not override the bad value. This
+        # holds while each validation rule checks a single setting. With no COV_LOUPE_OPTS,
+        # an invalid default is not its fault.
+        report_global_usage_error(e, from_env: env_argv.any? && !valid_config?(env_config))
+      end
+      parser.config
+    end
+
+    private def parse_options_from(parser, args, from_env:)
+      parser.parse_options(args.dup)
+    rescue OptionParser::ParseError, ConfigurationError, UsageError => e
+      report_global_usage_error(e, argv: args, from_env: from_env)
+    end
+
+    private def valid_config?(config)
+      config.validate!
+      true
+    rescue ConfigurationError
+      false
+    end
+
+    # Reports a usage error in the global options and exits with the usage status. When the
+    # error is in COV_LOUPE_OPTS, a line saying so comes before the --help line. argv, used
+    # only for an OptionParser error, is the arguments whose parse failed.
+    private def report_global_usage_error(error, from_env:, argv: [])
+      # Loaded only on this error path to keep normal startup light.
+      require_relative 'cov_loupe/option_parsers/error_helper'
+      note = "The error is in #{env_opts_description}, which is read before the command line." if from_env
+      hint = [note, OptionParsers::ErrorHelper::USAGE_HINT].compact.join("\n")
+      if error.is_a?(OptionParser::ParseError)
+        require_relative 'cov_loupe/subcommands'
+        OptionParsers::ErrorHelper.new(SUBCOMMANDS)
+          .handle_option_parser_error(error, argv: argv, usage_hint: hint)
+      else
+        warn "Error: #{error.message}"
+        warn hint
+        raise CliExit, ExitCodes::USAGE
+      end
+    end
+
+    # Retagged as UTF-8 like the arguments, so non-ASCII text is shown rather than escaped.
+    private def env_opts_description
+      require_relative 'cov_loupe/option_parsers/env_options_parser'
+      env_var = OptionParsers::EnvOptionsParser::ENV_VAR
+      "#{env_var} (#{utf8_arg(ENV[env_var]).inspect})"
     end
   end
 end

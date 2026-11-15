@@ -193,9 +193,24 @@
   The `-g` help now says what the option limits and reports, and how to write literal
   brackets. See
   [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#tracked-globs-split-outside-braces-and-brackets).
+- **`COV_LOUPE_OPTS` must be complete on its own.** It is now parsed on its own, before the
+  command line, so an option at its end that needs a value is an error
+  (`missing argument`) instead of taking the first command-line argument as its value.
+  See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#cov_loupe_opts-is-parsed-on-its-own).
 
 ### Other Changes
 
+- **Usage errors point to `COV_LOUPE_OPTS`.** Its options were parsed in one pass with the
+  command line, so an error in one of them gave no hint that it came from the environment.
+  An option or value in `COV_LOUPE_OPTS` that fails to parse, or a final setting it makes
+  invalid (such as `--log-file stdout`), is now followed by a line saying the error is
+  there, with its value. Errors in the command line, and errors found later, such as a
+  missing coverage file, get no such line; nor does a `COV_LOUPE_OPTS` that cannot be split
+  into arguments, whose message already names it. An unknown `--path-for` name is now reported
+  like the other usage errors, with the `Error:` prefix and the `Run 'cov-loupe --help'`
+  line. See
+  [`COV_LOUPE_OPTS`](docs/user/CLI_USAGE.md#cov_loupe_opts).
 - **Invalid JSON errors no longer quote the file.** When the coverage file is not valid JSON,
   the error now reads `Coverage file is not valid JSON: <path>` (with ` (at line L column C)`
   before the colon when the parser reports a position) instead of including the parser's

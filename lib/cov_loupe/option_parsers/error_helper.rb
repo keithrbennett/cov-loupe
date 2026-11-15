@@ -7,12 +7,17 @@ module CovLoupe
   module OptionParsers
     # @api private
     class ErrorHelper
+      PROGRAM_NAME = 'cov-loupe'
+
+      # The last line of an option usage error. For the global options, a line naming
+      # COV_LOUPE_OPTS comes before it when the error is there.
+      USAGE_HINT = "Run '#{PROGRAM_NAME} --help' for usage information.".freeze
+
       def initialize(subcommands)
         @subcommands = subcommands
       end
 
-      def handle_option_parser_error(error, argv: [],
-        usage_hint: "Run '#{program_name} --help' for usage information.")
+      def handle_option_parser_error(error, argv: [], usage_hint: USAGE_HINT)
         message = error.message.to_s
         # Suggest a subcommand when an invalid option matches a known subcommand
         option = extract_invalid_option(message)
@@ -40,7 +45,7 @@ module CovLoupe
       private def suggest_subcommand(option)
         subcommand = option[2..]
         warn "Error: '#{option}' is not a valid option. Did you mean the '#{subcommand}' subcommand?"
-        warn "Try: #{program_name} #{subcommand} [args]"
+        warn "Try: #{PROGRAM_NAME} #{subcommand} [args]"
       end
 
       private def build_enum_value_hint(argv)
@@ -107,10 +112,6 @@ module CovLoupe
             values:   OptionNormalizers::FORMAT_LONG_NAMES.to_a.flatten,
             display:  OptionNormalizers.available_format_choices.join('|') },
         ]
-      end
-
-      private def program_name
-        'cov-loupe'
       end
     end
   end

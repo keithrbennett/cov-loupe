@@ -60,16 +60,17 @@ RSpec.describe CovLoupe do
       end
     end
 
+    # COV_LOUPE_OPTS is cleared so that options exported in the developer's shell, such as
+    # -p repo, cannot change the result.
     it 'exits with code 2 and shows the message for configuration errors' do
-      allow(CovLoupe::ConfigParser).to receive(:parse)
-        .and_raise(CovLoupe::ConfigurationError, 'bad config')
-
+      allow(ENV).to receive(:[]).and_call_original
+      allow(ENV).to receive(:[]).with('COV_LOUPE_OPTS').and_return(nil)
       stderr = capture_stderr do
-        expect { described_class.run([]) }.to raise_error(SystemExit) do |error|
+        expect { described_class.run(%w[--log-file stdout]) }.to raise_error(SystemExit) do |error|
           expect(error.status).to eq(CovLoupe::ExitCodes::USAGE)
         end
       end
-      expect(stderr).to include('Error: bad config')
+      expect(stderr).to include('Error: Logging to stdout is not permitted')
     end
 
     it 'exits with code 2 and no backtrace for a usage error raised while parsing options' do

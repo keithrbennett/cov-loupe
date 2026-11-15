@@ -155,11 +155,9 @@ module CovLoupe
       end
       parser.on('-p', '--path-for NAME', String,
         'Print resource path/URL and exit. NAME: repo, docs, docs-local.') do |value|
+        # An unknown NAME raises UsageError, which the caller reports like any other usage error.
         puts Resources.cli_url_for(value)
         raise CliExit, ExitCodes::SUCCESS
-      rescue UsageError => e
-        warn e.user_friendly_message
-        raise CliExit, ExitCodes::USAGE
       end
     end
 

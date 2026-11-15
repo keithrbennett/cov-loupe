@@ -31,4 +31,18 @@ RSpec.describe CovLoupe::ConfigParser do
       expect(argv).to eq(%w[summary lib/foo.rb])
     end
   end
+
+  describe '#options_ended?' do
+    # order! removes a '--' it stops at, so the leftover arguments alone cannot show it.
+    {
+      %w[-f json] => false, %w[-f json list] => true, %w[--] => true,
+      %w[-f json -- -h] => true, %w[-g --] => false
+    }.each do |args, ended|
+      it "is #{ended} after parsing #{args.inspect}" do
+        parser = described_class.new
+        parser.parse_options(args.dup)
+        expect(parser.options_ended?).to be(ended)
+      end
+    end
+  end
 end

@@ -24,6 +24,7 @@ This document describes the breaking changes introduced in version 7.0.0.
 - [`--output-chars ascii` No Longer Changes Data](#output-chars-ascii-no-longer-changes-data)
 - [Source and Predicate Files Are Read as UTF-8](#source-and-predicate-files-are-read-as-utf-8)
 - [`--tracked-globs` Split Outside Braces and Brackets](#tracked-globs-split-outside-braces-and-brackets)
+- [`COV_LOUPE_OPTS` Is Parsed on Its Own](#cov_loupe_opts-is-parsed-on-its-own)
 
 ---
 
@@ -435,3 +436,21 @@ In 6.x, the CLI split the `-g`/`--tracked-globs` value on every comma. A brace p
 In 7.0, the value is split only on commas outside `{...}` and `[...]` and, except on Windows, not on a backslash-escaped comma (`\,`). Empty items are ignored. An unclosed `{`, or an unclosed `[` outside braces, is a usage error (exit 2) for every command, the per-file ones included, whether the value comes from the command line or `COV_LOUPE_OPTS`, and it stops the MCP server from starting. Such a value used to run with exit 0: it was split at every comma, the fragment holding the bracket matched nothing on CRuby (JRuby read an unmatched `{` literally), and the other fragments still applied. The MCP `tracked_globs` argument and the Ruby API are unchanged.
 
 **Migration:** values without braces, brackets, or backslashes need no change. Fix any unclosed `{` or `[` the new error reports. To match a literal `[`, write `[[]` (or `\[`, except on Windows); to match a literal `{`, write `\{`, quoted so the shell keeps the backslash (not possible on Windows). If a value relied on splitting at a comma inside braces or brackets, or after a backslash, write those patterns separately. See [`--tracked-globs`](../CLI_USAGE.md#tracked-globs).
+
+<a id="cov_loupe_opts-is-parsed-on-its-own"></a>
+
+## `COV_LOUPE_OPTS` Is Parsed on Its Own
+
+In 6.x, the options in `COV_LOUPE_OPTS` and the command line were parsed in one pass, so an option at the end of `COV_LOUPE_OPTS` that needs a value took the first command-line argument as its value: `COV_LOUPE_OPTS="-f"` with `cov-loupe json list` printed JSON.
+
+In 7.0, `COV_LOUPE_OPTS` is parsed on its own, before the command line, so such an option is an error (exit 2). That separation is what lets errors in `COV_LOUPE_OPTS` be reported as such:
+
+```text
+$ COV_LOUPE_OPTS="-f" cov-loupe json list
+Error: missing argument: -f
+Valid values for --format: a/amazing_print|i/inspect|j/json|J/pretty_json|p/puts|P/pretty_print|t/table|y/yaml
+The error is in COV_LOUPE_OPTS ("-f"), which is read before the command line.
+Run 'cov-loupe --help' for usage information.
+```
+
+**Migration:** if `COV_LOUPE_OPTS` ends with an option that relies on the command line for its value, move the value into `COV_LOUPE_OPTS`, or move the option to the command line. Otherwise no change is needed.
