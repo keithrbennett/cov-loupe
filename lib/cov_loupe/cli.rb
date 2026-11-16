@@ -4,8 +4,6 @@ require 'json'
 require_relative 'config/app_config'
 require_relative 'config/option_parser_builder'
 require_relative 'commands/command_factory'
-require_relative 'option_parsers/error_helper'
-require_relative 'option_parsers/env_options_parser'
 require_relative 'presenters/project_coverage_presenter'
 require_relative 'exit_codes'
 require_relative 'subcommands'
@@ -16,13 +14,10 @@ require_relative 'resources'
 module CovLoupe
   # Command-line interface for cov-loupe.
   #
-  # Parses global options (coverage file path, format, sort order, etc.) and dispatches
-  # to subcommand classes via CommandFactory. When no subcommand is given, the default
-  # report (equivalent to `list`) is shown.
-  #
-  # Option parsing uses order! so that global options before the subcommand are consumed
-  # and the subcommand name + its arguments remain in argv. Global options placed after
-  # the subcommand trigger a helpful error message.
+  # Dispatches to subcommand classes via CommandFactory, with the global options (coverage
+  # file path, format, sort order, etc.) already parsed by CovLoupe.run. When no subcommand
+  # is given, the default report (equivalent to `list`) is shown. Global options placed
+  # after the subcommand trigger a helpful error message.
   #
   # @api private
   class CoverageCLI
@@ -45,39 +40,33 @@ module CovLoupe
     # Always runs as CLI, no mode detection needed.
     def initialize(error_handler: nil)
       @config = AppConfig.new
-      @cmd = nil
-      @cmd_args = []
-      @global_args = [] # Arguments given before the subcommand
       @custom_error_handler = error_handler # Store custom handler if provided
-      @error_handler = nil # Will be created after parsing options
+      @global_args = []
+      @error_handler = nil # Created on first use, from config's error mode
     end
 
-    # @param env_arg_count [Integer] how many leading argv entries came from COV_LOUPE_OPTS
-    #   rather than the user's command line (used to keep them out of usage hints)
-    def run(argv, env_arg_count: 0)
-      context = nil
-      @env_arg_count = env_arg_count
-      # argv should already include environment options (merged by caller)
-      # Pre-scan for error-mode to ensure early errors are logged with correct verbosity
-      pre_scan_error_mode(argv)
-      parse_options!(argv)
+    # Runs a subcommand, or the default report, with options already parsed into config.
+    # @param args [Array<String>] the arguments after the global options: the subcommand
+    #   and its arguments
+    # @param config [AppConfig] the parsed global options; the caller must have validated them
+    # @param global_args [Array<String>] the global options as typed on the command line,
+    #   for usage hints
+    def run(args, config:, global_args:)
+      @config = config
+      @global_args = global_args
+      # Resolve single-character abbreviations (e.g., 's' -> 'summary')
+      cmd = SUBCOMMAND_ABBREVIATIONS[args.first] || args.first
 
-      context = build_context
-
-      CovLoupe.with_context(context) do
-        log_cli_params
-        if @cmd
-          run_subcommand(@cmd, @cmd_args)
-        else
-          run_default_report
+      CovLoupe.with_context(build_context) do
+        # Raised, not just built, so that --error-mode debug has a backtrace to show.
+        if cmd && !SUBCOMMANDS.include?(cmd)
+          with_user_facing_errors('CLI') do
+            raise UsageError, "Unknown subcommand: '#{cmd}'. Valid subcommands: #{SUBCOMMANDS.join(', ')}"
+          end
         end
+        log_cli_params(cmd)
+        cmd ? run_subcommand(cmd, args.drop(1)) : run_default_report
       end
-    rescue OptionParser::ParseError => e
-      # Handle any option parsing errors (invalid option/argument) without relying on
-      # @error_handler, which is not guaranteed to be initialized yet.
-      with_context_if_available(context) { handle_option_parser_error(e, argv: argv) }
-    rescue CovLoupe::Error => e
-      with_context_if_available(context || early_error_context) { handle_user_facing_error(e) }
     end
 
     private def build_context
@@ -88,23 +77,11 @@ module CovLoupe
       )
     end
 
-    # Context for usage errors raised after option parsing (e.g. an unknown subcommand), so
-    # they still reach --log-file. Returns nil for errors raised while parsing options, as the
-    # options may be incomplete, or if the context cannot be created (e.g. for a `stdout`
-    # log target).
-    private def early_error_context
-      return unless @options_parsed
-
-      build_context
-    rescue CovLoupe::Error
-      nil
-    end
-
     # Records CLI parameters in a log file. Skipped for stderr so routine runs stay quiet.
-    private def log_cli_params
+    private def log_cli_params(cmd)
       return unless CovLoupe.logger.file_target?
 
-      params = { mode: :cli, subcommand: @cmd || 'default' }
+      params = { mode: :cli, subcommand: cmd || 'default' }
       params[:root] = config.root if config.root
       params[:coverage_file] = config.coverage_file if config.coverage_file
       params[:format] = config.format if config.format
@@ -150,51 +127,9 @@ module CovLoupe
       warn text unless text.empty?
     end
 
-    private def parse_options!(argv)
-      require 'optparse'
-      parser = OptionParserBuilder.new(config).build_option_parser
-
-      # order! parses global options (updating config) and removes them from argv.
-      # It stops cleanly at the first subcommand (e.g., 'list', 'summary') or unknown option.
-      # If it stops at an unknown option, it raises OptionParser::InvalidOption.
-      original_argv = argv.dup
-      parser.order!(argv)
-      @options_parsed = true
-      @global_args = original_argv.first(original_argv.size - argv.size).drop(@env_arg_count.to_i)
-
-      # The first remaining argument is the subcommand
-      @cmd = argv.shift
-
-      # Resolve single-character abbreviations (e.g., 's' -> 'summary')
-      @cmd = SUBCOMMAND_ABBREVIATIONS[@cmd] || @cmd
-
-      # Verify it's a valid subcommand if present
-      if @cmd && !SUBCOMMANDS.include?(@cmd)
-        raise UsageError, "Unknown subcommand: '#{@cmd}'. Valid subcommands: #{SUBCOMMANDS.join(', ')}"
-      end
-
-      # Any remaining arguments belong to the subcommand
-      @cmd_args = argv
-
-      config.validate!
-    end
-
     private def error_handler
       @error_handler ||= @custom_error_handler ||
         ErrorHandlerFactory.for_cli(error_mode: config.error_mode)
-    end
-
-    private def pre_scan_error_mode(argv)
-      env_parser = OptionParsers::EnvOptionsParser.new
-      config.error_mode = env_parser.pre_scan_error_mode(argv) || :log
-    end
-
-    private def with_context_if_available(ctx, &block)
-      if ctx
-        CovLoupe.with_context(ctx, &block)
-      else
-        block.call
-      end
     end
 
     private def run_subcommand(cmd, args)
@@ -220,11 +155,6 @@ module CovLoupe
       # Custom error handlers need not implement conversion.
       converter = error_handler.respond_to?(:convert_standard_error) ? error_handler : ErrorHandler.new
       handle_user_facing_error(converter.convert_standard_error(e), log_error: e, log_context: log_context)
-    end
-
-    private def handle_option_parser_error(error, argv: [])
-      @error_helper ||= OptionParsers::ErrorHelper.new(SUBCOMMANDS)
-      @error_helper.handle_option_parser_error(error, argv: argv)
     end
 
     private def check_for_misplaced_global_options(cmd, args)

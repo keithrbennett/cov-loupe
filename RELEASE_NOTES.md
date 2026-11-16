@@ -201,6 +201,11 @@
 
 ### Other Changes
 
+- **A misplaced `--error-mode` no longer changes how its error is shown.** Global options
+  after the subcommand are rejected, but `--error-mode` used to be read from anywhere in
+  the arguments first, so a misplaced `-e debug`, as in `cov-loupe totals -e debug` or
+  after an unknown subcommand, added a backtrace to the error. The error mode now comes
+  only from the global options, like every other setting.
 - **Usage errors point to `COV_LOUPE_OPTS`.** Its options were parsed in one pass with the
   command line, so an error in one of them gave no hint that it came from the environment.
   An option or value in `COV_LOUPE_OPTS` that fails to parse, or a final setting it makes

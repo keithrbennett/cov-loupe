@@ -18,9 +18,8 @@ RSpec.describe CovLoupe::OptionParserBuilder do
       it "places global options before the subcommand in `#{example}`" do
         cli = CovLoupe::CoverageCLI.new
         argv = example.shellsplit.drop(1)
-        cli.send(:parse_options!, argv)
-        cmd = cli.instance_variable_get(:@cmd)
-        cmd_args = cli.instance_variable_get(:@cmd_args)
+        CovLoupe::ConfigParser.new.parse_options(argv)
+        cmd, *cmd_args = argv
 
         expect(cmd).not_to be_nil
         expect { cli.send(:check_for_misplaced_global_options, cmd, cmd_args) }.not_to raise_error

@@ -2,31 +2,14 @@
 
 # CLI test helpers
 module CLITestHelpers
-  # Run CLI with the given arguments and return [stdout, stderr, exit_status]
+  # Run the CLI entry point (CovLoupe.execute) and return [stdout, stderr, exit_status].
   def run_cli_with_status(*argv)
-    cli = CovLoupe::CoverageCLI.new
-    status = nil
-    _result, out_str, err_str = capture_io do
-      cli.run(argv.flatten)
-      status = 0
-    rescue SystemExit => e
-      status = e.status
-    end
+    status, out_str, err_str = capture_io { CovLoupe.execute(argv.flatten) }
     [out_str, err_str, status]
   end
 
   def run_fixture_cli_with_status(*argv)
     run_cli_with_status(*fixture_cli_args(*argv))
-  end
-
-  # Run the full entry point (including global ConfigParser) via CovLoupe.execute
-  def run_full_cli_with_status(*argv)
-    status, out_str, err_str = capture_io { CovLoupe.execute(argv.flatten) }
-    [out_str, err_str, status]
-  end
-
-  def run_fixture_full_cli_with_status(*argv)
-    run_full_cli_with_status(*fixture_cli_args(*argv))
   end
 
   def run_fixture_cli_output(*argv)

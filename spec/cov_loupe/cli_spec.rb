@@ -227,10 +227,10 @@ RSpec.describe CovLoupe::CoverageCLI do
     expect(data['missing_tracked_files']).to eq(['app/controllers/admin/audit_logs_controller.rb'])
   end
 
-  # Through the full entry point, which parses global options before the CLI does.
+  # Through the full entry point, where the global options are parsed.
   [['lib/{a,b/*.rb', '{'], ['lib/[ab,c.rb', '[']].each do |glob, bracket|
     it "reports an unclosed '#{bracket}' in --tracked-globs as a usage error" do
-      _stdout, stderr, status = run_fixture_full_cli_with_status('--tracked-globs', glob, 'list')
+      _stdout, stderr, status = run_fixture_cli_with_status('--tracked-globs', glob, 'list')
 
       expect(status).to eq(CovLoupe::ExitCodes::USAGE)
       expect(stderr).to include("Unclosed '#{bracket}' in --tracked-globs value: #{glob.inspect}")
@@ -242,8 +242,8 @@ RSpec.describe CovLoupe::CoverageCLI do
   it 'accepts an empty --tracked-globs value as no globs' do
     expect(CovLoupe::ConfigParser.parse(['-g', '']).tracked_globs).to eq([])
 
-    baseline, = run_fixture_full_cli_with_status('-f', 'json', 'list')
-    stdout, _stderr, status = run_fixture_full_cli_with_status('-f', 'json', '-g', '', 'list')
+    baseline, = run_fixture_cli_with_status('-f', 'json', 'list')
+    stdout, _stderr, status = run_fixture_cli_with_status('-f', 'json', '-g', '', 'list')
 
     expect(status).to eq(0)
     expect(JSON.parse(stdout)['files']).to eq(JSON.parse(baseline)['files'])
@@ -252,7 +252,7 @@ RSpec.describe CovLoupe::CoverageCLI do
   # Empty items used to reach the staleness check as nil and raise a TypeError there.
   it 'ignores empty --tracked-globs items' do
     stdout, _stderr, status =
-      run_fixture_full_cli_with_status('-f', 'json', '-g', 'lib/foo.rb,,lib/bar.rb,', 'list')
+      run_fixture_cli_with_status('-f', 'json', '-g', 'lib/foo.rb,,lib/bar.rb,', 'list')
     files = JSON.parse(stdout)['files'].map { |row| row['file'] }
 
     expect(status).to eq(0)
@@ -493,7 +493,7 @@ RSpec.describe CovLoupe::CoverageCLI do
       it "correctly passes -i to the #{subcommand} subcommand" do
         # This confirms that global option parsing (in ConfigParser) does not
         # strip subcommand-specific options like -i.
-        _stdout, _stderr, status = run_fixture_full_cli_with_status(subcommand, '-i',
+        _stdout, _stderr, status = run_fixture_cli_with_status(subcommand, '-i',
           '->(m) { m.project_totals["percentage"] >= 10 }')
         expect(status).to eq(0)
       end

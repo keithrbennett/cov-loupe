@@ -6,7 +6,7 @@ RSpec.describe 'MCP Mode Logging' do
   it 'exits with an error when --log-file is stdout' do
     argv = %w[--mode mcp --log-file stdout]
 
-    _stdout, stderr, status = run_full_cli_with_status(argv)
+    _stdout, stderr, status = run_cli_with_status(argv)
     expect(status).to eq(2)
     expect(stderr).to include('stdout', 'not permitted')
   end

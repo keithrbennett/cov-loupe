@@ -113,28 +113,21 @@ RSpec.describe 'Error Mode System' do
     let(:project_dir) { File.join(__dir__, 'fixtures', 'project1') }
 
     it 'accepts --error-mode flag' do
-      cli = CovLoupe::CoverageCLI.new
+      config = CovLoupe::ConfigParser.parse(%w[--error-mode debug summary lib/foo.rb])
 
-      # Test that the option parser accepts the flag
-      expect do
-        cli.send(:parse_options!, %w[--error-mode debug summary lib/foo.rb])
-      end.not_to raise_error
-
-      expect(cli.config.error_mode).to eq(:debug)
+      expect(config.error_mode).to eq(:debug)
     end
 
     it 'creates error handler with specified mode' do
       cli = CovLoupe::CoverageCLI.new
-      cli.send(:parse_options!, %w[--error-mode off summary lib/foo.rb])
+      cli.config.error_mode = :off
 
       expect(cli.send(:error_handler).error_mode).to eq(:off)
     end
 
     it 'validates error mode values' do
-      cli = CovLoupe::CoverageCLI.new
-
       expect do
-        cli.send(:parse_options!, %w[--error-mode invalid summary lib/foo.rb])
+        CovLoupe::ConfigParser.parse(%w[--error-mode invalid summary lib/foo.rb])
       end.to raise_error(OptionParser::InvalidArgument)
     end
   end

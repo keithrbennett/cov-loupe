@@ -259,7 +259,7 @@ end
 
 **CLI Mode** (lib/cov_loupe/cli.rb):
 
-1. Catches all exceptions in the main run loop
+1. Catches the exceptions a subcommand or the default report raises, and reports an unknown subcommand the same way (`with_user_facing_errors`); errors in the global options are reported earlier, by `CovLoupe.run`
 2. Uses the `for_cli` handler to log errors to a log file target (not to the default `stderr` target, where the message is already printed); a custom handler is called for every error except invalid options, which are reported during option parsing
 3. Displays `user_friendly_message` to the user
 4. Raises `CliExit` with the code from `CoverageCLI#exit_code_for` (see `CovLoupe::ExitCodes`): 1 runtime error, 2 usage or configuration error, 4 predicate error. The one exception is `validate`, which raises `CliExit` directly with 0 (pass) or 3 (validation failed) when the predicate runs to completion, since that outcome is not an error. `CovLoupe.run` lets `CliExit` end the process; `CovLoupe.execute` returns its status
@@ -311,7 +311,7 @@ The `ErrorHandler#convert_standard_error` method maps standard exceptions to cov
 - Custom exceptions: `lib/cov_loupe/errors/errors.rb`
 - ErrorHandler implementation: `lib/cov_loupe/errors/error_handler.rb`
 - ErrorHandlerFactory: `lib/cov_loupe/errors/error_handler_factory.rb`
-- CLI error handling: `lib/cov_loupe/cli.rb` (rescue block in `CoverageCLI#run`)
+- CLI error handling: `lib/cov_loupe/cli.rb` (`CoverageCLI#with_user_facing_errors` and `#handle_user_facing_error`); global option errors: `lib/cov_loupe.rb` (`report_global_usage_error`)
 - MCP tool error handling: `lib/cov_loupe/base_tool.rb` (`BaseTool.with_error_handling` and `BaseTool.handle_mcp_error`)
 - Library mode: `CoverageModel` raises the exceptions in `lib/cov_loupe/errors/errors.rb` directly
 - Related section: [Dual-Mode Operation](#dual-mode-operation-cli-and-mcp-server)

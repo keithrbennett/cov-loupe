@@ -744,8 +744,8 @@ A relative log file path is resolved against the current directory, not `--root`
 With the default `stderr` target, the CLI does not log its parameters or errors there;
 an error appears there once, as the user-facing message (followed by its stack trace
 with `--error-mode debug`). Warnings and diagnostics about the coverage data can still
-appear on stderr. A file target also receives a `CLI parameters` line for each run that
-gets past option parsing (including the default report) and, unless `--error-mode off`
+appear on stderr. A file target also receives a `CLI parameters` line for each run whose
+options are valid and whose subcommand, if any, is known and, unless `--error-mode off`
 is used, a log entry for each error. Invalid options and option values are rejected
 before logging is set up, so they appear only on stderr; other usage errors, such as an
 unknown subcommand or misplaced global options, are logged to the file.

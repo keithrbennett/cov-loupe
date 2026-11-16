@@ -3,17 +3,11 @@
 require 'spec_helper'
 
 RSpec.describe 'CLI enumerated option parsing' do
-  def parse!(argv)
-    cli = CovLoupe::CoverageCLI.new
-    cli.send(:parse_options!, argv.dup)
-    cli
-  end
-
   shared_examples 'parses option' do |cases|
     cases.each do |c|
       it "parses #{c[:argv].join(' ')}" do
-        cli = parse!(c[:argv])
-        expect(cli.config.public_send(c[:accessor])).to eq(c[:expected])
+        config = CovLoupe::ConfigParser.parse(c[:argv].dup)
+        expect(config.public_send(c[:accessor])).to eq(c[:expected])
       end
     end
   end

@@ -7,7 +7,7 @@ module ControlFlowHelpers
   # Returns the exit status code if exit was called, otherwise returns the block's value.
   #
   # Examples:
-  #   status = swallow_system_exit { cli.run(['--help']) }
+  #   status = swallow_system_exit { CovLoupe.run(['--help']) }
   #   expect(status).to eq(0)  # --help calls exit(0)
   #
   #   result = swallow_system_exit { some_computation }

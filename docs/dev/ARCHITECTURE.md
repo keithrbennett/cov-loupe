@@ -7,7 +7,7 @@ cov-loupe is organized around a single coverage data model that feeds three deli
 ## Runtime Entry Points
 
 - **Executable** – `exe/cov-loupe` bootstraps the gem, enforces Ruby >= 3.3, and delegates to `CovLoupe.run(ARGV)`.
-- **Mode Negotiation** – `CovLoupe.run` inspects environment defaults from `COV_LOUPE_OPTS` and parses the `-m/--mode` flag. It defaults to CLI mode and instantiates `CovLoupe::CoverageCLI`. When `-m mcp` or `--mode mcp` is specified, it instantiates `CovLoupe::MCPServer` for MCP protocol communication over STDIO.
+- **Mode Negotiation** – `CovLoupe.run` parses the global options, from `COV_LOUPE_OPTS` and then the command line, among them `-m/--mode`. It defaults to CLI mode and instantiates `CovLoupe::CoverageCLI`. When `-m mcp` or `--mode mcp` is specified, it instantiates `CovLoupe::MCPServer` for MCP protocol communication over STDIO.
 - **Status-Returning Entry** – `CovLoupe.execute` runs the same code as `CovLoupe.run` but rescues `CovLoupe::CliExit`, the `SystemExit` subclass the CLI raises to end with a status, and returns that status instead of ending the process.
 - **Embedded Usage** – Applications embed the gem by instantiating `CovLoupe::CoverageModel` directly, optionally wrapping work in `CovLoupe.with_context` to scope a log target to that work.
 
@@ -23,7 +23,7 @@ cov-loupe is organized around a single coverage data model that feeds three deli
 
 ### CLI (`CovLoupe::CoverageCLI`)
 
-- Builds on Ruby’s `OptionParser`, with global options such as `--coverage-file`, `--raise-on-stale`, `--format` (`-fJ` is `-f J`), and `--source`.
+- Global options are defined in `OptionParserBuilder` on Ruby’s `OptionParser` and parsed once, by `CovLoupe.run`, which passes `CoverageCLI#run` the resulting config, the remaining arguments, and the options typed on the command line (for usage hints). They include `--coverage-file`, `--raise-on-stale`, `--format` (`-fJ` is `-f J`), and `--source`.
 - Subcommands (`list`, `summary`, `raw`, `uncovered`, `detailed`, `totals`, `validate`) translate to calls on `CoverageModel`.
 - **Subcommand Abbreviations** – Frequent CLI users can use single-character abbreviations for most subcommands: `l` (list), `s` (summary), `u` (uncovered), `d` (detailed), `r` (raw), `t` (totals), and `v` (validate). The version is printed by the global `-v`/`--version` flag, not a subcommand.
 - Uses `ErrorHandlerFactory.for_cli` to convert unexpected exceptions into friendly user messages while honoring `--error-mode`.
@@ -110,7 +110,7 @@ Comprehensive test coverage exists:
 
 1. Add or update data processing inside `CoverageModel`, a helper class beside it in `lib/cov_loupe/model/` (such as `ProjectTotalsBuilder`) for payload assembly that depends only on explicit arguments, or `CoverageCalculator` for pure line-counting logic.
 2. Surface that metric through all interfaces: add a CLI option/subcommand, create an MCP tool, and expose a library helper method.
-3. Register the new tool in `MCPServer` and update CLI option parsing in `CoverageCLI`. If the tool runs client-supplied code, override `executes_code?` to return true (see the MCP layer notes above).
+3. Register the new tool in `MCPServer` and add any CLI option in `OptionParserBuilder`. If the tool runs client-supplied code, override `executes_code?` to return true (see the MCP layer notes above).
 4. Provide tests under `spec/` mirroring the lib path (`spec/cov_loupe/..._spec.rb`).
 5. Update documentation to reflect the new capability.
 

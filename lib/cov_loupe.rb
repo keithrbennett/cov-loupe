@@ -92,12 +92,12 @@ module CovLoupe
       require_relative 'cov_loupe/config/config_parser'
 
       env_argv, cli_argv = global_argv(argv)
-      config = parse_global_options(env_argv, cli_argv)
+      config, rest, global_args = parse_global_options(env_argv, cli_argv)
 
       if config.mode == :cli
         # CLI mode: load CLI components only
         require_relative 'cov_loupe/loaders/all_cli'
-        CoverageCLI.new.run(env_argv + cli_argv, env_arg_count: env_argv.size)
+        CoverageCLI.new.run(rest, config: config, global_args: global_args)
       else
         # MCP server mode: load MCP server components only
         require_relative 'cov_loupe/loaders/all_mcp'
@@ -267,13 +267,25 @@ module CovLoupe
     # be in one or the other; the error message itself cannot say which. A word in
     # COV_LOUPE_OPTS that is not an option (a subcommand), or a '--', ends the options, as it
     # would in a single parse of both, so the command line is then not parsed for options.
+    # Returns the validated config, the arguments after the options (the subcommand and its
+    # arguments), and the options typed on the command line, for usage hints. When
+    # COV_LOUPE_OPTS ended the options, the whole command line is in the arguments, and no
+    # options are returned for the hints.
     private def parse_global_options(env_argv, cli_argv)
       parser = ConfigParser.new
-      parse_options_from(parser, env_argv, from_env: true)
+      rest = parse_options_from(parser, env_argv, from_env: true)
       # The settings from COV_LOUPE_OPTS alone. A shallow copy is enough: the option
       # handlers replace values rather than change them.
       env_config = parser.config.dup
-      parse_options_from(parser, cli_argv, from_env: false) unless parser.options_ended?
+      if parser.options_ended?
+        rest += cli_argv
+        cli_options = []
+      else
+        rest = parse_options_from(parser, cli_argv, from_env: false)
+        # Parsing stops at the first non-option (order!), so the options, with any '--' that
+        # ended them, are a prefix.
+        cli_options = cli_argv.first(cli_argv.size - rest.size)
+      end
 
       begin
         parser.config.validate!
@@ -284,11 +296,14 @@ module CovLoupe
         # an invalid default is not its fault.
         report_global_usage_error(e, from_env: env_argv.any? && !valid_config?(env_config))
       end
-      parser.config
+      [parser.config, rest, cli_options]
     end
 
+    # Returns the arguments left after the options.
     private def parse_options_from(parser, args, from_env:)
-      parser.parse_options(args.dup)
+      rest = args.dup
+      parser.parse_options(rest)
+      rest
     rescue OptionParser::ParseError, ConfigurationError, UsageError => e
       report_global_usage_error(e, argv: args, from_env: from_env)
     end

@@ -3,38 +3,30 @@
 require 'spec_helper'
 
 RSpec.describe 'COV_LOUPE_OPTS Environment Variable' do
-  let(:cli) { CovLoupe::CoverageCLI.new }
+  # Runs CovLoupe.run with the CLI stubbed, and returns the config it would have run with.
+  def dispatched_config(*argv)
+    config = nil
+    cli = instance_double(CovLoupe::CoverageCLI)
+    allow(cli).to receive(:run) { |_args, **options| config = options[:config] }
+    allow(CovLoupe::CoverageCLI).to receive(:new).and_return(cli)
+    CovLoupe.run(argv)
+    config
+  end
 
   describe 'CLI option parsing from environment' do
     it 'parses simple options from COV_LOUPE_OPTS' do
       ENV['COV_LOUPE_OPTS'] = '--error-mode off --format json'
-      env_opts = CovLoupe.send(:extract_env_opts)
+      config = dispatched_config('summary', 'lib/foo.rb')
 
-      swallow_system_exit do
-        suppress_io do
-          cli.send(:run, env_opts + %w[summary lib/foo.rb])
-        end
-      end
-    rescue CovLoupe::Error
-      # Expected to fail due to missing file, but options should be parsed
-    ensure
-      expect(cli.config.error_mode).to eq(:off)
-      expect(cli.config.format).to eq(:json)
+      expect(config.error_mode).to eq(:off)
+      expect(config.format).to eq(:json)
     end
 
     it 'handles quoted options with spaces' do
       test_path = File.join(Dir.tmpdir, 'test path with spaces', 'coverage.json')
       ENV['COV_LOUPE_OPTS'] = "--coverage-file \"#{test_path}\""
-      env_opts = CovLoupe.send(:extract_env_opts)
 
-      exit_status = swallow_system_exit do
-        suppress_io do
-          cli.send(:run, env_opts + %w[--help])
-        end
-      end
-
-      expect(exit_status).to eq(0) # --help exits cleanly
-      expect(cli.config.coverage_file).to eq(test_path)
+      expect(dispatched_config.coverage_file).to eq(test_path)
     end
 
     it 'rejects setting log-file to stdout from environment' do
@@ -56,17 +48,8 @@ RSpec.describe 'COV_LOUPE_OPTS Environment Variable' do
 
     it 'command line arguments override environment options' do
       ENV['COV_LOUPE_OPTS'] = '--error-mode off'
-      env_opts = CovLoupe.send(:extract_env_opts)
 
-      begin
-        args = env_opts + %w[--error-mode debug summary lib/foo.rb]
-        suppress_io { cli.send(:run, args) }
-      rescue SystemExit, CovLoupe::Error
-        # Expected to fail, but options should be parsed
-      end
-
-      # Command line should override environment
-      expect(cli.config.error_mode).to eq(:debug)
+      expect(dispatched_config('--error-mode', 'debug', 'summary', 'lib/foo.rb').error_mode).to eq(:debug)
     end
 
     it 'handles malformed COV_LOUPE_OPTS gracefully' do
@@ -181,7 +164,7 @@ RSpec.describe 'COV_LOUPE_OPTS Environment Variable' do
       it "names COV_LOUPE_OPTS once, before the help line, for #{desc}" do
         ENV['COV_LOUPE_OPTS'] = opts
         args = argv.first.nil? ? argv.compact : [*argv, 'list']
-        _stdout, stderr, status = run_full_cli_with_status(*args)
+        _stdout, stderr, status = run_cli_with_status(*args)
 
         expect(status).to eq(CovLoupe::ExitCodes::USAGE)
         expect(stderr.scan('COV_LOUPE_OPTS (').size).to eq(1)
@@ -192,7 +175,7 @@ RSpec.describe 'COV_LOUPE_OPTS Environment Variable' do
 
     it 'lets the command line override an invalid --log-file in COV_LOUPE_OPTS' do
       ENV['COV_LOUPE_OPTS'] = '--log-file stdout'
-      _stdout, stderr, status = run_fixture_full_cli_with_status('-l', 'stderr', 'list')
+      _stdout, stderr, status = run_fixture_cli_with_status('-l', 'stderr', 'list')
 
       expect(status).to eq(CovLoupe::ExitCodes::SUCCESS)
       expect(stderr).not_to include('COV_LOUPE_OPTS (')
@@ -220,7 +203,7 @@ RSpec.describe 'COV_LOUPE_OPTS Environment Variable' do
     ].each do |desc, opts, argv|
       it "adds no note when #{desc}" do
         ENV['COV_LOUPE_OPTS'] = opts
-        _stdout, stderr, status = run_full_cli_with_status(*argv, 'list')
+        _stdout, stderr, status = run_cli_with_status(*argv, 'list')
 
         expect(status).to eq(CovLoupe::ExitCodes::USAGE)
         expect(stderr).not_to include('COV_LOUPE_OPTS (')
@@ -231,7 +214,7 @@ RSpec.describe 'COV_LOUPE_OPTS Environment Variable' do
     it 'names COV_LOUPE_OPTS when it stops the MCP server from starting' do
       allow(CovLoupe::MCPServer).to receive(:new)
       ENV['COV_LOUPE_OPTS'] = "-g 'lib/[ab'"
-      _stdout, stderr, status = run_full_cli_with_status('--mode', 'mcp')
+      _stdout, stderr, status = run_cli_with_status('--mode', 'mcp')
 
       expect(status).to eq(CovLoupe::ExitCodes::USAGE)
       expect(stderr).to include(note("-g 'lib/[ab'"))
@@ -250,7 +233,7 @@ RSpec.describe 'COV_LOUPE_OPTS Environment Variable' do
       it "does not parse #{argv.join(' ')} on the command line after #{opts.inspect} in COV_LOUPE_OPTS" do
         allow(CovLoupe::MCPServer).to receive(:new)
         ENV['COV_LOUPE_OPTS'] = opts
-        stdout, stderr, status = run_full_cli_with_status(*argv, 'list')
+        stdout, stderr, status = run_cli_with_status(*argv, 'list')
 
         expect(status).to eq(CovLoupe::ExitCodes::USAGE)
         expect(stdout).to eq('')
@@ -265,7 +248,7 @@ RSpec.describe 'COV_LOUPE_OPTS Environment Variable' do
     ['-h', '-v', '-p repo'].each do |opts|
       it "does not run #{opts} from COV_LOUPE_OPTS when a command-line argument is not valid UTF-8" do
         ENV['COV_LOUPE_OPTS'] = opts
-        stdout, stderr, status = run_full_cli_with_status("lib/\xFF.rb", 'list')
+        stdout, stderr, status = run_cli_with_status("lib/\xFF.rb", 'list')
 
         expect(status).to eq(CovLoupe::ExitCodes::USAGE)
         expect(stdout).to eq('')
@@ -277,7 +260,7 @@ RSpec.describe 'COV_LOUPE_OPTS Environment Variable' do
     # Only the global options are checked; later errors, even ones COV_LOUPE_OPTS caused, are not.
     it 'adds no note to an error found after the options are parsed' do
       ENV['COV_LOUPE_OPTS'] = '-c /no/such/coverage.json'
-      _stdout, stderr, status = run_full_cli_with_status('list')
+      _stdout, stderr, status = run_cli_with_status('list')
 
       expect(status).to eq(CovLoupe::ExitCodes::ERROR)
       expect(stderr).not_to include('COV_LOUPE_OPTS (')
@@ -289,14 +272,14 @@ RSpec.describe 'COV_LOUPE_OPTS Environment Variable' do
       value = "-g 'café/[ab'"
       allow(ENV).to receive(:[]).and_call_original
       allow(ENV).to receive(:[]).with('COV_LOUPE_OPTS').and_return(value.b)
-      _stdout, stderr, _status = run_fixture_full_cli_with_status('list')
+      _stdout, stderr, _status = run_fixture_cli_with_status('list')
 
       expect(stderr).to include(note(value))
     end
 
     # --path-for exists to print only a value, so its error must leave stdout empty.
     it 'reports an unknown --path-for name like other usage errors' do
-      stdout, stderr, status = run_full_cli_with_status('-p', 'bogus')
+      stdout, stderr, status = run_cli_with_status('-p', 'bogus')
 
       expect(status).to eq(CovLoupe::ExitCodes::USAGE)
       expect(stdout).to eq('')
@@ -312,7 +295,7 @@ RSpec.describe 'COV_LOUPE_OPTS Environment Variable' do
     # splitter as on the command line.
     it 'keeps a brace pattern whole' do
       ENV['COV_LOUPE_OPTS'] = "-f json -g 'lib/{foo,bar}.rb'"
-      stdout, _stderr, status = run_fixture_full_cli_with_status('list')
+      stdout, _stderr, status = run_fixture_cli_with_status('list')
 
       expect(status).to eq(0)
       files = JSON.parse(stdout)['files'].map { |row| row['file'] }
@@ -322,7 +305,7 @@ RSpec.describe 'COV_LOUPE_OPTS Environment Variable' do
     # An unclosed bracket is a usage error even for a per-file command, which ignores -g.
     it 'reports an unclosed bracket as a usage error for every command' do
       ENV['COV_LOUPE_OPTS'] = "-g 'lib/[ab'"
-      _stdout, stderr, status = run_fixture_full_cli_with_status('summary', 'lib/foo.rb')
+      _stdout, stderr, status = run_fixture_cli_with_status('summary', 'lib/foo.rb')
 
       expect(status).to eq(CovLoupe::ExitCodes::USAGE)
       expect(stderr).to include(%q(Unclosed '[' in --tracked-globs value: "lib/[ab"))
@@ -340,21 +323,6 @@ RSpec.describe 'COV_LOUPE_OPTS Environment Variable' do
 
         expect(CovLoupe::ConfigParser.parse(CovLoupe.send(:extract_env_opts)).tracked_globs).to eq(globs)
       end
-    end
-  end
-
-  describe 'integration with actual CLI usage' do
-    it 'works end-to-end with --coverage-file option' do
-      test_coverage_file = File.join(Dir.tmpdir, 'test_coverage', 'coverage.json')
-      ENV['COV_LOUPE_OPTS'] = "--coverage-file #{test_coverage_file} --format json"
-      env_opts = CovLoupe.send(:extract_env_opts)
-
-      swallow_system_exit do
-        suppress_io { cli.send(:run, env_opts + ['--help']) }
-      end
-
-      expect(cli.config.coverage_file).to eq(test_coverage_file)
-      expect(cli.config.format).to eq(:json)
     end
   end
 end

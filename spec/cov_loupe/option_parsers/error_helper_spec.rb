@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
+require 'cov_loupe/option_parsers/error_helper'
 
 OPTION_TESTS = {
   source:       {

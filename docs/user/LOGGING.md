@@ -16,8 +16,8 @@ than also being logged there; with `--error-mode debug`, the CLI follows it with
 the full stack trace (only its first 5 lines when logging to a file, which gets the
 full trace). Warnings and diagnostics about the coverage data can still
 appear on stderr. With a file target, the file receives the
-parameters line (for each run that gets past option parsing, including the
-default report) and the logged error (unless `--error-mode off` is used), and
+parameters line (for each run whose options are valid and whose subcommand,
+if any, is known) and the logged error (unless `--error-mode off` is used), and
 the user-facing message still appears on stderr. Invalid options and option
 values are rejected before logging is set up, so they appear only on stderr;
 other usage errors, such as an unknown subcommand or misplaced global options,

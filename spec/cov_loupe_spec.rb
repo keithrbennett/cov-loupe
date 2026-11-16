@@ -20,7 +20,8 @@ RSpec.describe CovLoupe do
           described_class.run(test_case[:argv])
 
           expect(described_class::CoverageCLI).to have_received(:new)
-          expect(cli).to have_received(:run).with(test_case[:argv], env_arg_count: 0)
+          expect(cli).to have_received(:run).with([], config: an_instance_of(CovLoupe::AppConfig),
+            global_args: test_case[:argv])
         else
           mcp_server = instance_double(described_class::MCPServer, run: nil)
           allow(described_class::MCPServer).to receive(:new).and_return(mcp_server)
@@ -148,7 +149,7 @@ RSpec.describe CovLoupe do
       allow(described_class::MCPServer).to receive(:new)
         .and_return(instance_double(described_class::MCPServer, run: nil))
 
-      _stdout, stderr, status = run_full_cli_with_status('--mode', 'mcp', '-g', 'lib/[ab')
+      _stdout, stderr, status = run_cli_with_status('--mode', 'mcp', '-g', 'lib/[ab')
 
       expect(status).to eq(described_class::ExitCodes::USAGE)
       expect(stderr).to include(%q(Unclosed '[' in --tracked-globs value: "lib/[ab"))

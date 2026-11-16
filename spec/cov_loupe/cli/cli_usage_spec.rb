@@ -95,8 +95,9 @@ RSpec.describe CovLoupe::CoverageCLI do
 
       it "accepts the suggested `#{correct}`" do
         cli = described_class.new
-        cli.send(:parse_options!, Shellwords.split(correct).drop(1))
-        cmd, cmd_args = cli.instance_variable_get(:@cmd), cli.instance_variable_get(:@cmd_args)
+        argv = Shellwords.split(correct).drop(1)
+        CovLoupe::ConfigParser.new.parse_options(argv)
+        cmd, *cmd_args = argv
         expect(cmd).to eq(args.find { |arg| CovLoupe::SUBCOMMANDS.include?(arg) })
         expect { cli.send(:check_for_misplaced_global_options, cmd, cmd_args) }.not_to raise_error
       end
@@ -109,9 +110,17 @@ RSpec.describe CovLoupe::CoverageCLI do
       expect(Shellwords.split(correct)).to eq(['cov-loupe', '-f', 'json', *args.first(3)])
     end
 
+    it 'keeps command-line options but leaves out COV_LOUPE_OPTS ones' do
+      ENV['COV_LOUPE_OPTS'] = '-g lib/**/*.rb'
+      _out, err, status = run_cli_with_status('-S', 'true', 'totals', '--format', 'json')
+      expect(status).to eq(2)
+      expect(err).to include("You used: cov-loupe -S true totals --format json\n",
+        "Correct: cov-loupe -S true --format json totals\n")
+    end
+
     it 'leaves out COV_LOUPE_OPTS arguments, which the user did not type' do
       ENV['COV_LOUPE_OPTS'] = '-g lib/**/*.rb'
-      _out, err, status = run_full_cli_with_status('totals', '--format', 'json')
+      _out, err, status = run_cli_with_status('totals', '--format', 'json')
       expect(status).to eq(2)
       expect(err).to include("You used: cov-loupe totals --format json\n",
         "Correct: cov-loupe --format json totals\n")
@@ -229,10 +238,9 @@ RSpec.describe CovLoupe::CoverageCLI do
       end
     end
 
-    # Through the full entry point, as the cov-loupe executable runs it
     context 'with an unknown subcommand' do
       it 'prints it to stderr exactly once' do
-        _out, err, status = run_full_cli_with_status('--log-file', 'stderr', 'bogus')
+        _out, err, status = run_cli_with_status('--log-file', 'stderr', 'bogus')
         expect(status).to eq(2)
         expect(err.scan('Unknown subcommand').size).to eq(1)
       end
@@ -240,11 +248,12 @@ RSpec.describe CovLoupe::CoverageCLI do
       it 'logs it to the --log-file given before it' do
         Dir.mktmpdir do |dir|
           log_path = File.join(dir, 'cov-loupe.log')
-          _out, err, status = run_full_cli_with_status('--log-file', log_path, 'bogus')
+          _out, err, status = run_cli_with_status('--log-file', log_path, 'bogus')
           expect(status).to eq(2)
           expect(err).to include('Unknown subcommand')
           expect(File.read(log_path))
             .to include('ERROR: Error in CLI: CovLoupe::UsageError: Unknown subcommand')
+          expect(File.read(log_path)).not_to include('CLI parameters')
         end
       end
     end
@@ -262,7 +271,7 @@ RSpec.describe CovLoupe::CoverageCLI do
     it 'reports an invalid option value only on stderr, before logging is set up' do
       Dir.mktmpdir do |dir|
         log_path = File.join(dir, 'cov-loupe.log')
-        _out, err, status = run_full_cli_with_status('--log-file', log_path, '--format', 'nope', 'list')
+        _out, err, status = run_cli_with_status('--log-file', log_path, '--format', 'nope', 'list')
         expect(status).to eq(2)
         expect(err.scan('Error: invalid argument').size).to eq(1)
         expect(File.exist?(log_path)).to be false
@@ -294,7 +303,9 @@ RSpec.describe CovLoupe::CoverageCLI do
     def run_with_handler(*argv)
       status = nil
       _result, _out, err = capture_io do
-        described_class.new(error_handler: handler).run(fixture_cli_args(*argv))
+        args = fixture_cli_args(*argv)
+        config = CovLoupe::ConfigParser.parse(args) # removes the options from args
+        described_class.new(error_handler: handler).run(args, config: config, global_args: [])
       rescue SystemExit => e
         status = e.status
       end
@@ -331,6 +342,27 @@ RSpec.describe CovLoupe::CoverageCLI do
       expect(err).to include('converted: boom')
       expect(err).not_to include('An unexpected error occurred')
     end
+  end
+
+  it 'shows a backtrace for an unknown subcommand with --error-mode debug' do
+    _out, err, status = run_fixture_cli_with_status('--error-mode', 'debug', 'bogus')
+    expect(status).to eq(2)
+    expect(err).to include("Unknown subcommand: 'bogus'")
+    expect(err).to match(%r{cov_loupe/cli\.rb:\d+:in })
+  end
+
+  it 'ignores a misplaced --error-mode; the usage error has no backtrace' do
+    _out, err, status = run_fixture_cli_with_status('totals', '-e', 'debug')
+    expect(status).to eq(2)
+    expect(err).to include('Global option(s) must come BEFORE the subcommand')
+    expect(err).not_to match(%r{\.rb:\d+:in })
+  end
+
+  it 'parses the global options once' do
+    allow(CovLoupe::OptionNormalizers).to receive(:normalize_format).and_call_original
+    _out, _err, status = run_fixture_cli_with_status('--format', 'json', 'totals')
+    expect(status).to eq(0)
+    expect(CovLoupe::OptionNormalizers).to have_received(:normalize_format).once
   end
 
   describe 'extra arguments detection' do
