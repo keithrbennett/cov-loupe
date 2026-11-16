@@ -5,13 +5,6 @@ require 'spec_helper'
 RSpec.describe 'COV_LOUPE_OPTS Environment Variable' do
   let(:cli) { CovLoupe::CoverageCLI.new }
 
-  around do |example|
-    original_value = ENV['COV_LOUPE_OPTS']
-    example.run
-  ensure
-    ENV['COV_LOUPE_OPTS'] = original_value
-  end
-
   describe 'CLI option parsing from environment' do
     it 'parses simple options from COV_LOUPE_OPTS' do
       ENV['COV_LOUPE_OPTS'] = '--error-mode off --format json'
@@ -89,7 +82,7 @@ RSpec.describe 'COV_LOUPE_OPTS Environment Variable' do
       { desc: 'returns empty array when COV_LOUPE_OPTS is empty', env_value: '' },
     ].each do |test_case|
       it test_case[:desc] do
-        ENV['COV_LOUPE_OPTS'] = test_case[:env_value] if test_case[:env_value]
+        ENV['COV_LOUPE_OPTS'] = test_case[:env_value]
         opts = CovLoupe.send(:extract_env_opts)
         expect(opts).to eq([])
       end
@@ -303,7 +296,6 @@ RSpec.describe 'COV_LOUPE_OPTS Environment Variable' do
 
     # --path-for exists to print only a value, so its error must leave stdout empty.
     it 'reports an unknown --path-for name like other usage errors' do
-      ENV['COV_LOUPE_OPTS'] = nil
       stdout, stderr, status = run_full_cli_with_status('-p', 'bogus')
 
       expect(status).to eq(CovLoupe::ExitCodes::USAGE)

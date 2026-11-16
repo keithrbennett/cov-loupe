@@ -5,13 +5,6 @@ require 'spec_helper'
 RSpec.describe CovLoupe::OptionParsers::EnvOptionsParser do
   let(:parser) { described_class.new }
 
-  around do |example|
-    original_value = ENV['COV_LOUPE_OPTS']
-    example.run
-  ensure
-    ENV['COV_LOUPE_OPTS'] = original_value
-  end
-
   describe '#parse_env_opts' do
     context 'with valid inputs' do
       [
@@ -62,11 +55,7 @@ RSpec.describe CovLoupe::OptionParsers::EnvOptionsParser do
         },
       ].each do |tc|
         it "handles #{tc[:desc]}" do
-          if tc[:env].nil?
-            ENV.delete('COV_LOUPE_OPTS')
-          else
-            ENV['COV_LOUPE_OPTS'] = tc[:env]
-          end
+          ENV['COV_LOUPE_OPTS'] = tc[:env]
           expect(parser.parse_env_opts).to eq(tc[:expected])
         end
       end
@@ -232,6 +221,13 @@ RSpec.describe CovLoupe::OptionParsers::EnvOptionsParser do
   end
 
   describe 'custom environment variable name' do
+    around do |example|
+      originals = ENV.to_h.slice('CUSTOM_OPTS', 'MY_CUSTOM_VAR')
+      example.run
+    ensure
+      %w[CUSTOM_OPTS MY_CUSTOM_VAR].each { |name| ENV[name] = originals[name] }
+    end
+
     it 'uses custom environment variable when specified' do
       custom_parser = described_class.new(env_var: 'CUSTOM_OPTS')
       ENV['CUSTOM_OPTS'] = '--error-mode off'

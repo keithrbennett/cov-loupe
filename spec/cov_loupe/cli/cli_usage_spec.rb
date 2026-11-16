@@ -110,14 +110,11 @@ RSpec.describe CovLoupe::CoverageCLI do
     end
 
     it 'leaves out COV_LOUPE_OPTS arguments, which the user did not type' do
-      original = ENV.fetch('COV_LOUPE_OPTS', nil)
       ENV['COV_LOUPE_OPTS'] = '-g lib/**/*.rb'
       _out, err, status = run_full_cli_with_status('totals', '--format', 'json')
       expect(status).to eq(2)
       expect(err).to include("You used: cov-loupe totals --format json\n",
         "Correct: cov-loupe --format json totals\n")
-    ensure
-      ENV['COV_LOUPE_OPTS'] = original
     end
   end
 

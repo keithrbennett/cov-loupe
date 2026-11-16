@@ -82,6 +82,17 @@ RSpec.configure do |config|
     CovLoupe.active_log_file = File::NULL
   end
 
+  # Run every example without COV_LOUPE_OPTS, so options exported in the developer's shell
+  # (such as -p repo) cannot change results. Afterward the shell's value is put back, which
+  # also discards any value the example set. Suite and context hooks are not covered; none
+  # reads COV_LOUPE_OPTS.
+  config.around do |example|
+    original_opts = ENV.delete('COV_LOUPE_OPTS')
+    example.run
+  ensure
+    ENV['COV_LOUPE_OPTS'] = original_opts
+  end
+
   config.before do
     CovLoupe::ModelDataCache.instance.clear
     # Decide the default output character mode as on a UTF-8 terminal, whatever the locale the

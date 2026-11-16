@@ -41,6 +41,10 @@ Specs see captured output as UTF-8 and pick the default output character mode as
 terminal; a spec that needs another encoding sets it explicitly (see `with_default_encodings` in
 `spec/support/io_helpers.rb`).
 
+Each example runs with `COV_LOUPE_OPTS` unset, so options exported in your shell do not affect
+the examples; suite-level hooks still see them, but none reads them. A spec that needs the
+variable sets it, and `spec/spec_helper.rb` restores your value afterward.
+
 ## Project-Specific Patterns
 
 **All Ruby files start with:**

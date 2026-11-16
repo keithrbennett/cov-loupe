@@ -60,11 +60,7 @@ RSpec.describe CovLoupe do
       end
     end
 
-    # COV_LOUPE_OPTS is cleared so that options exported in the developer's shell, such as
-    # -p repo, cannot change the result.
     it 'exits with code 2 and shows the message for configuration errors' do
-      allow(ENV).to receive(:[]).and_call_original
-      allow(ENV).to receive(:[]).with('COV_LOUPE_OPTS').and_return(nil)
       stderr = capture_stderr do
         expect { described_class.run(%w[--log-file stdout]) }.to raise_error(SystemExit) do |error|
           expect(error.status).to eq(CovLoupe::ExitCodes::USAGE)
