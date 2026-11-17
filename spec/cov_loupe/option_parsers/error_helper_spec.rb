@@ -49,7 +49,7 @@ RSpec.describe CovLoupe::OptionParsers::ErrorHelper do
     context 'with invalid enumerated option values' do
       OPTION_TESTS.each_value do |config|
         context "when parsing #{config[:long]} option" do
-          let(:error) { OptionParser::InvalidArgument.new('invalid argument: xyz') }
+          let(:error) { OptionParser::InvalidArgument.new('xyz') }
 
           it 'suggests valid values for space-separated form with invalid value' do
             expect_error_output(
@@ -81,7 +81,7 @@ RSpec.describe CovLoupe::OptionParsers::ErrorHelper do
 
       context 'when handling --source option edge cases' do
         it 'suggests valid values when value is missing' do
-          error = OptionParser::InvalidArgument.new('missing argument: --source')
+          error = OptionParser::MissingArgument.new('--source')
           expect_error_output(
             error: error,
             argv:  %w[--source],
@@ -90,7 +90,7 @@ RSpec.describe CovLoupe::OptionParsers::ErrorHelper do
         end
 
         it 'suggests valid values when next token looks like an option' do
-          error = OptionParser::InvalidArgument.new('invalid argument: --other')
+          error = OptionParser::InvalidArgument.new('--source', '--other-option')
           expect_error_output(
             error: error,
             argv:  %w[--source --other-option],
@@ -100,14 +100,14 @@ RSpec.describe CovLoupe::OptionParsers::ErrorHelper do
       end
 
       context 'when handling raise-on-stale (boolean) option edge cases' do
-        let(:boolean_error) { OptionParser::InvalidOption.new('invalid option: --raise-on-stale=maybe') }
+        let(:boolean_error) { OptionParser::InvalidArgument.new('--raise-on-stale=maybe') }
 
         it 'does not suggest enum values for invalid boolean value' do
           stderr_output = capture_stderr do
             helper.handle_option_parser_error(boolean_error, argv: %w[--raise-on-stale=maybe])
           end
 
-          expect(stderr_output).to include('invalid option')
+          expect(stderr_output).to include('invalid argument: --raise-on-stale=maybe')
           expect(stderr_output).not_to include('Valid values')
         end
       end
@@ -115,7 +115,7 @@ RSpec.describe CovLoupe::OptionParsers::ErrorHelper do
 
     context 'with multiple options in argv' do
       it 'correctly identifies the problematic option among valid options' do
-        error = OptionParser::InvalidArgument.new('invalid argument: bad')
+        error = OptionParser::InvalidArgument.new('bad')
         expect_error_output(
           error: error,
           argv:  %w[--coverage-file coverage --source bad --format json],
@@ -124,7 +124,7 @@ RSpec.describe CovLoupe::OptionParsers::ErrorHelper do
       end
 
       it 'handles equal form mixed with other options' do
-        error = OptionParser::InvalidArgument.new('invalid argument: invalid')
+        error = OptionParser::InvalidArgument.new('invalid')
         expect_error_output(
           error: error,
           argv:  %w[--format json --sort-order=invalid --coverage-file coverage],
@@ -135,7 +135,7 @@ RSpec.describe CovLoupe::OptionParsers::ErrorHelper do
 
     context 'when option is not an enumerated type' do
       it 'shows generic error message without enum hint' do
-        error = OptionParser::InvalidArgument.new('invalid option: --unknown')
+        error = OptionParser::InvalidOption.new('--unknown')
 
         stderr_output = capture_stderr do
           helper.handle_option_parser_error(error, argv: %w[--unknown])
@@ -149,7 +149,7 @@ RSpec.describe CovLoupe::OptionParsers::ErrorHelper do
 
     context 'when invalid option matches a subcommand' do
       it 'suggests using it as a subcommand instead' do
-        error = OptionParser::InvalidOption.new('invalid option: --summary')
+        error = OptionParser::InvalidOption.new('--summary')
 
         stderr_output = capture_stderr do
           helper.handle_option_parser_error(error, argv: %w[--summary])
@@ -162,7 +162,7 @@ RSpec.describe CovLoupe::OptionParsers::ErrorHelper do
 
     context 'when exiting after invalid option' do
       it 'exits with status 2' do
-        error = OptionParser::InvalidArgument.new('invalid argument: xyz')
+        error = OptionParser::InvalidArgument.new('xyz')
 
         stderr_output = capture_stderr do
           expect do
@@ -178,7 +178,7 @@ RSpec.describe CovLoupe::OptionParsers::ErrorHelper do
 
     context 'when customizing usage hint' do
       it 'uses custom usage hint when provided' do
-        error = OptionParser::InvalidArgument.new('invalid argument: xyz')
+        error = OptionParser::InvalidArgument.new('xyz')
 
         expect do
           helper.handle_option_parser_error(error, argv: %w[--source xyz],
@@ -213,7 +213,7 @@ RSpec.describe CovLoupe::OptionParsers::ErrorHelper do
     end
 
     it 'does not show enum hint when all enum values are valid' do
-      error = OptionParser::MissingArgument.new('missing argument: --coverage-file')
+      error = OptionParser::MissingArgument.new('--coverage-file')
 
       stderr_output = capture_stderr do
         helper.handle_option_parser_error(error, argv: %w[--source full --coverage-file])

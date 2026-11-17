@@ -10,24 +10,11 @@ RSpec.describe CovLoupe::OptionNormalizers do
       end
     end
 
-    normalized_cases = invalid_cases.map do |c|
-      c.is_a?(Hash) ? [c.fetch(:input), c[:error_fragment]] : [c, c]
-    end
-    normalized_cases.each do |input_val, fragment_val|
-      context "when input is #{input_val.inspect}" do
-        let(:input) { input_val }
-        let(:fragment) { fragment_val }
-
-        it 'raises OptionParser::InvalidArgument' do
-          expect { described_class.send(method_name, input) }
-            .to raise_error(OptionParser::InvalidArgument) { |error|
-              expect(error.message).to include('invalid argument')
-              fragment_str = fragment.to_s
-              unless fragment_str.empty?
-                expect(error.message).to include(fragment_str)
-              end
-            }
-        end
+    # The exact message: the exception adds the reason, so a normalizer passes only the value.
+    invalid_cases.each do |input|
+      it "raises OptionParser::InvalidArgument for #{input.inspect}" do
+        expect { described_class.send(method_name, input) }
+          .to raise_error(OptionParser::InvalidArgument, "invalid argument: #{input}")
       end
     end
   end
@@ -107,7 +94,7 @@ RSpec.describe CovLoupe::OptionNormalizers do
     context 'with a single character not in the map' do
       it 'raises OptionParser::InvalidArgument' do
         expect { described_class.normalize_format('X') }
-          .to raise_error(OptionParser::InvalidArgument)
+          .to raise_error(OptionParser::InvalidArgument, 'invalid argument: X')
       end
     end
 
@@ -198,7 +185,7 @@ RSpec.describe CovLoupe::OptionNormalizers do
 
     it 'raises on invalid values' do
       expect { described_class.normalize_mode('bad') }
-        .to raise_error(OptionParser::InvalidArgument)
+        .to raise_error(OptionParser::InvalidArgument, 'invalid argument: bad')
     end
   end
 

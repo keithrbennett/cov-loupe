@@ -2,7 +2,10 @@
 
 module CovLoupe
   # Shared normalization logic for CLI and MCP tool options. Each normalizer raises
-  # OptionParser::InvalidArgument on an invalid value.
+  # OptionParser::InvalidArgument on an invalid value, with only the value as its argument.
+  # The exception adds "invalid argument:"; when the value comes from an option handler,
+  # OptionParser also adds the option (`--format bogus`) or, for `--format=bogus`, puts the
+  # whole argument in place of the value.
   #
   # All normalizers accept both full names and single-character abbreviations.
   #
@@ -108,7 +111,7 @@ module CovLoupe
       normalized = SORT_ORDER_MAP[value.to_s.downcase]
       return normalized if normalized
 
-      raise OptionParser::InvalidArgument, "invalid argument: #{value}"
+      raise OptionParser::InvalidArgument, value.to_s
     end
 
     # Normalize source mode value.
@@ -120,7 +123,7 @@ module CovLoupe
       return nil if normalized == :none
       return normalized if normalized
 
-      raise OptionParser::InvalidArgument, "invalid argument: #{value}"
+      raise OptionParser::InvalidArgument, value.to_s
     end
 
     # Normalize error mode value.
@@ -131,7 +134,7 @@ module CovLoupe
       normalized = ERROR_MODE_MAP[value.to_s.downcase]
       return normalized if normalized
 
-      raise OptionParser::InvalidArgument, "invalid argument: #{value}"
+      raise OptionParser::InvalidArgument, value.to_s
     end
 
     # Normalize format value.
@@ -144,12 +147,12 @@ module CovLoupe
 
       # Only allow case-insensitive match for multi-character keys
       # to avoid single-char shortcuts like 'J' falling through to 'j'
-      raise OptionParser::InvalidArgument, "invalid argument: #{value}" if value.to_s.length == 1
+      raise OptionParser::InvalidArgument, value.to_s if value.to_s.length == 1
 
       normalized = FORMAT_MAP[resolve_format_code(value.to_s.downcase)]
       return normalized if normalized
 
-      raise OptionParser::InvalidArgument, "invalid argument: #{value}"
+      raise OptionParser::InvalidArgument, value.to_s
     end
 
     # Normalize mode value (cli or mcp).
@@ -160,7 +163,7 @@ module CovLoupe
       normalized = MODE_MAP[value.to_s.downcase]
       return normalized if normalized
 
-      raise OptionParser::InvalidArgument, "invalid argument: #{value}"
+      raise OptionParser::InvalidArgument, value.to_s
     end
 
     # Normalize output_chars value.
@@ -172,7 +175,7 @@ module CovLoupe
       normalized = OUTPUT_CHARS_MAP[value.to_s.downcase]
       return normalized if normalized
 
-      raise OptionParser::InvalidArgument, "invalid argument: #{value}"
+      raise OptionParser::InvalidArgument, value.to_s
     end
   end
 end

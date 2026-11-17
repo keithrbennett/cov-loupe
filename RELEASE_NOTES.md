@@ -201,6 +201,11 @@
 
 ### Other Changes
 
+- **Invalid option values no longer repeat "invalid argument".** An invalid value for
+  `--format`, `--sort-order`, `--source`, `--error-mode`, `--mode` or `--output-chars`,
+  given as a separate argument, was reported as
+  `Error: invalid argument: --format invalid argument: bogus`; it now reads
+  `Error: invalid argument: --format bogus`. The `--format=bogus` form was not affected.
 - **A misplaced `--error-mode` no longer changes how its error is shown.** Global options
   after the subcommand are rejected, but `--error-mode` used to be read from anywhere in
   the arguments first, so a misplaced `-e debug`, as in `cov-loupe totals -e debug` or

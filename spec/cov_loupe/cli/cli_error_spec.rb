@@ -190,7 +190,7 @@ RSpec.describe CovLoupe::CoverageCLI do
       },
       '--error-mode bogus (enum space)'  => {
         args:              ['--error-mode', 'bogus', 'list'],
-        expected_messages: ['invalid argument: bogus'],
+        expected_messages: ["Error: invalid argument: --error-mode bogus\n"],
       },
       '--no-such-option'                 => {
         args:              ['--no-such-option'],
