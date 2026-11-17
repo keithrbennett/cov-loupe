@@ -65,10 +65,10 @@ module CovLoupe
             )
 
             sort_order_sym = OptionNormalizers.normalize_sort_order(
-              sort_order || BaseTool::DEFAULT_SORT_ORDER, strict: true
+              sort_order || BaseTool::DEFAULT_SORT_ORDER
             )
 
-            format_sym = OptionNormalizers.normalize_format(format || 'json', strict: true)
+            format_sym = OptionNormalizers.normalize_format(format || 'json')
 
             presenter = Presenters::ProjectCoveragePresenter.new(
               model:          model,

@@ -1,11 +1,8 @@
 # frozen_string_literal: true
 
 module CovLoupe
-  # Shared normalization logic for CLI and MCP tool options.
-  #
-  # Provides two modes for each normalizer:
-  #   - strict: true  → raise OptionParser::InvalidArgument on invalid values
-  #   - strict: false → return a default value (nil or specified default) on invalid values
+  # Shared normalization logic for CLI and MCP tool options. Each normalizer raises
+  # OptionParser::InvalidArgument on an invalid value.
   #
   # All normalizers accept both full names and single-character abbreviations.
   #
@@ -107,97 +104,75 @@ module CovLoupe
       'ascii'   => :ascii,
     }.freeze
 
-    module_function def normalize_sort_order(value, strict: true)
+    module_function def normalize_sort_order(value)
       normalized = SORT_ORDER_MAP[value.to_s.downcase]
       return normalized if normalized
-      raise OptionParser::InvalidArgument, "invalid argument: #{value}" if strict
 
-      nil
+      raise OptionParser::InvalidArgument, "invalid argument: #{value}"
     end
 
     # Normalize source mode value.
-    # @param value [String, Symbol, nil] The value to normalize
-    # @param strict [Boolean] If true, raises on invalid value; if false, returns nil
-    # @return [Symbol, nil] The normalized symbol or nil if invalid and not strict
-    # @raise [OptionParser::InvalidArgument] If strict and value is invalid
-    module_function def normalize_source_mode(value, strict: true)
+    # @param value [String, Symbol] The value to normalize
+    # @return [Symbol, nil] The normalized symbol, or nil for none
+    # @raise [OptionParser::InvalidArgument] If value is invalid
+    module_function def normalize_source_mode(value)
       normalized = SOURCE_MODE_MAP[value.to_s.downcase]
       return nil if normalized == :none
       return normalized if normalized
-      raise OptionParser::InvalidArgument, "invalid argument: #{value}" if strict
 
-      nil
+      raise OptionParser::InvalidArgument, "invalid argument: #{value}"
     end
 
     # Normalize error mode value.
-    # @param value [String, Symbol, nil] The value to normalize
-    # @param strict [Boolean] If true, raises on invalid value; if false, returns default
-    # @param default [Symbol] The default value to return if invalid and not strict
-    # @return [Symbol] The normalized symbol or default if invalid and not strict
-    # @raise [OptionParser::InvalidArgument] If strict and value is invalid
-    module_function def normalize_error_mode(value, strict: true, default: :log)
+    # @param value [String, Symbol] The value to normalize
+    # @return [Symbol] The normalized symbol
+    # @raise [OptionParser::InvalidArgument] If value is invalid
+    module_function def normalize_error_mode(value)
       normalized = ERROR_MODE_MAP[value.to_s.downcase]
       return normalized if normalized
 
-      raise OptionParser::InvalidArgument, "invalid argument: #{value}" if strict
-
-      default
+      raise OptionParser::InvalidArgument, "invalid argument: #{value}"
     end
 
     # Normalize format value.
     # @param value [String, Symbol] The value to normalize
-    # @param strict [Boolean] If true, raises on invalid value; if false, returns nil
-    # @return [Symbol, nil] The normalized symbol or nil if invalid and not strict
-    # @raise [OptionParser::InvalidArgument] If strict and value is invalid
-    module_function def normalize_format(value, strict: true)
+    # @return [Symbol] The normalized symbol
+    # @raise [OptionParser::InvalidArgument] If value is invalid
+    module_function def normalize_format(value)
       normalized = FORMAT_MAP[resolve_format_code(value)]
       return normalized if normalized
 
       # Only allow case-insensitive match for multi-character keys
       # to avoid single-char shortcuts like 'J' falling through to 'j'
-      if value.to_s.length == 1
-        raise OptionParser::InvalidArgument, "invalid argument: #{value}" if strict
-
-        return nil
-      end
+      raise OptionParser::InvalidArgument, "invalid argument: #{value}" if value.to_s.length == 1
 
       normalized = FORMAT_MAP[resolve_format_code(value.to_s.downcase)]
       return normalized if normalized
 
-      raise OptionParser::InvalidArgument, "invalid argument: #{value}" if strict
-
-      nil
+      raise OptionParser::InvalidArgument, "invalid argument: #{value}"
     end
 
     # Normalize mode value (cli or mcp).
     # @param value [String, Symbol] The value to normalize
-    # @param strict [Boolean] If true, raises on invalid value; if false, returns default
-    # @param default [Symbol] The default value to return if invalid and not strict
     # @return [Symbol] The normalized symbol (:cli or :mcp)
-    # @raise [OptionParser::InvalidArgument] If strict and value is invalid
-    module_function def normalize_mode(value, strict: true, default: :cli)
+    # @raise [OptionParser::InvalidArgument] If value is invalid
+    module_function def normalize_mode(value)
       normalized = MODE_MAP[value.to_s.downcase]
       return normalized if normalized
 
-      raise OptionParser::InvalidArgument, "invalid argument: #{value}" if strict
-
-      default
+      raise OptionParser::InvalidArgument, "invalid argument: #{value}"
     end
 
     # Normalize output_chars value.
     # Chooses Unicode (fancy) or ASCII table borders and markers.
     # @param value [String, Symbol] The value to normalize
-    # @param strict [Boolean] If true, raises on invalid value; if false, returns default
-    # @param default [Symbol] The default value to return if invalid and not strict
     # @return [Symbol] The normalized symbol (:default, :fancy, or :ascii)
-    # @raise [OptionParser::InvalidArgument] If strict and value is invalid
-    module_function def normalize_output_chars(value, strict: true, default: :default)
+    # @raise [OptionParser::InvalidArgument] If value is invalid
+    module_function def normalize_output_chars(value)
       normalized = OUTPUT_CHARS_MAP[value.to_s.downcase]
       return normalized if normalized
 
-      raise OptionParser::InvalidArgument, "invalid argument: #{value}" if strict
-
-      default
+      raise OptionParser::InvalidArgument, "invalid argument: #{value}"
     end
   end
 end

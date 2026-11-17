@@ -73,15 +73,15 @@ module CovLoupe
         '-f', '--format FORMAT', String,
         "Output format: #{OptionNormalizers.available_format_choices.join('|')} (default: table)"
       ) do |value|
-        config.format = normalize_format(value)
+        config.format = OptionNormalizers.normalize_format(value)
       end
       parser.on('-o', '--sort-order ORDER', String,
         'Sort order for list: a[scending]|d[escending] (default descending)') do |value|
-        config.sort_order = normalize_sort_order(value)
+        config.sort_order = OptionNormalizers.normalize_sort_order(value)
       end
       parser.on('-s', '--source MODE', String,
         'Source display: f[ull]|u[ncovered]|n[one] (default: none)') do |value|
-        config.source_mode = normalize_source_mode(value)
+        config.source_mode = OptionNormalizers.normalize_source_mode(value)
       end
       parser.on('-n', '--context-lines N', Integer,
         'Context lines around uncovered lines (non-negative, default: 2)') do |value|
@@ -127,7 +127,7 @@ module CovLoupe
       end
       parser.on('-m', '--mode MODE', String,
         'Execution mode: c[li]|m[cp] (default: cli)') do |value|
-        config.mode = normalize_mode(value)
+        config.mode = OptionNormalizers.normalize_mode(value)
       end
       parser.on('--[no-]allow-code-predicates',
         'MCP mode: register the project_validate tool, which runs client-supplied',
@@ -140,14 +140,14 @@ module CovLoupe
         '  log:   log errors to the log target (the CLI does not log them',
         '         to stderr, where it already prints them)',
         '  debug: as log, with full backtraces; the CLI also prints a backtrace') do |value|
-        config.error_mode = normalize_error_mode(value)
+        config.error_mode = OptionNormalizers.normalize_error_mode(value)
       end
       parser.on('-O', '--output-chars MODE', String,
         'Output character mode: d[efault]|f[ancy]|a[scii] (default: default)',
         '  default: UTF-8 encoding uses fancy (Unicode), else ascii',
         '  fancy:   draw tables and markers with Unicode characters',
         '  ascii:   draw tables and markers with ASCII; JSON escapes non-ASCII') do |value|
-        config.output_chars = normalize_output_chars(value)
+        config.output_chars = OptionNormalizers.normalize_output_chars(value)
       end
       parser.on('-v', '--version', 'Print version and exit.') do
         puts CovLoupe::VERSION
@@ -179,30 +179,6 @@ module CovLoupe
           cov-loupe --source uncovered --context-lines 2 uncovered lib/foo.rb
           cov-loupe --format json totals
         EXAMPLES
-    end
-
-    private def normalize_sort_order(value)
-      OptionNormalizers.normalize_sort_order(value, strict: true)
-    end
-
-    private def normalize_source_mode(value)
-      OptionNormalizers.normalize_source_mode(value, strict: true)
-    end
-
-    private def normalize_error_mode(value)
-      OptionNormalizers.normalize_error_mode(value, strict: true)
-    end
-
-    private def normalize_format(value)
-      OptionNormalizers.normalize_format(value, strict: true)
-    end
-
-    private def normalize_mode(value)
-      OptionNormalizers.normalize_mode(value, strict: true)
-    end
-
-    private def normalize_output_chars(value)
-      OptionNormalizers.normalize_output_chars(value, strict: true)
     end
   end
 end
