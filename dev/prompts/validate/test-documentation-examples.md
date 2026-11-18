@@ -78,7 +78,7 @@ code looks wrong, the code.
 ## Common Causes
 
 - Renamed or removed options and subcommands
-- Global options placed after the subcommand (cov-loupe requires them before)
+- Options that come only before the subcommand (`-m`, `-h`, `-v`, `-p`, `--allow-code-predicates`) placed after it
 - Changed JSON fields, table columns, or error text
 - Working-directory or path assumptions
 - Missing setup steps
@@ -109,21 +109,20 @@ Otherwise, write a report like this:
 
 **Command:**
 ```bash
-cov-loupe list --format json
+cov-loupe list --mode cli
 ```
 
-**Expected:** JSON output with coverage data
+**Expected:** The coverage table
 
 **Actual:**
 ```text
-Global option(s) must come BEFORE the subcommand.
-You used: cov-loupe list --format json
-Correct: cov-loupe --format json list
+Error: --mode must come before the subcommand, not after 'list'.
+Run 'cov-loupe --help' for usage information.
 ```
 
-**Suggested Fix:** Put the global option before the subcommand:
+**Suggested Fix:** Put the option before the subcommand:
 ```bash
-cov-loupe --format json list
+cov-loupe --mode cli list
 ```
 
 ## Checked, Not Run

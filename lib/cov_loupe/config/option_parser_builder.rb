@@ -13,6 +13,13 @@ module CovLoupe
   class OptionParserBuilder
     HORIZONTAL_RULE = '-' * 79
 
+    # Options that may come only before the subcommand. They select the mode, or print
+    # something and exit, so they have no meaning for a subcommand.
+    BEFORE_SUBCOMMAND_ONLY = %w[
+      -h --help -m --mode -v --version -p --path-for
+      --allow-code-predicates --no-allow-code-predicates
+    ].freeze
+
     attr_reader :config
 
     def initialize(config)
@@ -30,10 +37,21 @@ module CovLoupe
       end
     end
 
+    # A parser for the arguments after a subcommand: the global options that take values,
+    # without help text and without the options in BEFORE_SUBCOMMAND_ONLY.
+    def build_subcommand_option_parser
+      require 'optparse'
+      OptionParser.new do |parser|
+        # OptionParser's built-in --help, --version and completion options would print and exit.
+        parser.base.long.clear
+        define_options(parser, after_subcommand: true)
+      end
+    end
+
     private def configure_banner(parser)
       parser.banner = <<~BANNER
         #{HORIZONTAL_RULE}
-        Usage:                 cov-loupe [options] [subcommand] [args]  (default subcommand: list)
+        Usage:                 cov-loupe [options] [subcommand] [options] [args]  (default subcommand: list)
         Repository:            #{Resources::REPOSITORY_URL}
         Documentation (Web):   #{Resources::DOCUMENTATION_WEB_URL}
         Documentation (Local): #{Resources::LOCAL_README_PATH}
@@ -59,7 +77,8 @@ module CovLoupe
         SUBCOMMANDS
     end
 
-    private def define_options(parser)
+    # With after_subcommand, the options in BEFORE_SUBCOMMAND_ONLY are left out.
+    private def define_options(parser, after_subcommand: false)
       parser.separator 'Options:'
       parser.on('-c', '--coverage-file PATH', String,
         'Path to SimpleCov coverage.json, or to a directory containing it',
@@ -117,23 +136,17 @@ module CovLoupe
         "Example: --tracked-globs 'lib/**/*.rb,app/{models,controllers}/**/*.rb'") do |value|
         config.tracked_globs = GlobListSplitter.split(value)
       end
-      parser.on('-h', '--help', 'Show help') do
-        puts parser
-        raise CliExit, ExitCodes::SUCCESS
+      unless after_subcommand
+        parser.on('-h', '--help', 'Show help (only before the subcommand)') do
+          puts parser
+          raise CliExit, ExitCodes::SUCCESS
+        end
       end
       parser.on('-l', '--log-file PATH', String,
         'Log target (default stderr, use a file path for persistent logging, off to disable)') do |value|
         config.log_file = value
       end
-      parser.on('-m', '--mode MODE', String,
-        'Execution mode: c[li]|m[cp] (default: cli)') do |value|
-        config.mode = OptionNormalizers.normalize_mode(value)
-      end
-      parser.on('--[no-]allow-code-predicates',
-        'MCP mode: register the project_validate tool, which runs client-supplied',
-        'Ruby with full process privileges (default: off; ignored in CLI mode)') do |value|
-        config.allow_code_predicates = value
-      end
+      define_mode_options(parser) unless after_subcommand
       parser.on('-e', '--error-mode MODE', String,
         'Error handling mode: o[ff]|l[og]|d[ebug] (default: log)',
         '  off:   no error logging',
@@ -149,12 +162,30 @@ module CovLoupe
         '  ascii:   draw tables and markers with ASCII; JSON escapes non-ASCII') do |value|
         config.output_chars = OptionNormalizers.normalize_output_chars(value)
       end
-      parser.on('-v', '--version', 'Print version and exit.') do
+      define_exit_options(parser) unless after_subcommand
+    end
+
+    private def define_mode_options(parser)
+      parser.on('-m', '--mode MODE', String,
+        'Execution mode: c[li]|m[cp] (default: cli; only before the subcommand)') do |value|
+        config.mode = OptionNormalizers.normalize_mode(value)
+      end
+      parser.on('--[no-]allow-code-predicates',
+        'MCP mode: register the project_validate tool, which runs client-supplied',
+        'Ruby with full process privileges (default: off; ignored in CLI mode;',
+        'only before the subcommand)') do |value|
+        config.allow_code_predicates = value
+      end
+    end
+
+    private def define_exit_options(parser)
+      parser.on('-v', '--version', 'Print version and exit (only before the subcommand).') do
         puts CovLoupe::VERSION
         raise CliExit, ExitCodes::SUCCESS
       end
       parser.on('-p', '--path-for NAME', String,
-        'Print resource path/URL and exit. NAME: repo, docs, docs-local.') do |value|
+        'Print resource path/URL and exit (only before the subcommand).',
+        'NAME: repo, docs, docs-local.') do |value|
         # An unknown NAME raises UsageError, which the caller reports like any other usage error.
         puts Resources.cli_url_for(value)
         raise CliExit, ExitCodes::SUCCESS
@@ -165,6 +196,7 @@ module CovLoupe
       parser.separator <<~ENVIRONMENT
         Environment:
           COV_LOUPE_OPTS can be used to set default options. Command-line arguments override these defaults.
+          It may contain only options (no subcommand, arguments or '--').
           Example: export COV_LOUPE_OPTS="--format json --sort-order ascending"
 
       ENVIRONMENT
@@ -173,10 +205,14 @@ module CovLoupe
     private def define_examples(parser)
       parser.separator <<~EXAMPLES
 
+        Options can come before or after the subcommand, except those marked
+        "only before the subcommand". After the subcommand, a path starting with '-'
+        must follow '--' (e.g. cov-loupe summary -- -odd.rb).
+
         Examples:
-          cov-loupe --coverage-file coverage list
-          cov-loupe --format json --coverage-file coverage summary lib/foo.rb
-          cov-loupe --source uncovered --context-lines 2 uncovered lib/foo.rb
+          cov-loupe list --coverage-file coverage
+          cov-loupe summary lib/foo.rb --format json --coverage-file coverage
+          cov-loupe uncovered lib/foo.rb --source uncovered --context-lines 2
           cov-loupe --format json totals
         EXAMPLES
     end

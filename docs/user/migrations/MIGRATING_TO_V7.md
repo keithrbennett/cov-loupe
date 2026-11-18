@@ -25,6 +25,7 @@ This document describes the breaking changes introduced in version 7.0.0.
 - [Source and Predicate Files Are Read as UTF-8](#source-and-predicate-files-are-read-as-utf-8)
 - [`--tracked-globs` Split Outside Braces and Brackets](#tracked-globs-split-outside-braces-and-brackets)
 - [`COV_LOUPE_OPTS` Is Parsed on Its Own](#cov_loupe_opts-is-parsed-on-its-own)
+- [Options Can Follow the Subcommand](#options-can-follow-the-subcommand)
 
 ---
 
@@ -311,7 +312,7 @@ Each failure kind now has its own exit code, defined in `CovLoupe::ExitCodes`.
 
 `validate` no longer reports coverage-data errors (missing, stale or corrupt coverage data) as "Predicate error". In 6.x they exited 2; they now print the normal error message and exit 1, like every other command.
 
-Usage errors raised inside a subcommand (for example a global option placed after the subcommand, or missing `validate` arguments) previously exited 1 and now exit 2. Invalid global options also now show the subcommand and enum-value hints.
+Usage errors raised inside a subcommand (for example unexpected arguments, or missing `validate` arguments) previously exited 1 and now exit 2. Invalid global options also now show the subcommand and enum-value hints.
 
 **Migration:** update CI scripts that test `validate` for exit 1 to test 3 (policy failed) and, if you distinguish them, 4 (predicate error). Scripts that treated exit 2 from `validate` as "stale or missing coverage" should test for 1 instead. A script that only checks for non-zero needs no change.
 
@@ -454,3 +455,25 @@ Run 'cov-loupe --help' for usage information.
 ```
 
 **Migration:** if `COV_LOUPE_OPTS` ends with an option that relies on the command line for its value, move the value into `COV_LOUPE_OPTS`, or move the option to the command line. Otherwise no change is needed.
+
+## Options Can Follow the Subcommand
+
+In 6.x, global options had to come before the subcommand. In 7.0 they can also come after it, mixed with its arguments, so an agent permission rule such as `Bash(cov-loupe list:*)` can allow a subcommand with any options:
+
+```sh
+cov-loupe --format json summary lib/foo.rb   # 6.x and 7.0
+cov-loupe summary lib/foo.rb --format json   # 7.0
+```
+
+`-m`/`--mode`, `--[no-]allow-code-predicates`, `-h`/`--help`, `-v`/`--version` and `-p`/`--path-for` still come only before the subcommand. These command lines change:
+
+| Command line | 6.x | 7.0 |
+|---|---|---|
+| `cov-loupe summary -odd.rb` | `-odd.rb` is the path | `-odd.rb` is read as `-o dd.rb`: `invalid argument: -odd.rb`; write `cov-loupe summary -- -odd.rb` |
+| `cov-loupe list -v` | prints the version | usage error: `-v must come before the subcommand` |
+| `cov-loupe -m mcp list` | starts the MCP server; `list` is ignored | usage error |
+| `COV_LOUPE_OPTS=list cov-loupe` | runs `list` | usage error: `COV_LOUPE_OPTS` may contain only options |
+| `COV_LOUPE_OPTS=list cov-loupe -f json` | usage error (`-f` after the subcommand), exit 1 | usage error, as above, exit 2 |
+| `cov-loupe -- list` | runs `list` | usage error: `--` cannot come before the subcommand |
+
+**Migration:** pass a path that starts with `-` after `--`. Move a subcommand out of `COV_LOUPE_OPTS` onto the command line. Remove a `--` before the subcommand, and any arguments after `-m mcp`.

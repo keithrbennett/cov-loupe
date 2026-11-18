@@ -104,7 +104,7 @@ before { setup_mcp_response_stub }
 
 ## Adding Features
 
-**CLI commands:** Add a command class under `lib/cov_loupe/commands/`, require it and register it in `CovLoupe::Commands::CommandFactory::COMMAND_MAP` (`command_factory.rb`), add its name to `CovLoupe::SUBCOMMANDS` (`lib/cov_loupe/subcommands.rb`; the CLI rejects names not listed there), optionally add an abbreviation to `CoverageCLI::SUBCOMMAND_ABBREVIATIONS`, describe it in the subcommand help in `OptionParserBuilder`, and add tests.
+**CLI commands:** Add a command class under `lib/cov_loupe/commands/`, require it and register it in `CovLoupe::Commands::CommandFactory::COMMAND_MAP` (`command_factory.rb`), add its name to `CovLoupe::SUBCOMMANDS` (`lib/cov_loupe/subcommands.rb`; the CLI rejects names not listed there), optionally add an abbreviation to `CovLoupe::SUBCOMMAND_ABBREVIATIONS` (same file), describe it in the subcommand help in `OptionParserBuilder`, and add tests.
 
 **MCP tools:** Create `*_tool.rb` in `lib/cov_loupe/tools/`, require it in `lib/cov_loupe/loaders/all_mcp.rb`, add it to `MCPServer::TOOLSET` in `mcp_server.rb`, and add an entry to `HelpTool::TOOL_GUIDE` (`spec/cov_loupe/mcp_server_spec.rb` checks that the two match). A tool that runs client-supplied code must override `executes_code?` to return true, so that it is registered only with `--allow-code-predicates`.
 

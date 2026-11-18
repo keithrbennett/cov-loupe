@@ -6,10 +6,10 @@ require_relative 'option_parser_builder'
 module CovLoupe
   # Parses command-line arguments into an AppConfig.
   #
-  # Used in both CLI and MCP modes to extract mode, log file, and other global
-  # settings before dispatching to the appropriate runner. Uses order! so that
-  # subcommand-specific options (e.g., 'validate -i') are not consumed by the
-  # global parser.
+  # Options can come before and after the subcommand. parse_options parses the ones before it
+  # with order!, stopping at the subcommand; parse_subcommand_options parses the arguments
+  # after it with permute!, with the options allowed there plus the subcommand's own (only
+  # validate's -i/--inline), leaving the positional arguments.
   #
   # @api private
   class ConfigParser
@@ -19,11 +19,11 @@ module CovLoupe
     def initialize(argv = [])
       @argv = argv
       @config = AppConfig.new
-      @options_ended = false
+      @stopped_at_terminator = false
     end
 
-    # Parses argv and returns the validated config. COV_LOUPE_OPTS is not read here; a caller
-    # that wants it includes its arguments in argv.
+    # Parses argv (the options before any subcommand) and returns the validated config.
+    # COV_LOUPE_OPTS is not read here; a caller that wants it includes its arguments in argv.
     # @param argv [Array<String>] arguments to parse
     # @return [AppConfig] populated configuration object
     def self.parse(argv)
@@ -34,33 +34,45 @@ module CovLoupe
       parse_options.validate!
     end
 
-    # Parses options from args (by default the argv given to new) into config without
-    # validating the result, so a caller can parse in parts and tell parse errors from
-    # validation errors. Parsed arguments are removed from args.
+    # Parses the options before the subcommand from args (by default the argv given to new)
+    # into config without validating the result, so a caller can parse in parts and tell parse
+    # errors from validation errors. Parsed arguments are removed from args; parsing stops at
+    # the first non-option argument (the subcommand) or at '--'.
     # @return [AppConfig]
     def parse_options(args = argv)
-      # Build and execute the option parser
       parser = OptionParserBuilder.new(config).build_option_parser
-      @options_ended = false
-      # Replaces OptionParser's own '--' handling (in OptionParser::DefaultList), which this mirrors, to record that parsing
-      # stopped there: order! removes the '--', so args alone cannot show it.
+      @stopped_at_terminator = false
+      # Replaces OptionParser's own '--' handling (in OptionParser::DefaultList), which this
+      # mirrors, to record that parsing stopped there: order! removes the '--', so args alone
+      # cannot show it.
       parser.top.long[''] = OptionParser::Switch::NoArgument.new do
-        @options_ended = true
+        @stopped_at_terminator = true
         parser.terminate
       end
-
-      # Use order! to stop at the first non-option argument (the subcommand).
-      # This ensures that subcommand-specific options (like 'validate -i') are not
-      # stripped by the global option parser.
       parser.order!(args)
-      @options_ended ||= !args.empty?
       config
     end
 
-    # Whether the last parse_options stopped at a non-option argument or '--', so that any
-    # arguments after the ones it parsed are not options.
-    def options_ended?
-      @options_ended
+    # Whether the last parse_options stopped at a '--' (as opposed to a '--' that was an
+    # option's value).
+    def stopped_at_terminator?
+      @stopped_at_terminator
+    end
+
+    # Parses the arguments after the subcommand into config, without validating it. Options
+    # and positional arguments may be mixed; a '--' ends the options. Parsed arguments are
+    # removed from args, leaving the positional arguments in order.
+    # @param subcommand [String] the subcommand's full name
+    # @param args [Array<String>] the arguments after the subcommand
+    # @return [String, nil] validate's inline code (-i), or nil
+    def parse_subcommand_options(subcommand, args)
+      parser = OptionParserBuilder.new(config).build_subcommand_option_parser
+      inline_code = nil
+      if subcommand == 'validate'
+        parser.on('-i', '--inline CODE', String) { |value| inline_code = value }
+      end
+      parser.permute!(args)
+      inline_code
     end
   end
 end

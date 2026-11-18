@@ -51,7 +51,7 @@ Before you begin the analysis:
   cov-loupe's per-line output into area totals is expected (see Step 4).
 - Prefer the cov-loupe MCP server. If it is unavailable, use the CLI
   (`cov-loupe`, or `bundle exec cov-loupe` if it is in the Gemfile; run
-  `cov-loupe --help` for usage), adding `-m cli -fJ` for JSON output. Say in
+  `cov-loupe --help` for usage), putting the subcommand first and adding `-fJ` after it for JSON output. Say in
   the report which one you used.
 - Use source and test files only to define the logical areas and to judge the
   importance of uncovered code.
@@ -78,9 +78,9 @@ it exists), and tells the user to rerun the full suite. Do not write a report.
    UTC) from the file system (e.g. `ls -l` or `stat`); this metadata is not
    coverage data, so reading it is allowed.
 2. Run the project totals with the tracked globs from Step 2
-   (`project_coverage_totals` / `cov-loupe -m cli -fJ -g '<globs>' totals`)
+   (`project_coverage_totals` / `cov-loupe totals -fJ -g '<globs>'`)
    and the file list with the same globs (`project_coverage` /
-   `cov-loupe -m cli -fJ -g '<globs>' list`). `timestamp_status` must be `ok`,
+   `cov-loupe list -fJ -g '<globs>'`). `timestamp_status` must be `ok`,
    and `newer_files`, `deleted_files`, `length_mismatch_files`,
    `unreadable_files`, and `skipped_files` must all be empty. These show
    whether source files changed after the run.
@@ -163,7 +163,7 @@ and more tokens than a file-level rollup; that is the point.
 ## Step 4: Compute coverage per area
 
 1. For each file touched by an area, get per-line data with
-   `file_coverage_detailed` / `cov-loupe -m cli -fJ detailed <path>`. Each row
+   `file_coverage_detailed` / `cov-loupe detailed <path> -fJ`. Each row
    gives a line number, its hit count, and whether it is covered; lines that
    are not coverable (comments, blank lines, `end`) do not appear.
 2. For each area, sum the covered and coverable lines that fall in its line
@@ -173,7 +173,7 @@ and more tokens than a file-level rollup; that is the point.
    by averaging child percentages.
 4. For an area made of whole files, cross-check your sums against
    `project_coverage_totals` with `tracked_globs` /
-   `cov-loupe -m cli -fJ -g '<globs>' totals`; they must match exactly.
+   `cov-loupe totals -fJ -g '<globs>'`; they must match exactly.
 5. Confirm that the line totals for the partition level from Step 3 add up to
    the project's covered and total lines for the same overall globs. If they
    don't, find the overlap or orphaned lines and fix the map; state any
@@ -195,7 +195,7 @@ report.
 For each selected file or area:
 
 1. Get the uncovered lines (`file_uncovered_lines` /
-   `cov-loupe -m cli -fJ uncovered <path>`); use `file_coverage_detailed` or
+   `cov-loupe uncovered <path> -fJ`); use `file_coverage_detailed` or
    `cov-loupe -m cli -s uncovered -n 2 uncovered <path>` to see the source in
    context.
 2. Characterize each cluster of uncovered lines: error/rescue path, edge-case

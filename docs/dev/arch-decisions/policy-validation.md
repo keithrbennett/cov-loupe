@@ -100,10 +100,10 @@ end
 The CLI `validate` command ends with an exit status set by the predicate result:
 
 ```ruby
-result = if inline_mode
+result = if code # validate's -i code, or nil
   PredicateEvaluator.evaluate_code(code, model)
 else
-  PredicateEvaluator.evaluate_file(code, model)
+  PredicateEvaluator.evaluate_file(file_path, model)
 end
 
 raise CliExit, result ? ExitCodes::SUCCESS : ExitCodes::VALIDATION_FAILED

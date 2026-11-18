@@ -56,8 +56,10 @@ module CovLoupeExecutable
     exit 1
   end
 
+  # Prints the version before the Ruby version check, so it works under an unsupported Ruby.
+  # Only a first argument counts: anywhere else, -v may be a value or follow '--'.
   def self.handle_executable_flags(argv = ARGV)
-    return unless argv.intersect?(%w[-v --version])
+    return unless %w[-v --version].include?(argv.first)
 
     require_relative '../lib/cov_loupe/version'
     puts CovLoupe::VERSION

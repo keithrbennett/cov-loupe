@@ -481,14 +481,22 @@ File breakdown:
 
 These options can be used with every subcommand, though some affect only certain subcommands (for example, `-o` affects only `list` and the default report, and `-s`/`-n` only the per-file commands noted below).
 
-Global options must come before the subcommand:
+Options can come before or after the subcommand, and after it they can be mixed with its arguments. A later value overrides an earlier one, and the command line overrides `COV_LOUPE_OPTS`:
 
 ```sh
-clp --format json summary lib/api/client.rb  # Correct
-clp summary lib/api/client.rb --format json  # Incorrect
+clp --format json summary lib/api/client.rb
+clp summary lib/api/client.rb --format json  # Same result
 ```
 
-The exception is `-v`/`--version`, which prints the version wherever it appears.
+Putting options after the subcommand lets an agent permission rule such as `Bash(cov-loupe list:*)` allow a subcommand with any options; see [CLI Fallback for LLMs](CLI_FALLBACK_FOR_LLMS.md#differences-between-the-interfaces).
+
+These options come only before the subcommand; after it they are a usage error: `-m`/`--mode`, `--[no-]allow-code-predicates`, `-h`/`--help`, `-v`/`--version` and `-p`/`--path-for`. A `--` before the subcommand is also an error.
+
+After the subcommand, an argument that starts with `-` is read as an option, so a path that starts with `-` must follow `--`:
+
+```sh
+clp summary -- -odd.rb
+```
 
 `-h`/`--help` prints usage and exits, and `-v`/`--version` prints the version and exits; see the [Quick Reference](#quick-reference).
 
@@ -747,8 +755,8 @@ with `--error-mode debug`). Warnings and diagnostics about the coverage data can
 appear on stderr. A file target also receives a `CLI parameters` line for each run whose
 options are valid and whose subcommand, if any, is known and, unless `--error-mode off`
 is used, a log entry for each error. Invalid options and option values are rejected
-before logging is set up, so they appear only on stderr; other usage errors, such as an
-unknown subcommand or misplaced global options, are logged to the file.
+before logging is set up, so they appear only on stderr; an unknown subcommand and other
+usage errors found by the subcommand, such as a missing path, are logged to the file.
 
 ```sh
 clp -l /tmp/cov-loupe.log  # -l = --log-file
@@ -901,9 +909,9 @@ cov-loupe v coverage_policy.rb
 clp validate -i '->(m) { m.list["files"].all? { |f| f["percentage"].nil? || f["percentage"] >= 80 } }'
 clp v -i '->(m) { m.list["files"].all? { |f| f["percentage"].nil? || f["percentage"] >= 80 } }'
 
-# Long form of -i, with a global option before the subcommand
-clp -S true validate --inline '->(m) { m.list["files"].size > 0 }'
-clp -S true v --inline '->(m) { m.list["files"].size > 0 }'
+# Long form of -i, with an option after the subcommand
+clp validate --inline '->(m) { m.list["files"].size > 0 }' -S true
+clp v --inline '->(m) { m.list["files"].size > 0 }' -S true
 ```
 
 **Example predicate file:**
@@ -961,7 +969,7 @@ Every structured CLI format and library coverage hash has integer `schema_versio
 
 Default command-line options applied to all invocations.
 
-**Format:** Shell-style string containing any valid CLI options
+**Format:** Shell-style string containing CLI options only: no subcommand, arguments, `--`, or `validate`'s `-i`
 
 ```sh
 export COV_LOUPE_OPTS="--raise-on-stale true -fJ"
@@ -977,7 +985,7 @@ clp summary lib/api/client.rb  # Uses JSON (from env)
 clp -f table summary lib/api/client.rb  # Explicit override to table format
 ```
 
-**Parsing:** `COV_LOUPE_OPTS` is parsed on its own, before the command line, into the same settings, so it must be complete: an option at its end that needs a value is an error there, rather than taking the first command-line argument. An option that fails to parse in `COV_LOUPE_OPTS` fails every command, even one that passes the same option correctly. A setting that is invalid only as a final value, such as `--log-file stdout`, can be overridden on the command line. A word in `COV_LOUPE_OPTS` that is not an option, or a `--`, ends the options, so the command line is then not read for options.
+**Parsing:** `COV_LOUPE_OPTS` is parsed on its own, before the command line, into the same settings, so it must be complete: an option at its end that needs a value is an error there, rather than taking the first command-line argument. An option that fails to parse in `COV_LOUPE_OPTS` fails every command, even one that passes the same option correctly. A setting that is invalid only as a final value, such as `--log-file stdout`, can be overridden on the command line. A word in `COV_LOUPE_OPTS` that is not an option (such as a subcommand), or a `--`, is a usage error; see [Migrating to v7](migrations/MIGRATING_TO_V7.md#options-can-follow-the-subcommand).
 
 **Errors:** an option's error message does not say whether the option came from `COV_LOUPE_OPTS` or the command line. When it is in `COV_LOUPE_OPTS` (an option or value there fails to parse, or a final setting is invalid because of it), the error is followed by a line saying so, with the value:
 

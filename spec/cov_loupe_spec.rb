@@ -21,7 +21,7 @@ RSpec.describe CovLoupe do
 
           expect(described_class::CoverageCLI).to have_received(:new)
           expect(cli).to have_received(:run).with([], config: an_instance_of(CovLoupe::AppConfig),
-            global_args: test_case[:argv])
+            inline_code: nil)
         else
           mcp_server = instance_double(described_class::MCPServer, run: nil)
           allow(described_class::MCPServer).to receive(:new).and_return(mcp_server)

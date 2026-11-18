@@ -90,15 +90,34 @@ module CovLoupe
     private def dispatch(argv)
       # Parse config to determine mode
       require_relative 'cov_loupe/config/config_parser'
+      require_relative 'cov_loupe/subcommands'
 
       env_argv, cli_argv = global_argv(argv)
-      config, rest, global_args = parse_global_options(env_argv, cli_argv)
+      parser, rest, env_config = parse_global_options(env_argv, cli_argv)
+      config = parser.config
 
       if config.mode == :cli
+        # Options after a known subcommand. After an unknown one, the arguments go to the CLI
+        # unchanged, which reports the unknown subcommand under the configured error mode.
+        inline_code = nil
+        if (subcommand = CovLoupe.subcommand_for(rest.first))
+          positional = rest.drop(1)
+          inline_code = parse_subcommand_options(parser, subcommand, positional)
+          rest = [rest.first, *positional]
+        end
+        validate_config(config, env_argv, env_config)
         # CLI mode: load CLI components only
         require_relative 'cov_loupe/loaders/all_cli'
-        CoverageCLI.new.run(rest, config: config, global_args: global_args)
+        CoverageCLI.new.run(rest, config: config, inline_code: inline_code)
       else
+        # Checked before validation, so a stray subcommand is the error reported.
+        unless rest.empty?
+          report_global_usage_error(
+            UsageError.new("MCP mode takes no subcommand or arguments; found #{rest.first.inspect}."),
+            from_env: false
+          )
+        end
+        validate_config(config, env_argv, env_config)
         # MCP server mode: load MCP server components only
         require_relative 'cov_loupe/loaders/all_mcp'
 
@@ -263,40 +282,80 @@ module CovLoupe
       report_global_usage_error(e, from_env: false)
     end
 
-    # Parses COV_LOUPE_OPTS, then the command line, into one config, so an error is known to
-    # be in one or the other; the error message itself cannot say which. A word in
-    # COV_LOUPE_OPTS that is not an option (a subcommand), or a '--', ends the options, as it
-    # would in a single parse of both, so the command line is then not parsed for options.
-    # Returns the validated config, the arguments after the options (the subcommand and its
-    # arguments), and the options typed on the command line, for usage hints. When
-    # COV_LOUPE_OPTS ended the options, the whole command line is in the arguments, and no
-    # options are returned for the hints.
+    # Parses COV_LOUPE_OPTS, then the options on the command line before the subcommand, into
+    # one config, so an error is known to be in one or the other; the error message itself
+    # cannot say which. COV_LOUPE_OPTS may contain only options. A '--' before the subcommand
+    # is an error: there is nothing it could protect there. Returns the parser (holding the
+    # config, not yet validated), the arguments after the options (the subcommand and its
+    # arguments), and a copy of the config as COV_LOUPE_OPTS alone set it, for validate_config.
     private def parse_global_options(env_argv, cli_argv)
       parser = ConfigParser.new
-      rest = parse_options_from(parser, env_argv, from_env: true)
-      # The settings from COV_LOUPE_OPTS alone. A shallow copy is enough: the option
-      # handlers replace values rather than change them.
+      env_rest = parse_options_from(parser, env_argv, from_env: true)
+      reject_env_leftover(env_rest, parser.stopped_at_terminator?)
+      # A shallow copy is enough: the option handlers replace values rather than change them.
       env_config = parser.config.dup
-      if parser.options_ended?
-        rest += cli_argv
-        cli_options = []
-      else
-        rest = parse_options_from(parser, cli_argv, from_env: false)
-        # Parsing stops at the first non-option (order!), so the options, with any '--' that
-        # ended them, are a prefix.
-        cli_options = cli_argv.first(cli_argv.size - rest.size)
-      end
 
-      begin
-        parser.config.validate!
-      rescue ConfigurationError => e
-        # validate! sees each option's last value, so the error is in COV_LOUPE_OPTS when its
-        # settings alone are invalid: the command line did not override the bad value. This
-        # holds while each validation rule checks a single setting. With no COV_LOUPE_OPTS,
-        # an invalid default is not its fault.
-        report_global_usage_error(e, from_env: env_argv.any? && !valid_config?(env_config))
+      rest = parse_options_from(parser, cli_argv, from_env: false)
+      if parser.stopped_at_terminator?
+        report_global_usage_error(
+          UsageError.new("'--' cannot come before the subcommand. To pass a path that starts " \
+                         "with '-', put '--' after the subcommand: cov-loupe summary -- -odd.rb"),
+          from_env: false
+        )
       end
-      [parser.config, rest, cli_options]
+      [parser, rest, env_config]
+    end
+
+    # The message names COV_LOUPE_OPTS, so the note saying the error is there is not added.
+    private def reject_env_leftover(env_rest, terminated)
+      return if env_rest.empty? && !terminated
+
+      found = terminated ? '--' : env_rest.first
+      report_global_usage_error(
+        UsageError.new("#{env_opts_description} may contain only options; found #{found.inspect}."),
+        from_env: false
+      )
+    end
+
+    # Parses the arguments after a known subcommand (see ConfigParser#parse_subcommand_options),
+    # removing the options from args. Returns validate's inline code, or nil.
+    private def parse_subcommand_options(parser, subcommand, args)
+      original = args.dup
+      parser.parse_subcommand_options(subcommand, args)
+    rescue OptionParser::ParseError => e
+      report_global_usage_error(subcommand_option_error(e, subcommand), argv: original, from_env: false)
+    rescue ConfigurationError, UsageError => e
+      report_global_usage_error(e, from_env: false)
+    end
+
+    # Rewords the parse errors whose OptionParser message would mislead: -i without code (or
+    # with empty code), and an option that may come only before the subcommand, also when its
+    # long form is abbreviated (--vers).
+    private def subcommand_option_error(error, subcommand)
+      option = error.args.first.to_s.split('=', 2).first
+      if !error.is_a?(OptionParser::InvalidOption) && %w[-i --inline].include?(option)
+        UsageError.for_subcommand('validate -i <code>')
+      elsif error.is_a?(OptionParser::InvalidOption) && before_subcommand_only?(option)
+        UsageError.new("#{option} must come before the subcommand, not after '#{subcommand}'.")
+      else
+        error
+      end
+    end
+
+    private def before_subcommand_only?(option)
+      OptionParserBuilder::BEFORE_SUBCOMMAND_ONLY.any? do |flag|
+        flag == option || (option.start_with?('--') && option.size > 2 && flag.start_with?(option))
+      end
+    end
+
+    # Validates the parsed config. validate! sees each option's last value, so the error is in
+    # COV_LOUPE_OPTS when its settings alone are invalid: the command line did not override the
+    # bad value. This holds while each validation rule checks a single setting. With no
+    # COV_LOUPE_OPTS, an invalid default is not its fault.
+    private def validate_config(config, env_argv, env_config)
+      config.validate!
+    rescue ConfigurationError => e
+      report_global_usage_error(e, from_env: env_argv.any? && !valid_config?(env_config))
     end
 
     # Returns the arguments left after the options.
@@ -328,7 +387,8 @@ module CovLoupe
         OptionParsers::ErrorHelper.new(SUBCOMMANDS)
           .handle_option_parser_error(error, argv: argv, usage_hint: hint)
       else
-        warn "Error: #{error.message}"
+        # A usage synopsis ('Usage: cov-loupe ...') is shown as is, as the CLI shows it.
+        warn error.message.start_with?('Usage: ') ? error.message : "Error: #{error.message}"
         warn hint
         raise CliExit, ExitCodes::USAGE
       end

@@ -7,6 +7,26 @@
 
 ### Breaking
 
+- **Options can come after the subcommand.** `cov-loupe list --format json` and
+  `cov-loupe summary lib/foo.rb -f json` now work, so an agent permission rule such as
+  `Bash(cov-loupe list:*)` can allow a subcommand with any options. The options that select
+  the mode or print and exit (`-m`/`--mode`, `--[no-]allow-code-predicates`, `-h`/`--help`,
+  `-v`/`--version`, `-p`/`--path-for`) still come only before the subcommand; after it they
+  are a usage error. Breaking or changed behavior:
+    - After a subcommand, an argument starting with `-` is read as an option, so a path such
+      as `-odd.rb` must follow `--`: `cov-loupe summary -- -odd.rb`.
+    - `COV_LOUPE_OPTS` may contain only options. A subcommand, argument or `--` there is a
+      usage error (previously it ended the options, and the command line was not parsed for
+      options).
+    - A `--` before the subcommand (`cov-loupe -- list`) is a usage error.
+    - MCP mode with a subcommand or argument (`cov-loupe -m mcp list`, or `-m mcp` in
+      `COV_LOUPE_OPTS` with a subcommand on the command line) is a usage error; the argument
+      used to be ignored.
+    - `validate`'s `-i` is parsed like the other options, so `-iCODE` and `--inline=CODE`
+      now work, and an unknown option after `validate` is reported as
+      `invalid option: --bogus` instead of `Unknown option for validate: --bogus`.
+    - The executable prints the version for `-v`/`--version` only as the first argument or
+      among the options before the subcommand, not anywhere (for example `list -v`).
 - **Payload keys reshaped for schema v1.** Line metrics now have one flat shape everywhere,
   and keys whose names meant different things in different payloads were renamed. This
   applies to library hashes, structured CLI output, and MCP tool payloads; `schema_version`
@@ -96,7 +116,7 @@
   message. Predicate errors now go through the central error handler, so they are
   logged like other CLI errors: to the log file when `--log-file` is a file (not to
   the default `stderr` target, where the message is already printed). Usage errors (invalid
-  options or arguments, invalid configuration, misplaced global options) now
+  options or arguments, invalid configuration) now
   consistently exit `2`; some were `1`. Exit `1` is reserved for runtime errors
   such as missing or stale coverage data. Invalid global options now also get
   the enum-value and subcommand suggestions previously unreachable from the real
@@ -206,11 +226,6 @@
   given as a separate argument, was reported as
   `Error: invalid argument: --format invalid argument: bogus`; it now reads
   `Error: invalid argument: --format bogus`. The `--format=bogus` form was not affected.
-- **A misplaced `--error-mode` no longer changes how its error is shown.** Global options
-  after the subcommand are rejected, but `--error-mode` used to be read from anywhere in
-  the arguments first, so a misplaced `-e debug`, as in `cov-loupe totals -e debug` or
-  after an unknown subcommand, added a backtrace to the error. The error mode now comes
-  only from the global options, like every other setting.
 - **Usage errors point to `COV_LOUPE_OPTS`.** Its options were parsed in one pass with the
   command line, so an error in one of them gave no hint that it came from the environment.
   An option or value in `COV_LOUPE_OPTS` that fails to parse, or a final setting it makes
@@ -322,10 +337,6 @@
   `convert_standard_error` to control the conversion. As before, the handler is called for
   every error the CLI reports except invalid options, whatever the log target. `CoverageCLI` and custom error handlers are internal as
   of 7.0; see [Public API and Versioning](docs/user/LIBRARY_API.md#public-api-and-versioning).
-- **Misplaced global option hints keep option values.** `cov-loupe totals --format json` now
-  suggests `cov-loupe --format json totals` (previously `--format totals`). The suggested
-  command keeps options given before the subcommand and quotes arguments that need it.
-- **Improved guidance for misplaced short global options.** `-e`/`--error-mode` and `-C`/`--color` used after a subcommand (for example `list -e debug`) now get the "must come BEFORE the subcommand" message instead of a generic "Unexpected argument(s)" error; previously only their long forms were recognized.
 - **Fixed `uncovered` and `detailed` crashing on files with no coverable lines.** Their text output raised `TypeError` when a file's coverage percentage was `nil` (for example, a file containing only comments); it now shows `n/a`, as `summary` and `totals` already did. `detailed` and `uncovered` print `No coverable lines.` for such files. The `project_validate` tool description and the code examples in the README, docs and `examples/` now handle `nil` percentages, and the Library API docs, the MCP integration docs and the descriptions of every MCP tool that returns a `percentage` show it as nullable. In the `validate` predicate examples, per-file checks skip files with no coverable lines, and project-total checks treat a `nil` total (nothing measurable, including when every file is stale) as failing.
 - **Fixed the MCP server ignoring `--error-mode`.** Tools always used `log` unless a call passed `error_mode`, so starting the server with `--error-mode off` still logged errors and `--error-mode debug` logged no backtraces. A call without `error_mode` now uses the server's mode, and the tools' input schemas no longer advertise `log` as the default. Likewise, they no longer advertise static defaults for `root`, `raise_on_stale`, and `output_chars`, which come from the server's `--root`, `--raise-on-stale`, and `--output-chars`.
 - **Fixed misaligned source output without color.** With `-C false` (or when stdout is not a terminal), `--source` rows were one column to the right of the header.

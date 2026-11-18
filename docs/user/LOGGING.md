@@ -20,8 +20,8 @@ parameters line (for each run whose options are valid and whose subcommand,
 if any, is known) and the logged error (unless `--error-mode off` is used), and
 the user-facing message still appears on stderr. Invalid options and option
 values are rejected before logging is set up, so they appear only on stderr;
-other usage errors, such as an unknown subcommand or misplaced global options,
-are logged to the file.
+an unknown subcommand and other usage errors found by the subcommand, such as a
+missing path, are logged to the file.
 
 File logging is intentionally explicit and has no built-in rotation. Users who
 choose a file target are responsible for cleanup or external log rotation.

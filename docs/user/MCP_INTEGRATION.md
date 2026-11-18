@@ -94,7 +94,7 @@ env_vars = ["GEM_HOME", "GEM_PATH"]  # Add this line manually
 You'll need to manually add it back after running `codex mcp add` again.
 To avoid this, consider editing `~/.codex/config.toml` directly instead of using `remove`/`add` commands.
 
-**Watch the position of `--`.** It goes right after the server name and *before* the command: `codex mcp add cov-loupe -- cov-loupe -m mcp` (name, `--`, command, arguments). If you put the command before the `--`, as in `codex mcp add cov-loupe cov-loupe -- -m mcp`, Codex stores the `--` as a literal argument: `args = ["--", "-m", "mcp"]`, and `cov-loupe` fails with `Unknown subcommand: '-m'`. After adding, confirm that the `Args` column of `codex mcp list` shows `-m mcp` with no leading `--`.
+**Watch the position of `--`.** It goes right after the server name and *before* the command: `codex mcp add cov-loupe -- cov-loupe -m mcp` (name, `--`, command, arguments). If you put the command before the `--`, as in `codex mcp add cov-loupe cov-loupe -- -m mcp`, Codex stores the `--` as a literal argument: `args = ["--", "-m", "mcp"]`, and `cov-loupe` fails with `'--' cannot come before the subcommand`. After adding, confirm that the `Args` column of `codex mcp list` shows `-m mcp` with no leading `--`.
 
 If Codex starts `cov-loupe` in a repo and you see `Resolving dependencies...` before the MCP handshake, use the [launch wrapper](#step-by-step-the-launch-wrapper) below instead of `cov-loupe` directly.
 

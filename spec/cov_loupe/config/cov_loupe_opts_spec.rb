@@ -221,26 +221,32 @@ RSpec.describe 'COV_LOUPE_OPTS Environment Variable' do
       expect(CovLoupe::MCPServer).not_to have_received(:new)
     end
 
-    # A subcommand or '--' in COV_LOUPE_OPTS ends the options, as in one parse of both, so the
-    # command line's options are not run; the CLI then reports them as misplaced or unknown.
+    # COV_LOUPE_OPTS may contain only options, so a subcommand, an argument or a '--' there is
+    # an error, whatever the command line holds.
     [
-      ['list', %w[-f json], 'Global option(s) must come BEFORE the subcommand'],
-      ['list', %w[-m mcp], 'Global option(s) must come BEFORE the subcommand'],
-      ['--', %w[-h], "Unknown subcommand: '-h'"],
-      ['--', %w[-m mcp], "Unknown subcommand: '-m'"],
-      ['-f json --', %w[-v], "Unknown subcommand: '-v'"],
-    ].each do |opts, argv, message|
-      it "does not parse #{argv.join(' ')} on the command line after #{opts.inspect} in COV_LOUPE_OPTS" do
+      ['list', [], '"list"'],
+      ['list', %w[-f json], '"list"'],
+      ['-f json summary lib/foo.rb', [], '"summary"'],
+      ['--', %w[-h], '"--"'],
+      ['-f json --', %w[-m mcp], '"--"'],
+    ].each do |opts, argv, found|
+      it "rejects #{opts.inspect} in COV_LOUPE_OPTS (command line: #{argv.inspect})" do
         allow(CovLoupe::MCPServer).to receive(:new)
         ENV['COV_LOUPE_OPTS'] = opts
         stdout, stderr, status = run_cli_with_status(*argv, 'list')
 
         expect(status).to eq(CovLoupe::ExitCodes::USAGE)
         expect(stdout).to eq('')
-        expect(stderr).to include(message)
-        expect(stderr).not_to include('COV_LOUPE_OPTS (')
+        expect(stderr).to include("may contain only options; found #{found}.")
         expect(CovLoupe::MCPServer).not_to have_received(:new)
       end
+    end
+
+    it 'accepts a -- that is an option value in COV_LOUPE_OPTS' do
+      ENV['COV_LOUPE_OPTS'] = '-g -- -f json'
+      _stdout, stderr, status = run_cli_with_status('totals')
+      expect(stderr).not_to include('may contain only options')
+      expect(status).not_to eq(CovLoupe::ExitCodes::USAGE)
     end
 
     # Options that print and exit must not run while the error's source is worked out: here

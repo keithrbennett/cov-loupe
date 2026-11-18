@@ -63,14 +63,14 @@ RSpec.describe CovLoupe::CoverageCLI, 'format option' do
       expect(data).to have_key('files')
     end
 
-    it 'shows helpful error when global option comes after subcommand' do
-      _out, err, status = run_cli_with_status('list', '--format', 'json')
-      expect(status).to eq(2)
-      expect(err).to include(
-        'Global option(s) must come BEFORE the subcommand',
-        'You used: cov-loupe list --format json',
-        'Correct: cov-loupe --format json list'
-      )
+    it 'works with format option after subcommand' do
+      data = JSON.parse(run_cli('list', '--format', 'json'))
+      expect(data).to have_key('files')
+    end
+
+    it 'lets an option after the subcommand override one before it' do
+      data = JSON.parse(run_cli('--format', 'table', 'list', '--format', 'json'))
+      expect(data).to have_key('files')
     end
   end
 
@@ -86,52 +86,6 @@ RSpec.describe CovLoupe::CoverageCLI, 'format option' do
       data = JSON.parse(output)
       expect(data).to have_key('file')
       expect(data).to include('percentage', 'stale')
-    end
-  end
-
-  describe 'comprehensive misplaced option detection' do
-    # Array of test cases: [description, args_array, expected_option_in_error]
-    [
-      # Short-form options
-      ['short -f after list', %w[list -f json], '-f'],
-      ['short -c after totals', %w[totals -c coverage.json], '-c'],
-      ['short -n after list', %w[list -n 3], '-n'],
-      ['short -R after list', ['list', '-R', Dir.tmpdir], '-R'],
-      ['short -o after list', %w[list -o a], '-o'],
-      ['short -s after list', %w[list -s full], '-s'],
-      ['short -S after list', %w[list -S error], '-S'],
-      ['short -v after list', %w[list -v], '-v'],
-      ['short -p after list', %w[list -p repo], '-p'],
-      ['short -O after list', %w[list -O ascii], '-O'],
-      ['short -e after list', %w[list -e debug], '-e'],
-      ['short -C after list', %w[list -C true], '-C'],
-      ['short -v after totals', %w[totals -v], '-v'],
-      ['short -v after summary', %w[summary lib/foo.rb -v], '-v'],
-
-      # Long-form options
-      ['--sort-order after list', %w[list --sort-order ascending], '--sort-order'],
-      ['--source after list', %w[list --source full], '--source'],
-      ['--raise-on-stale after totals', %w[totals --raise-on-stale], '--raise-on-stale'],
-      ['--color after list', %w[list --color], '--color'],
-      ['--log-file after list', ['list', '--log-file', File.join(Dir.tmpdir, 'test.log')], '--log-file'],
-      ['--version after list', %w[list --version], '--version'],
-      ['--version after totals', %w[totals --version], '--version'],
-      ['--version after summary', %w[summary lib/foo.rb --version], '--version'],
-      ['--path-for after list', %w[list --path-for repo], '--path-for'],
-      ['--output-chars after list', %w[list --output-chars ascii], '--output-chars'],
-
-      # Different subcommands
-      ['option after summary', %w[summary lib/foo.rb --format json], '--format'],
-      ['option after raw', %w[raw lib/foo.rb -f json], '-f'],
-      ['option after detailed', %w[detailed lib/foo.rb -f json], '-f'],
-      ['option after uncovered', ['uncovered', 'lib/foo.rb', '--root', Dir.tmpdir], '--root'],
-    ].each do |desc, args, option|
-      it "detects #{desc}" do
-        _out, err, status = run_cli_with_status(*args)
-        expect(status).to eq(2)
-        expect(err).to include('Global option(s) must come BEFORE the subcommand')
-        expect(err).to include(option)
-      end
     end
   end
 end

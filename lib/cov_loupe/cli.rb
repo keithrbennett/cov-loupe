@@ -2,7 +2,6 @@
 
 require 'json'
 require_relative 'config/app_config'
-require_relative 'config/option_parser_builder'
 require_relative 'commands/command_factory'
 require_relative 'presenters/project_coverage_presenter'
 require_relative 'exit_codes'
@@ -14,34 +13,24 @@ require_relative 'resources'
 module CovLoupe
   # Command-line interface for cov-loupe.
   #
-  # Dispatches to subcommand classes via CommandFactory, with the global options (coverage
-  # file path, format, sort order, etc.) already parsed by CovLoupe.run. When no subcommand
-  # is given, the default report (equivalent to `list`) is shown. Global options placed
-  # after the subcommand trigger a helpful error message.
+  # Dispatches to subcommand classes via CommandFactory, with the options (coverage file
+  # path, format, sort order, etc.), before and after the subcommand, already parsed by
+  # CovLoupe.run. When no subcommand is given, the default report (equivalent to `list`) is
+  # shown.
   #
   # @api private
   class CoverageCLI
     HORIZONTAL_RULE = '-' * 79
 
-    # Optional single-character abbreviations for subcommands.
-    SUBCOMMAND_ABBREVIATIONS = {
-      'd' => 'detailed',
-      'l' => 'list',
-      'r' => 'raw',
-      's' => 'summary',
-      't' => 'totals',
-      'u' => 'uncovered',
-      'v' => 'validate',
-    }.freeze
-
-    attr_reader :config
+    # inline_code is validate's -i code, or nil.
+    attr_reader :config, :inline_code
 
     # Initialize CLI for pure CLI usage only.
     # Always runs as CLI, no mode detection needed.
     def initialize(error_handler: nil)
       @config = AppConfig.new
       @custom_error_handler = error_handler # Store custom handler if provided
-      @global_args = []
+      @inline_code = nil
       @error_handler = nil # Created on first use, from config's error mode
     end
 
@@ -49,13 +38,13 @@ module CovLoupe
     # @param args [Array<String>] the arguments after the global options: the subcommand
     #   and its arguments
     # @param config [AppConfig] the parsed global options; the caller must have validated them
-    # @param global_args [Array<String>] the global options as typed on the command line,
-    #   for usage hints
-    def run(args, config:, global_args:)
+    # @param inline_code [String, nil] validate's -i code, parsed with the options after the
+    #   subcommand
+    def run(args, config:, inline_code: nil)
       @config = config
-      @global_args = global_args
+      @inline_code = inline_code
       # Resolve single-character abbreviations (e.g., 's' -> 'summary')
-      cmd = SUBCOMMAND_ABBREVIATIONS[args.first] || args.first
+      cmd = CovLoupe::SUBCOMMAND_ABBREVIATIONS[args.first] || args.first
 
       CovLoupe.with_context(build_context) do
         # Raised, not just built, so that --error-mode debug has a backtrace to show.
@@ -134,9 +123,6 @@ module CovLoupe
 
     private def run_subcommand(cmd, args)
       with_user_facing_errors("subcommand '#{cmd}'") do
-        # Check if user mistakenly placed global options after the subcommand
-        check_for_misplaced_global_options(cmd, args)
-
         command = Commands::CommandFactory.create(cmd, self)
         command.execute(args)
       end
@@ -155,88 +141,6 @@ module CovLoupe
       # Custom error handlers need not implement conversion.
       converter = error_handler.respond_to?(:convert_standard_error) ? error_handler : ErrorHandler.new
       handle_user_facing_error(converter.convert_standard_error(e), log_error: e, log_context: log_context)
-    end
-
-    private def check_for_misplaced_global_options(cmd, args)
-      switches = global_option_switches
-      misplaced = []
-      remaining = []
-      tokens = args.dup
-      while (arg = tokens.shift)
-        # Extract base option (e.g., --format from --format=json)
-        switch = switches[arg.split('=', 2).first]
-        if switch.nil?
-          remaining << arg
-        elsif arg.include?('=') || !switch.is_a?(OptionParser::Switch::RequiredArgument)
-          misplaced << arg
-        elsif tokens.empty? || switches.key?(tokens.first.split('=', 2).first)
-          # Without a value, show a placeholder (e.g. <MODE>) for the user to fill in.
-          misplaced.push(arg, Placeholder.new(switch.arg.strip))
-        else
-          misplaced.push(arg, tokens.shift)
-        end
-      end
-      return if misplaced.empty?
-
-      raise UsageError, "Global option(s) must come BEFORE the subcommand.\n" \
-        "You used: #{shell_command(*@global_args, cmd, *args)}\n" \
-        "Correct: #{shell_command(*with_options_before_subcommand(misplaced), cmd, *remaining)}"
-    end
-
-    # A value the user must supply, shown unquoted as <NAME> in usage hints.
-    Placeholder = Data.define(:name) do
-      def to_s = "<#{name}>"
-    end
-    private_constant :Placeholder
-
-    # Inserts options among those given before the subcommand. They must precede a `--`,
-    # since option parsing stops there.
-    private def with_options_before_subcommand(options)
-      return [*@global_args, *options] unless ends_with_terminator?(@global_args)
-
-      [*@global_args[0...-1], *options, '--']
-    end
-
-    # True if args end with a `--` terminator, as opposed to a `--` that is an option's value.
-    private def ends_with_terminator?(args)
-      switches = global_option_switches
-      index = 0
-      while index < args.size
-        return index == args.size - 1 if args[index] == '--'
-
-        index += 1 if switches[args[index]].is_a?(OptionParser::Switch::RequiredArgument)
-        index += 1
-      end
-      false
-    end
-
-    # Global option switches keyed by each of their flags (e.g. '-f' and '--format').
-    # Help is left out: after a subcommand it is reported as an unexpected argument.
-    private def global_option_switches
-      OptionParserBuilder.new(config).build_option_parser.top.list
-        .grep(OptionParser::Switch)
-        .reject { |switch| switch.long.include?('--help') }
-        .each_with_object({}) do |switch, by_flag|
-          (switch.short + switch.long).flat_map { |flag| flag_spellings(flag) }
-            .each { |flag| by_flag[flag] = switch }
-        end
-    end
-
-    # A negatable switch is listed as --[no-]name; it can be typed as --name or --no-name.
-    private def flag_spellings(flag)
-      return [flag] unless flag.include?('[no-]')
-
-      [flag.sub('[no-]', ''), flag.sub('[no-]', 'no-')]
-    end
-
-    # Formats a command line for copying into a shell, quoting arguments that need it.
-    private def shell_command(*args)
-      ['cov-loupe', *args].map do |arg|
-        next arg.to_s if arg.is_a?(Placeholder)
-
-        # Block form: in a replacement string, \' would mean the text after the match.
-        arg.match?(%r{\A[\w@%+=:,./-]+\z}) ? arg : "'#{arg.gsub("'") { "'\\''" }}'"
-      end.join(' ')
     end
 
     private def handle_user_facing_error(error, log_error: error, log_context: 'CLI')

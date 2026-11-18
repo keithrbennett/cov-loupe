@@ -14,9 +14,10 @@ If MCP isn't working, provide this prompt to your LLM:
 ```
 The cov-loupe MCP server isn't available. Use the cov-loupe CLI instead:
 
-- Run it as `cov-loupe -m cli -fJ <subcommand> ...` (or `bundle exec exe/cov-loupe ...`
-  from a cov-loupe checkout). -m cli guards against COV_LOUPE_OPTS selecting MCP mode;
-  -fJ gives the same JSON the MCP tools return.
+- Run it as `cov-loupe <subcommand> ... -fJ` (or `bundle exec exe/cov-loupe ...` from a
+  cov-loupe checkout), with the subcommand first and options after it. -fJ gives the same
+  JSON the MCP tools return. If it reports "MCP mode takes no subcommand", COV_LOUPE_OPTS
+  selects MCP mode; run `cov-loupe -m cli <subcommand> ...` instead.
 - Carry over any root, coverage file, tracked globs, or staleness settings you were using:
   -R <root>, -c <coverage file>, -g <glob,glob>, -S true.
 - Run `cov-loupe --help` for subcommands and options.
@@ -44,7 +45,7 @@ The cov-loupe MCP server isn't available. Use the cov-loupe CLI instead:
 
 | MCP argument | Tools | CLI option |
 |---|---|---|
-| `path` | `file_*` | Positional `<path>` after the subcommand |
+| `path` | `file_*` | Positional `<path>` after the subcommand (after `--` if it starts with `-`) |
 | `root` | All coverage tools | `-R`, `--root` |
 | `coverage_file` | All coverage tools | `-c`, `--coverage-file` |
 | `raise_on_stale` (boolean) | All coverage tools | `-S`, `--raise-on-stale` (takes a value, e.g. `-S true`) |
@@ -75,6 +76,14 @@ command line instead.
   cov-loupe is mostly read-only, `validate` runs arbitrary Ruby, so a rule letting an agent
   run any `cov-loupe` command without asking also lets it run any Ruby. Allow only the
   subcommands the agent needs instead, such as `cov-loupe list` and `cov-loupe totals`.
+- **Permission rules by subcommand:** options can follow the subcommand
+  (`cov-loupe list -fJ`), so a prefix rule such as `Bash(cov-loupe list:*)` matches a
+  subcommand with any options. After a subcommand other than `validate`, `-i`/`--inline` is
+  an invalid option, and `-m`/`--mode` is rejected, so such a rule cannot run Ruby or start
+  the MCP server. It does allow every other option: `-l`/`--log-file` creates or appends to a
+  file of the agent's choosing, and `-c`, `-R` and `-g` read any path. A prefix rule also
+  covers one command, not a shell string: depending on your harness, `cov-loupe list && ...`
+  may match it. A prefix rule is not a sandbox.
 
 ## Related Documentation
 

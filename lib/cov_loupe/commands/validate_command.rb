@@ -16,37 +16,18 @@ module CovLoupe
     #
     # @api private
     class ValidateCommand < BaseCommand
+      # The -i code is parsed with the options after the subcommand (see
+      # ConfigParser#parse_subcommand_options); args holds only the positional arguments.
       def execute(args)
-        # Parse command-specific options
-        inline_mode = false
-        code = nil
-
-        # Simple option parsing for -i/--inline flag
-        while args.first&.start_with?('-')
-          case args.first
-          when '-i', '--inline'
-            inline_mode = true
-            args.shift
-            code = args.shift or raise UsageError.for_subcommand('validate -i <code>')
-          else
-            raise UsageError, "Unknown option for validate: #{args.first}"
-          end
-        end
-
-        # If not inline mode, expect a file path as positional argument
-        unless inline_mode
-          file_path = args.shift or raise UsageError.for_subcommand('validate <file> | -i <code>')
-          code = file_path
-        end
-
-        # Ensure no extra arguments remain
-        reject_extra_args(args, 'validate')
-
-        # Evaluate the predicate
-        result = if inline_mode
+        code = cli.inline_code
+        result = if code
+          # A policy file, or any other argument, beside -i is unexpected.
+          reject_extra_args(args, 'validate')
           PredicateEvaluator.evaluate_code(code, model)
         else
-          PredicateEvaluator.evaluate_file(code, model)
+          file_path = args.shift or raise UsageError.for_subcommand('validate <file> | -i <code>')
+          reject_extra_args(args, 'validate')
+          PredicateEvaluator.evaluate_file(file_path, model)
         end
 
         raise CliExit, result ? ExitCodes::SUCCESS : ExitCodes::VALIDATION_FAILED

@@ -267,7 +267,7 @@ RSpec.describe CovLoupe::Commands::ValidateCommand do
         'validate', '--unknown-option'
       )
       expect(status).to eq(2)
-      expect(err).to include('Unknown option for validate: --unknown-option')
+      expect(err).to include('invalid option: --unknown-option')
     end
   end
 end

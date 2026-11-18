@@ -32,17 +32,41 @@ RSpec.describe CovLoupe::ConfigParser do
     end
   end
 
-  describe '#options_ended?' do
+  describe '#stopped_at_terminator?' do
     # order! removes a '--' it stops at, so the leftover arguments alone cannot show it.
     {
-      %w[-f json] => false, %w[-f json list] => true, %w[--] => true,
+      %w[-f json] => false, %w[-f json list] => false, %w[--] => true,
       %w[-f json -- -h] => true, %w[-g --] => false
-    }.each do |args, ended|
-      it "is #{ended} after parsing #{args.inspect}" do
+    }.each do |args, stopped|
+      it "is #{stopped} after parsing #{args.inspect}" do
         parser = described_class.new
         parser.parse_options(args.dup)
-        expect(parser.options_ended?).to be(ended)
+        expect(parser.stopped_at_terminator?).to be(stopped)
       end
+    end
+  end
+
+  describe '#parse_subcommand_options' do
+    it 'parses options mixed with positional arguments, keeping their order' do
+      parser = described_class.new
+      args = %w[a -f json b --sort-order ascending c]
+      parser.parse_subcommand_options('summary', args)
+
+      expect(args).to eq(%w[a b c])
+      expect(parser.config.format).to eq(:json)
+      expect(parser.config.sort_order).to eq(:ascending)
+    end
+
+    it 'leaves the arguments after -- as positional arguments' do
+      args = %w[-f json -- -odd.rb]
+      described_class.new.parse_subcommand_options('summary', args)
+      expect(args).to eq(%w[-odd.rb])
+    end
+
+    it "returns validate's inline code, taking the next argument even if it starts with '-'" do
+      args = ['-i', '->(m) { true }']
+      expect(described_class.new.parse_subcommand_options('validate', args)).to eq('->(m) { true }')
+      expect(args).to be_empty
     end
   end
 end

@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
-require 'shellwords'
 require 'tempfile'
 
 RSpec.describe CovLoupe::CoverageCLI do
@@ -36,95 +35,6 @@ RSpec.describe CovLoupe::CoverageCLI do
     expect(status).to eq(0)
     expect(err).to eq('')
     expect(out).to include('File', 'lib/foo.rb')
-  end
-
-  describe 'misplaced global options detection' do
-    [
-      { args: ['list', '--format', 'json'],               expected: '--format' },
-      { args: ['summary', 'lib/foo.rb', '--format=json'], expected: '--format=json' },
-      { args: ['list', '--coverage-file=path/to/file'],       expected: '--coverage-file=' },
-      { args: ['list', '--mode', 'mcp'],                  expected: '--mode' },
-      { args: ['list', '-m', 'cli'],                      expected: '-m' },
-      { args: ['summary', 'lib/foo.rb', '--mode=mcp'],    expected: '--mode=mcp' },
-      { args: ['list', '--allow-code-predicates'],        expected: '--allow-code-predicates' },
-      { args: ['list', '--no-allow-code-predicates'],     expected: '--no-allow-code-predicates' },
-    ].each do |test_case|
-      it "detects misplaced #{test_case[:expected]} option after subcommand" do
-        _out, err, status = run_fixture_cli_with_status(*test_case[:args])
-        expect(status).to eq(2)
-        expect(err).to include('Global option(s) must come BEFORE the subcommand')
-        expect(err).to include(test_case[:expected])
-      end
-    end
-  end
-
-  describe 'misplaced global option hint' do
-    [
-      [%w[totals --format json], 'cov-loupe totals --format json',
-        'cov-loupe --format json totals'],
-      [%w[totals --format=json], 'cov-loupe totals --format=json',
-        'cov-loupe --format=json totals'],
-      [%w[totals -f json -S], 'cov-loupe totals -f json -S',
-        'cov-loupe -f json -S <BOOLEAN> totals'],
-      [%w[totals -e], 'cov-loupe totals -e',
-        'cov-loupe -e <MODE> totals'],
-      [%w[totals -e -f json], 'cov-loupe totals -e -f json',
-        'cov-loupe -e <MODE> -f json totals'],
-      [%w[totals --no-allow-code-predicates], 'cov-loupe totals --no-allow-code-predicates',
-        'cov-loupe --no-allow-code-predicates totals'],
-      [%w[-R proj totals --format json], 'cov-loupe -R proj totals --format json',
-        'cov-loupe -R proj --format json totals'],
-      [%w[-- totals --format json], 'cov-loupe -- totals --format json',
-        'cov-loupe --format json -- totals'],
-      [%w[-g -- totals --format json], 'cov-loupe -g -- totals --format json',
-        'cov-loupe -g -- --format json totals'],
-      [['summary', 'lib/my file.rb', '-f', 'json'], "cov-loupe summary 'lib/my file.rb' -f json",
-        "cov-loupe -f json summary 'lib/my file.rb'"],
-      [['validate', '-i', '->(m) { true }', '-f', 'json'], "cov-loupe validate -i '->(m) { true }' -f json",
-        "cov-loupe -f json validate -i '->(m) { true }'"],
-      [['summary', "lib/it's.rb", '-f', 'json'], "cov-loupe summary 'lib/it'\\''s.rb' -f json",
-        "cov-loupe -f json summary 'lib/it'\\''s.rb'"],
-    ].each do |args, used, correct|
-      it "suggests `#{correct}` for `#{used}`" do
-        _out, err, status = run_cli_with_status(*args)
-        expect(status).to eq(2)
-        expect(err).to include("You used: #{used}\n", "Correct: #{correct}\n")
-      end
-
-      next if correct.include?('<') # placeholders are for the user to fill in
-
-      it "accepts the suggested `#{correct}`" do
-        cli = described_class.new
-        argv = Shellwords.split(correct).drop(1)
-        CovLoupe::ConfigParser.new.parse_options(argv)
-        cmd, *cmd_args = argv
-        expect(cmd).to eq(args.find { |arg| CovLoupe::SUBCOMMANDS.include?(arg) })
-        expect { cli.send(:check_for_misplaced_global_options, cmd, cmd_args) }.not_to raise_error
-      end
-    end
-
-    it 'quotes arguments so the suggested command splits back into the same arguments' do
-      args = ['validate', '-i', %q(->(m) { m.list.none? { |f| f['file'] == "it's.rb" } }), '-f', 'json']
-      _out, err, _status = run_cli_with_status(*args)
-      correct = err[/^Correct: (.*)$/, 1]
-      expect(Shellwords.split(correct)).to eq(['cov-loupe', '-f', 'json', *args.first(3)])
-    end
-
-    it 'keeps command-line options but leaves out COV_LOUPE_OPTS ones' do
-      ENV['COV_LOUPE_OPTS'] = '-g lib/**/*.rb'
-      _out, err, status = run_cli_with_status('-S', 'true', 'totals', '--format', 'json')
-      expect(status).to eq(2)
-      expect(err).to include("You used: cov-loupe -S true totals --format json\n",
-        "Correct: cov-loupe -S true --format json totals\n")
-    end
-
-    it 'leaves out COV_LOUPE_OPTS arguments, which the user did not type' do
-      ENV['COV_LOUPE_OPTS'] = '-g lib/**/*.rb'
-      _out, err, status = run_cli_with_status('totals', '--format', 'json')
-      expect(status).to eq(2)
-      expect(err).to include("You used: cov-loupe totals --format json\n",
-        "Correct: cov-loupe --format json totals\n")
-    end
   end
 
   describe 'stderr output' do
@@ -305,7 +215,7 @@ RSpec.describe CovLoupe::CoverageCLI do
       _result, _out, err = capture_io do
         args = fixture_cli_args(*argv)
         config = CovLoupe::ConfigParser.parse(args) # removes the options from args
-        described_class.new(error_handler: handler).run(args, config: config, global_args: [])
+        described_class.new(error_handler: handler).run(args, config: config)
       rescue SystemExit => e
         status = e.status
       end
@@ -349,13 +259,6 @@ RSpec.describe CovLoupe::CoverageCLI do
     expect(status).to eq(2)
     expect(err).to include("Unknown subcommand: 'bogus'")
     expect(err).to match(%r{cov_loupe/cli\.rb:\d+:in })
-  end
-
-  it 'ignores a misplaced --error-mode; the usage error has no backtrace' do
-    _out, err, status = run_fixture_cli_with_status('totals', '-e', 'debug')
-    expect(status).to eq(2)
-    expect(err).to include('Global option(s) must come BEFORE the subcommand')
-    expect(err).not_to match(%r{\.rb:\d+:in })
   end
 
   it 'parses the global options once' do

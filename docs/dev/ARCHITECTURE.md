@@ -23,7 +23,7 @@ cov-loupe is organized around a single coverage data model that feeds three deli
 
 ### CLI (`CovLoupe::CoverageCLI`)
 
-- Global options are defined in `OptionParserBuilder` on Ruby’s `OptionParser` and parsed once, by `CovLoupe.run`, which passes `CoverageCLI#run` the resulting config, the remaining arguments, and the options typed on the command line (for usage hints). They include `--coverage-file`, `--raise-on-stale`, `--format` (`-fJ` is `-f J`), and `--source`.
+- Global options are defined in `OptionParserBuilder` on Ruby’s `OptionParser` and parsed by `CovLoupe.run` in two steps: `COV_LOUPE_OPTS` and the options before the subcommand (`order!`), then, for a known subcommand, the arguments after it (`permute!`, with the options in `OptionParserBuilder::BEFORE_SUBCOMMAND_ONLY` left out and `validate`'s `-i` added). It passes `CoverageCLI#run` the resulting config, the subcommand and its positional arguments, and `validate`'s inline code. They include `--coverage-file`, `--raise-on-stale`, `--format` (`-fJ` is `-f J`), and `--source`.
 - Subcommands (`list`, `summary`, `raw`, `uncovered`, `detailed`, `totals`, `validate`) translate to calls on `CoverageModel`.
 - **Subcommand Abbreviations** – Frequent CLI users can use single-character abbreviations for most subcommands: `l` (list), `s` (summary), `u` (uncovered), `d` (detailed), `r` (raw), `t` (totals), and `v` (validate). The version is printed by the global `-v`/`--version` flag, not a subcommand.
 - Uses `ErrorHandlerFactory.for_cli` to convert unexpected exceptions into friendly user messages while honoring `--error-mode`.
