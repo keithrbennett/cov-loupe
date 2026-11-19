@@ -57,6 +57,7 @@ module CovLoupe
           puts
           puts 'To finish the release, run:'
           puts
+          puts '  bundle exec rake release:smoke_test'
           puts "  git tag -a #{@tag_name} -m 'Version #{@version}' #{@head_sha}"
           puts '  git push origin main --follow-tags'
           puts "  gem push #{@gem_file.basename}"

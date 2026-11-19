@@ -131,7 +131,7 @@ RSpec.describe CovLoupe::Scripts::PreReleaseCheck do
         expect(out).to include("Built from commit: #{head_sha}")
         expect(out).to include("SHA256: #{gem_sha256}")
         expect(out).to include("git tag -a v1.2.3 -m 'Version 1.2.3' #{head_sha}")
-        expect(out).to include('gem push cov-loupe-1.2.3.gem')
+        expect(out).to include('bundle exec rake release:smoke_test', 'gem push cov-loupe-1.2.3.gem')
         expect(out).to include('is the authoritative artifact; do not rebuild it')
       end
     end

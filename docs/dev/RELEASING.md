@@ -122,15 +122,32 @@ bin/pre-release-check
     - Note the build commit SHA and SHA256 it prints
     - The `cov-loupe-$VERSION.gem` file it produces is the authoritative release artifact
 
-- [ ] **Test installation**: Install and test the exact file the script produced
+- [ ] **Test installation**: Smoke-test the exact file the script produced
+```bash
+bundle exec rake release:smoke_test
+```
+    - Installs `cov-loupe-$VERSION.gem` into a temporary gem directory that holds only the
+      gem and copies of the installed gems its declared runtime dependencies resolve to, with
+      `GEM_PATH` limited to that directory. So a dependency missing from the gemspec is not
+      found, unless a declared dependency also depends on it or it is a default gem (such as
+      `json`), which Ruby always provides. Nothing is downloaded, so the dependencies must be
+      installed (`bundle install`).
+    - It then runs the installed executable: `--version` (against the version the gem
+      declares), `--help`, `--path-for docs-local` (to confirm it runs from the installed gem,
+      not this checkout, and that its README is packaged), `totals` against the demo
+      project's coverage data the gem ships, and a `help` call to the MCP server (which loads
+      the `mcp` dependency). Nothing outside the temporary directory changes.
+    - Without an argument it tests `cov-loupe-$VERSION.gem` in the repository root, or else
+      in `pkg/` (from `rake build`). To test another file:
+      `bundle exec rake "release:smoke_test[path/to/cov-loupe-$VERSION.gem]"`.
+    - Optionally also try it on a real project. This installs into your default gem
+      directory, so uninstall it afterward, or use a scratch `GEM_HOME`, to avoid shadowing
+      your development setup:
 ```bash
 gem install ./cov-loupe-$VERSION.gem
-cov-loupe --version
-cov-loupe --help
-# Test on actual project (subshell, so later steps still run in this repo)
 (cd /path/to/test/project && cov-loupe list)
+gem uninstall cov-loupe -v "$VERSION"
 ```
-    - Uninstall or use a sandbox environment to avoid shadowing your development setup
 
 ### 5. Git Release
 

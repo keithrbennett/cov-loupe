@@ -84,6 +84,7 @@ end
 
 require_relative 'lib/cov_loupe/scripts/pre_release_check'
 require_relative 'lib/cov_loupe/scripts/release_bump'
+require_relative 'lib/cov_loupe/scripts/release_smoke_test'
 require_relative 'lib/cov_loupe/scripts/latest_ci_status'
 require_relative 'lib/cov_loupe/scripts/setup_doc_server'
 require_relative 'lib/cov_loupe/scripts/start_doc_server'
@@ -97,6 +98,12 @@ namespace :release do
   desc 'Run pre-release checks (same as bin/pre-release-check); pass rerun_ci to force a fresh CI run'
   task :check, [:rerun_ci] do |_task, args|
     CovLoupe::Scripts::PreReleaseCheck.new(rerun_ci: args[:rerun_ci] == 'rerun_ci').call
+  end
+
+  desc 'Install the built release gem into a temporary gem directory and run it (default: the gem ' \
+    'bin/pre-release-check built for the current version)'
+  task :smoke_test, [:gem_file] do |_task, args|
+    CovLoupe::Scripts::ReleaseSmokeTest.new(args[:gem_file]).call
   end
 end
 
