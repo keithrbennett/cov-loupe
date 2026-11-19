@@ -67,6 +67,21 @@ end
 desc 'Run all security audits'
 task security: 'security:all'
 
+# Only build and install: bundler/gem_tasks would also define `release`, but tagging, pushing
+# and `gem push` stay manual.
+require 'bundler/gem_helper'
+gem_helper = Bundler::GemHelper.new(__dir__)
+
+desc 'Build the gem into pkg/'
+task :build do
+  gem_helper.build_gem
+end
+
+desc 'Build and install the gem locally'
+task :install do
+  gem_helper.install_gem
+end
+
 require_relative 'lib/cov_loupe/scripts/pre_release_check'
 require_relative 'lib/cov_loupe/scripts/release_bump'
 require_relative 'lib/cov_loupe/scripts/latest_ci_status'

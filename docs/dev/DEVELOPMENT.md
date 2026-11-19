@@ -11,7 +11,7 @@ git clone https://github.com/keithrbennett/cov-loupe.git
 cd cov-loupe
 bundle install
 bin/setup-hooks  # optional: enable the tracked git hooks
-gem build cov-loupe.gemspec && gem install cov-loupe-*.gem  # optional
+bundle exec rake install  # optional: build into pkg/ and install
 cov-loupe --version  # verify it works
 ```
 

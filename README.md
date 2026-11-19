@@ -317,9 +317,8 @@ bundle exec rspec
 # Test locally
 bundle exec exe/cov-loupe
 
-# Build and install
-gem build cov-loupe.gemspec
-gem install cov-loupe-*.gem
+# Build and install (the gem is written to pkg/)
+bundle exec rake install
 ```
 
 See [docs/dev/DEVELOPMENT.md](docs/dev/DEVELOPMENT.md) for more.
