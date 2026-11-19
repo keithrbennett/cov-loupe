@@ -39,7 +39,7 @@ cov-loupe is organized around a single coverage data model that feeds three deli
 ### Library API
 
 - Consuming code instantiates `CoverageModel` directly for fine-grained control over coverage queries.
-- Library calls raise `CovLoupe::Error` subclasses for callers to rescue; they never consult the context's configured error handler. To log a block of work to a different target, run it inside `CovLoupe.with_context(CovLoupe.create_context(log_target: ...))`.
+- Library calls raise `CovLoupe::Error` subclasses for callers to rescue (an invalid `sort_order` value, or an invalid `output_chars` value when there are rows to format, raises `ArgumentError` instead); they never consult the context's configured error handler. To log a block of work to a different target, run it inside `CovLoupe.with_context(CovLoupe.create_context(log_target: ...))`.
 - The Ruby public API is whatever is tagged `@api public` in the source (see [Public API and Versioning](../user/LIBRARY_API.md#public-api-and-versioning)); classes described in this document are internal unless tagged `@api public`, as `CoverageModel` is.
 
 ## MCP Tool Stack

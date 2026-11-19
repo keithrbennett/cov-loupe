@@ -30,6 +30,13 @@ RSpec.describe CovLoupe::CoverageRowSorter do
     end
   end
 
+  [:bogus, 'descending', 'ascending', nil].each do |sort_order|
+    it "raises ArgumentError for sort_order #{sort_order.inspect}" do
+      expect { sorted_files(sort_order) }
+        .to raise_error(ArgumentError, /Invalid sort_order: #{Regexp.escape(sort_order.inspect)}/)
+    end
+  end
+
   it 'returns a new array without reordering the input' do
     original = rows.dup
     described_class.sort(rows, sort_order: :ascending, root: root)

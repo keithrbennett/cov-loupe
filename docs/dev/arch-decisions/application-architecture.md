@@ -274,7 +274,7 @@ end
 
 **Library Mode** (`lib/cov_loupe.rb`):
 
-1. Raises custom exceptions directly; library calls never consult the context's error handler
+1. Raises custom exceptions directly (an invalid `sort_order` value, or an invalid `output_chars` value when there are rows to format, raises `ArgumentError`); library calls never consult the context's error handler
 2. Consumers catch and handle `CovLoupe::Error` subclasses
 
 ### Consequences

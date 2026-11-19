@@ -29,6 +29,17 @@
       `Unknown option for validate: --bogus`.
     - The executable prints the version for `-v`/`--version` only as the first argument or
       among the options before the subcommand, not anywhere (for example `list -v`).
+- **The library rejects an invalid `sort_order`.** `CoverageModel#list` and
+  `CoverageModel#format_table` sorted ascending for any `sort_order` other than the symbol
+  `:descending`, including a misspelling, `nil`, and the string `'descending'`. They now
+  raise `ArgumentError` for anything but `:ascending` or `:descending`, before any staleness
+  check. Code that passed `'ascending'` or `nil` and got an ascending sort must pass
+  `:ascending`; code that passed `'descending'` was silently getting ascending order and
+  must pass `:descending`. This includes `validate` predicates, which receive a
+  `CoverageModel`: a predicate that passes a string now fails with a predicate error (exit
+  4). The CLI and MCP, which take strings, already rejected invalid values and are
+  unchanged. See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#library-sort_order-must-be-ascending-or-descending).
 - **Payload keys reshaped for schema v1.** Line metrics now have one flat shape everywhere,
   and keys whose names meant different things in different payloads were renamed. This
   applies to library hashes, structured CLI output, and MCP tool payloads; `schema_version`

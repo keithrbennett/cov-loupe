@@ -25,7 +25,7 @@ $ cov-loupe --error-mode debug s nonexistent.rb
 
 ## Library Mode
 
-Calls to `CovLoupe::CoverageModel` raise custom exceptions rather than printing or logging them; rescue them in your code. To keep the diagnostics cov-loupe logs along the way, such as skipped coverage rows, give the context a log target:
+Calls to `CovLoupe::CoverageModel` raise custom exceptions (subclasses of `CovLoupe::Error`) rather than printing or logging them; rescue them in your code. An invalid `sort_order` value, or an invalid `output_chars` value when there are rows to format, raises Ruby's `ArgumentError` instead, which rescuing `CovLoupe::Error` does not catch; see [Exception Types](LIBRARY_API.md#exception-types). To keep the diagnostics cov-loupe logs along the way, such as skipped coverage rows, give the context a log target:
 
 ```ruby
 context = CovLoupe.create_context(log_target: 'cov_loupe.log')

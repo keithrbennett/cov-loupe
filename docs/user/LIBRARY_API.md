@@ -158,6 +158,8 @@ Returns coverage summary for all files in the coverage file.
 
 **Returns:** `Hash` - See [list return type](#list)
 
+**Raises:** `ArgumentError` if `sort_order` is not `:ascending` or `:descending` (strings are not accepted). This is checked before any staleness check, so it is raised even when `raise_on_stale` would also fail.
+
 **Example:**
 ```ruby
 list_result = model.list
@@ -267,6 +269,8 @@ Generates a formatted table string.
 - `output_chars` (Symbol, optional): Character mode for table borders and symbols (`:default`, `:fancy`, or `:ascii`).
 
 **Returns:** `String` - Formatted table with Unicode box-drawing borders, or ASCII borders in `:ascii` mode (`:default` chooses by the output encoding). File paths are shown as they are in every mode.
+
+**Raises:** `ArgumentError` if `sort_order` is not `:ascending` or `:descending` (strings are not accepted), checked before any staleness check; or if `output_chars` is not `:default`, `:fancy` or `:ascii` and there are rows to format.
 
 **Example:**
 ```ruby
@@ -526,6 +530,8 @@ All public cov-loupe exceptions inherit from `CovLoupe::Error`, which provides `
     - **`CorruptCoverageDataError`** - A file's coverage entry has no usable `lines` array; raised on load when a non-empty coverage map has no entry with one (line coverage disabled)
     - **`CoverageDataStaleError`** - A file's coverage is stale (only with `raise_on_stale: true`)
     - **`CoverageDataProjectStaleError`** - Project coverage is stale (only with `raise_on_stale: true`)
+
+An invalid value for a fixed-choice `CoverageModel` argument is a programming error, not a cov-loupe error: `list` and `format_table` raise Ruby's `ArgumentError` for an invalid `sort_order`, and `format_table` raises it for an invalid `output_chars` when there are rows to format. Rescuing `CovLoupe::Error` does not catch it. Other bad arguments, such as a `coverage_file` that does not exist, raise `CovLoupe::Error` subclasses as listed above.
 
 ### Basic Error Handling
 

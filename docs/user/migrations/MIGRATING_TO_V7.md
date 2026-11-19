@@ -26,6 +26,7 @@ This document describes the breaking changes introduced in version 7.0.0.
 - [`--tracked-globs` Split Outside Braces and Brackets](#tracked-globs-split-outside-braces-and-brackets)
 - [`COV_LOUPE_OPTS` Is Parsed on Its Own](#cov_loupe_opts-is-parsed-on-its-own)
 - [Options Can Follow the Subcommand](#options-can-follow-the-subcommand)
+- [Library `sort_order` Must Be `:ascending` or `:descending`](#library-sort_order-must-be-ascending-or-descending)
 
 ---
 
@@ -477,3 +478,24 @@ cov-loupe summary lib/foo.rb --format json   # 7.0
 | `cov-loupe -- list` | runs `list` | usage error: `--` is allowed only after a subcommand |
 
 **Migration:** pass a path that starts with `-` after `--`. Move a subcommand out of `COV_LOUPE_OPTS` onto the command line. Remove a standalone `--` before the subcommand (not one that is an option's value, as in `-g --`), and any arguments after `-m mcp`.
+
+## Library `sort_order` Must Be `:ascending` or `:descending`
+
+In 6.x, `CoverageModel#list` and `CoverageModel#format_table` sorted descending only for the symbol `:descending` and ascending for any other value, including a misspelling, `nil`, and the string `'descending'`. In 7.0 they raise `ArgumentError` for anything but `:ascending` or `:descending`, before any staleness check. This applies to `validate` predicates too, since they receive a `CoverageModel`: a predicate that passes a string now fails with a predicate error (exit 4). The CLI `--sort-order` option and the MCP `sort_order` argument are unchanged.
+
+| Library call | 6.x | 7.0 |
+|---|---|---|
+| `model.list(sort_order: 'ascending')` or `sort_order: nil` | ascending | `ArgumentError` |
+| `model.list(sort_order: 'descending')` | ascending (silently wrong) | `ArgumentError` |
+| `model.list(sort_order: :desc)` | ascending (silently wrong) | `ArgumentError` |
+| `model.format_table(sort_order: 'a')` | ascending | `ArgumentError` |
+
+**Migration:** in library code and predicates, pass `:ascending` or `:descending`, or omit `sort_order` for the default `:descending`. `to_sym` is enough only when the string is exactly `'ascending'` or `'descending'`: it turns any string into a symbol without checking it, so `'a'.to_sym` gives `:a`, which the library rejects. To accept the abbreviations and capitalization the CLI accepts, map the string yourself; this rejects anything else, including `nil`:
+
+```ruby
+SORT_ORDERS = { 'a' => :ascending, 'ascending' => :ascending,
+                'd' => :descending, 'descending' => :descending }.freeze
+
+sort_order = SORT_ORDERS.fetch(input.to_s.downcase) { raise ArgumentError, "bad sort order: #{input.inspect}" }
+model.list(sort_order: sort_order)
+```

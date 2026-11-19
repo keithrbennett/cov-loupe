@@ -159,6 +159,8 @@ module CovLoupe
     #   - 'length_mismatch_files': Files with line count mismatches
     #   - 'unreadable_files': Files that could not be read
     #   - 'timestamp_status': 'ok', or 'missing' when coverage has no timestamp
+    # @raise [ArgumentError] if sort_order is not :ascending or :descending, before any
+    #   staleness check
     #
     # @note Complexity: O(n log n) where n is the number of tracked files due to sorting.
     #   File I/O for staleness checks adds O(m) where m is the number of tracked source files.
@@ -166,6 +168,7 @@ module CovLoupe
     def list(sort_order: DEFAULT_SORT_ORDER,
       raise_on_stale: @default_raise_on_stale,
       tracked_globs: @default_tracked_globs)
+      CoverageRowSorter.validate_sort_order!(sort_order)
       relative_paths(PayloadSchema.add(unversioned_list(sort_order: sort_order,
         raise_on_stale: raise_on_stale, tracked_globs: tracked_globs)))
     end
@@ -232,6 +235,9 @@ module CovLoupe
     # @param tracked_globs [Array<String>, String, nil] Glob patterns for tracked files
     # @param output_chars [Symbol] Output character mode (:default, :fancy, :ascii)
     # @return [String] Formatted table
+    # @raise [ArgumentError] if sort_order is not :ascending or :descending, before any
+    #   staleness check; or if output_chars is not :default, :fancy or :ascii and there are
+    #   rows to format
     def format_table(rows = nil, sort_order: DEFAULT_SORT_ORDER,
       raise_on_stale: @default_raise_on_stale,
       tracked_globs: @default_tracked_globs,

@@ -202,6 +202,37 @@ RSpec.describe CovLoupe::CoverageModel do
     end
   end
 
+  describe 'sort_order validation' do
+    calls = {
+      'list'                   => ->(m, order) { m.list(sort_order: order) },
+      'format_table'           => ->(m, order) { m.format_table(sort_order: order) },
+      'format_table with rows' => ->(m, order) { m.format_table(m.list['files'], sort_order: order) },
+      'format_table with []'   => ->(m, order) { m.format_table([], sort_order: order) },
+    }
+
+    calls.each do |label, call|
+      it "#{label} rejects a sort_order that is not :ascending or :descending" do
+        aggregate_failures do
+          [:bogus, 'descending', 'ascending', nil].each do |order|
+            expect { call.call(model, order) }.to raise_error(ArgumentError, /Invalid sort_order/)
+          end
+        end
+      end
+    end
+
+    {
+      'list'         => ->(m) { m.list(sort_order: :bogus, raise_on_stale: true) },
+      'format_table' => ->(m) { m.format_table(sort_order: :bogus, raise_on_stale: true) },
+    }.each do |label, call|
+      it "#{label} rejects an invalid sort_order before checking staleness" do
+        stub_staleness_checker(newer_files: [File.expand_path('lib/foo.rb', root)])
+
+        expect { call.call(model) }.to raise_error(ArgumentError, /Invalid sort_order/)
+        expect(CovLoupe::StalenessChecker).not_to have_received(:new)
+      end
+    end
+  end
+
   describe 'paths in query results' do
     let(:in_project_file) { File.join(root, 'lib', 'foo.rb') }
     let(:outside_file) { File.expand_path('../zz_outside_root.rb', root) }
@@ -588,6 +619,14 @@ RSpec.describe CovLoupe::CoverageModel do
         # Sorting: Descending (foo before bar)
         output_desc = model.format_table(list_data, sort_order: :descending)
         expect(output_desc.index('foo.rb')).to be < output_desc.index('bar.rb')
+      end
+    end
+
+    it 'raises ArgumentError for an invalid output_chars only when there are rows to format' do
+      aggregate_failures do
+        expect { model.format_table(output_chars: :bogus) }
+          .to raise_error(ArgumentError, /Invalid output_chars mode: :bogus/)
+        expect(model.format_table([], output_chars: :bogus)).to eq('No coverage data found')
       end
     end
 
