@@ -98,7 +98,6 @@ RSpec.describe CovLoupe::CoverageCLI do
       end
     end
 
-
     [
       %w[-h], %w[--help], %w[-v], %w[--version], %w[-p repo], %w[--path-for=repo], %w[-m mcp],
       %w[--mode=mcp], %w[--allow-code-predicates], %w[--no-allow-code-predicates]
@@ -163,6 +162,17 @@ RSpec.describe CovLoupe::CoverageCLI do
       expect(parsed('v', '-i', '->(m) { true }')[:inline_code]).to eq('->(m) { true }')
     end
 
+    [%w[-i CODE], %w[-iCODE], %w[--inline CODE], %w[--inline=CODE]].each do |spelling|
+      it "passes the code given as `#{spelling.join(' ')}`" do
+        option = spelling.map { |arg| arg.sub('CODE', '->(m) { true }') }
+        expect(parsed('validate', *option)[:inline_code]).to eq('->(m) { true }')
+      end
+    end
+
+    it 'passes -i=CODE as the code =CODE, as OptionParser does for any short option' do
+      expect(parsed('validate', '-i=x')[:inline_code]).to eq('=x')
+    end
+
     it 'uses the last -i when it is given twice' do
       expect(parsed('validate', '-i', 'first', '-i', 'second')[:inline_code]).to eq('second')
     end
@@ -178,7 +188,7 @@ RSpec.describe CovLoupe::CoverageCLI do
       expect(err).to include("Unexpected argument(s) for 'validate': policy.rb")
     end
 
-    [['-i'], ['-i', ''], ['--inline=']].each do |option|
+    [['-i'], ['-i', ''], ['--inline='], ['--in'], ['--inl=']].each do |option|
       it "shows the usage synopsis, without an Error: prefix, for #{option.inspect}" do
         _out, err, status = run_fixture_cli_with_status('validate', *option)
         expect(status).to eq(CovLoupe::ExitCodes::USAGE)
@@ -214,10 +224,22 @@ RSpec.describe CovLoupe::CoverageCLI do
     end
   end
 
+  it 'runs in CLI mode with -m cli before the subcommand when COV_LOUPE_OPTS selects MCP' do
+    ENV['COV_LOUPE_OPTS'] = '-m mcp'
+    expect(parsed('-m', 'cli', 'list')[:args]).to eq(%w[list])
+  end
+
+  it 'does not suggest a subcommand for an invalid option after one' do
+    _out, err, status = run_fixture_cli_with_status('list', '--summary')
+    expect(status).to eq(CovLoupe::ExitCodes::USAGE)
+    expect(err).to include('invalid option: --summary')
+    expect(err).not_to include('Did you mean')
+  end
+
   it "rejects '--' before the subcommand" do
     _out, err, status = run_fixture_cli_with_status('--', 'list')
     expect(status).to eq(CovLoupe::ExitCodes::USAGE)
-    expect(err).to include("'--' cannot come before the subcommand")
+    expect(err).to include("'--' is allowed only after a subcommand")
   end
 
   it "accepts '--' as an option's value before the subcommand" do

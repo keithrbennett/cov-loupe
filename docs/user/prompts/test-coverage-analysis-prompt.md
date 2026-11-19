@@ -51,8 +51,9 @@ Before you begin the analysis:
   cov-loupe's per-line output into area totals is expected (see Step 4).
 - Prefer the cov-loupe MCP server. If it is unavailable, use the CLI
   (`cov-loupe`, or `bundle exec cov-loupe` if it is in the Gemfile; run
-  `cov-loupe --help` for usage), putting the subcommand first and adding `-fJ` after it for JSON output. Say in
-  the report which one you used.
+  `cov-loupe --help` for usage), putting the subcommand first and adding `-fJ` after it for JSON output. If it
+  reports "MCP mode takes no subcommand", COV_LOUPE_OPTS selects MCP mode; put
+  `-m cli` before the subcommand. Say in the report which one you used.
 - Use source and test files only to define the logical areas and to judge the
   importance of uncovered code.
 - Do not run the test suite, and do not modify source files, test files, or
@@ -196,7 +197,7 @@ For each selected file or area:
 
 1. Get the uncovered lines (`file_uncovered_lines` /
    `cov-loupe uncovered <path> -fJ`); use `file_coverage_detailed` or
-   `cov-loupe -m cli -s uncovered -n 2 uncovered <path>` to see the source in
+   `cov-loupe uncovered <path> -s uncovered -n 2` to see the source in
    context.
 2. Characterize each cluster of uncovered lines: error/rescue path, edge-case
    branch, defensive guard, platform-specific code, dead code, debug/logging

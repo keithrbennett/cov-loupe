@@ -318,10 +318,11 @@ warn 'Coverage policy failed' unless status.zero?
 ```
 
 Unlike the `cov-loupe` executable, neither method installs `INT`/`TERM` handlers, checks the
-Ruby version, treats a first `-v`/`--version` argument as a version request before anything else (among
-the options before the subcommand, it still prints the version), or sets
+Ruby version, prints the version for a first `-v`/`--version` argument before checking the
+Ruby version, or sets
 `Encoding.default_external` to UTF-8 under the C locale (see
-[Library API](LIBRARY_API.md#quick-start) for why that matters for non-ASCII paths).
+[Library API](LIBRARY_API.md#quick-start) for why that matters for non-ASCII paths). Like the executable, both print the version for `-v` among the options before the
+subcommand.
 
 ```ruby
 CovLoupe.run(%w[--error-mode debug --log-file cov_loupe.log list])

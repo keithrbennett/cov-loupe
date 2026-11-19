@@ -474,6 +474,6 @@ cov-loupe summary lib/foo.rb --format json   # 7.0
 | `cov-loupe -m mcp list` | starts the MCP server; `list` is ignored | usage error |
 | `COV_LOUPE_OPTS=list cov-loupe` | runs `list` | usage error: `COV_LOUPE_OPTS` may contain only options |
 | `COV_LOUPE_OPTS=list cov-loupe -f json` | usage error (`-f` after the subcommand), exit 1 | usage error, as above, exit 2 |
-| `cov-loupe -- list` | runs `list` | usage error: `--` cannot come before the subcommand |
+| `cov-loupe -- list` | runs `list` | usage error: `--` is allowed only after a subcommand |
 
-**Migration:** pass a path that starts with `-` after `--`. Move a subcommand out of `COV_LOUPE_OPTS` onto the command line. Remove a `--` before the subcommand, and any arguments after `-m mcp`.
+**Migration:** pass a path that starts with `-` after `--`. Move a subcommand out of `COV_LOUPE_OPTS` onto the command line. Remove a standalone `--` before the subcommand (not one that is an option's value, as in `-g --`), and any arguments after `-m mcp`.

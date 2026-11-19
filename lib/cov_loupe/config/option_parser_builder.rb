@@ -196,7 +196,7 @@ module CovLoupe
       parser.separator <<~ENVIRONMENT
         Environment:
           COV_LOUPE_OPTS can be used to set default options. Command-line arguments override these defaults.
-          It may contain only options (no subcommand, arguments or '--').
+          It may contain only options (no subcommand, arguments or standalone '--').
           Example: export COV_LOUPE_OPTS="--format json --sort-order ascending"
 
       ENVIRONMENT

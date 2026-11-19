@@ -79,8 +79,9 @@ command line instead.
 - **Permission rules by subcommand:** options can follow the subcommand
   (`cov-loupe list -fJ`), so a prefix rule such as `Bash(cov-loupe list:*)` matches a
   subcommand with any options. After a subcommand other than `validate`, `-i`/`--inline` is
-  an invalid option, and `-m`/`--mode` is rejected, so such a rule cannot run Ruby or start
-  the MCP server. It does allow every other option: `-l`/`--log-file` creates or appends to a
+  an invalid option, and `-m`/`--mode` and `--[no-]allow-code-predicates` are rejected (as are
+  `-h`, `-v` and `-p`), so such a rule cannot run Ruby or start the MCP server. It does allow
+  every other option: `-l`/`--log-file` creates or appends to a
   file of the agent's choosing, and `-c`, `-R` and `-g` read any path. A prefix rule also
   covers one command, not a shell string: depending on your harness, `cov-loupe list && ...`
   may match it. A prefix rule is not a sandbox.

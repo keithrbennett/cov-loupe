@@ -15,16 +15,18 @@
   are a usage error. Breaking or changed behavior:
     - After a subcommand, an argument starting with `-` is read as an option, so a path such
       as `-odd.rb` must follow `--`: `cov-loupe summary -- -odd.rb`.
-    - `COV_LOUPE_OPTS` may contain only options. A subcommand, argument or `--` there is a
-      usage error (previously it ended the options, and the command line was not parsed for
-      options).
-    - A `--` before the subcommand (`cov-loupe -- list`) is a usage error.
+    - `COV_LOUPE_OPTS` may contain only options. A subcommand, argument or standalone `--`
+      there is a usage error; a `--` that is an option's value, as in `-g --`, is fine.
+      Previously such a word ended the options, and the command line was not parsed for
+      options.
+    - A standalone `--` before the subcommand (`cov-loupe -- list`) is a usage error.
     - MCP mode with a subcommand or argument (`cov-loupe -m mcp list`, or `-m mcp` in
       `COV_LOUPE_OPTS` with a subcommand on the command line) is a usage error; the argument
       used to be ignored.
     - `validate`'s `-i` is parsed like the other options, so `-iCODE` and `--inline=CODE`
-      now work, and an unknown option after `validate` is reported as
-      `invalid option: --bogus` instead of `Unknown option for validate: --bogus`.
+      now work. As with any short option, `-i=CODE` passes `=CODE` as the code. An unknown
+      option after `validate` is reported as `invalid option: --bogus` instead of
+      `Unknown option for validate: --bogus`.
     - The executable prints the version for `-v`/`--version` only as the first argument or
       among the options before the subcommand, not anywhere (for example `list -v`).
 - **Payload keys reshaped for schema v1.** Line metrics now have one flat shape everywhere,

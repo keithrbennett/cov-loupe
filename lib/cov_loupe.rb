@@ -113,7 +113,9 @@ module CovLoupe
         # Checked before validation, so a stray subcommand is the error reported.
         unless rest.empty?
           report_global_usage_error(
-            UsageError.new("MCP mode takes no subcommand or arguments; found #{rest.first.inspect}."),
+            UsageError.new("MCP mode takes no subcommand or arguments; found #{rest.first.inspect}. " \
+                           'To run a subcommand when COV_LOUPE_OPTS selects MCP mode, put -m cli ' \
+                           'before it.'),
             from_env: false
           )
         end
@@ -298,8 +300,8 @@ module CovLoupe
       rest = parse_options_from(parser, cli_argv, from_env: false)
       if parser.stopped_at_terminator?
         report_global_usage_error(
-          UsageError.new("'--' cannot come before the subcommand. To pass a path that starts " \
-                         "with '-', put '--' after the subcommand: cov-loupe summary -- -odd.rb"),
+          UsageError.new("'--' is allowed only after a subcommand, before a path that starts " \
+                         "with '-' (cov-loupe summary -- -odd.rb)."),
           from_env: false
         )
       end
@@ -323,7 +325,9 @@ module CovLoupe
       original = args.dup
       parser.parse_subcommand_options(subcommand, args)
     rescue OptionParser::ParseError => e
-      report_global_usage_error(subcommand_option_error(e, subcommand), argv: original, from_env: false)
+      # No subcommand suggestion: one was given.
+      report_global_usage_error(subcommand_option_error(e, subcommand), argv: original,
+        from_env: false, suggest_subcommands: false)
     rescue ConfigurationError, UsageError => e
       report_global_usage_error(e, from_env: false)
     end
@@ -333,13 +337,18 @@ module CovLoupe
     # long form is abbreviated (--vers).
     private def subcommand_option_error(error, subcommand)
       option = error.args.first.to_s.split('=', 2).first
-      if !error.is_a?(OptionParser::InvalidOption) && %w[-i --inline].include?(option)
+      if !error.is_a?(OptionParser::InvalidOption) && inline_option?(option)
         UsageError.for_subcommand('validate -i <code>')
       elsif error.is_a?(OptionParser::InvalidOption) && before_subcommand_only?(option)
         UsageError.new("#{option} must come before the subcommand, not after '#{subcommand}'.")
       else
         error
       end
+    end
+
+    # -i, or --inline or an abbreviation of it (--in).
+    private def inline_option?(option)
+      option == '-i' || (option.start_with?('--i') && '--inline'.start_with?(option))
     end
 
     private def before_subcommand_only?(option)
@@ -377,14 +386,14 @@ module CovLoupe
     # Reports a usage error in the global options and exits with the usage status. When the
     # error is in COV_LOUPE_OPTS, a line saying so comes before the --help line. argv, used
     # only for an OptionParser error, is the arguments whose parse failed.
-    private def report_global_usage_error(error, from_env:, argv: [])
+    private def report_global_usage_error(error, from_env:, argv: [], suggest_subcommands: true)
       # Loaded only on this error path to keep normal startup light.
       require_relative 'cov_loupe/option_parsers/error_helper'
       note = "The error is in #{env_opts_description}, which is read before the command line." if from_env
       hint = [note, OptionParsers::ErrorHelper::USAGE_HINT].compact.join("\n")
       if error.is_a?(OptionParser::ParseError)
         require_relative 'cov_loupe/subcommands'
-        OptionParsers::ErrorHelper.new(SUBCOMMANDS)
+        OptionParsers::ErrorHelper.new(suggest_subcommands ? SUBCOMMANDS : [])
           .handle_option_parser_error(error, argv: argv, usage_hint: hint)
       else
         # A usage synopsis ('Usage: cov-loupe ...') is shown as is, as the CLI shows it.

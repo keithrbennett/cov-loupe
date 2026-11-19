@@ -490,7 +490,7 @@ clp summary lib/api/client.rb --format json  # Same result
 
 Putting options after the subcommand lets an agent permission rule such as `Bash(cov-loupe list:*)` allow a subcommand with any options; see [CLI Fallback for LLMs](CLI_FALLBACK_FOR_LLMS.md#differences-between-the-interfaces).
 
-These options come only before the subcommand; after it they are a usage error: `-m`/`--mode`, `--[no-]allow-code-predicates`, `-h`/`--help`, `-v`/`--version` and `-p`/`--path-for`. A `--` before the subcommand is also an error.
+These options come only before the subcommand; after it they are a usage error: `-m`/`--mode`, `--[no-]allow-code-predicates`, `-h`/`--help`, `-v`/`--version` and `-p`/`--path-for`. Options after an unknown subcommand are not parsed; the unknown subcommand is reported. `validate`'s `-i` goes after `validate`. A standalone `--` before the subcommand is also an error (a `--` that is an option's value, as in `-g --`, is fine).
 
 After the subcommand, an argument that starts with `-` is read as an option, so a path that starts with `-` must follow `--`:
 
@@ -985,7 +985,7 @@ clp summary lib/api/client.rb  # Uses JSON (from env)
 clp -f table summary lib/api/client.rb  # Explicit override to table format
 ```
 
-**Parsing:** `COV_LOUPE_OPTS` is parsed on its own, before the command line, into the same settings, so it must be complete: an option at its end that needs a value is an error there, rather than taking the first command-line argument. An option that fails to parse in `COV_LOUPE_OPTS` fails every command, even one that passes the same option correctly. A setting that is invalid only as a final value, such as `--log-file stdout`, can be overridden on the command line. A word in `COV_LOUPE_OPTS` that is not an option (such as a subcommand), or a `--`, is a usage error; see [Migrating to v7](migrations/MIGRATING_TO_V7.md#options-can-follow-the-subcommand).
+**Parsing:** `COV_LOUPE_OPTS` is parsed on its own, before the command line, into the same settings, so it must be complete: an option at its end that needs a value is an error there, rather than taking the first command-line argument. An option that fails to parse in `COV_LOUPE_OPTS` fails every command, even one that passes the same option correctly. A setting that is invalid only as a final value, such as `--log-file stdout`, can be overridden on the command line. A word in `COV_LOUPE_OPTS` that is not an option (such as a subcommand), or a standalone `--`, is a usage error; see [Migrating to v7](migrations/MIGRATING_TO_V7.md#options-can-follow-the-subcommand).
 
 **Errors:** an option's error message does not say whether the option came from `COV_LOUPE_OPTS` or the command line. When it is in `COV_LOUPE_OPTS` (an option or value there fails to parse, or a final setting is invalid because of it), the error is followed by a line saying so, with the value:
 

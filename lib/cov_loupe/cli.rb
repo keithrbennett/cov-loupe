@@ -35,8 +35,8 @@ module CovLoupe
     end
 
     # Runs a subcommand, or the default report, with options already parsed into config.
-    # @param args [Array<String>] the arguments after the global options: the subcommand
-    #   and its arguments
+    # @param args [Array<String>] the subcommand and its positional arguments (for a known
+    #   subcommand, CovLoupe.run has removed the options after it)
     # @param config [AppConfig] the parsed global options; the caller must have validated them
     # @param inline_code [String, nil] validate's -i code, parsed with the options after the
     #   subcommand
