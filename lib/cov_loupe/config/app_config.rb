@@ -26,7 +26,7 @@ module CovLoupe
     :color,
     :error_mode,
     :raise_on_stale,
-    :tracked_globs,
+    :file_globs,
     :log_file,
     :mode,
     :output_chars,
@@ -43,7 +43,7 @@ module CovLoupe
       color: $stdout.tty?,
       error_mode: :log,
       raise_on_stale: false,
-      tracked_globs: nil,
+      file_globs: nil,
       log_file: nil,
       mode: :cli,
       output_chars: :default,
@@ -52,7 +52,7 @@ module CovLoupe
       # Default to empty array (show all files in the coverage file and don't look for
       # files lacking coverage data). Setting globs, e.g. in COV_LOUPE_OPTS, opts in to
       # that check.
-      tracked_globs = [] if tracked_globs.nil?
+      file_globs = [] if file_globs.nil?
       super
     end
 
@@ -62,7 +62,7 @@ module CovLoupe
         root:           root,
         coverage_file:  coverage_file,
         raise_on_stale: raise_on_stale,
-        tracked_globs:  tracked_globs,
+        file_globs:     file_globs,
       }
     end
 

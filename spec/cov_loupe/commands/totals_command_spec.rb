@@ -19,15 +19,15 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
       it 'prints aggregated totals for the project' do
         output = capture_command_output(command, [])
 
-        expect(output).to include('Tracked globs:', 'Lines', '50.00%')
+        expect(output).to include('File globs:', 'Lines', '50.00%')
       end
 
-      it 'omits without coverage breakdown when tracking is disabled' do
-        # Disable tracked globs to ensure tracking is off
-        cli_context.config.tracked_globs = []
+      it 'omits without coverage breakdown when no file globs are set' do
+        # Set no file globs
+        cli_context.config.file_globs = []
         output = capture_command_output(command, [])
 
-        expect(output).to include('Tracked globs: (tracking disabled)')
+        expect(output).to include('File globs: (none)')
         expect(output).not_to include('Without coverage')
       end
 
@@ -41,10 +41,7 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
             'covered'     => 3,
             'uncovered'   => 3,
             'percentage'  => 50.0,
-            'tracking'    => {
-              'enabled' => true,
-              'globs'   => ['lib/**/*.rb'],
-            },
+            'file_globs'  => ['lib/**/*.rb'],
             'file_counts' => {
               'total'            => 4,
               'with_coverage'    => {
@@ -83,6 +80,7 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
           expect(output).to include('Stale: deleted = 0, newer than coverage = 1')
           expect(output).to include('Without coverage: 1 total')
           expect(output).to include('Not in coverage data = 1')
+          expect(output).to include("File globs:\n  - lib/**/*.rb\n")
         end
       end
 
@@ -92,7 +90,7 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
           root_warning:     nil,
           payload:          {
             'total' => 0, 'covered' => 0, 'uncovered' => 0, 'percentage' => nil,
-            'tracking' => { 'enabled' => false, 'globs' => [] },
+            'file_globs' => [],
             'file_counts' => { 'total'         => 0,
                                'with_coverage' => { 'total' => 0, 'ok' => 0,
                                               'stale' => { 'total' => 0, 'by_type' => {} } } }
@@ -107,7 +105,7 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
       end
     end
 
-    it_behaves_like 'a command with formatted output', [], %w[percentage tracking file_counts]
+    it_behaves_like 'a command with formatted output', [], %w[percentage file_globs file_counts]
 
     it 'raises when unexpected arguments are provided' do
       expect do
@@ -119,7 +117,7 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
       let(:base_payload) do
         {
           'total' => 0, 'covered' => 0, 'uncovered' => 0, 'percentage' => 0,
-          'tracking' => { 'enabled' => false, 'globs' => [] },
+          'file_globs' => [],
           'file_counts' => {
             'total'         => 0,
             'with_coverage' => {

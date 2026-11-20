@@ -296,7 +296,7 @@ RSpec.describe 'COV_LOUPE_OPTS Environment Variable' do
     end
   end
 
-  describe 'tracked globs from COV_LOUPE_OPTS' do
+  describe 'file globs from COV_LOUPE_OPTS' do
     # COV_LOUPE_OPTS is split with Shellwords, then -g goes through the same brace-aware
     # splitter as on the command line.
     it 'keeps a brace pattern whole' do
@@ -314,7 +314,7 @@ RSpec.describe 'COV_LOUPE_OPTS Environment Variable' do
       _stdout, stderr, status = run_fixture_cli_with_status('summary', 'lib/foo.rb')
 
       expect(status).to eq(CovLoupe::ExitCodes::USAGE)
-      expect(stderr).to include(%q(Unclosed '[' in --tracked-globs value: "lib/[ab"))
+      expect(stderr).to include(%q(Unclosed '[' in --file-globs value: "lib/[ab"))
     end
 
     # Shellwords removes an unquoted backslash, so the docs say to quote an escaped comma there.
@@ -327,7 +327,7 @@ RSpec.describe 'COV_LOUPE_OPTS Environment Variable' do
         allow(CovLoupe).to receive(:windows?).and_return(false)
         ENV['COV_LOUPE_OPTS'] = opts
 
-        expect(CovLoupe::ConfigParser.parse(CovLoupe.send(:extract_env_opts)).tracked_globs).to eq(globs)
+        expect(CovLoupe::ConfigParser.parse(CovLoupe.send(:extract_env_opts)).file_globs).to eq(globs)
       end
     end
   end

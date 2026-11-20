@@ -108,7 +108,7 @@ test:
   return false if list.any? { |f| f['percentage'] && f['percentage'] < 60.0 }
 
   # lib/ files must have at least 90% overall line coverage
-  lib_totals = model.project_totals(tracked_globs: ['lib/**/*.rb'])
+  lib_totals = model.project_totals(file_globs: ['lib/**/*.rb'])
   return false if lib_totals['percentage'].to_f < 90.0
 
   true

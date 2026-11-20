@@ -13,7 +13,8 @@ module CovLoupe
   # Staleness detection operates at two levels:
   #   - File level: checks if a single source file is newer than the coverage timestamp
   #     or has a different line count than the coverage array
-  #   - Project level: scans all tracked files for newer/missing/deleted/mismatched files
+  #   - Project level: checks the files in the coverage data (only those matching the file globs, when
+  #     set) for newer, deleted or mismatched files, and finds matching files not in coverage data
   #
   # Modes:
   #   - :off   → compute staleness but never raise (used for status reporting)
@@ -30,12 +31,12 @@ module CovLoupe
   class StalenessChecker
     MODES = %i[off error].freeze
 
-    def initialize(root:, coverage_file:, mode: :off, tracked_globs: nil, timestamp: nil,
+    def initialize(root:, coverage_file:, mode: :off, file_globs: nil, timestamp: nil,
       recorded_root: nil)
       @root = File.expand_path(root || '.')
       @coverage_file = coverage_file
       @mode = (mode || :off).to_sym
-      @tracked_globs = tracked_globs
+      @file_globs = file_globs
       @cov_timestamp = timestamp
       @recorded_root = recorded_root
       @coverage_file_path = nil
@@ -239,19 +240,19 @@ module CovLoupe
       [newer, deleted, unreadable]
     end
 
-    # Identifies tracked files that are not in coverage data.
-    # Returns array of relative paths for files matched by tracked_globs but not in coverage.
+    # Identifies files matching the file globs that are not in coverage data.
+    # Returns array of relative paths for files matched by file_globs but not in coverage.
     private def compute_not_in_coverage_files(coverage_files)
-      return [] unless @tracked_globs && Array(@tracked_globs).any?
+      return [] unless @file_globs && Array(@file_globs).any?
 
-      patterns = Array(@tracked_globs).map { |g| File.expand_path(g, @root) }
-      tracked = patterns
+      patterns = Array(@file_globs).map { |g| File.expand_path(g, @root) }
+      matching = patterns
         .flat_map { |p| Dir.glob(p, File::FNM_EXTGLOB | File::FNM_PATHNAME) }
         .select { |p| File.file?(p) }
         .uniq
 
       covered_set = coverage_files.to_set
-      tracked.reject { |abs| covered_set.include?(abs) }.map { |abs| rel(abs) }
+      matching.reject { |abs| covered_set.include?(abs) }.map { |abs| rel(abs) }
     end
 
     private def coverage_timestamp

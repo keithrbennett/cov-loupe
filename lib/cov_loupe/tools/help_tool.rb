@@ -57,9 +57,10 @@ module CovLoupe
         {
           tool:       ProjectCoverageTool,
           label:      'Project coverage (JSON, table, YAML, etc.)',
-          use_when:   'User wants coverage data for every tracked file in their preferred format.',
+          use_when:   'User wants coverage data for every file in the coverage data (or every ' \
+                      'file matching file_globs) in their preferred format.',
           avoid_when: 'User asks about a single file or only wants totals.',
-          inputs:     ['root/coverage_file (optional)', 'sort_order', 'raise_on_stale', 'tracked_globs',
+          inputs:     ['root/coverage_file (optional)', 'sort_order', 'raise_on_stale', 'file_globs',
             'format (json/pretty_json/yaml/amazing_print/inspect/puts/pretty_print/table)'],
         },
         {
@@ -67,7 +68,7 @@ module CovLoupe
           label:      'Project coverage totals',
           use_when:   'User wants total/covered/uncovered line counts or the overall coverage percent.',
           avoid_when: 'User needs per-file breakdowns.',
-          inputs:     ['root/coverage_file (optional)', 'raise_on_stale', 'tracked_globs'],
+          inputs:     ['root/coverage_file (optional)', 'raise_on_stale', 'file_globs'],
         },
         {
           tool:       ProjectValidateTool,

@@ -160,8 +160,8 @@ CoveragePolicy.new
 
 The predicate receives a full `CoverageModel` instance with access to:
 
-- `list(sort_order:, raise_on_stale:, tracked_globs:)` - All file coverage data
-- `project_totals(tracked_globs:, raise_on_stale:)` - Aggregated line totals
+- `list(sort_order:, raise_on_stale:, file_globs:)` - All file coverage data
+- `project_totals(file_globs:, raise_on_stale:)` - Aggregated line totals
 - `summary_for(path)` - Coverage summary for a specific file
 - `uncovered_for(path)` - Uncovered lines for a specific file
 - `detailed_for(path)` - Per-line coverage data

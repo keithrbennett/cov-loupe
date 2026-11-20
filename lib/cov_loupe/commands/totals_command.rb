@@ -14,7 +14,7 @@ module CovLoupe
         presenter = Presenters::ProjectTotalsPresenter.new(
           model:          model,
           raise_on_stale: config.raise_on_stale,
-          tracked_globs:  config.tracked_globs
+          file_globs:     config.file_globs
         )
         payload = presenter.payload
         if maybe_output_structured_format?(payload)
@@ -23,15 +23,15 @@ module CovLoupe
         end
 
         file_counts = payload['file_counts']
-        tracking = payload['tracking']
+        file_globs = payload['file_globs']
         with_coverage = file_counts['with_coverage']
         without_coverage = file_counts['without_coverage']
 
-        if tracking && tracking['enabled']
-          puts 'Tracked globs:'
-          tracking['globs'].each { |glob| puts "  - #{glob}" }
+        if file_globs.any?
+          puts 'File globs:'
+          file_globs.each { |glob| puts "  - #{glob}" }
         else
-          puts 'Tracked globs: (tracking disabled)'
+          puts 'File globs: (none)'
         end
         puts
 

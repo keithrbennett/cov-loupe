@@ -10,7 +10,7 @@
 >
 > Replace `clp` with `cov-loupe` if you want to target your own project/coverage file.
 >
-> The fixture's coverage timestamp is deliberately set far in the future, so the outputs below keep working on a fresh clone: `--raise-on-stale` / `-S` runs do not fail on timestamps, though those that also pass `-g` with globs matching the fixture's missing tracked files fail by design. Timestamps and absolute paths in some messages still vary by machine and time zone.
+> The fixture's coverage timestamp is deliberately set far in the future, so the outputs below keep working on a fresh clone: `--raise-on-stale` / `-S` runs do not fail on timestamps, though those that also pass `-g` with globs matching fixture files that are not in coverage data fail by design. Timestamps and absolute paths in some messages still vary by machine and time zone.
 
 ## Table of Contents
 
@@ -127,7 +127,7 @@ Detects system-wide staleness issues:
 **Conditions Checked:**
 
 1. **Newer files** - A file in the coverage data that was modified after coverage (requires timestamps - see [Timestamp Warnings](#timestamp-warnings))
-2. **Files not in coverage data** - Files matching `--tracked-globs` with no coverage data (checked only when globs are set)
+2. **Files not in coverage data** - Files matching `--file-globs` with no coverage data (checked only when globs are set)
 3. **Deleted files** - Coverage exists for non-existent files
 4. **Line count mismatches** - Source line count differs from the coverage array length
 5. **Unreadable files** - Source could not be read, or its staleness check failed
@@ -180,7 +180,7 @@ Check your coverage tool configuration to ensure timestamps are recorded.
 
 - Time-based staleness checks (the `"newer"` indicator) cannot run without timestamps
 - Files modified after coverage collection won't be flagged as stale
-- Only line count mismatches, deleted or unreadable files, and (with tracked globs) tracked files not in coverage data will be detected
+- Only line count mismatches, deleted or unreadable files, and (with file globs) matching files that are not in coverage data will be detected
 - The `timestamp_status` field in project-level JSON output will show `"missing"` instead of `"ok"`
 - Per-file commands and tools show no warning and have no `timestamp_status` field; in the CLI and MCP server, any command or tool that loads coverage without a timestamp logs an INFO line (on stderr by default; library logging is off by default)
 
@@ -449,8 +449,8 @@ The CLI is designed for CI/CD use with features that integrate naturally into pi
 # 1. Run tests to generate coverage
 bundle exec rspec
 
-# 2. Validate coverage freshness (fails with exit code 1 if any tracked file is stale
-#    or not in coverage data; on the demo fixture it fails, since two lib files are not in coverage data)
+# 2. Validate coverage freshness (fails with exit code 1 if any file in the coverage data, within the globs, is stale
+#    or a matching file is not in coverage data; on the demo fixture it fails, since two lib files are not in coverage data)
 clp -S true -g "lib/**/*.rb"
 
 # 3. Export data for CI artifacts or further processing
@@ -487,24 +487,24 @@ For GitHub Actions and GitLab CI examples, see [CI/CD Integration](examples/ci-c
 
 ## Advanced Filtering & Glob Patterns
 
-### Tracked Globs Overview
+### File Globs Overview
 
-**Default behavior:** By default, `--tracked-globs` is empty (`[]`), which means all files in the coverage file are shown. This ensures transparency—you see exactly what SimpleCov measured without any filtering.
+**Default behavior:** By default, `--file-globs` is empty (`[]`), which means all files in the coverage file are shown. This ensures transparency—you see exactly what SimpleCov measured without any filtering.
 
 **Why opt-in filtering?**
 
-- **Coverage results are not hidden** - Results are not excluded because their filespecs did not match default tracked globs
+- **Coverage results are not hidden** - Results are not excluded because their filespecs did not match default file globs
 - **Meaningful validation** - `not_in_coverage_files` only flags files you explicitly expect to have coverage
 - **Project flexibility** - Different projects use different directory structures
 
 **Important:** Files that are not in the coverage file are not visible with the default empty array. That includes files added since the last test run, and files never loaded during tests unless SimpleCov's `cover` globs include them (SimpleCov then records them at 0%).
 
-**Two purposes of tracked globs:**
+**Two purposes of file globs:**
 
 1. **Limit results** - Only show files from the coverage file that match the patterns
 2. **Include files with or without coverage** - Report files that match the patterns but aren't in the coverage file (reported in `not_in_coverage_files` for `list`, `not_in_coverage` for `totals`)
 
-**When to set them:** with no tracked globs you see what SimpleCov reported. Set them to also catch files with no coverage data, using patterns for the files you expect to be covered (normally the globs you give SimpleCov's `cover`; files that its `skip` filters remove still match them and are reported as missing, so narrow the globs to leave those out). See [`--tracked-globs`](CLI_USAGE.md#tracked-globs) for the canonical setup example.
+**When to set them:** with no file globs you see what SimpleCov reported. Set them to also catch files with no coverage data, using patterns for the files you expect to be covered (normally the globs you give SimpleCov's `cover`; files that its `skip` filters remove still match them and are reported as not in coverage data, so narrow the globs to leave those out). See [`--file-globs`](CLI_USAGE.md#file-globs) for the canonical setup example.
 
 ### Pattern Syntax
 
@@ -538,7 +538,7 @@ clp -fJ list | rexe -ij -mb -oJ 'self["files"].reject { |f| f["file"].include?("
 -g "app/**/concerns/*.rb"
 ```
 
-The CLI's `-g` value (on the command line or in `COV_LOUPE_OPTS`, including when it starts the MCP server) is split only on commas outside `{...}` and `[...]`, and an unclosed `{`, or an unclosed `[` outside braces, is a usage error. [`--tracked-globs`](CLI_USAGE.md#tracked-globs) gives the full rules, including literal commas and brackets, backslash escapes, and quoting in `COV_LOUPE_OPTS`. The MCP `tracked_globs` tool argument takes an array of patterns, and the Ruby API an array or a single pattern string; neither splits on commas or checks for unclosed brackets, so such a pattern there matches no files on CRuby (JRuby reads an unmatched `{` literally).
+The CLI's `-g` value (on the command line or in `COV_LOUPE_OPTS`, including when it starts the MCP server) is split only on commas outside `{...}` and `[...]`, and an unclosed `{`, or an unclosed `[` outside braces, is a usage error. [`--file-globs`](CLI_USAGE.md#file-globs) gives the full rules, including literal commas and brackets, backslash escapes, and quoting in `COV_LOUPE_OPTS`. The MCP `file_globs` tool argument takes an array of patterns, and the Ruby API an array or a single pattern string; neither splits on commas or checks for unclosed brackets, so such a pattern there matches no files on CRuby (JRuby reads an unmatched `{` literally).
 
 ### Use Cases
 
@@ -553,7 +553,7 @@ clp -g "lib/domain/**/*.rb" list
 
 **2. Ensure New Files Have Coverage:**
 ```sh
-# Fail if any tracked file lacks coverage
+# Fail if any file matching the file globs lacks coverage
 clp -S true -g "lib/features/**/*.rb"
 ```
 
@@ -572,12 +572,12 @@ model = CovLoupe::CoverageModel.new
 
 # Filter files in output
 api_files = model.list(
-  tracked_globs: ['lib/api/**/*.rb']
+  file_globs: ['lib/api/**/*.rb']
 )['files']
 
 # Multi-pattern filtering
 core_files = model.list(
-  tracked_globs: [
+  file_globs: [
     'lib/core/**/*.rb',
     'lib/domain/**/*.rb'
   ]
@@ -587,7 +587,7 @@ core_files = model.list(
 begin
   model.list(
     raise_on_stale: true,
-    tracked_globs: ['lib/critical/**/*.rb']
+    file_globs: ['lib/critical/**/*.rb']
   )
 rescue CovLoupe::CoverageDataProjectStaleError => e
   # Handle missing coverage for critical files

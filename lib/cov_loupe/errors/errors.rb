@@ -201,7 +201,7 @@ module CovLoupe
   end
 
   # Project-level stale coverage (global) — coverage timestamp older than
-  # one or more source files, or new tracked files not in coverage data.
+  # one or more source files, or new files matching the file globs that are not in coverage data.
   #
   # @api public
   class CoverageDataProjectStaleError < CoverageDataError

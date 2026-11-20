@@ -23,10 +23,11 @@ This document describes the breaking changes introduced in version 7.0.0.
 - [Public API Declared](#public-api-declared)
 - [`--output-chars ascii` No Longer Changes Data](#output-chars-ascii-no-longer-changes-data)
 - [Source and Predicate Files Are Read as UTF-8](#source-and-predicate-files-are-read-as-utf-8)
-- [`--tracked-globs` Split Outside Braces and Brackets](#tracked-globs-split-outside-braces-and-brackets)
+- [`--file-globs` Split Outside Braces and Brackets](#file-globs-split-outside-braces-and-brackets)
 - [`COV_LOUPE_OPTS` Is Parsed on Its Own](#cov_loupe_opts-is-parsed-on-its-own)
 - [Options Can Follow the Subcommand](#options-can-follow-the-subcommand)
 - [Library `sort_order` Must Be `:ascending` or `:descending`](#library-sort_order-must-be-ascending-or-descending)
+- [Tracked Globs Renamed to File Globs](#tracked-globs-renamed-to-file-globs)
 
 ---
 
@@ -54,6 +55,7 @@ Line metrics now have one flat shape in every payload, and keys that meant diffe
 | `uncovered_for` | `'uncovered' => [line numbers]` | `'uncovered_lines' => [line numbers]`; `'uncovered'` is now the count |
 | `project_totals` (CLI `totals`, MCP `project_coverage_totals`) | `'lines' => { 'covered', 'uncovered', 'total', 'percentage', 'included_files', 'excluded_files' }` | top-level `'covered'`, `'uncovered'`, `'total'`, `'percentage'`; use `file_counts.with_coverage.ok` and `.stale.total` for the file counts |
 | `project_totals` | `'files' => { ... }` | `'file_counts' => { ... }` (same contents) |
+| `project_totals` | `'tracking' => { 'enabled', 'globs' }` | `'file_globs' => [...]`; see [Tracked Globs Renamed to File Globs](#tracked-globs-renamed-to-file-globs) |
 | `project_totals` | `without_coverage.by_type.missing_from_coverage` | `without_coverage.by_type.not_in_coverage` |
 | `list` (CLI `list`, MCP `project_coverage`) | `'missing_tracked_files'` | `'not_in_coverage_files'` |
 | `CoverageDataProjectStaleError` | `#missing_files`, `missing_files:` keyword | `#not_in_coverage_files`, `not_in_coverage_files:` keyword |
@@ -363,7 +365,7 @@ Staleness states now have one name everywhere. The per-file `stale` value and th
 | `list` table legend | `Staleness: error, missing, newer, length_mismatch` | `Staleness: deleted, newer, length_mismatch, unreadable` |
 | Library code testing for a deleted source | `StaleStatus::MISSING_FROM_DISK` | the string `"deleted"` (`StaleStatus` is internal) |
 
-`"ok"`, `"newer"`, and `"length_mismatch"` are unchanged. "Missing" now only means an absent coverage timestamp (`timestamp_status: "missing"`). A tracked file absent from the coverage data is "not in coverage": `not_in_coverage_files` in `list` (`missing_tracked_files` in 6.x), counted as `not_in_coverage` in totals. `CoverageModel#staleness_for` returns `"unreadable"` (was `"error"`) when the staleness check itself fails. `StaleStatus.normalize` now rejects `"missing"` and `"error"`.
+`"ok"`, `"newer"`, and `"length_mismatch"` are unchanged. "Missing" now only means an absent coverage timestamp (`timestamp_status: "missing"`). A file that matches the file globs but is absent from the coverage data is "not in coverage": `not_in_coverage_files` in `list` (`missing_tracked_files` in 6.x), counted as `not_in_coverage` in totals. `CoverageModel#staleness_for` returns `"unreadable"` (was `"error"`) when the staleness check itself fails. `StaleStatus.normalize` now rejects `"missing"` and `"error"`.
 
 This applies to library hashes, CLI output in all formats, and MCP tool payloads.
 
@@ -371,7 +373,7 @@ This applies to library hashes, CLI output in all formats, and MCP tool payloads
 
 ## Library Results Use Project-Relative Paths
 
-In 6.x, `CoverageModel#list`, `#summary_for`, `#uncovered_for`, `#detailed_for`, and `#raw_for` returned absolute file paths, while the CLI and MCP server reported project-relative ones; `CoverageModel#relativize` converted library results to the relative form. In 7.0 the library returns the same paths as the CLI and MCP server, so every payload has one shape. A path inside the project root is relative to the root; a path outside it stays absolute. This applies to every `file` value, including the `list` `files` and `skipped_files` rows. The other `list` path arrays (`missing_tracked_files`, now `not_in_coverage_files`; `newer_files`, `deleted_files`, `length_mismatch_files`, and `unreadable_files`) were already relative for files inside the root, but showed files outside it as `../` paths; they now show those as absolute paths, in the library, CLI, and MCP output alike. Staleness errors change the same way: `CoverageDataStaleError#file_path`, the `CoverageDataProjectStaleError` path arrays, and the error messages report files outside the root as absolute paths. A relative path whose first directory starts with `~` is reported with a `./` prefix (for example `./~vendor/a.rb`) in all modes, so `File.expand_path` does not treat it as a home directory. On input, relative `coverage.json` keys and `format_table` row paths starting with `~` resolve to a directory under the root. In 6.x, such relative `.resultset.json` keys were expanded as home directories (or raised for an unknown user), and such row paths were used as written, so no `tracked_globs` pattern matched them and the row was dropped; query path arguments and `tracked_globs` still follow `File.expand_path`, so write `./~vendor/a.rb` to name such a directory there. `CoverageModel#relativize` is removed. `CoverageModel#format_table` called without rows now shows relative paths too (it showed absolute paths in 6.x). `validate` predicates receive library results, so a predicate that prints `f['file']` now prints relative paths. Table rows with equal coverage are ordered by absolute path, as in `list`; in 6.x the CLI and MCP tables ordered them by the displayed path, so ties involving files outside the root may order differently. Otherwise CLI and MCP output is unchanged, and `CoverageReporter.report` prints the same text apart from the `./~` prefix and the two-decimal percentages described in [Percentages Truncated, Not Rounded](#percentages-truncated-not-rounded).
+In 6.x, `CoverageModel#list`, `#summary_for`, `#uncovered_for`, `#detailed_for`, and `#raw_for` returned absolute file paths, while the CLI and MCP server reported project-relative ones; `CoverageModel#relativize` converted library results to the relative form. In 7.0 the library returns the same paths as the CLI and MCP server, so every payload has one shape. A path inside the project root is relative to the root; a path outside it stays absolute. This applies to every `file` value, including the `list` `files` and `skipped_files` rows. The other `list` path arrays (`missing_tracked_files`, now `not_in_coverage_files`; `newer_files`, `deleted_files`, `length_mismatch_files`, and `unreadable_files`) were already relative for files inside the root, but showed files outside it as `../` paths; they now show those as absolute paths, in the library, CLI, and MCP output alike. Staleness errors change the same way: `CoverageDataStaleError#file_path`, the `CoverageDataProjectStaleError` path arrays, and the error messages report files outside the root as absolute paths. A relative path whose first directory starts with `~` is reported with a `./` prefix (for example `./~vendor/a.rb`) in all modes, so `File.expand_path` does not treat it as a home directory. On input, relative `coverage.json` keys and `format_table` row paths starting with `~` resolve to a directory under the root. In 6.x, such relative `.resultset.json` keys were expanded as home directories (or raised for an unknown user), and such row paths were used as written, so no `tracked_globs` pattern matched them and the row was dropped; query path arguments and `file_globs` (`tracked_globs` in 6.x) still follow `File.expand_path`, so write `./~vendor/a.rb` to name such a directory there. `CoverageModel#relativize` is removed. `CoverageModel#format_table` called without rows now shows relative paths too (it showed absolute paths in 6.x). `validate` predicates receive library results, so a predicate that prints `f['file']` now prints relative paths. Table rows with equal coverage are ordered by absolute path, as in `list`; in 6.x the CLI and MCP tables ordered them by the displayed path, so ties involving files outside the root may order differently. Otherwise CLI and MCP output is unchanged, and `CoverageReporter.report` prints the same text apart from the `./~` prefix and the two-decimal percentages described in [Percentages Truncated, Not Rounded](#percentages-truncated-not-rounded).
 
 The path arguments the methods accept are unchanged: absolute paths and paths relative to the root both work, so a `file` value from one result can be passed straight to another query.
 
@@ -432,15 +434,15 @@ In 7.0 they are always read as UTF-8, Ruby's default source encoding, whatever t
 
 **Migration:** if your source or predicate files are UTF-8 (or ASCII), no change is needed. Otherwise convert them to UTF-8, for example with `iconv -f ISO-8859-1 -t UTF-8`. A magic comment such as `# encoding: ISO-8859-1` lets a predicate file parse, but its non-ASCII strings are then in that encoding and do not match the UTF-8 paths in the coverage data, so converting is the reliable fix.
 
-<a id="tracked-globs-split-outside-braces-and-brackets"></a>
+<a id="file-globs-split-outside-braces-and-brackets"></a>
 
-## `--tracked-globs` Split Outside Braces and Brackets
+## `--file-globs` Split Outside Braces and Brackets
 
-In 6.x, the CLI split the `-g`/`--tracked-globs` value on every comma. A brace pattern such as `-g 'app/{models,controllers}/**/*.rb'` became two invalid globs that matched nothing, without an error, and an empty item (`-g 'a,,b'`) made project-level commands such as `list` and `totals` fail with `no implicit conversion of nil into String`.
+In 6.x, the CLI split the `-g`/`--tracked-globs` value (now `--file-globs`; see [Tracked Globs Renamed to File Globs](#tracked-globs-renamed-to-file-globs)) on every comma. A brace pattern such as `-g 'app/{models,controllers}/**/*.rb'` became two invalid globs that matched nothing, without an error, and an empty item (`-g 'a,,b'`) made project-level commands such as `list` and `totals` fail with `no implicit conversion of nil into String`.
 
-In 7.0, the value is split only on commas outside `{...}` and `[...]` and, except on Windows, not on a backslash-escaped comma (`\,`). Empty items are ignored. An unclosed `{`, or an unclosed `[` outside braces, is a usage error (exit 2) for every command, the per-file ones included, whether the value comes from the command line or `COV_LOUPE_OPTS`, and it stops the MCP server from starting. Such a value used to run with exit 0: it was split at every comma, the fragment holding the bracket matched nothing on CRuby (JRuby read an unmatched `{` literally), and the other fragments still applied. The MCP `tracked_globs` argument and the Ruby API are unchanged.
+In 7.0, the value is split only on commas outside `{...}` and `[...]` and, except on Windows, not on a backslash-escaped comma (`\,`). Empty items are ignored. An unclosed `{`, or an unclosed `[` outside braces, is a usage error (exit 2) for every command, the per-file ones included, whether the value comes from the command line or `COV_LOUPE_OPTS`, and it stops the MCP server from starting. Such a value used to run with exit 0: it was split at every comma, the fragment holding the bracket matched nothing on CRuby (JRuby read an unmatched `{` literally), and the other fragments still applied. The MCP `file_globs` argument and the Ruby API take their patterns as an array (the Ruby API also takes one string, used as a single pattern) and do not split them, so this change does not affect them.
 
-**Migration:** values without braces, brackets, or backslashes need no change. Fix any unclosed `{` or `[` the new error reports. To match a literal `[`, write `[[]` (or `\[`, except on Windows); to match a literal `{`, write `\{`, quoted so the shell keeps the backslash (not possible on Windows). If a value relied on splitting at a comma inside braces or brackets, or after a backslash, write those patterns separately. See [`--tracked-globs`](../CLI_USAGE.md#tracked-globs).
+**Migration:** values without braces, brackets, or backslashes need no change. Fix any unclosed `{` or `[` the new error reports. To match a literal `[`, write `[[]` (or `\[`, except on Windows); to match a literal `{`, write `\{`, quoted so the shell keeps the backslash (not possible on Windows). If a value relied on splitting at a comma inside braces or brackets, or after a backslash, write those patterns separately. See [`--file-globs`](../CLI_USAGE.md#file-globs).
 
 <a id="cov_loupe_opts-is-parsed-on-its-own"></a>
 
@@ -502,3 +504,21 @@ SORT_ORDERS = { 'a' => :ascending, 'ascending' => :ascending,
 sort_order = SORT_ORDERS.fetch(input.to_s.downcase) { raise ArgumentError, "bad sort order: #{input.inspect}" }
 model.list(sort_order: sort_order)
 ```
+
+## Tracked Globs Renamed to File Globs
+
+"Tracked" could be read as git-tracked files, and SimpleCov 1.x no longer uses the word (`track_files` is deprecated in favor of `cover`). The option is now named for what it takes, and the old names are removed, with no alias:
+
+| Where | 6.x | 7.0 |
+|---|---|---|
+| CLI option | `-g`/`--tracked-globs` | `-g`/`--file-globs` |
+| Library keywords (`CoverageModel.new`, `list`, `format_table`, `project_totals`) | `tracked_globs:` | `file_globs:` |
+| MCP tool argument (`project_coverage`, `project_coverage_totals`) | `tracked_globs` | `file_globs` |
+| `project_totals` payload | `'tracking' => { 'enabled' => Boolean, 'globs' => [...] }` | `'file_globs' => [...]` (empty when none were given) |
+| CLI `totals` text | `Tracked globs:` / `Tracked globs: (tracking disabled)` | `File globs:` / `File globs: (none)` |
+
+`--f` no longer abbreviates `--format`: it is now a prefix of both `--format` and `--file-globs`, so it fails with `ambiguous option: --f`. Use `-f` or `--format`.
+
+What the option does is unchanged: it limits project results to matching files, and reports matching files that have no coverage data.
+
+**Migration:** replace `--tracked-globs` with `--file-globs` in scripts, `COV_LOUPE_OPTS` and MCP server arguments (`-g` is unchanged); replace the `tracked_globs:` keyword and MCP argument with `file_globs`; and replace `totals['tracking']['enabled']` with `totals['file_globs'].any?` and `totals['tracking']['globs']` with `totals['file_globs']`. The old CLI option is now an `invalid option` usage error, the old keyword raises `ArgumentError` (`unknown keyword`), and the old MCP argument is rejected as a "disallowed additional property".

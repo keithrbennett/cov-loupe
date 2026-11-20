@@ -68,9 +68,9 @@ RSpec.describe 'MCP structured payload schema version' do
     expect_schema_valid('summary', data)
   end
 
-  it 'validates project coverage with missing tracked files' do
+  it 'validates project coverage with files not in coverage data' do
     response = CovLoupe::Tools::ProjectCoverageTool.call(root: root,
-      tracked_globs: ['lib/**/*.rb'], server_context: server_context)
+      file_globs: ['lib/**/*.rb'], server_context: server_context)
     data = JSON.parse(response.content.first['text'])
 
     expect(data['not_in_coverage_files']).not_to be_empty

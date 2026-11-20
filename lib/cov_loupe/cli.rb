@@ -76,7 +76,7 @@ module CovLoupe
       params[:format] = config.format if config.format
       params[:sort_order] = config.sort_order if config.sort_order
       params[:raise_on_stale] = config.raise_on_stale if config.raise_on_stale
-      params[:tracked_globs] = config.tracked_globs if config.tracked_globs&.any?
+      params[:file_globs] = config.file_globs if config.file_globs&.any?
       params[:error_mode] = config.error_mode if config.error_mode
       CovLoupe.logger.info("CLI parameters: #{params.inspect}")
     end
@@ -87,7 +87,7 @@ module CovLoupe
         model:          model,
         sort_order:     sort_order,
         raise_on_stale: config.raise_on_stale,
-        tracked_globs:  config.tracked_globs
+        file_globs:     config.file_globs
       )
 
       if config.format == :table
@@ -96,7 +96,7 @@ module CovLoupe
           file_summaries,
           sort_order:     sort_order,
           raise_on_stale: config.raise_on_stale,
-          tracked_globs:  nil,
+          file_globs:     nil,
           output_chars:   config.output_chars
         )
         # The exclusions summary already lists skipped rows.

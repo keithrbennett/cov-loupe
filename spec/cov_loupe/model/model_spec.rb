@@ -108,22 +108,22 @@ RSpec.describe CovLoupe::CoverageModel do
       end
     end
 
-    it 'filters rows when tracked_globs are provided' do
+    it 'filters rows when file_globs are provided' do
       abs_foo = File.expand_path('lib/foo.rb', root)
       abs_bar = File.expand_path('lib/bar.rb', root)
 
       aggregate_failures do
         # Single glob
-        files = model.list(tracked_globs: ['lib/foo.rb'])['files']
+        files = model.list(file_globs: ['lib/foo.rb'])['files']
         expect(files.length).to eq(1)
         expect(files.first['file']).to eq('lib/foo.rb')
 
         # Multiple globs
-        files_multi = model.list(tracked_globs: ['lib/foo.rb', abs_bar])['files']
+        files_multi = model.list(file_globs: ['lib/foo.rb', abs_bar])['files']
         expect(files_multi.map { |f| f['file'] }).to contain_exactly('lib/foo.rb', 'lib/bar.rb')
 
         # Absolute pattern
-        files_abs = model.list(tracked_globs: [abs_foo])['files']
+        files_abs = model.list(file_globs: [abs_foo])['files']
         expect(files_abs.map { |f| f['file'] }).to contain_exactly('lib/foo.rb')
       end
     end
@@ -202,6 +202,19 @@ RSpec.describe CovLoupe::CoverageModel do
     end
   end
 
+  describe 'removed tracked_globs keyword (renamed file_globs in 7.0)' do
+    {
+      'new'            => ->(root) { described_class.new(root: root, tracked_globs: []) },
+      'list'           => ->(root) { described_class.new(root: root).list(tracked_globs: []) },
+      'format_table'   => ->(root) { described_class.new(root: root).format_table(tracked_globs: []) },
+      'project_totals' => ->(root) { described_class.new(root: root).project_totals(tracked_globs: []) },
+    }.each do |label, call|
+      it "#{label} rejects it as an unknown keyword" do
+        expect { call.call(root) }.to raise_error(ArgumentError, /unknown keyword: :tracked_globs/)
+      end
+    end
+  end
+
   describe 'sort_order validation' do
     calls = {
       'list'                   => ->(m, order) { m.list(sort_order: order) },
@@ -256,7 +269,7 @@ RSpec.describe CovLoupe::CoverageModel do
       summary_for:   ->(m, path) { m.summary_for(path)['file'] },
       uncovered_for: ->(m, path) { m.uncovered_for(path)['file'] },
       detailed_for:  ->(m, path) { m.detailed_for(path)['file'] },
-      list:          ->(m, path) { m.list(tracked_globs: [path])['files'].map { |row| row['file'] } },
+      list:          ->(m, path) { m.list(file_globs: [path])['files'].map { |row| row['file'] } },
     }.each do |method, file_from|
       # Symbols name the lets above; strings are literal paths.
       [
@@ -313,7 +326,7 @@ RSpec.describe CovLoupe::CoverageModel do
             aggregate_failures do
               expect(file).to eq('./~nouser/a.rb')
               expect(tilde_model.summary_for(file)['file']).to eq(file)
-              expect(tilde_model.format_table(tilde_model.list['files'], tracked_globs: ['**/*.rb']))
+              expect(tilde_model.format_table(tilde_model.list['files'], file_globs: ['**/*.rb']))
                 .to include('~nouser/a.rb')
             end
           end
@@ -324,24 +337,24 @@ RSpec.describe CovLoupe::CoverageModel do
         rows = [{ 'file' => '~nouser/a.rb', 'percentage' => 50.0, 'covered' => 1, 'total' => 2,
                   'stale' => 'ok' }]
 
-        expect(tilde_model.format_table(rows, tracked_globs: ['**/*.rb'])).to include('~nouser/a.rb')
+        expect(tilde_model.format_table(rows, file_globs: ['**/*.rb'])).to include('~nouser/a.rb')
       end
     end
   end
 
-  it 'validates tracked files not in coverage data and stale files with missing timestamps' do
-    tracked_list = model.list(tracked_globs: ['lib/**/*.rb'])
-    tracked_totals = model.project_totals(tracked_globs: ['lib/**/*.rb'])
+  it 'validates files not in coverage data and stale files with missing timestamps' do
+    globbed_list = model.list(file_globs: ['lib/**/*.rb'])
+    globbed_totals = model.project_totals(file_globs: ['lib/**/*.rb'])
     stale_model = described_class.new(root: (FIXTURES_DIR / 'project_no_timestamp').to_s)
     stale_list = stale_model.list
     stale_totals = stale_model.project_totals
 
-    expect(tracked_list['not_in_coverage_files']).not_to be_empty
-    expect(tracked_totals['file_counts']).to have_key('without_coverage')
+    expect(globbed_list['not_in_coverage_files']).not_to be_empty
+    expect(globbed_totals['file_counts']).to have_key('without_coverage')
     expect(stale_list['files'].first['stale']).to eq('length_mismatch')
     expect(stale_totals['percentage']).to be_nil
-    expect_schema_valid('list', tracked_list)
-    expect_schema_valid('totals', tracked_totals)
+    expect_schema_valid('list', globbed_list)
+    expect_schema_valid('totals', globbed_totals)
     expect_schema_valid('list', stale_list)
     expect_schema_valid('totals', stale_totals)
   end
@@ -357,7 +370,7 @@ RSpec.describe CovLoupe::CoverageModel do
           'uncovered'  => 3,
           'percentage' => be_within(0.01).of(50.0)
         )
-        expect(totals['tracking']).to include('enabled' => false, 'globs' => [])
+        expect(totals['file_globs']).to eq([])
         expect(totals['file_counts']).to include('total' => 2)
         expect(totals['file_counts']['with_coverage']).to include('total' => 2, 'ok' => 2)
       end
@@ -421,8 +434,8 @@ RSpec.describe CovLoupe::CoverageModel do
       end
     end
 
-    it 'respects tracked_globs filtering' do
-      totals = model.project_totals(tracked_globs: ['lib/foo.rb'])
+    it 'respects file_globs filtering' do
+      totals = model.project_totals(file_globs: ['lib/foo.rb'])
 
       expect(totals).to include(
         'total'      => 3,
@@ -430,39 +443,39 @@ RSpec.describe CovLoupe::CoverageModel do
         'uncovered'  => 1,
         'percentage' => be_within(0.01).of(66.66)
       )
-      expect(totals['tracking']).to include('enabled' => true, 'globs' => ['lib/foo.rb'])
+      expect(totals['file_globs']).to eq(['lib/foo.rb'])
       expect(totals['file_counts']).to include('total' => 1)
       expect(totals['file_counts']['with_coverage']).to include('total' => 1, 'ok' => 1)
     end
 
-    it 'includes without_coverage data when tracking is enabled' do
-      totals = model.project_totals(tracked_globs: ['lib/**/*.rb'])
+    it 'includes without_coverage data when file globs are set' do
+      totals = model.project_totals(file_globs: ['lib/**/*.rb'])
 
-      expect(totals['tracking']).to include('enabled' => true)
+      expect(totals['file_globs']).to eq(['lib/**/*.rb'])
       expect(totals['file_counts']['without_coverage']).to include('total' => 1)
       expect(totals['file_counts']['without_coverage']['by_type'])
         .to include('not_in_coverage' => 1)
     end
 
-    it 'counts a missing file matched by overlapping tracked globs once' do
+    it 'counts a missing file matched by overlapping file globs once' do
       globs = ['lib/**/*.rb', 'lib/*.rb']
-      totals = model.project_totals(tracked_globs: globs)
+      totals = model.project_totals(file_globs: globs)
 
-      expect(model.list(tracked_globs: globs)['not_in_coverage_files']).to eq(['lib/uncovered_file.rb'])
+      expect(model.list(file_globs: globs)['not_in_coverage_files']).to eq(['lib/uncovered_file.rb'])
       expect(totals['file_counts']['without_coverage']['by_type']).to include('not_in_coverage' => 1)
     end
 
-    it 'counts unreadable tracked files in without_coverage breakdown' do
+    it 'counts unreadable files matching the file globs in without_coverage breakdown' do
       abs_unreadable = File.expand_path('lib/unreadable.rb', root)
 
       stub_staleness_checker(
         unreadable_files: [abs_unreadable]
       )
 
-      totals = model.project_totals(tracked_globs: ['lib/**/*.rb'])
+      totals = model.project_totals(file_globs: ['lib/**/*.rb'])
 
       aggregate_failures do
-        expect(totals['tracking']).to include('enabled' => true)
+        expect(totals['file_globs']).to eq(['lib/**/*.rb'])
         expect(totals['file_counts']['without_coverage']).to include('total' => 1)
         expect(totals['file_counts']['without_coverage']['by_type'])
           .to include('unreadable' => 1)
@@ -477,7 +490,7 @@ RSpec.describe CovLoupe::CoverageModel do
         file_statuses:    { abs_foo => 'unreadable' }
       )
 
-      totals = model.project_totals(tracked_globs: ['lib/**/*.rb'])
+      totals = model.project_totals(file_globs: ['lib/**/*.rb'])
 
       aggregate_failures do
         expect(totals['file_counts']['with_coverage']['stale']['by_type']).to include('unreadable' => 1)
@@ -630,19 +643,19 @@ RSpec.describe CovLoupe::CoverageModel do
       end
     end
 
-    it 'applies tracked_globs to the project-relative rows returned by list' do
-      table = model.format_table(model.list['files'], tracked_globs: ['lib/foo.rb'])
+    it 'applies file_globs to the project-relative rows returned by list' do
+      table = model.format_table(model.list['files'], file_globs: ['lib/foo.rb'])
 
       expect(table).to include('lib/foo.rb')
       expect(table).not_to include('lib/bar.rb')
     end
   end
 
-  describe 'default tracked_globs' do
-    let(:tracked_globs) { ['lib/foo.rb'] }
-    let(:model_with_globs) { described_class.new(root: root, tracked_globs: tracked_globs) }
+  describe 'default file_globs' do
+    let(:file_globs) { ['lib/foo.rb'] }
+    let(:model_with_globs) { described_class.new(root: root, file_globs: file_globs) }
 
-    it 'uses constructor tracked_globs for operations' do
+    it 'uses constructor file_globs for operations' do
       # Setup for list
       allow(model_with_globs).to receive(:filter_rows_by_globs).and_call_original
       stub_checker = instance_double(
@@ -664,17 +677,17 @@ RSpec.describe CovLoupe::CoverageModel do
         model_with_globs.list
         # filter_rows_by_globs is called twice: once for files, once for skipped_files
         expect(model_with_globs).to have_received(:filter_rows_by_globs)
-          .with(anything, tracked_globs).twice
+          .with(anything, file_globs).twice
 
         # Project totals uses the configured globs for its internal list.
         totals = model_with_globs.project_totals
-        expect(totals['tracking']).to include('enabled' => true, 'globs' => tracked_globs)
+        expect(totals['file_globs']).to eq(file_globs)
 
         # Format table
         allow(model_with_globs).to receive(:prepare_rows).and_return([])
         model_with_globs.format_table
         expect(model_with_globs).to have_received(:prepare_rows)
-          .with(anything, hash_including(tracked_globs: tracked_globs))
+          .with(anything, hash_including(file_globs: file_globs))
       end
     end
   end

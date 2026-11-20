@@ -12,7 +12,7 @@
       "description": "Coverage rows ordered by percentage."
     },
     "skipped_files": {"type": "array", "items": {"$ref": "#/$defs/skipped_row"}, "description": "Files skipped because coverage data could not be processed."},
-    "not_in_coverage_files": {"$ref": "#/$defs/paths", "description": "Tracked files absent from coverage data."},
+    "not_in_coverage_files": {"$ref": "#/$defs/paths", "description": "Files matching the file globs that are absent from coverage data."},
     "newer_files": {"$ref": "#/$defs/paths", "description": "Sources newer than the coverage timestamp."},
     "deleted_files": {"$ref": "#/$defs/paths", "description": "Coverage entries whose source files have been deleted."},
     "length_mismatch_files": {"$ref": "#/$defs/paths", "description": "Files whose source line count differs from coverage data."},

@@ -26,20 +26,20 @@ RSpec.describe CovLoupe::CoverageModel do
     expect { model.list }.to raise_error(CovLoupe::CoverageDataProjectStaleError)
   end
 
-  it 'list detects new files via tracked_globs' do
+  it 'list detects new files via file_globs' do
     mock_coverage_with_timestamp(root, Time.now.to_i)
     Tempfile.create(%w[brand_new_file .rb], File.join(root, 'lib')) do |f|
       f.write("# new file\n")
       f.flush
       model = described_class.new(root: root, raise_on_stale: true)
       expect do
-        model.list(tracked_globs: %w[lib/**/*.rb])
+        model.list(file_globs: %w[lib/**/*.rb])
       end.to raise_error(CovLoupe::CoverageDataProjectStaleError)
     end
   end
 
-  describe 'tracked_globs scoping for staleness checks' do
-    it 'only reports newer_files that match tracked_globs' do
+  describe 'file_globs scoping for staleness checks' do
+    it 'only reports newer_files that match file_globs' do
       # Use coverage data with correct line counts (foo.rb: 6 lines, bar.rb: 5 lines)
       accurate_coverage = {
         File.join(root, 'lib', 'foo.rb') => { 'lines' => [nil, nil, 1, 0, nil, 2] },
@@ -47,16 +47,16 @@ RSpec.describe CovLoupe::CoverageModel do
       }
       mock_coverage_with_timestamp(root, VERY_OLD_TIMESTAMP, coverage: accurate_coverage)
 
-      # All files are newer than the very old timestamp, but we're only tracking lib/foo.rb
+      # All files are newer than the very old timestamp, but the file globs match only lib/foo.rb
       model = described_class.new(root: root, raise_on_stale: false)
-      result = model.list(tracked_globs: ['lib/foo.rb'])
+      result = model.list(file_globs: ['lib/foo.rb'])
 
       # Should only report foo.rb as newer, not bar.rb (which is also newer but outside scope)
       expect(result['newer_files']).to eq(['lib/foo.rb'])
       expect(result['newer_files']).not_to include('lib/bar.rb')
     end
 
-    it 'only reports deleted_files that match tracked_globs' do
+    it 'only reports deleted_files that match file_globs' do
       # Create a scenario where bar.rb is in coverage but missing from filesystem
       coverage_with_missing = {
         File.join(root, 'lib', 'foo.rb')         => { 'lines' => [1, 0, nil, 2] },
@@ -66,14 +66,14 @@ RSpec.describe CovLoupe::CoverageModel do
       mock_coverage_with_timestamp(root, Time.now.to_i, coverage: coverage_with_missing)
 
       model = described_class.new(root: root, raise_on_stale: false)
-      result = model.list(tracked_globs: ['lib/foo.rb'])
+      result = model.list(file_globs: ['lib/foo.rb'])
 
-      # Should not report nonexistent.rb as deleted since it's outside tracked_globs scope
+      # Should not report nonexistent.rb as deleted since it's outside file_globs scope
       expect(result['deleted_files']).to eq([])
       expect(result['deleted_files']).not_to include('lib/nonexistent.rb')
     end
 
-    it 'includes all stale files when tracked_globs is not specified' do
+    it 'includes all stale files when file_globs is not specified' do
       # Use coverage data with correct line counts (foo.rb: 6 lines, bar.rb: 5 lines)
       accurate_coverage = {
         File.join(root, 'lib', 'foo.rb') => { 'lines' => [nil, nil, 1, 0, nil, 2] },
@@ -88,7 +88,7 @@ RSpec.describe CovLoupe::CoverageModel do
       expect(result['newer_files']).to include('lib/foo.rb', 'lib/bar.rb')
     end
 
-    it 'only checks length mismatches for files matching tracked_globs' do
+    it 'only checks length mismatches for files matching file_globs' do
       # Create coverage with length mismatch for bar.rb (actual: 5 lines, coverage: 2 lines)
       # and accurate coverage for foo.rb (actual: 6 lines, coverage: 6 lines)
       mismatched_coverage = {
@@ -97,18 +97,18 @@ RSpec.describe CovLoupe::CoverageModel do
       }
       mock_coverage_with_timestamp(root, Time.now.to_i, coverage: mismatched_coverage)
 
-      # Only track foo.rb - bar.rb's length mismatch should be ignored
+      # The file globs match only foo.rb - bar.rb's length mismatch should be ignored
       model = described_class.new(root: root, raise_on_stale: false)
-      result = model.list(tracked_globs: ['lib/foo.rb'])
+      result = model.list(file_globs: ['lib/foo.rb'])
 
-      # bar.rb should not appear in the results at all since it's outside tracked_globs
+      # bar.rb should not appear in the results at all since it's outside file_globs
       expect(result['files'].map { |f| f['file'] }).to eq(['lib/foo.rb'])
       # foo.rb should not be marked as stale (no mismatch, and timestamp is current)
       foo_row = result['files'].find { |f| f['file'] == 'lib/foo.rb' }
       expect(foo_row['stale']).to eq('ok')
     end
 
-    it 'raises error for length mismatch only when file is in tracked_globs scope' do
+    it 'raises error for length mismatch only when file is in file_globs scope' do
       # Create coverage with length mismatch for bar.rb (actual: 5 lines, coverage: 2 lines)
       # and accurate coverage for foo.rb (actual: 6 lines, coverage: 6 lines)
       mismatched_coverage = {
@@ -117,13 +117,13 @@ RSpec.describe CovLoupe::CoverageModel do
       }
       mock_coverage_with_timestamp(root, Time.now.to_i, coverage: mismatched_coverage)
 
-      # When tracking only foo.rb with raise_on_stale, bar.rb's mismatch should be ignored
+      # When the file globs match only foo.rb with raise_on_stale, bar.rb's mismatch should be ignored
       model = described_class.new(root: root, raise_on_stale: true)
-      expect { model.list(tracked_globs: ['lib/foo.rb']) }.not_to raise_error
+      expect { model.list(file_globs: ['lib/foo.rb']) }.not_to raise_error
 
-      # When tracking bar.rb with raise_on_stale, the length mismatch should raise
+      # When the file globs match bar.rb with raise_on_stale, the length mismatch should raise
       expect do
-        model.list(tracked_globs: ['lib/bar.rb'])
+        model.list(file_globs: ['lib/bar.rb'])
       end.to raise_error(CovLoupe::CoverageDataProjectStaleError) { |error|
         expect(error.length_mismatch_files).to include('lib/bar.rb')
       }
@@ -145,15 +145,15 @@ RSpec.describe CovLoupe::CoverageModel do
         mock_coverage_with_timestamp(root, Time.now.to_i, coverage: coverage_with_errors)
       end
 
-      it 'only includes skipped files that match tracked_globs' do
+      it 'only includes skipped files that match file_globs' do
         model = described_class.new(root: root, raise_on_stale: false)
-        result = model.list(tracked_globs: ['lib/foo.rb', 'lib/bar.rb'])
+        result = model.list(file_globs: ['lib/foo.rb', 'lib/bar.rb'])
 
         expect(result['skipped_files'].map { |f| f['file'] }).to eq(['lib/bar.rb'])
         expect(result['skipped_files']).not_to include(hash_including('file' => 'lib/baz.rb'))
       end
 
-      it 'includes all skipped files when tracked_globs is not specified' do
+      it 'includes all skipped files when file_globs is not specified' do
         model = described_class.new(root: root, raise_on_stale: false)
         result = model.list
 

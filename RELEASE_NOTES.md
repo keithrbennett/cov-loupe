@@ -29,6 +29,13 @@
       `Unknown option for validate: --bogus`.
     - The executable prints the version for `-v`/`--version` only as the first argument or
       among the options before the subcommand, not anywhere (for example `list -v`).
+- **`--tracked-globs` is renamed `--file-globs`.** "Tracked" could be read as git-tracked
+  files, and SimpleCov 1.x has deprecated its `track_files`. The CLI option is now
+  `-g`/`--file-globs`, the library keyword and MCP argument are `file_globs`, and the
+  `project_totals` `tracking` object is replaced by a `file_globs` array (empty when none
+  were given). The CLI `totals` text says `File globs:`. The old names are removed, not
+  aliased. `--f` is now ambiguous (`--format` or `--file-globs`); use `-f` or `--format`. See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#tracked-globs-renamed-to-file-globs).
 - **The library rejects an invalid `sort_order`.** `CoverageModel#list` and
   `CoverageModel#format_table` sorted ascending for any `sort_order` other than the symbol
   `:descending`, including a misspelling, `nil`, and the string `'descending'`. They now
@@ -49,6 +56,8 @@
       top-level `covered`, `uncovered`, `total`, and `percentage`. A `summary_for` result is
       now the file's `list` row plus `schema_version`.
     - `list` rows keep their keys and gain an `uncovered` count.
+    - `project_totals` replaces the `tracking` object with a `file_globs` array (see the
+      `--file-globs` bullet above).
     - `uncovered_for` renames its line-number array `uncovered` to `uncovered_lines`.
     - `project_totals` (CLI `totals`, MCP `project_coverage_totals`) replaces the `lines`
       object with top-level line metrics, drops `included_files` and `excluded_files` (use
@@ -108,7 +117,7 @@
   starting with `~` now resolve to a directory under the root (6.x expanded such `.resultset.json`
   keys as home directories, raising for an unknown user, and used such row paths as written, so
   no `tracked_globs` pattern matched them);
-  query path arguments and `tracked_globs` still follow `File.expand_path`. Table rows with
+  query path arguments and `file_globs` still follow `File.expand_path`. Table rows with
   equal coverage are ordered by absolute path, as in `list`, so ties involving files outside
   the root may order differently. CLI and MCP output is otherwise unchanged. See
   [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#library-results-use-project-relative-paths).
@@ -218,7 +227,7 @@
   do not match the UTF-8 coverage data). UTF-8 files, which are Ruby's default, are
   unaffected. See
   [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#source-and-predicate-files-are-read-as-utf-8).
-- **`--tracked-globs` keeps brace patterns whole; an unclosed `{` or `[` is a usage error.**
+- **`--file-globs` keeps brace patterns whole; an unclosed `{` or `[` is a usage error.**
   The CLI split the value on every comma, so `-g 'app/{models,controllers}/**/*.rb'`
   became two invalid globs that matched nothing, without an error. It now splits only on
   commas outside `{...}` and `[...]` and, except on Windows, not on a backslash-escaped comma
@@ -231,7 +240,7 @@
   nil into String". Other values without braces, brackets, or backslashes split as before.
   The `-g` help now says what the option limits and reports, and how to write literal
   brackets. See
-  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#tracked-globs-split-outside-braces-and-brackets).
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#file-globs-split-outside-braces-and-brackets).
 - **`COV_LOUPE_OPTS` must be complete on its own.** It is now parsed on its own, before the
   command line, so an option at its end that needs a value is an error
   (`missing argument`) instead of taking the first command-line argument as its value.
@@ -309,7 +318,7 @@
     - Fixed: a `validate` predicate file containing a non-ASCII string literal failed to
       evaluate.
     - Fixed: in a directory with a non-ASCII name, `-R .` and `-c coverage` failed, and
-      `--tracked-globs` reported covered non-ASCII files as missing.
+      `--file-globs` reported covered non-ASCII files as missing.
     - `coverage.json`, source files and predicate files are now always read as UTF-8, also
       when `Encoding.default_internal` is set. For files in another encoding, see the
       Breaking entry "Source and predicate files are read as UTF-8 in every locale".
@@ -368,7 +377,7 @@
 - **The MCP `help` and `version` tools describe the common arguments.** `help` now lists `error_mode`/`output_chars` among every tool's inputs, and the `version` tool no longer says it takes no arguments.
 - **Fixed `CoverageReporter.report` with an absolute `SimpleCov.coverage_dir`.** The default coverage location joined the directory onto `SimpleCov.root` even when it was absolute; it is now expanded against the root, as SimpleCov does. An explicit `root:` now also sets where that directory is looked for; it used to be looked for under `SimpleCov.root`.
 - **Documentation links work in the installed gem and on GitHub.** Links now point to real files (`README.md`, `LICENSE`, `examples/*/README.md`, ...) rather than to the documentation site's wrapper pages, and the gem now includes the developer docs (`docs/dev/`) they link to. The gem no longer includes `AGENTS.md` or `CLAUDE.md`, which are instructions for agents working in the repository.
-- **Fixed duplicate missing tracked files.** A file matched by more than one `--tracked-globs` pattern (for example `lib/**/*.rb` and `lib/*.rb`) was listed twice in `missing_tracked_files` and counted twice in the `totals` `missing_tracked` count; it is now listed and counted once.
+- **Fixed duplicate files not in coverage data.** A file matched by more than one `--file-globs` pattern (for example `lib/**/*.rb` and `lib/*.rb`) was listed twice in `not_in_coverage_files` and counted twice in the `totals` `not_in_coverage` count; it is now listed and counted once.
 - **Fixed `NoMethodError` message rewriting on Ruby 3.4+.** Ruby 3.4 quotes the method name in `NoMethodError#message` as `'name'` instead of the pre-3.4 `` `name' ``, so the friendly "missing method '...' on ..." rewrite silently failed to apply on 3.4+. Both quote styles are now recognized.
 
 ## v6.1.0

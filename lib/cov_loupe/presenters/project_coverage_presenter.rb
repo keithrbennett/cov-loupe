@@ -16,13 +16,13 @@ module CovLoupe
     class ProjectCoveragePresenter
       include PayloadCaching
 
-      attr_reader :model, :sort_order, :raise_on_stale, :tracked_globs
+      attr_reader :model, :sort_order, :raise_on_stale, :file_globs
 
-      def initialize(model:, sort_order:, raise_on_stale:, tracked_globs:)
+      def initialize(model:, sort_order:, raise_on_stale:, file_globs:)
         @model = model
         @sort_order = sort_order
         @raise_on_stale = raise_on_stale
-        @tracked_globs = tracked_globs
+        @file_globs = file_globs
       end
 
       # Returns the project-relative file rows.
@@ -35,7 +35,7 @@ module CovLoupe
         payload['skipped_files']
       end
 
-      # Returns the project-relative missing tracked files.
+      # Returns the project-relative files that are not in coverage data.
       def relative_not_in_coverage_files
         payload['not_in_coverage_files']
       end
@@ -80,7 +80,7 @@ module CovLoupe
         model.list(
           sort_order:     sort_order,
           raise_on_stale: raise_on_stale,
-          tracked_globs:  tracked_globs
+          file_globs:     file_globs
         )
       end
     end

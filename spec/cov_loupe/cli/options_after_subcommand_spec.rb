@@ -41,7 +41,7 @@ RSpec.describe CovLoupe::CoverageCLI do
       [%w[-n 3], :source_context, 3],
       [%w[-C false], :color, false],
       [%w[-S true], :raise_on_stale, true],
-      [%w[-g lib/**/*.rb], :tracked_globs, ['lib/**/*.rb']],
+      [%w[-g lib/**/*.rb], :file_globs, ['lib/**/*.rb']],
       [%w[-l off], :log_file, 'off'],
       [%w[-e debug], :error_mode, :debug],
       [%w[-O ascii], :output_chars, :ascii],

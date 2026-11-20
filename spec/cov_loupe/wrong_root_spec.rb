@@ -128,7 +128,7 @@ RSpec.describe 'running against the wrong project root' do
     end
 
     # lib/bar.rb and lib/foo.rb exist under the root; lib/gone1.rb through lib/gone3.rb do not.
-    context 'with tracked globs' do
+    context 'with file globs' do
       let(:coverage_path) do
         coverage = JSON.parse(File.read(coverage_file))
         %w[gone1 gone2 gone3].each { |name| coverage['coverage']["lib/#{name}.rb"] = { 'lines' => [1] } }

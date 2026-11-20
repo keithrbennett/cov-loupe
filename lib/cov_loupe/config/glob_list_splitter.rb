@@ -3,12 +3,12 @@
 require_relative '../errors/errors'
 
 module CovLoupe
-  # Parses the CLI's --tracked-globs option value. It lives with the option parsing rather
+  # Parses the CLI's --file-globs option value. It lives with the option parsing rather
   # than in GlobUtils, which matches paths against patterns once they are split.
   #
   # @api private
   module GlobListSplitter
-    # Splits the CLI's comma-separated --tracked-globs value into individual glob patterns.
+    # Splits the CLI's comma-separated --file-globs value into individual glob patterns.
     #
     # A plain split(',') is not enough, because commas also appear *inside* glob syntax:
     #
@@ -48,7 +48,7 @@ module CovLoupe
     # Empty items ('a,,b', a trailing comma, or an empty value) are dropped. (The Array type
     # previously used for this option returned nil for them instead.)
     #
-    # @param value [String] the raw --tracked-globs argument, e.g. 'lib/**/*.rb,app/{a,b}/*.rb'
+    # @param value [String] the raw --file-globs argument, e.g. 'lib/**/*.rb,app/{a,b}/*.rb'
     # @return [Array<String>] the individual patterns, in order
     # @raise [UsageError] if a '{', or a '[' outside braces, is never closed. CRuby's
     #   File.fnmatch matches nothing for such a pattern, so it would silently select no files.
@@ -116,7 +116,7 @@ module CovLoupe
           else
             ''
           end
-        raise UsageError, "Unclosed '#{bracket}' in --tracked-globs value: #{value.inspect}#{hint}"
+        raise UsageError, "Unclosed '#{bracket}' in --file-globs value: #{value.inspect}#{hint}"
       end
 
       patterns << current

@@ -14,24 +14,24 @@ RSpec.describe CovLoupe::AppConfig do
       expect(config.raise_on_stale).to be(false)
       expect(config.coverage_file).to be_nil
       expect(config.source_mode).to be_nil
-      expect(config.tracked_globs).to eq([])
+      expect(config.file_globs).to eq([])
       expect(config.log_file).to be_nil
       expect(config.allow_code_predicates).to be(false)
     end
 
-    it 'applies default tracked globs when not provided' do
+    it 'applies default file globs when not provided' do
       config = described_class.new
-      expect(config.tracked_globs).to eq([])
+      expect(config.file_globs).to eq([])
     end
 
-    it 'allows explicitly setting tracked_globs to empty array' do
-      config = described_class.new(tracked_globs: [])
-      expect(config.tracked_globs).to eq([])
+    it 'allows explicitly setting file_globs to empty array' do
+      config = described_class.new(file_globs: [])
+      expect(config.file_globs).to eq([])
     end
 
-    it 'allows overriding default tracked_globs with custom values' do
-      config = described_class.new(tracked_globs: ['custom/**/*.rb'])
-      expect(config.tracked_globs).to eq(['custom/**/*.rb'])
+    it 'allows overriding default file_globs with custom values' do
+      config = described_class.new(file_globs: ['custom/**/*.rb'])
+      expect(config.file_globs).to eq(['custom/**/*.rb'])
     end
 
     it 'allows overriding defaults via keyword arguments' do
@@ -62,7 +62,7 @@ RSpec.describe CovLoupe::AppConfig do
         root:           '/custom/root',
         coverage_file:  '/custom/coverage.json',
         raise_on_stale: true,
-        tracked_globs:  ['lib/**/*.rb']
+        file_globs:     ['lib/**/*.rb']
       )
 
       options = config.model_options
@@ -70,7 +70,7 @@ RSpec.describe CovLoupe::AppConfig do
         root:           '/custom/root',
         coverage_file:  '/custom/coverage.json',
         raise_on_stale: true,
-        tracked_globs:  ['lib/**/*.rb'],
+        file_globs:     ['lib/**/*.rb'],
       })
     end
 
@@ -80,7 +80,7 @@ RSpec.describe CovLoupe::AppConfig do
       expect(options[:root]).to eq('.')
       expect(options[:coverage_file]).to be_nil
       expect(options[:raise_on_stale]).to be(false)
-      expect(options[:tracked_globs]).to eq([])
+      expect(options[:file_globs]).to eq([])
     end
   end
 

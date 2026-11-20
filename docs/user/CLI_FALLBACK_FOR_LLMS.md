@@ -18,7 +18,7 @@ The cov-loupe MCP server isn't available. Use the cov-loupe CLI instead:
   cov-loupe checkout), with the subcommand first and options after it. -fJ gives the same
   JSON the MCP tools return. If it reports "MCP mode takes no subcommand", COV_LOUPE_OPTS
   selects MCP mode; run `cov-loupe -m cli <subcommand> ...` instead.
-- Carry over any root, coverage file, tracked globs, or staleness settings you were using:
+- Carry over any root, coverage file, file globs, or staleness settings you were using:
   -R <root>, -c <coverage file>, -g <glob,glob>, -S true.
 - Run `cov-loupe --help` for subcommands and options.
 - Do not retry the MCP server, and do not read coverage.json yourself or estimate coverage
@@ -49,7 +49,7 @@ The cov-loupe MCP server isn't available. Use the cov-loupe CLI instead:
 | `root` | All coverage tools | `-R`, `--root` |
 | `coverage_file` | All coverage tools | `-c`, `--coverage-file` |
 | `raise_on_stale` (boolean) | All coverage tools | `-S`, `--raise-on-stale` (takes a value, e.g. `-S true`) |
-| `tracked_globs` (array) | `project_coverage`, `project_coverage_totals` | `-g`, `--tracked-globs` (comma-separated, e.g. `-g 'lib/**/*.rb,app/**/*.rb'`) |
+| `file_globs` (array) | `project_coverage`, `project_coverage_totals` | `-g`, `--file-globs` (comma-separated, e.g. `-g 'lib/**/*.rb,app/**/*.rb'`) |
 | `sort_order` | `project_coverage` | `-o`, `--sort-order` |
 | `format` | `project_coverage` | `-f`, `--format` (use `-fJ` or `-fj` for JSON) |
 | `code` / `file` | `project_validate` | `validate -i <code>` / `validate <file>` |

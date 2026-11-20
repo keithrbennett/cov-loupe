@@ -14,10 +14,10 @@ module CovLoupe
       tool_name 'project_coverage'
       description <<~DESC
         Use this when the user wants project-wide coverage data in their preferred format.
-        Provides coverage percentages for every tracked file in JSON (default), or formatted output
+        Provides coverage percentages for every file in the coverage data (or matching file_globs) in JSON (default), or formatted output
         (table, YAML, pretty JSON, Amazing Print, inspect, puts, pretty_print).
         Inputs: optional project root, alternate coverage file path, sort order, raise_on_stale flag,
-        tracked_globs, error mode, output_chars, and format (default: json).
+        file_globs, error mode, output_chars, and format (default: json).
         Output format depends on the format parameter:
         - json (default): JSON object with schema_version, files, skipped_files, etc.
           Each file row has "file", "covered", "uncovered", "total", "percentage", and "stale";
@@ -36,9 +36,9 @@ module CovLoupe
       DESC
       input_schema(**coverage_schema(
         additional_properties: {
-          sort_order:    SORT_ORDER_PROPERTY,
-          tracked_globs: TRACKED_GLOBS_PROPERTY,
-          format:        {
+          sort_order: SORT_ORDER_PROPERTY,
+          file_globs: FILE_GLOBS_PROPERTY,
+          format:     {
             type:        'string',
             description: 'Output format (default: json). Accepts a short code or its canonical ' \
                          "long name: #{OptionNormalizers.available_format_choices.join(', ')}.",
@@ -51,7 +51,7 @@ module CovLoupe
       ))
       class << self
         def call(root: nil, coverage_file: nil, sort_order: nil,
-          raise_on_stale: nil, tracked_globs: nil, format: 'json', error_mode: nil,
+          raise_on_stale: nil, file_globs: nil, format: 'json', error_mode: nil,
           output_chars: nil, server_context:)
           output_chars_sym = resolve_output_chars(output_chars, server_context)
           with_error_handling('ProjectCoverageTool', error_mode: error_mode,
@@ -61,7 +61,7 @@ module CovLoupe
               root:           root,
               coverage_file:  coverage_file,
               raise_on_stale: raise_on_stale,
-              tracked_globs:  tracked_globs
+              file_globs:     file_globs
             )
 
             sort_order_sym = OptionNormalizers.normalize_sort_order(
@@ -74,7 +74,7 @@ module CovLoupe
               model:          model,
               sort_order:     sort_order_sym,
               raise_on_stale: config[:raise_on_stale],
-              tracked_globs:  config[:tracked_globs]
+              file_globs:     config[:file_globs]
             )
 
             if format_sym == :table
@@ -91,7 +91,7 @@ module CovLoupe
             file_summaries,
             sort_order:     sort_order_sym,
             raise_on_stale: config[:raise_on_stale],
-            tracked_globs:  nil,
+            file_globs:     nil,
             output_chars:   output_chars_sym
           )
 

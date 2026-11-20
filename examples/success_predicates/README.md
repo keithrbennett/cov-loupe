@@ -39,7 +39,7 @@ The predicate receives a `CoverageModel` instance and returns:
 ## Available Examples
 
 ### `all_files_above_threshold_predicate.rb`
-Every file in the coverage data must have >= 80% coverage. A file with no coverage entry at all is not in `list['files']`; to catch those, set tracked globs and check `not_in_coverage_files`.
+Every file in the coverage data must have >= 80% coverage. A file with no coverage entry at all is not in `list['files']`; to catch those, set file globs and check `not_in_coverage_files`.
 
 ```sh
 cov-loupe validate examples/success_predicates/all_files_above_threshold_predicate.rb
@@ -123,7 +123,7 @@ files = model.list['files']
 # => [{ "file" => "...", "covered" => 12, "uncovered" => 2, "total" => 14, "percentage" => 85.71, "stale" => "ok" }, ...]
 
 # Filter by globs
-api_files = model.list(tracked_globs: ['lib/api/**/*.rb'])['files']
+api_files = model.list(file_globs: ['lib/api/**/*.rb'])['files']
 
 # Get specific file data
 summary = model.summary_for('lib/model.rb')

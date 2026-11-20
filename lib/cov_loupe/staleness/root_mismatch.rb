@@ -9,7 +9,7 @@ module CovLoupe
   # @api private
   module RootMismatch
     # Callers count only files with coverage rows (rows skipped as malformed are excluded),
-    # scoped to the tracked globs when they are set.
+    # scoped to the file globs when they are set.
     #
     # The block returns meta.root from coverage.json; it is called only when the
     # warning fires. That root is suggested only when it differs from root and is a directory

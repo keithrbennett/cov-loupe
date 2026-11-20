@@ -18,12 +18,12 @@ RSpec.describe CovLoupe::CoverageCLI do
     expect(err).to include("Unknown subcommand: 'bogus'", 'Valid subcommands:')
   end
 
-  it 'list honors stale=error and tracked_globs by exiting 1 when project is stale' do
+  it 'list honors stale=error and file_globs by exiting 1 when project is stale' do
     Tempfile.create(%w[brand_new_file_for_cli_usage_spec .rb], File.join(root, 'lib')) do |f|
       f.write("# new file\n")
       f.flush
       _out, err, status = run_fixture_cli_with_status(
-        '--raise-on-stale', 'true', '--tracked-globs', 'lib/**/*.rb', 'list'
+        '--raise-on-stale', 'true', '--file-globs', 'lib/**/*.rb', 'list'
       )
       expect(status).to eq(1)
       expect(err).to include('Coverage data stale (project)')

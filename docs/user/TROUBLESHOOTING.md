@@ -94,7 +94,7 @@ to the coverage snapshot and raises if stale. When it fails:
 - Regenerate coverage (`bundle exec rspec`) so the snapshot matches current sources.
 - Or drop back to warning-only behaviour using `--raise-on-stale false` / `raise_on_stale: false`.
 
-If you only care about a subset of files, supply `-g` / `--tracked-globs` (CLI) or `tracked_globs:`
+If you only care about a subset of files, supply `-g` / `--file-globs` (CLI) or `file_globs:`
 (API) so new files outside those globs do not trigger staleness.
 
 **Note:** If you see warnings about missing timestamps, time-based staleness checks may be skipped.
@@ -107,7 +107,7 @@ root, which defaults to the current directory. It warns when more than half of t
 coverage rows are not found there (rows skipped as malformed are not counted), for example when
 `--coverage-file` points into another project while the root is still the current directory.
 The same condition also fits source files that really were removed, or coverage generated on
-another machine. With tracked globs, the count covers only the files the globs match.
+another machine. With file globs, the count covers only the files the globs match.
 
 Set the root with `--root PATH` (CLI) or the `root` argument (MCP, Ruby). When `coverage.json`
 records an absolute root (`meta.root`, written by SimpleCov 1.x) that differs from the current

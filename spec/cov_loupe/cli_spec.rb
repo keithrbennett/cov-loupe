@@ -90,7 +90,7 @@ RSpec.describe CovLoupe::CoverageCLI do
           'uncovered'  => 3,
           'percentage' => be_within(0.01).of(50.0)
         )
-        expect(data['tracking']).to include('enabled' => false)
+        expect(data['file_globs']).to eq([])
         expect(data['file_counts']).to include('total' => 2)
         expect(data['file_counts']['with_coverage']).to include('total' => 2, 'ok' => 2)
       end
@@ -181,9 +181,9 @@ RSpec.describe CovLoupe::CoverageCLI do
     expect(output).to match(/Files: total \d+/)
   end
 
-  it 'list subcommand retains rows when using an absolute tracked glob' do
+  it 'list subcommand retains rows when using an absolute file glob' do
     absolute_glob = File.join(fixture_root, 'lib', '**', '*.rb')
-    output = run_cli('--tracked-globs',
+    output = run_cli('--file-globs',
       absolute_glob, 'list')
     expect(output).not_to include('No coverage data found')
     expect(output).to include('lib/foo.rb', 'lib/bar.rb')
@@ -213,10 +213,10 @@ RSpec.describe CovLoupe::CoverageCLI do
 
   # The comma inside the braces belongs to the first pattern; only the top-level comma
   # separates the two patterns.
-  it 'keeps brace alternatives together in --tracked-globs' do
+  it 'keeps brace alternatives together in --file-globs' do
     demo_root = File.expand_path('../../docs/fixtures/demo_project', __dir__)
     stdout, _stderr, status = run_cli_with_status('--root', demo_root, '--format', 'json',
-      '--tracked-globs', 'app/{models,controllers}/**/*.rb,lib/api/*.rb', 'list')
+      '--file-globs', 'app/{models,controllers}/**/*.rb,lib/api/*.rb', 'list')
     data = JSON.parse(stdout)
 
     expect(status).to eq(0)
@@ -229,18 +229,18 @@ RSpec.describe CovLoupe::CoverageCLI do
 
   # Through the full entry point, where the global options are parsed.
   [['lib/{a,b/*.rb', '{'], ['lib/[ab,c.rb', '[']].each do |glob, bracket|
-    it "reports an unclosed '#{bracket}' in --tracked-globs as a usage error" do
-      _stdout, stderr, status = run_fixture_cli_with_status('--tracked-globs', glob, 'list')
+    it "reports an unclosed '#{bracket}' in --file-globs as a usage error" do
+      _stdout, stderr, status = run_fixture_cli_with_status('--file-globs', glob, 'list')
 
       expect(status).to eq(CovLoupe::ExitCodes::USAGE)
-      expect(stderr).to include("Unclosed '#{bracket}' in --tracked-globs value: #{glob.inspect}")
+      expect(stderr).to include("Unclosed '#{bracket}' in --file-globs value: #{glob.inspect}")
     end
   end
 
   # OptionParser's String type would reject an empty value; -g '' must still mean no globs,
   # giving the same list as no -g at all.
-  it 'accepts an empty --tracked-globs value as no globs' do
-    expect(CovLoupe::ConfigParser.parse(['-g', '']).tracked_globs).to eq([])
+  it 'accepts an empty --file-globs value as no globs' do
+    expect(CovLoupe::ConfigParser.parse(['-g', '']).file_globs).to eq([])
 
     baseline, = run_fixture_cli_with_status('-f', 'json', 'list')
     stdout, _stderr, status = run_fixture_cli_with_status('-f', 'json', '-g', '', 'list')
@@ -250,7 +250,7 @@ RSpec.describe CovLoupe::CoverageCLI do
   end
 
   # Empty items used to reach the staleness check as nil and raise a TypeError there.
-  it 'ignores empty --tracked-globs items' do
+  it 'ignores empty --file-globs items' do
     stdout, _stderr, status =
       run_fixture_cli_with_status('-f', 'json', '-g', 'lib/foo.rb,,lib/bar.rb,', 'list')
     files = JSON.parse(stdout)['files'].map { |row| row['file'] }
@@ -259,9 +259,9 @@ RSpec.describe CovLoupe::CoverageCLI do
     expect(files).to contain_exactly('lib/foo.rb', 'lib/bar.rb')
   end
 
-  it 'validates structured list and totals with missing tracked files' do
+  it 'validates structured list and totals with files not in coverage data' do
     %w[list totals].each do |command|
-      data = JSON.parse(run_cli('--format', 'json', '--tracked-globs', 'lib/**/*.rb', command))
+      data = JSON.parse(run_cli('--format', 'json', '--file-globs', 'lib/**/*.rb', command))
 
       expect(data.dig('file_counts', 'without_coverage')).not_to be_nil if command == 'totals'
       expect(data['not_in_coverage_files']).not_to be_empty if command == 'list'

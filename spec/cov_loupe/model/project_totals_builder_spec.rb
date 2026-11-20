@@ -32,10 +32,10 @@ RSpec.describe CovLoupe::ProjectTotalsBuilder do
     }
   end
 
-  it 'builds the full payload when tracking is enabled' do
-    expect(builder.build(list_result, tracked_globs: 'lib/**/*.rb')).to eq(
+  it 'builds the full payload when file globs are set' do
+    expect(builder.build(list_result, file_globs: 'lib/**/*.rb')).to eq(
       'covered' => 3, 'uncovered' => 1, 'total' => 4, 'percentage' => 75.0,
-      'tracking' => { 'enabled' => true, 'globs' => ['lib/**/*.rb'] },
+      'file_globs' => ['lib/**/*.rb'],
       'file_counts' => {
         'total'            => 6,
         'with_coverage'    => with_coverage,
@@ -48,11 +48,11 @@ RSpec.describe CovLoupe::ProjectTotalsBuilder do
     )
   end
 
-  it 'omits the without-coverage bucket when tracking is disabled' do
-    result = builder.build(list_result, tracked_globs: [])
+  it 'omits the without-coverage bucket when no file globs are set' do
+    result = builder.build(list_result, file_globs: [])
 
     aggregate_failures do
-      expect(result['tracking']).to eq('enabled' => false, 'globs' => [])
+      expect(result['file_globs']).to eq([])
       expect(result['file_counts']).to eq('total' => 3, 'with_coverage' => with_coverage)
     end
   end

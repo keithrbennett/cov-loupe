@@ -7,7 +7,7 @@ RSpec.describe CovLoupe::Presenters::ProjectTotalsPresenter do
     described_class.new(
       model:          model,
       raise_on_stale: true,
-      tracked_globs:  ['lib/**/*.rb']
+      file_globs:     ['lib/**/*.rb']
     )
   end
 
@@ -18,10 +18,7 @@ RSpec.describe CovLoupe::Presenters::ProjectTotalsPresenter do
       'covered'          => 80,
       'uncovered'        => 20,
       'percentage'       => 80.0,
-      'tracking'         => {
-        'enabled' => true,
-        'globs'   => ['lib/**/*.rb'],
-      },
+      'file_globs'       => ['lib/**/*.rb'],
       'file_counts'      => {
         'total'            => 12,
         'with_coverage'    => {
@@ -52,15 +49,15 @@ RSpec.describe CovLoupe::Presenters::ProjectTotalsPresenter do
 
   before do
     allow(model).to receive(:project_totals)
-      .with(tracked_globs: ['lib/**/*.rb'], raise_on_stale: true)
+      .with(file_globs: ['lib/**/*.rb'], raise_on_stale: true)
       .and_return(raw_totals)
   end
 
   describe '#initialize' do
-    it 'stores the model, raise_on_stale, and tracked_globs options' do
+    it 'stores the model, raise_on_stale, and file_globs options' do
       expect(presenter.model).to eq(model)
       expect(presenter.raise_on_stale).to be(true)
-      expect(presenter.tracked_globs).to eq(['lib/**/*.rb'])
+      expect(presenter.file_globs).to eq(['lib/**/*.rb'])
     end
   end
 
@@ -76,11 +73,11 @@ RSpec.describe CovLoupe::Presenters::ProjectTotalsPresenter do
       expect(model).to have_received(:project_totals).once
     end
 
-    it 'passes tracked_globs to the model' do
+    it 'passes file_globs to the model' do
       presenter.payload
 
       expect(model).to have_received(:project_totals)
-        .with(tracked_globs: ['lib/**/*.rb'], raise_on_stale: true)
+        .with(file_globs: ['lib/**/*.rb'], raise_on_stale: true)
     end
   end
 
@@ -89,13 +86,13 @@ RSpec.describe CovLoupe::Presenters::ProjectTotalsPresenter do
       described_class.new(
         model:          model,
         raise_on_stale: false,
-        tracked_globs:  nil
+        file_globs:     nil
       )
     end
 
     before do
       allow(model).to receive(:project_totals)
-        .with(tracked_globs: nil, raise_on_stale: false)
+        .with(file_globs: nil, raise_on_stale: false)
         .and_return(raw_totals)
     end
 
@@ -103,30 +100,30 @@ RSpec.describe CovLoupe::Presenters::ProjectTotalsPresenter do
       presenter.payload
 
       expect(model).to have_received(:project_totals)
-        .with(tracked_globs: nil, raise_on_stale: false)
+        .with(file_globs: nil, raise_on_stale: false)
     end
   end
 
-  context 'with empty tracked_globs' do
+  context 'with empty file_globs' do
     subject(:presenter) do
       described_class.new(
         model:          model,
         raise_on_stale: true,
-        tracked_globs:  []
+        file_globs:     []
       )
     end
 
     before do
       allow(model).to receive(:project_totals)
-        .with(tracked_globs: [], raise_on_stale: true)
+        .with(file_globs: [], raise_on_stale: true)
         .and_return(raw_totals)
     end
 
-    it 'passes empty tracked_globs to the model' do
+    it 'passes empty file_globs to the model' do
       presenter.payload
 
       expect(model).to have_received(:project_totals)
-        .with(tracked_globs: [], raise_on_stale: true)
+        .with(file_globs: [], raise_on_stale: true)
     end
   end
 
@@ -142,7 +139,7 @@ RSpec.describe CovLoupe::Presenters::ProjectTotalsPresenter do
 
       before do
         allow(model).to receive(:project_totals)
-          .with(tracked_globs: ['lib/**/*.rb'], raise_on_stale: true)
+          .with(file_globs: ['lib/**/*.rb'], raise_on_stale: true)
           .and_return(raw_totals_missing_timestamps)
       end
 

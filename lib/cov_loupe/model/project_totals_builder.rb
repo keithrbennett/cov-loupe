@@ -10,7 +10,7 @@ module CovLoupe
   # CoverageModel list result whose rows carry absolute paths.
   #
   # Stale files are excluded from line counts but still counted in the file breakdown.
-  # When tracked_globs are provided, files without coverage data (not in coverage data,
+  # When file_globs are provided, files without coverage data (not in coverage data,
   # skipped, or unreadable) are also reported.
   #
   # @api private
@@ -24,16 +24,16 @@ module CovLoupe
     end
 
     # @param list_result [Hash] unversioned list result with absolute paths
-    # @param tracked_globs [Array<String>, String, nil] glob patterns for tracked files
+    # @param file_globs [Array<String>, String, nil] glob patterns; matching files are counted
     # @return [Hash] line metrics ('covered', 'uncovered', 'total', 'percentage') for fresh
-    #   files, then 'tracking', 'file_counts', and 'timestamp_status' entries
-    def build(list_result, tracked_globs:)
-      patterns = GlobUtils.normalize_patterns(tracked_globs)
+    #   files, then 'file_globs', 'file_counts', and 'timestamp_status' entries
+    def build(list_result, file_globs:)
+      patterns = GlobUtils.normalize_patterns(file_globs)
       without = without_coverage(list_result) if patterns.any?
       fresh_rows = list_result['files'].reject { |row| StaleStatus.stale?(row['stale']) }
 
       CoverageCalculator.aggregate(fresh_rows).merge(
-        'tracking'         => { 'enabled' => patterns.any?, 'globs' => patterns },
+        'file_globs'       => patterns,
         'file_counts'      => file_counts(with_coverage(list_result['files']), without),
         'timestamp_status' => list_result['timestamp_status']
       )

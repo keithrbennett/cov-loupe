@@ -57,7 +57,7 @@ The parts cov-loupe reads:
 - `meta.timestamp` is when the coverage was collected, normalized to epoch seconds for staleness checks. A missing or unparseable value becomes 0, which disables time-based checks.
 - `meta.root` is the absolute project root the tests ran under. It never sets the root: when the wrong-root warning fires and this path is a directory here, other than the current root, the warning suggests it. A missing, relative, or otherwise invalid value is ignored.
 
-A non-empty `coverage` map whose entries all lack a `lines` array (SimpleCov run with `disable_coverage :line`) is rejected on load (an empty map, with no tracked files, still loads), since cov-loupe reports line coverage only; without the check, every file would be skipped and the project would report no coverage with a success status.
+A non-empty `coverage` map whose entries all lack a `lines` array (SimpleCov run with `disable_coverage :line`) is rejected on load (an empty map, which records no files, still loads), since cov-loupe reports line coverage only; without the check, every file would be skipped and the project would report no coverage with a success status.
 
 Other keys (`$schema`, `total`, `groups`, `errors`, `branches`, `methods`, source text) are ignored.
 

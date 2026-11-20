@@ -444,6 +444,17 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
             name:      'project_coverage',
             arguments: { root: project_root, coverage_file: coverage_dir, sort_order: 'invalid' },
           },
+          # removed tracked_globs argument (renamed file_globs in 7.0)
+          {
+            id:        206,
+            name:      'project_coverage',
+            arguments: { root: project_root, coverage_file: coverage_dir, tracked_globs: ['lib/*.rb'] },
+          },
+          {
+            id:        207,
+            name:      'project_coverage_totals',
+            arguments: { root: project_root, coverage_file: coverage_dir, tracked_globs: ['lib/*.rb'] },
+          },
         ].each do |request|
           response = jsonrpc_tool_call(request[:id], request[:name], request[:arguments])
           expect_jsonrpc_tool_error(response, request[:id])

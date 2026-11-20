@@ -36,7 +36,7 @@ RSpec.describe CovLoupe::StalenessChecker do
       end
 
       checker = described_class.new(root: tmpdir, coverage_file: nil, mode: 'error',
-        tracked_globs: nil, timestamp: ts)
+        file_globs: nil, timestamp: ts)
 
       details = checker.send(:compute_file_staleness_details, file, coverage_lines)
 
@@ -144,7 +144,7 @@ RSpec.describe CovLoupe::StalenessChecker do
   context 'when file stat calls raise errors' do
     let(:checker) do
       described_class.new(root: tmpdir, coverage_file: nil, mode: 'error',
-        tracked_globs: nil, timestamp: Time.now)
+        file_globs: nil, timestamp: Time.now)
     end
 
     [
@@ -347,16 +347,16 @@ RSpec.describe CovLoupe::StalenessChecker do
     end
   end
 
-  context 'when checking project-level missing tracked files' do
-    it 'raises error listing tracked files not in coverage data' do
-      tracked_root = Dir.mktmpdir('tracked')
+  context 'when checking project-level files not in coverage data' do
+    it 'raises error listing files matching the file globs that are not in coverage data' do
+      globbed_root = Dir.mktmpdir('globbed')
       begin
-        file = File.join(tracked_root, 'lib', 'uncovered.rb')
+        file = File.join(globbed_root, 'lib', 'uncovered.rb')
         FileUtils.mkdir_p(File.dirname(file))
         File.write(file, "puts 'hello'\n")
 
-        checker = described_class.new(root: tracked_root, coverage_file: nil, mode: :error,
-          tracked_globs: ['lib/**/*.rb'], timestamp: Time.now.to_i)
+        checker = described_class.new(root: globbed_root, coverage_file: nil, mode: :error,
+          file_globs: ['lib/**/*.rb'], timestamp: Time.now.to_i)
 
         expect do
           checker.check_project!({})
@@ -364,15 +364,15 @@ RSpec.describe CovLoupe::StalenessChecker do
           expect(error.not_in_coverage_files).to include('lib/uncovered.rb')
         }
       ensure
-        FileUtils.remove_entry(tracked_root)
+        FileUtils.remove_entry(globbed_root)
       end
     end
 
-    it 'reports a file matched by overlapping tracked globs only once' do
+    it 'reports a file matched by overlapping file globs only once' do
       write_file(File.join(tmpdir, 'lib', 'uncovered.rb'), ['puts 1'])
 
       checker = described_class.new(root: tmpdir, coverage_file: nil, mode: :off,
-        tracked_globs: ['lib/**/*.rb', 'lib/*.rb'], timestamp: Time.now.to_i)
+        file_globs: ['lib/**/*.rb', 'lib/*.rb'], timestamp: Time.now.to_i)
 
       expect(checker.check_project!({})[:not_in_coverage_files]).to eq(['lib/uncovered.rb'])
     end
@@ -569,10 +569,10 @@ RSpec.describe CovLoupe::StalenessChecker do
       end.to raise_error(CovLoupe::CoverageDataProjectStaleError)
     end
 
-    it 'does not raise for empty tracked_globs when nothing else is stale' do
+    it 'does not raise for empty file_globs when nothing else is stale' do
       checker = described_class.new(root: tmpdir, coverage_file: nil,
         mode: :error,
-        tracked_globs: [], timestamp: Time.now.to_i)
+        file_globs: [], timestamp: Time.now.to_i)
       expect do
         checker.check_project!({})
       end.not_to raise_error

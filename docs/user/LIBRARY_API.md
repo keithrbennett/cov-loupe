@@ -70,15 +70,15 @@ require "cov_loupe"
 # - root: "."
 # - coverage_file: nil (uses coverage/coverage.json under root)
 # - raise_on_stale: false (don't raise on stale data)
-# - tracked_globs: [] (no project-level file-set checks)
+# - file_globs: [] (no project-level file-set checks)
 model = CovLoupe::CoverageModel.new
 
 # Custom configuration (non-default values):
 model = CovLoupe::CoverageModel.new(
-  root: File.join(Dir.home, 'project'),          # non-default project root
-  coverage_file: "build/coverage",                # coverage.json file, or its directory
-  raise_on_stale: true,                          # enable strict staleness checks (raise on stale)
-  tracked_globs: ["lib/my_app/**/*.rb"]          # for 'list' staleness: flag files not in coverage data
+  root: File.join(Dir.home, 'project'),   # non-default project root
+  coverage_file: "build/coverage",        # coverage.json file, or its directory
+  raise_on_stale: true,                   # enable strict staleness checks (raise on stale)
+  file_globs: ["lib/my_app/**/*.rb"]      # for 'list' staleness: flag files not in coverage data
 )
 
 # List all files with coverage summary
@@ -142,11 +142,11 @@ Staleness values share one vocabulary across payloads. A per-file `stale` value 
 
 File paths in payloads (`file` values and the `list` path arrays) are relative to the project root, such as `'lib/foo.rb'`. A file outside the root keeps its absolute path. A relative path whose first directory starts with `~` gets a `./` prefix, so expanding it never resolves to a home directory. Library, CLI, and MCP payloads report the same paths. If you need absolute paths, expand them against the model's root: `File.expand_path(row['file'], model.root)`. `model.root` is the absolute project root, resolved when the model was created.
 
-Paths and glob patterns you pass in (query `path` arguments and `tracked_globs`) follow `File.expand_path` rules, so a leading `~` or `~user` means a home directory. To name a directory under the root whose name starts with `~`, write it as `./~vendor/a.rb`, the form payloads use. Paths cov-loupe reads as data, namely relative `coverage.json` keys and the `file` values of rows passed to `format_table`, always treat a leading `~` as a directory under the root.
+Paths and glob patterns you pass in (query `path` arguments and `file_globs`) follow `File.expand_path` rules, so a leading `~` or `~user` means a home directory. To name a directory under the root whose name starts with `~`, write it as `./~vendor/a.rb`, the form payloads use. Paths cov-loupe reads as data, namely relative `coverage.json` keys and the `file` values of rows passed to `format_table`, always treat a leading `~` as a directory under the root.
 
 ## Method Reference
 
-### `list(sort_order: :descending, raise_on_stale: model default, tracked_globs: model default)`
+### `list(sort_order: :descending, raise_on_stale: model default, file_globs: model default)`
 
 Returns coverage summary for all files in the coverage file.
 
@@ -154,7 +154,7 @@ Returns coverage summary for all files in the coverage file.
 
 - `sort_order` (Symbol, optional): `:descending` (default) or `:ascending` by coverage percentage
 - `raise_on_stale` (Boolean, optional): Whether to raise error if project is stale. Defaults to model setting.
-- `tracked_globs` (Array<String> or String, optional): Patterns to filter files (also used for staleness checks). Defaults to model setting.
+- `file_globs` (Array<String> or String, optional): Report only files matching these patterns, and report matching files that have no coverage data in `not_in_coverage_files`; staleness checks are limited to matching files. Defaults to model setting.
 
 **Returns:** `Hash` - See [list return type](#list)
 
@@ -256,7 +256,7 @@ raw = model.raw_for("lib/foo.rb")
 # => { 'schema_version' => 1, 'file' => 'lib/foo.rb', 'lines' => [nil, 1, 0, 3, ...], 'stale' => 'ok' }
 ```
 
-### `format_table(rows = nil, sort_order: :descending, raise_on_stale: model default, tracked_globs: model default, output_chars: :default)`
+### `format_table(rows = nil, sort_order: :descending, raise_on_stale: model default, file_globs: model default, output_chars: :default)`
 
 Generates a formatted table string.
 
@@ -265,7 +265,7 @@ Generates a formatted table string.
 - `rows` (Array<Hash>, optional): Custom row data, such as `list['files']`; `file` values may be relative to the project root or absolute. Defaults to `list`
 - `sort_order` (Symbol, optional): `:descending` (default) or `:ascending`
 - `raise_on_stale` (Boolean, optional): Whether to raise error if project is stale. Defaults to model setting. Used only when `rows` is omitted, since supplied rows are not rechecked.
-- `tracked_globs` (Array<String> or String, optional): Patterns to filter files. Defaults to model setting.
+- `file_globs` (Array<String> or String, optional): Show only rows for files matching these patterns. Defaults to model setting.
 - `output_chars` (Symbol, optional): Character mode for table borders and symbols (`:default`, `:fancy`, or `:ascii`).
 
 **Returns:** `String` - Formatted table with Unicode box-drawing borders, or ASCII borders in `:ascii` mode (`:default` chooses by the output encoding). File paths are shown as they are in every mode.
@@ -284,13 +284,13 @@ lib_table = model.format_table(lib_files, sort_order: :descending)
 puts lib_table
 ```
 
-### `project_totals(tracked_globs: model default, raise_on_stale: model default)`
+### `project_totals(file_globs: model default, raise_on_stale: model default)`
 
 Returns aggregated coverage totals across all files.
 
 **Parameters:**
 
-- `tracked_globs` (Array<String> or String, optional): Glob patterns to filter files. Defaults to model setting.
+- `file_globs` (Array<String> or String, optional): Count only files matching these patterns, and count matching files that have no coverage data under `without_coverage`. Defaults to model setting.
 - `raise_on_stale` (Boolean, optional): Whether to raise error if project is stale. Defaults to model setting.
 
 **Returns:** `Hash` - See [project_totals return type](#project_totals)
@@ -301,18 +301,18 @@ totals = model.project_totals
 # => {
 #      'schema_version' => 1,
 #      'covered' => 100, 'uncovered' => 23, 'total' => 123, 'percentage' => 81.3,
-#      'tracking' => { 'enabled' => false, 'globs' => [] },
+#      'file_globs' => [],
 #      'file_counts' => { 'total' => 4, 'with_coverage' => { 'total' => 4, 'ok' => 4, 'stale' => { ... } } },
 #      'timestamp_status' => 'ok'
 #    }
 
 # Filter to specific directory
-lib_totals = model.project_totals(tracked_globs: 'lib/**/*.rb')
+lib_totals = model.project_totals(file_globs: 'lib/**/*.rb')
 ```
 
 When `raise_on_stale: true` is set, the method raises on stale coverage instead of returning totals. Otherwise, totals exclude stale files (with staleness indicators `"deleted"`, `"newer"`, `"length_mismatch"`, `"unreadable"`) from line counts and report stale breakdowns under `file_counts['with_coverage']['stale']`. `file_counts['with_coverage']['ok']` is the number of files the line counts include.
 
-Note: The `without_coverage` hash is present only when `tracked_globs` is non-empty.
+Note: The `without_coverage` hash is present only when `file_globs` is non-empty.
 
 ### `staleness_for(path)`
 
@@ -380,7 +380,7 @@ Returns `Hash` with file data and staleness metadata:
     }
   ],
   'skipped_files' => Array<Hash>,          # Skipped rows; each hash has 'file', 'error', 'error_class'
-  'not_in_coverage_files' => Array<String>,# Tracked files not in coverage data
+  'not_in_coverage_files' => Array<String>,# Files matching the file globs that are not in coverage data
   'newer_files' => Array<String>,          # Files newer than coverage
   'deleted_files' => Array<String>,        # Coverage entries for deleted files
   'length_mismatch_files' => Array<String>,# Files whose line counts differ from coverage
@@ -474,12 +474,9 @@ Returns `Hash`:
   'uncovered' => Integer,          # Uncovered lines in fresh files
   'total' => Integer,              # Coverable lines in fresh files
   'percentage' => Float | nil,     # Overall line coverage percent; nil if no measurable lines
-  'tracking' => {
-    'enabled' => Boolean,          # Whether tracked_globs are active
-    'globs' => Array<String>       # Active tracked globs (empty when disabled)
-  },
+  'file_globs' => Array<String>,   # Active file globs (empty when none were given)
   'file_counts' => {
-    'total' => Integer,          # Total number of files (with + without coverage; without only when tracking is enabled)
+    'total' => Integer,          # Total number of files (with + without coverage; without only when file globs are set)
     'with_coverage' => {
       'total' => Integer,        # Files with coverage entries (skipped rows excluded)
       'ok' => Integer,           # Fresh coverage entries (the files the line metrics include)
@@ -494,7 +491,7 @@ Returns `Hash`:
       }
     },
     'without_coverage' => {
-      'total' => Integer,        # Tracked files not in coverage data, unreadable, or skipped
+      'total' => Integer,        # Files matching the file globs that are not in coverage data, unreadable, or skipped
       'by_type' => {
         'not_in_coverage' => Integer, # Count of the list's not_in_coverage_files
         'unreadable' => Integer,
@@ -506,7 +503,7 @@ Returns `Hash`:
 }
 ```
 
-Note: The `without_coverage` hash is present only when `tracked_globs` is non-empty.
+Note: The `without_coverage` hash is present only when `file_globs` is non-empty.
 
 ## Error Handling
 
@@ -719,7 +716,7 @@ model = CovLoupe::CoverageModel.new
 patterns = %w[app/models/**/*.rb app/controllers/**/*.rb lib/**/*.rb]
 
 directory_stats = patterns.map do |pattern|
-  totals = model.project_totals(tracked_globs: pattern)
+  totals = model.project_totals(file_globs: pattern)
 
   {
     directory: pattern,

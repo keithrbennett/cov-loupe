@@ -227,7 +227,7 @@ RSpec.describe CovLoupe::Commands::ValidateCommand do
         File.write(File.join(project, 'lib', 'brand_new_file.rb'), "# new file\n")
 
         _out, err, status = run_cli_with_status(
-          '--root', project, '--raise-on-stale', 'true', '--tracked-globs', 'lib/**/*.rb',
+          '--root', project, '--raise-on-stale', 'true', '--file-globs', 'lib/**/*.rb',
           'validate', '-i', '->(model) { model.list; true }'
         )
         expect(status).to eq(1)

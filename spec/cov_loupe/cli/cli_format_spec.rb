@@ -78,7 +78,7 @@ RSpec.describe CovLoupe::CoverageCLI, 'format option' do
     it 'works with totals subcommand' do
       output = run_cli('--format', 'json', 'totals')
       data = JSON.parse(output)
-      %w[percentage tracking file_counts].each { |key| expect(data).to have_key(key) }
+      %w[percentage file_globs file_counts].each { |key| expect(data).to have_key(key) }
     end
 
     it 'works with summary subcommand' do

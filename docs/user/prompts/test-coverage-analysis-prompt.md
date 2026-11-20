@@ -35,7 +35,7 @@ Before you begin the analysis:
 3. If `git status` shows uncommitted changes, include them in the analysis:
    analyze the working tree as it is, and list the `git status` details
    immediately after the commit citation.
-4. Analyze the files git would consider part of the project: tracked files
+4. Analyze the files git would consider part of the project: git-tracked files
    plus new files not yet added, excluding anything git ignores
    (`git ls-files --cached --others --exclude-standard`). Mark the untracked
    files in the `git status` details.
@@ -78,7 +78,7 @@ it exists), and tells the user to rerun the full suite. Do not write a report.
    SimpleCov 1.x. Record its path, size in bytes, and modification time (in
    UTC) from the file system (e.g. `ls -l` or `stat`); this metadata is not
    coverage data, so reading it is allowed.
-2. Run the project totals with the tracked globs from Step 2
+2. Run the project totals with the file globs from Step 2
    (`project_coverage_totals` / `cov-loupe totals -fJ -g '<globs>'`)
    and the file list with the same globs (`project_coverage` /
    `cov-loupe list -fJ -g '<globs>'`). `timestamp_status` must be `ok`,
@@ -97,15 +97,15 @@ it exists), and tells the user to rerun the full suite. Do not write a report.
 These checks cannot prove that the last run was the complete suite. Say in
 the report that the analysis relies on the user's assurance that it was.
 
-`not_in_coverage_files` (tracked files the suite never loaded) is not a
-staleness failure; it is a finding for Step 2.
+`not_in_coverage_files` (files that match the file globs but that the suite
+never loaded) is not a staleness failure; it is a finding for Step 2.
 
 ## Step 2: Establish the project baseline
 
-1. Get overall totals with no globs, then with tracked globs matching the
-   code SimpleCov is meant to measure (from its `track_files` and filter
+1. Get overall totals with no globs, then with file globs matching the
+   code SimpleCov is meant to measure (from its `cover` (formerly `track_files`) and filter
    settings; typically `lib/**/*.rb`, or `app/**/*.rb,lib/**/*.rb` for Rails).
-   Passing `tracked_globs` makes cov-loupe report tracked files that have
+   Passing `file_globs` makes cov-loupe report matching files that have
    **no** coverage data at all (`not_in_coverage_files`, `without_coverage`);
    these are files never loaded by the suite and are often the biggest real
    gap.
@@ -173,7 +173,7 @@ and more tokens than a file-level rollup; that is the point.
 3. Get a broader area's numbers by summing its children's line counts, never
    by averaging child percentages.
 4. For an area made of whole files, cross-check your sums against
-   `project_coverage_totals` with `tracked_globs` /
+   `project_coverage_totals` with `file_globs` /
    `cov-loupe totals -fJ -g '<globs>'`; they must match exactly.
 5. Confirm that the line totals for the partition level from Step 3 add up to
    the project's covered and total lines for the same overall globs. If they
@@ -189,8 +189,8 @@ and more tokens than a file-level rollup; that is the point.
 Decide for yourself which files and areas deserve a close look. Do not apply a
 fixed percentage cutoff: weigh each area's coverage against its criticality,
 so a critical area at a high percentage can still warrant scrutiny while a
-low-stakes area at a lower percentage may not. Always include every tracked
-file with no coverage data. State the reasoning behind your selection in the
+low-stakes area at a lower percentage may not. Always include every
+file matching the file globs that has no coverage data. State the reasoning behind your selection in the
 report.
 
 For each selected file or area:
@@ -268,7 +268,7 @@ The file should have the following structure:
 - The coverage file's path (relative to the project root), size, and
   modification time (UTC), so readers can tell which test run the report
   describes.
-- Overall line coverage (with and without tracked globs).
+- Overall line coverage (with and without file globs).
 - The best- and worst-covered areas, and the top risk areas.
 - A **one-line verdict** (e.g. *"Strong domain coverage; payment error
   handling is the main gap"*).
@@ -287,7 +287,7 @@ percentage:
 | Area | Criticality | Code units | Covered | Total | % | Weakest unit (%) |
 |------|-------------|------------|---------|-------|---|------------------|
 
-List tracked files with no coverage data separately, with the areas they
+List matching files with no coverage data separately, with the areas they
 belong to.
 
 Follow with a short interpretation of each area that stands out, positively or
@@ -315,7 +315,7 @@ citations.
 
 ### Data Caveats
 Reliance on the user's assurance that the last run was the complete, passing
-suite; tracked files not in the coverage data; branch coverage being out
+suite; matching files not in the coverage data; branch coverage being out
 of scope; ambiguous line assignments at area boundaries; anything else that
 limits confidence in the numbers.
 

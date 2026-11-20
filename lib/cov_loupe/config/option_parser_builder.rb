@@ -114,27 +114,27 @@ module CovLoupe
         config.color = BooleanType.parse(value)
       end
       parser.on('-S', '--raise-on-stale BOOLEAN', BooleanType::IS_BOOLEAN_STRING_VALUE,
-        'Raise error if coverage is stale; for project queries, also if a tracked file is ' \
-          'missing or a row is skipped (default: false). ' \
-          "Accepts: #{BooleanType::BOOLEAN_VALUES_DISPLAY_STRING}") do |value|
+        'Raise error if coverage is stale (default: false). For project queries, also raise',
+        'if a file matching the file globs is not in coverage data, or if a row is skipped.',
+        "Accepts: #{BooleanType::BOOLEAN_VALUES_DISPLAY_STRING}") do |value|
         config.raise_on_stale = BooleanType.parse(value)
       end
       # Not OptionParser's Array type: Array splits on every comma, which breaks brace patterns
       # such as 'app/{models,controllers}/**/*.rb' into two invalid globs. GlobListSplitter
       # splits only on commas outside {...} and [...]. Object passes the raw value through;
       # String would reject an empty value (-g ''), which Array accepted as no globs.
-      parser.on('-g', '--tracked-globs PATTERNS', Object,
+      parser.on('-g', '--file-globs PATTERNS', Object,
         'Limit project-level results (list, totals, default report, validate predicates) to',
         'files matching these comma-separated globs, and report matching files on disk that',
         'have no coverage data (e.g. files added since the last test run)',
-        'In MCP mode, the default for project tools whose call passes no tracked_globs',
+        'In MCP mode, the default for project tools whose call passes no file_globs',
         'Default: [] (every file in the coverage file, as SimpleCov reported it)',
         'When set, use the files you expect covered, normally your SimpleCov cover globs',
         'Commas inside {...} or [...] belong to their pattern',
         'An unclosed {, or an unclosed [ outside braces, is an error',
         'Write a literal comma as [,], a literal [ as [[], and a literal { as a quoted \{ (not on Windows)',
-        "Example: --tracked-globs 'lib/**/*.rb,app/{models,controllers}/**/*.rb'") do |value|
-        config.tracked_globs = GlobListSplitter.split(value)
+        "Example: --file-globs 'lib/**/*.rb,app/{models,controllers}/**/*.rb'") do |value|
+        config.file_globs = GlobListSplitter.split(value)
       end
       unless after_subcommand
         parser.on('-h', '--help', 'Show help (only before the subcommand)') do

@@ -8,14 +8,14 @@ RSpec.describe CovLoupe::Presenters::ProjectCoveragePresenter do
       model:          model,
       sort_order:     sort_order,
       raise_on_stale: raise_on_stale,
-      tracked_globs:  tracked_globs
+      file_globs:     file_globs
     )
   end
 
   let(:model) { instance_double(CovLoupe::CoverageModel) }
   let(:sort_order) { :ascending }
   let(:raise_on_stale) { true }
-  let(:tracked_globs) { ['lib/**/*.rb'] }
+  let(:file_globs) { ['lib/**/*.rb'] }
   let(:files) do
     [
       {
@@ -55,7 +55,7 @@ RSpec.describe CovLoupe::Presenters::ProjectCoveragePresenter do
 
   before do
     allow(model).to receive(:list).with(sort_order: sort_order, raise_on_stale: raise_on_stale,
-      tracked_globs: tracked_globs).and_return(list_payload)
+      file_globs: file_globs).and_return(list_payload)
   end
 
 
@@ -93,7 +93,7 @@ RSpec.describe CovLoupe::Presenters::ProjectCoveragePresenter do
   end
 
   describe '#relative_not_in_coverage_files' do
-    it 'returns the missing tracked files' do
+    it 'returns the files not in coverage data' do
       expect(presenter.relative_not_in_coverage_files).to eq(['lib/missing.rb'])
     end
   end
@@ -130,7 +130,7 @@ RSpec.describe CovLoupe::Presenters::ProjectCoveragePresenter do
     context 'when timestamps are missing' do
       before do
         allow(model).to receive(:list).with(sort_order: sort_order, raise_on_stale: raise_on_stale,
-          tracked_globs: tracked_globs).and_return({
+          file_globs: file_globs).and_return({
             'files'                 => files,
             'skipped_files'         => [],
             'not_in_coverage_files' => [],

@@ -116,6 +116,10 @@ RSpec.describe CovLoupe do
       ['a passing validate', ['validate', '-i', '->(_m) { true }'], codes::SUCCESS, true],
       ['a failing validate', ['validate', '-i', '->(_m) { false }'], codes::VALIDATION_FAILED, true],
       ['an invalid option', %w[--no-such-option], codes::USAGE, true],
+      ['the removed --tracked-globs option', %w[list --tracked-globs lib/*.rb], codes::USAGE, true],
+      ['the removed --tracked-globs option before the subcommand', %w[--tracked-globs lib/*.rb list],
+        codes::USAGE, true],
+      ['--f, now ambiguous (--format or --file-globs)', %w[list --f json], codes::USAGE, true],
       ['an invalid mode', %w[--mode nope], codes::USAGE, true],
       ['a runtime error', %w[summary lib/missing.rb], codes::ERROR, true],
     ].each do |desc, argv, status, exits|
@@ -145,14 +149,14 @@ RSpec.describe CovLoupe do
 
     # The server is stubbed so that, if the check ever stopped firing, the spec would fail
     # instead of waiting on stdin.
-    it 'does not start the MCP server when --tracked-globs has an unclosed bracket' do
+    it 'does not start the MCP server when --file-globs has an unclosed bracket' do
       allow(described_class::MCPServer).to receive(:new)
         .and_return(instance_double(described_class::MCPServer, run: nil))
 
       _stdout, stderr, status = run_cli_with_status('--mode', 'mcp', '-g', 'lib/[ab')
 
       expect(status).to eq(described_class::ExitCodes::USAGE)
-      expect(stderr).to include(%q(Unclosed '[' in --tracked-globs value: "lib/[ab"))
+      expect(stderr).to include(%q(Unclosed '[' in --file-globs value: "lib/[ab"))
       expect(described_class::MCPServer).not_to have_received(:new)
     end
 
@@ -210,7 +214,7 @@ RSpec.describe CovLoupe do
           [out.force_encoding(Encoding::UTF_8), err, status]
         end
         # Environment values arrive as raw bytes under LANG=C too
-        list_out, list_err, list_status = run.call('list', opts: '--tracked-globs lib/café*.rb')
+        list_out, list_err, list_status = run.call('list', opts: '--file-globs lib/café*.rb')
         summary_out, summary_err, summary_status = run.call('-c', 'coverage', 'summary', 'lib/café.rb')
         # -U sets Encoding.default_internal, so $stdout transcodes to US-ASCII and the default
         # report cannot write the non-ASCII path.

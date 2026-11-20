@@ -19,10 +19,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTotalsTool do
       'covered'          => 40,
       'uncovered'        => 2,
       'percentage'       => 95.24,
-      'tracking'         => {
-        'enabled' => true,
-        'globs'   => ['lib/**/*.rb'],
-      },
+      'file_globs'       => ['lib/**/*.rb'],
       'file_counts'      => {
         'total'            => 4,
         'with_coverage'    => {
@@ -59,7 +56,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTotalsTool do
   it_behaves_like 'an MCP tool that returns text JSON'
 
   it 'returns aggregated totals' do
-    data, = expect_mcp_text_json(tool_response, expected_keys: %w[percentage tracking file_counts])
+    data, = expect_mcp_text_json(tool_response, expected_keys: %w[percentage file_globs file_counts])
 
     expect(data).to include(
       'total'      => 42,
@@ -68,17 +65,23 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTotalsTool do
       'percentage' => 95.24
     )
     expect(data['file_counts']).to include('total' => 4)
-    expect(data['tracking']).to include('enabled' => true)
+    expect(data['file_globs']).to eq(['lib/**/*.rb'])
   end
 
-  it 'includes tracking metadata in output' do
+  it 'includes the file globs in output' do
     data, = expect_mcp_text_json(
       tool_response,
-      expected_keys: %w[percentage tracking file_counts]
+      expected_keys: %w[percentage file_globs file_counts]
     )
 
-    expect(data['tracking']).to include('enabled' => true)
-    expect(data['tracking']['globs']).to eq(['lib/**/*.rb'])
+    expect(data['file_globs']).to eq(['lib/**/*.rb'])
+  end
+
+  it 'passes the file_globs argument to the presenter' do
+    described_class.call(root: root, file_globs: ['lib/foo.rb'], server_context: server_context)
+
+    expect(CovLoupe::Presenters::ProjectTotalsPresenter).to have_received(:new)
+      .with(hash_including(file_globs: ['lib/foo.rb']))
   end
 
   describe 'timestamp_status warnings' do
@@ -89,7 +92,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTotalsTool do
 
         test_payload = {
           'total' => 0, 'covered' => 0, 'uncovered' => 0, 'percentage' => 0,
-          'tracking' => { 'enabled' => false, 'globs' => [] },
+          'file_globs' => [],
           'file_counts' => {
             'total'         => 0,
             'with_coverage' => {
@@ -121,7 +124,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTotalsTool do
 
       response = described_class.call(root: root, server_context: server_context)
       data, _item = expect_mcp_text_json(response, expected_keys: %w[
-        percentage tracking file_counts timestamp_status warnings
+        percentage file_globs file_counts timestamp_status warnings
       ])
 
       expect(data['timestamp_status']).to eq('missing')

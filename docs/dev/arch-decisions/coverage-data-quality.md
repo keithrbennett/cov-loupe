@@ -120,11 +120,11 @@ This allows:
 
 **Project-level** (`check_project!` and `check_project_with_lines!`):
 
-- Checks all covered files plus optionally tracked files
+- Checks the files in the coverage data (only those matching the file globs, when set), plus, when file globs are set, whether matching files are in the coverage data
 - Detects:
     - Files newer than coverage timestamp
     - Files deleted since coverage was collected
-    - Tracked files not in coverage data (newly added files)
+    - Files matching the file globs that are not in coverage data (such as newly added files)
 - Return a hash of the problem file lists (`newer_files`, `not_in_coverage_files`, `deleted_files`, `unreadable_files`, plus `length_mismatch_files` from `check_project_with_lines!`) and `timestamp_status`
 - In `:error` mode, raise `CoverageDataProjectStaleError` with those lists instead
 - `CoverageModel` uses `check_project_with_lines!` in `list` and `project_totals` (behind the `project_coverage` and `project_coverage_totals` MCP tools), passing coverage line arrays so length mismatches and unreadable files are also reported
@@ -132,20 +132,20 @@ This allows:
 **Totals behavior**:
 
 - `project_totals` excludes any stale files ("deleted", "newer", "length_mismatch", "unreadable") from aggregate counts.
-- Totals include a `with_coverage` breakdown, plus a `without_coverage` breakdown when tracked globs are set, so callers can reconcile what was omitted.
+- Totals include a `with_coverage` breakdown, plus a `without_coverage` breakdown when file globs are set, so callers can reconcile what was omitted.
 - The `without_coverage` payload includes counts for three categories:
-    - `not_in_coverage`: Tracked files that have no coverage data in the coverage file
+    - `not_in_coverage`: Files matching the file globs that have no coverage data in the coverage file
     - `unreadable`: Files that exist but could not be read (e.g., due to permission errors, I/O issues, or staleness check failures)
     - `skipped`: Files that were skipped during list processing due to coverage data errors (e.g., malformed entries)
 - The `unreadable` count comes from `list_result['unreadable_files']` (collected during staleness checking when files exist but cannot be accessed or validated), excluding files that already appear as a coverage row or a skipped row, so no file is counted twice.
 
-#### Tracked Globs Feature
+#### File Globs Feature
 
-`StalenessChecker` takes a `tracked_globs:` constructor keyword; the project-level checks use it to detect newly added files:
+`StalenessChecker` takes a `file_globs:` constructor keyword; the project-level checks use it to detect newly added files:
 
 ```ruby
 # Detects if lib/**/*.rb files exist that have no coverage data
-checker = StalenessChecker.new(root: root, coverage_file: path, tracked_globs: ['lib/**/*.rb'])
+checker = StalenessChecker.new(root: root, coverage_file: path, file_globs: ['lib/**/*.rb'])
 checker.check_project!(coverage_map)
 ```
 

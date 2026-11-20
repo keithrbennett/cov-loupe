@@ -3,28 +3,21 @@
   "$id": "urn:cov-loupe:schema:v1:totals",
   "title": "cov-loupe v1 project coverage totals",
   "type": "object",
-  "required": ["schema_version", "covered", "uncovered", "total", "percentage", "tracking", "file_counts", "timestamp_status"],
+  "required": ["schema_version", "covered", "uncovered", "total", "percentage", "file_globs", "file_counts", "timestamp_status"],
   "properties": {
     "schema_version": {"const": 1, "description": "Version of this payload shape."},
     "covered": {"type": "integer", "minimum": 0, "description": "Covered lines in fresh files (stale files are excluded)."},
     "uncovered": {"type": "integer", "minimum": 0, "description": "Uncovered lines in fresh files."},
     "total": {"type": "integer", "minimum": 0, "description": "Coverable lines in fresh files."},
     "percentage": {"type": ["number", "null"], "minimum": 0, "maximum": 100, "description": "Line coverage percent (covered / coverable lines across fresh files), truncated to two decimals; null when there are no such lines."},
-    "tracking": {
-      "type": "object",
-      "required": ["enabled", "globs"],
-      "properties": {
-        "enabled": {"type": "boolean", "description": "Whether tracked globs were supplied."},
-        "globs": {"type": "array", "items": {"type": "string"}, "description": "Active tracked glob patterns."}
-      }
-    },
+    "file_globs": {"type": "array", "items": {"type": "string"}, "description": "Active file glob patterns; empty when none were given."},
     "file_counts": {
       "type": "object",
       "required": ["total", "with_coverage"],
       "properties": {
         "total": {"type": "integer", "minimum": 0, "description": "Files with or without coverage."},
         "with_coverage": {"$ref": "#/$defs/with_coverage"},
-        "without_coverage": {"$ref": "#/$defs/without_coverage", "description": "Present only when tracked globs are enabled."}
+        "without_coverage": {"$ref": "#/$defs/without_coverage", "description": "Present only when file globs are set."}
       }
     },
     "timestamp_status": {"type": "string", "enum": ["ok", "missing"], "description": "Whether the coverage timestamp is available."},
@@ -60,13 +53,13 @@
       "type": "object",
       "required": ["total", "by_type"],
       "properties": {
-        "total": {"type": "integer", "minimum": 0, "description": "Tracked files without usable coverage."},
+        "total": {"type": "integer", "minimum": 0, "description": "Files matching the file globs that have no usable coverage."},
         "by_type": {
           "type": "object",
           "required": ["not_in_coverage", "unreadable", "skipped"],
           "properties": {
-            "not_in_coverage": {"type": "integer", "minimum": 0, "description": "Tracked files absent from coverage data."},
-            "unreadable": {"type": "integer", "minimum": 0, "description": "Tracked files that could not be read."},
+            "not_in_coverage": {"type": "integer", "minimum": 0, "description": "Files matching the file globs that are absent from coverage data."},
+            "unreadable": {"type": "integer", "minimum": 0, "description": "Files matching the file globs that could not be read."},
             "skipped": {"type": "integer", "minimum": 0, "description": "Files skipped because coverage data was invalid."}
           }
         }

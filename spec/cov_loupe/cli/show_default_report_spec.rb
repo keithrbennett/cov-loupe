@@ -10,7 +10,7 @@ RSpec.describe CovLoupe::CoverageCLI do
     cli.config.root = root
     cli.config.coverage_file = FIXTURE_PROJECT1_COVERAGE_PATH
     cli.config.raise_on_stale = false
-    cli.config.tracked_globs = nil
+    cli.config.file_globs = nil
   end
 
   describe '#show_default_report' do
@@ -75,15 +75,15 @@ RSpec.describe CovLoupe::CoverageCLI do
         end.to raise_error(CovLoupe::CoverageDataError, /corrupt data/)
       end
 
-      it 'filters skipped rows warning by tracked_globs' do
-        # Use tracked_globs that excludes the skipped file (lib/foo.rb)
-        cli.config.tracked_globs = ['lib/bar.rb']
+      it 'filters skipped rows warning by file_globs' do
+        # Use file_globs that excludes the skipped file (lib/foo.rb)
+        cli.config.file_globs = ['lib/bar.rb']
 
         _result, _out, warnings = capture_io do
           cli.show_default_report(sort_order: :ascending, output: $stdout)
         end
 
-        # The skipped file (lib/foo.rb) is outside tracked_globs, so no warning should appear
+        # The skipped file (lib/foo.rb) is outside file_globs, so no warning should appear
         expect(warnings).not_to include('WARNING', 'coverage row', 'lib/foo.rb')
       end
     end

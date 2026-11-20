@@ -13,12 +13,12 @@ module CovLoupe
     class ProjectTotalsPresenter
       include PayloadCaching
 
-      attr_reader :model, :raise_on_stale, :tracked_globs
+      attr_reader :model, :raise_on_stale, :file_globs
 
-      def initialize(model:, raise_on_stale:, tracked_globs:)
+      def initialize(model:, raise_on_stale:, file_globs:)
         @model = model
         @raise_on_stale = raise_on_stale
-        @tracked_globs = tracked_globs
+        @file_globs = file_globs
       end
 
       # Returns the timestamp status indicating whether coverage timestamps are available.
@@ -39,7 +39,7 @@ module CovLoupe
 
       private def compute_payload
         model.project_totals(
-          tracked_globs:  tracked_globs,
+          file_globs:     file_globs,
           raise_on_stale: raise_on_stale
         )
       end

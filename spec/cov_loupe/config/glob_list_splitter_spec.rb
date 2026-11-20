@@ -6,7 +6,7 @@ RSpec.describe CovLoupe::GlobListSplitter do
   # Backslash handling differs on Windows; pin the platform so these cases are deterministic.
   before { allow(CovLoupe).to receive(:windows?).and_return(false) }
 
-  # Each case: the raw --tracked-globs value, the patterns it must split into, and paths
+  # Each case: the raw --file-globs value, the patterns it must split into, and paths
   # that File.fnmatch must match with at least one of those patterns. The path check makes
   # each case confirm the split agrees with Ruby's own glob rules, not just with the
   # splitter's reading of them.
@@ -66,7 +66,7 @@ RSpec.describe CovLoupe::GlobListSplitter do
       hint = bracket == '[' ? "write '[[]'" : "write '\\{', quoted so the shell keeps the backslash"
       expect { described_class.split(value) }.to raise_error(
         CovLoupe::UsageError,
-        "Unclosed '#{bracket}' in --tracked-globs value: #{value.inspect}. " \
+        "Unclosed '#{bracket}' in --file-globs value: #{value.inspect}. " \
           "To match a literal '#{bracket}', #{hint}"
       )
     end

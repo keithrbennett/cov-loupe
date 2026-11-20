@@ -47,9 +47,10 @@ module CovLoupe
       raise_on_stale: {
         type:        'boolean',
         description: 'If true, raise error if coverage data is stale (deleted or unreadable ' \
-          'source files, timestamp or line-count mismatch), or, for project tools, if a tracked ' \
-          "file is not in coverage data or a coverage row is skipped. Defaults to the server's " \
-          '--raise-on-stale (false unless set).',
+          'source files, timestamp or line-count mismatch), or, for project tools, if a file ' \
+          "matching the file globs (a file_globs argument, or the server's -g) is not in " \
+          'coverage data or a coverage row is skipped. ' \
+          "Defaults to the server's --raise-on-stale (false unless set).",
       },
       error_mode:     {
         type:        'string',
@@ -72,10 +73,10 @@ module CovLoupe
 
     ERROR_MODE_PROPERTY = COMMON_PROPERTIES[:error_mode].freeze
 
-    TRACKED_GLOBS_PROPERTY = {
+    FILE_GLOBS_PROPERTY = {
       type:        'array',
-      description: 'Glob patterns for files that should exist in the coverage report ' \
-                   '(helps flag new files).',
+      description: 'Report only files matching these glob patterns, and report matching files ' \
+                   'that have no coverage data (helps flag new files).',
       items:       { type: 'string' },
     }.freeze
 
@@ -263,7 +264,7 @@ module CovLoupe
 
     # Default configuration when no context or explicit params are provided
     def self.default_model_options
-      { root: '.', coverage_file: nil, raise_on_stale: false, tracked_globs: [] }
+      { root: '.', coverage_file: nil, raise_on_stale: false, file_globs: [] }
     end
 
     # Resolves output_chars from tool parameter or server context.

@@ -13,7 +13,7 @@ module CovLoupe
   # The same names are used as project totals stale.by_type keys (DELETED, NEWER,
   # LENGTH_MISMATCH, UNREADABLE) and match the list payload's *_files arrays.
   # Files without usable coverage data are counted under their own names:
-  #   - NOT_IN_COVERAGE      → tracked file not found in coverage data (not_in_coverage_files)
+  #   - NOT_IN_COVERAGE      → file matching the file globs, not in coverage data (not_in_coverage_files)
   #   - SKIPPED              → file skipped due to processing error
   #
   # @api private

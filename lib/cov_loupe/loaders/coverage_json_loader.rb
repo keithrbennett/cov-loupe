@@ -97,7 +97,7 @@ module CovLoupe
     # branches or methods but no "lines" key. Without this check every file would be skipped
     # as malformed and the project would report no coverage, with a success exit status.
     # When only some entries lack a lines array, the per-file skip reports them instead. An
-    # empty coverage map is valid: the run simply tracked no files.
+    # empty coverage map is valid: the run simply recorded no files.
     #
     # Raises CorruptCoverageDataError, the class a single file without usable lines raises.
     private def validate_line_coverage(coverage)

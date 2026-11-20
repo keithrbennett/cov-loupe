@@ -290,7 +290,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
 
   describe 'table format exclusions and warnings' do
     context 'with format: table' do
-      it 'includes exclusions summary when tracked files are missing' do
+      it 'includes exclusions summary when files are not in coverage data' do
         model = instance_double(CovLoupe::CoverageModel, format_table: "Mock\nTable")
         allow(CovLoupe::CoverageModel).to receive(:new).and_return(model)
 
@@ -323,7 +323,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
         output = described_class.call(
           root:           root,
           format:         'table',
-          tracked_globs:  ['lib/**/*.rb'],
+          file_globs:     ['lib/**/*.rb'],
           server_context: server_context
         ).content.first['text']
 
@@ -547,7 +547,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
         root:           root,
         coverage_file:  nil,
         raise_on_stale: true,
-        tracked_globs:  []
+        file_globs:     []
       ).and_return(model)
 
       test_payload = {
@@ -572,7 +572,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
         root:           root,
         coverage_file:  nil,
         raise_on_stale: true,
-        tracked_globs:  []
+        file_globs:     []
       )
     end
   end

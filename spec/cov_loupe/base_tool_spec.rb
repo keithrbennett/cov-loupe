@@ -131,7 +131,7 @@ RSpec.describe CovLoupe::BaseTool do
 
   describe '.model_config_for' do
     let(:defaults) do
-      { root: '.', coverage_file: nil, raise_on_stale: false, tracked_globs: [] }
+      { root: '.', coverage_file: nil, raise_on_stale: false, file_globs: [] }
     end
 
     # Helper to mock AppContext with a specific config

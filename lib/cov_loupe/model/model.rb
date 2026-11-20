@@ -88,17 +88,17 @@ module CovLoupe
     # - coverage_file: path to a SimpleCov coverage.json file, or to a directory
     #   containing one
     # - raise_on_stale: boolean (default false). When true, raises if a source file is newer
-    #   than the coverage, deleted, unreadable, or has a different line count; if a tracked
-    #   file is not in the coverage data (project queries); or if a coverage row is skipped.
-    # - tracked_globs: array of glob patterns, or one pattern string (default []). Used for
-    #   filtering and tracking.
+    #   than the coverage, deleted, unreadable, or has a different line count; if a file
+    #   matching file_globs is not in the coverage data (project queries); or if a coverage row is skipped.
+    # - file_globs: array of glob patterns, or one pattern string (default []). Used for
+    #   reporting only matching files, and matching files that have no coverage data.
     # - logger: internal (@api private); a CovLoupe::Logger, defaulting to CovLoupe.logger.
     #   Library callers configure logging through the context instead.
-    def initialize(root: '.', coverage_file: nil, raise_on_stale: false, tracked_globs: [],
+    def initialize(root: '.', coverage_file: nil, raise_on_stale: false, file_globs: [],
       logger: nil)
       @root = File.expand_path(root || '.')
       @coverage_file_arg = coverage_file
-      @default_tracked_globs = tracked_globs
+      @default_file_globs = file_globs
       @logger = logger || CovLoupe.logger
       @relativizer = PathRelativizer.new(
         root:        @root,
@@ -143,17 +143,18 @@ module CovLoupe
       end
     end
 
-    # Returns a list of coverage data for all tracked files.
+    # Returns a list of coverage data for every file in the coverage data, or for the files
+    # matching file_globs.
     #
     # @param sort_order [Symbol] :descending (default) or :ascending for sorting by percentage
-    # @param raise_on_stale [Boolean] When true, raises if any file is stale, a tracked file is
+    # @param raise_on_stale [Boolean] When true, raises if any file is stale, a file matching the file globs is
     #   not in coverage data, or a coverage row is skipped
-    # @param tracked_globs [Array<String>, String] Glob patterns to filter tracked files
+    # @param file_globs [Array<String>, String] Report only files matching these globs, and matching files with no coverage data
     # @return [Hash] Hash containing:
     #   - 'schema_version': Payload schema version (Integer)
     #   - 'files': Array of file coverage data sorted by percentage
     #   - 'skipped_files': Files that could not be processed
-    #   - 'not_in_coverage_files': Tracked files not in coverage data
+    #   - 'not_in_coverage_files': Files matching the file globs that are not in coverage data
     #   - 'newer_files': Coverage data older than source files
     #   - 'deleted_files': Source files removed since coverage run
     #   - 'length_mismatch_files': Files with line count mismatches
@@ -162,36 +163,36 @@ module CovLoupe
     # @raise [ArgumentError] if sort_order is not :ascending or :descending, before any
     #   staleness check
     #
-    # @note Complexity: O(n log n) where n is the number of tracked files due to sorting.
-    #   File I/O for staleness checks adds O(m) where m is the number of tracked source files.
+    # @note Complexity: O(n log n) where n is the number of listed files due to sorting.
+    #   File I/O for staleness checks adds O(m) where m is the number of source files checked.
     # @note Thread-safety: Not thread-safe; see the class documentation.
     def list(sort_order: DEFAULT_SORT_ORDER,
       raise_on_stale: @default_raise_on_stale,
-      tracked_globs: @default_tracked_globs)
+      file_globs: @default_file_globs)
       CoverageRowSorter.validate_sort_order!(sort_order)
       relative_paths(PayloadSchema.add(unversioned_list(sort_order: sort_order,
-        raise_on_stale: raise_on_stale, tracked_globs: tracked_globs)))
+        raise_on_stale: raise_on_stale, file_globs: file_globs)))
     end
 
-    private def unversioned_list(sort_order:, raise_on_stale:, tracked_globs:)
+    private def unversioned_list(sort_order:, raise_on_stale:, file_globs:)
       # Rows are built leniently so that staleness checking covers every file; the first
       # skipped row's error is raised only after that check.
       listing = ListRowBuilder.new(coverage_map, root: @root,
         volume_case_sensitive: volume_case_sensitive, logger: @logger).build
       project_staleness_details = project_staleness_report(
-        tracked_globs:          tracked_globs,
+        file_globs:             file_globs,
         raise_on_stale:         raise_on_stale,
         coverage_lines_by_path: listing.lines_by_path
       )
       raise listing.errors.values.first if raise_on_stale && listing.errors.any?
 
       file_statuses = project_staleness_details[:file_statuses] || {}
-      rows = filter_rows_by_globs(listing.rows, tracked_globs)
+      rows = filter_rows_by_globs(listing.rows, file_globs)
       rows.each { |row| row['stale'] = file_statuses.fetch(row['file'], StaleStatus::OK) }
 
       {
         'files'                 => CoverageRowSorter.sort(rows, sort_order: sort_order, root: @root),
-        'skipped_files'         => filter_rows_by_globs(listing.skipped_rows, tracked_globs),
+        'skipped_files'         => filter_rows_by_globs(listing.skipped_rows, file_globs),
         'not_in_coverage_files' => project_staleness_details[:not_in_coverage_files],
         'newer_files'           => project_staleness_details[:newer_files],
         'deleted_files'         => project_staleness_details[:deleted_files],
@@ -203,15 +204,15 @@ module CovLoupe
 
     # Aggregates per-file coverage into project-wide totals.
     # Partitions files by staleness: stale files are excluded from line counts
-    # but still counted in the file breakdown. When tracked_globs are provided,
+    # but still counted in the file breakdown. When file_globs are provided,
     # also reports files without coverage data (not in coverage data, skipped, unreadable).
     def project_totals(
-      tracked_globs: @default_tracked_globs, raise_on_stale: @default_raise_on_stale
+      file_globs: @default_file_globs, raise_on_stale: @default_raise_on_stale
     )
       list_result = unversioned_list(sort_order: :ascending, raise_on_stale: raise_on_stale,
-        tracked_globs: tracked_globs)
+        file_globs: file_globs)
       PayloadSchema.add(
-        ProjectTotalsBuilder.new(root: @root).build(list_result, tracked_globs: tracked_globs)
+        ProjectTotalsBuilder.new(root: @root).build(list_result, file_globs: file_globs)
       )
     end
 
@@ -232,7 +233,7 @@ module CovLoupe
     # @param sort_order [Symbol] Sort order (:ascending or :descending)
     # @param raise_on_stale [Boolean] Whether to raise on stale coverage data; used only when
     #   rows is nil, since supplied rows are not rechecked
-    # @param tracked_globs [Array<String>, String, nil] Glob patterns for tracked files
+    # @param file_globs [Array<String>, String, nil] Report only files matching these globs
     # @param output_chars [Symbol] Output character mode (:default, :fancy, :ascii)
     # @return [String] Formatted table
     # @raise [ArgumentError] if sort_order is not :ascending or :descending, before any
@@ -240,10 +241,10 @@ module CovLoupe
     #   rows to format
     def format_table(rows = nil, sort_order: DEFAULT_SORT_ORDER,
       raise_on_stale: @default_raise_on_stale,
-      tracked_globs: @default_tracked_globs,
+      file_globs: @default_file_globs,
       output_chars: :default)
       rows = prepare_rows(rows, sort_order: sort_order, raise_on_stale: raise_on_stale,
-        tracked_globs: tracked_globs)
+        file_globs: file_globs)
       CoverageTableFormatter.format(rows, output_chars: output_chars)
     end
 
@@ -291,7 +292,7 @@ module CovLoupe
     end
 
     private def file_staleness(file_abs, lines)
-      build_staleness_checker(raise_on_stale: false, tracked_globs: nil)
+      build_staleness_checker(raise_on_stale: false, file_globs: nil)
         .file_staleness_status(file_abs, lines)
     rescue => e
       @logger.safe_log("Failed to check staleness for #{file_abs}: #{e.message}")
@@ -312,52 +313,52 @@ module CovLoupe
       self
     end
 
-    private def build_staleness_checker(raise_on_stale:, tracked_globs:)
+    private def build_staleness_checker(raise_on_stale:, file_globs:)
       data = fetch_data
       StalenessChecker.new(
         root:          @root,
         coverage_file: resolved_coverage_file_path,
         mode:          raise_on_stale ? :error : :off,
-        tracked_globs: tracked_globs,
+        file_globs:    file_globs,
         timestamp:     data.timestamp,
         recorded_root: data.recorded_root
       )
     end
 
-    private def project_staleness_report(tracked_globs:, raise_on_stale:, coverage_lines_by_path:)
-      # Filter coverage files to match the same scope as tracked_globs
-      coverage_files = GlobUtils.filter_paths(coverage_map.keys, tracked_globs, root: @root)
+    private def project_staleness_report(file_globs:, raise_on_stale:, coverage_lines_by_path:)
+      # Filter coverage files to match the same scope as file_globs
+      coverage_files = GlobUtils.filter_paths(coverage_map.keys, file_globs, root: @root)
 
       # Filter coverage_lines_by_path to the same scope to ensure length-mismatch
-      # checks only apply to files within the tracked_globs scope
+      # checks only apply to files within the file_globs scope
       coverage_files_set = coverage_files.to_set
       scoped_coverage_lines = coverage_lines_by_path.slice(*coverage_files_set)
 
       build_staleness_checker(
-        raise_on_stale: raise_on_stale, tracked_globs: tracked_globs
+        raise_on_stale: raise_on_stale, file_globs: file_globs
       ).check_project_with_lines!(scoped_coverage_lines, coverage_files: coverage_files)
     end
 
     # Rows computed here come from list, already sorted and glob-filtered; supplied rows
     # still need both.
-    private def prepare_rows(rows, sort_order:, raise_on_stale:, tracked_globs:)
+    private def prepare_rows(rows, sort_order:, raise_on_stale:, file_globs:)
       unless rows
         return list(sort_order: sort_order, raise_on_stale: raise_on_stale,
-          tracked_globs: tracked_globs)['files']
+          file_globs: file_globs)['files']
       end
 
       sorted = CoverageRowSorter.sort(rows, sort_order: sort_order, root: @root)
-      filter_rows_by_globs(sorted, tracked_globs)
+      filter_rows_by_globs(sorted, file_globs)
     end
 
     # Filters coverage rows to only include files matching the given glob patterns.
     #
     # @param rows [Array<Hash>] coverage rows with 'file' keys containing absolute paths, or
     #   project-relative paths when format_table receives rows from a query result
-    # @param tracked_globs [Array<String>, String, nil] glob patterns to match against
+    # @param file_globs [Array<String>, String, nil] glob patterns to match against
     # @return [Array<Hash>] rows whose files match at least one pattern (or all rows if no patterns)
-    private def filter_rows_by_globs(rows, tracked_globs)
-      patterns = GlobUtils.normalize_patterns(tracked_globs)
+    private def filter_rows_by_globs(rows, file_globs)
+      patterns = GlobUtils.normalize_patterns(file_globs)
       return rows if patterns.empty?
 
       absolute_patterns = patterns.map { |p| GlobUtils.absolutize_pattern(p, @root) }
@@ -381,7 +382,7 @@ module CovLoupe
         raise FileNotFoundError, "File not found: #{path}"
       end
 
-      checker = build_staleness_checker(raise_on_stale: raise_on_stale, tracked_globs: nil)
+      checker = build_staleness_checker(raise_on_stale: raise_on_stale, file_globs: nil)
       checker.check_file!(file_abs, coverage_lines) unless checker.off?
 
       [file_abs, coverage_lines]

@@ -85,9 +85,9 @@ RSpec.describe 'CLI --output-chars option' do
       end
     end
 
-    it 'shows tracked globs unchanged in totals output' do
+    it 'shows file globs unchanged in totals output' do
       glob = "lib/caf\u00e9\u2192*.rb"
-      out, err, status = run_cli_with_status('-O', 'ascii', '--root', root, '--tracked-globs', glob, 'totals')
+      out, err, status = run_cli_with_status('-O', 'ascii', '--root', root, '--file-globs', glob, 'totals')
 
       expect(status).to eq(0), err
       expect(out).to include(glob)

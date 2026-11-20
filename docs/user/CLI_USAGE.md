@@ -9,7 +9,7 @@ Complete reference for using cov-loupe from the command line.
 > Run the examples from the root of a cov-loupe checkout, since the alias's path is relative. Without the gem
 > installed, use `alias clp='bundle exec exe/cov-loupe -R docs/fixtures/demo_project'` instead.
 > Replace `clp` with `cov-loupe` to run commands against your own project.
-> The demo fixture is a small Rails-like project in `docs/fixtures/demo_project` with intentional coverage gaps for testing `--tracked-globs`.
+> The demo fixture is a small Rails-like project in `docs/fixtures/demo_project` with intentional coverage gaps for testing `--file-globs`.
 > Its coverage timestamp is deliberately set far in the future, so the outputs below are reproducible on a fresh clone.
 
 ## Table of Contents
@@ -96,8 +96,8 @@ Default sort order is descending (highest coverage first) so the lowest-coverage
 | Short  | Long                     | Description                                           |
 |--------|--------------------------|-------------------------------------------------------|
 | `-o`   | `--sort-order`           | Sort by coverage percentage (ascending or descending) |
-| `-g`   | `--tracked-globs`        | Limit results to matching files; report matching files with no coverage |
-| `-S`   | `--raise-on-stale BOOLEAN` | Raise error if coverage is stale, a tracked file (with `-g`) is missing, or a row is skipped (default false) |
+| `-g`   | `--file-globs`           | Limit results to matching files; report matching files with no coverage |
+| `-S`   | `--raise-on-stale BOOLEAN` | Raise error if coverage is stale, a file matching `-g` is not in coverage data, or a row is skipped (default false) |
 | `-f`   | `--format`               | Output format, e.g. `J` (pretty JSON), `j`, `y`, `a`; see [Output Formats](#output-formats) |
 
 **Output (table format):**
@@ -141,7 +141,7 @@ Files: total 7, ok 7, stale 0
 
 **Stale indicators:** deleted (source file deleted), newer (timestamp mismatch), length_mismatch (line count mismatch), unreadable (source file could not be read, or its staleness check failed)
 
-**Skipped rows:** a coverage row with invalid data is left out of the report. It is listed in the exclusions summary on `stderr` (table format) or in `skipped_files` (structured formats, with a warning on `stderr`). The table-format exclusions summary also lists missing tracked files and stale files, and a table with stale rows ends with a `Staleness:` legend line. With `--raise-on-stale true`, such a row is an error instead.
+**Skipped rows:** a coverage row with invalid data is left out of the report. It is listed in the exclusions summary on `stderr` (table format) or in `skipped_files` (structured formats, with a warning on `stderr`). The table-format exclusions summary also lists files not in coverage data and stale files, and a table with stale rows ends with a `Staleness:` legend line. With `--raise-on-stale true`, such a row is an error instead.
 
 ### `summary <path>`, `s <path>`
 
@@ -401,20 +401,20 @@ File: app/models/order.rb
 
 ### `totals`, `t`
 
-Show aggregated totals for all tracked files.
+Show aggregated totals for the project (or the files matching `--file-globs`).
 
 ```sh
 clp totals
 clp t
 clp -fJ t
-clp -g "lib/ops/jobs/*.rb" t  # -g = --tracked-globs
+clp -g "lib/ops/jobs/*.rb" t  # -g = --file-globs
 ```
 
 `totals` has no table form: `-f table` prints the same text breakdown as the default.
 
 **Output of `clp totals` (default format):**
 ```
-Tracked globs: (tracking disabled)
+File globs: (none)
 
 Lines (7 ok files): 47 total, 38 covered, 9 uncovered (80.85%)
 
@@ -423,9 +423,9 @@ File breakdown:
     Stale: deleted = 0, newer than coverage = 0, line mismatch = 0, unreadable = 0
 ```
 
-**With `--tracked-globs` enabled (`clp -g "lib/**/*.rb,app/**/*.rb" t`):**
+**With `--file-globs` enabled (`clp -g "lib/**/*.rb,app/**/*.rb" t`):**
 ```
-Tracked globs:
+File globs:
   - lib/**/*.rb
   - app/**/*.rb
 
@@ -446,7 +446,7 @@ File breakdown:
   "uncovered": 9,
   "total": 47,
   "percentage": 80.85,
-  "tracking": { "enabled": false, "globs": [] },
+  "file_globs": [],
   "file_counts": {
     "total": 7,
     "with_coverage": {
@@ -472,8 +472,8 @@ File breakdown:
 - The line metrics (`covered`, `uncovered`, `total`, `percentage`) count fresh coverage entries only; `file_counts.with_coverage.ok` is how many files they include, and `file_counts.with_coverage.stale.total` how many stale files they exclude.
 - `with_coverage.stale.by_type` keys match the per-file `stale` values: `deleted`, `newer`,
   `length_mismatch`, `unreadable`.
-- `without_coverage` is only present when tracking is enabled (tracked globs provided).
-- Respects `-g` / `--tracked-globs` when you only want to aggregate a subset of files.
+- `without_coverage` is only present when file globs are set.
+- Respects `-g` / `--file-globs` when you only want to aggregate a subset of files.
 - Totals exclude stale files (`"deleted"`, `"newer"`, `"length_mismatch"`, `"unreadable"`) so the aggregate reflects only fresh coverage data.
 - Honors `-S true` / `--raise-on-stale true` to raise if coverage data is out of date.
 
@@ -654,7 +654,7 @@ clp -s uncovered -C false uncovered lib/api/client.rb
 
 ### `-S, --raise-on-stale BOOLEAN`
 
-Raise error if coverage is stale. Project queries (`list`, `totals`, the default report, and `validate` predicates that call `model.list` or `model.project_totals`) also raise if a tracked file is not in coverage data or a coverage row is skipped because its data is invalid. Requires an explicit boolean value. Default is `false` (report staleness and skipped rows instead of raising; `totals` counts skipped rows only when tracked globs are set, and otherwise leaves them out of its output, logging each only as an INFO line).
+Raise error if coverage is stale. Project queries (`list`, `totals`, the default report, and `validate` predicates that call `model.list` or `model.project_totals`) also raise if a file matching the file globs is not in coverage data or a coverage row is skipped because its data is invalid. Requires an explicit boolean value. Default is `false` (report staleness and skipped rows instead of raising; `totals` counts skipped rows only when file globs are set, and otherwise leaves them out of its output, logging each only as an INFO line).
 
 ```sh
 # Enable raising an error if coverage is stale
@@ -671,16 +671,16 @@ clp --raise-on-stale false
 - **"newer"** (Timestamp): Source file modified after coverage was generated
 - **"length_mismatch"** (Length): Source file line count differs from coverage data
 - **"unreadable"** (Unreadable): Source file could not be read (permission or I/O errors), or its staleness check failed
-- Tracked files not in coverage data (with `--tracked-globs`; checked by `list`, `totals`, the default report, and `validate` predicates that call `model.list` or `model.project_totals`; the per-file commands ignore `-g`)
+- Files matching the file globs that are not in coverage data (with `--file-globs`; checked by `list`, `totals`, the default report, and `validate` predicates that call `model.list` or `model.project_totals`; the per-file commands ignore `-g`)
 
-<a id="tracked-globs"></a>
+<a id="file-globs"></a>
 
-### `-g, --tracked-globs PATTERNS`
+### `-g, --file-globs PATTERNS`
 
 Comma-separated glob patterns. They limit results to matching files, and report matching files on disk that have no coverage data at all.
 
 - Put all patterns in one `-g` value; a repeated `-g` replaces the earlier one.
-- The value is split only on commas outside `{...}` and `[...]`, so brace alternatives and character classes stay whole: `-g 'app/{models,controllers}/**/*.rb,lib/**/*.rb'` is two patterns. To write a literal comma in a pattern, use `[,]`, which works everywhere. A comma escaped with a backslash (`\,`) also does not split, except on Windows, where a backslash is a path separator. A doubled backslash (`\\`) is an escaped backslash, so a comma after it does split. The backslash must reach cov-loupe, so quote it (`-g 'a\,b.rb,c.rb'`): Unix shells and `COV_LOUPE_OPTS` both remove an unquoted backslash. In `COV_LOUPE_OPTS` the quotes go inside the value: `COV_LOUPE_OPTS="-g 'a\,b.rb,c.rb'"`. Empty items, as in `'a,,b'` or a trailing comma, are ignored, so a value with no patterns at all, such as `''` or `','`, means no tracked globs. One contrived case is not followed: a `[` that opens inside braces and closes after them, as in `{a[1,2},b]`, is split at the comma after `}`, giving `{a[1,2}` and `b]`.
+- The value is split only on commas outside `{...}` and `[...]`, so brace alternatives and character classes stay whole: `-g 'app/{models,controllers}/**/*.rb,lib/**/*.rb'` is two patterns. To write a literal comma in a pattern, use `[,]`, which works everywhere. A comma escaped with a backslash (`\,`) also does not split, except on Windows, where a backslash is a path separator. A doubled backslash (`\\`) is an escaped backslash, so a comma after it does split. The backslash must reach cov-loupe, so quote it (`-g 'a\,b.rb,c.rb'`): Unix shells and `COV_LOUPE_OPTS` both remove an unquoted backslash. In `COV_LOUPE_OPTS` the quotes go inside the value: `COV_LOUPE_OPTS="-g 'a\,b.rb,c.rb'"`. Empty items, as in `'a,,b'` or a trailing comma, are ignored, so a value with no patterns at all, such as `''` or `','`, means no file globs. One contrived case is not followed: a `[` that opens inside braces and closes after them, as in `{a[1,2},b]`, is split at the comma after `}`, giving `{a[1,2}` and `b]`.
 - An unclosed `{`, or an unclosed `[` outside braces, is a usage error (exit 2) for every command, including the per-file ones that otherwise ignore `-g`, and at MCP server startup. A bad value in `COV_LOUPE_OPTS` is parsed before the command line, so it fails every command even when the command line passes its own `-g`; see [`COV_LOUPE_OPTS`](#cov_loupe_opts) for how such errors are reported. CRuby matches no files for such a pattern; JRuby reads an unmatched `{` literally, but it is rejected there too, so a value means the same on every engine. To match a literal `[`, write `[[]` (or `\[`, except on Windows). To match a literal `{`, escape it as `\{`, quoted like `\,` above so the backslash reaches cov-loupe; on Windows, where a backslash is a path separator, a literal `{` cannot be written in `-g`. See [Advanced Filtering](ADVANCED_USAGE.md#advanced-filtering-glob-patterns).
 
 **Default:** `[]` (empty - shows every file in the coverage file)
@@ -707,14 +707,14 @@ end
 ```sh
 # In your shell config (.bashrc, .zshrc, etc.)
 # Match the cover patterns above
-export COV_LOUPE_OPTS="--tracked-globs lib/**/*.rb,app/**/*.rb"
+export COV_LOUPE_OPTS="--file-globs lib/**/*.rb,app/**/*.rb"
 ```
 
 **Usage:**
 
 ```sh
 # Use environment variable for project-wide default
-export COV_LOUPE_OPTS="--tracked-globs lib/**/*.rb,app/**/*.rb"
+export COV_LOUPE_OPTS="--file-globs lib/**/*.rb,app/**/*.rb"
 clp list  # Uses globs from env var
 
 # Or specify per-command
@@ -730,12 +730,12 @@ clp -g "lib/**/*.rb,app/**/*.rb" -fJ list > coverage-report.json
 **Use cases:**
 
 - **Limit results** - Narrow focus to a subsystem or layer
-- **Include files without coverage** - Report files that should be tracked but aren't in the coverage file
+- **Include files without coverage** - Report files that should have coverage but aren't in the coverage file
 - **CI validation** - Use with `-S true`/`--raise-on-stale true` to catch coverage gaps
 
 **Important:** The `not_in_coverage_files` array (in `list` output) only includes files that:
 
-1. Match the tracked globs
+1. Match the file globs
 2. Exist in the filesystem
 3. Are NOT in the coverage file
 
@@ -990,7 +990,7 @@ clp -f table summary lib/api/client.rb  # Explicit override to table format
 **Errors:** an option's error message does not say whether the option came from `COV_LOUPE_OPTS` or the command line. When it is in `COV_LOUPE_OPTS` (an option or value there fails to parse, or a final setting is invalid because of it), the error is followed by a line saying so, with the value:
 
 ```text
-Error: Unclosed '[' in --tracked-globs value: "lib/[ab". To match a literal '[', write '[[]'
+Error: Unclosed '[' in --file-globs value: "lib/[ab". To match a literal '[', write '[[]'
 The error is in COV_LOUPE_OPTS ("-g 'lib/[ab'"), which is read before the command line.
 Run 'cov-loupe --help' for usage information.
 ```

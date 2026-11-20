@@ -371,8 +371,8 @@ cov-loupe exposes 8 MCP tools by default, and 9 when started with `--allow-code-
 | `file_coverage_detailed` | Per-line coverage | `path` |
 | `file_coverage_raw` | Raw SimpleCov array | `path` |
 | `file_uncovered_lines` | List uncovered lines | `path` |
-| `project_coverage` | Project-wide coverage (JSON, table, YAML, etc.) | `sort_order`, `tracked_globs`, `format` |
-| `project_coverage_totals` | Aggregated line totals | `tracked_globs` |
+| `project_coverage` | Project-wide coverage (JSON, table, YAML, etc.) | `sort_order`, `file_globs`, `format` |
+| `project_coverage_totals` | Aggregated line totals | `file_globs` |
 | `project_validate` | Validate coverage policies (only with `--allow-code-predicates`) | `code` or `file` |
 | `help` | Tool discovery | (only the common `error_mode` and `output_chars`) |
 | `version` | Version information | (only the common `error_mode` and `output_chars`) |
@@ -474,7 +474,7 @@ When the MCP server starts, you can pass CLI options via the startup command. Th
 | `-R`, `--root` | ✅ Default | `root` | Request param overrides; CLI sets default |
 | `-c`, `--coverage-file` | ✅ Default | `coverage_file` | Request param overrides; CLI sets default |
 | `-S`, `--raise-on-stale BOOLEAN` | ✅ Default | `raise_on_stale` | Request param overrides; CLI sets default (`false` or `true`) |
-| `-g`, `--tracked-globs` | ✅ Default | `tracked_globs` | Request param overrides; CLI sets default (array). Accepted per request only by `project_coverage` and `project_coverage_totals`; a server-level `-g` is also the default for the model `project_validate` predicates receive |
+| `-g`, `--file-globs` | ✅ Default | `file_globs` | Request param overrides; CLI sets default (array). Accepted per request only by `project_coverage` and `project_coverage_totals`; a server-level `-g` is also the default for the model `project_validate` predicates receive |
 | `--error-mode` | ✅ Yes | `error_mode` | Sets server-wide error handling; can override per tool |
 | `-l`, `--log-file` | ✅ Yes | N/A | Sets server log location (cannot override per tool) |
 | `-O`, `--output-chars` | ✅ Default | `output_chars` | Request param overrides; CLI sets default (`default`, `fancy`, or `ascii`) |
@@ -489,10 +489,10 @@ When the MCP server starts, you can pass CLI options via the startup command. Th
 **Key Takeaways:**
 
 - **Server-level options** (`--error-mode`, `--log-file`, `--allow-code-predicates`): Set once when server starts, apply to all tool calls (a call's `error_mode` overrides `--error-mode` for that call)
-- **Tool-level options** (`root`, `coverage_file`, `raise_on_stale`, `tracked_globs`, `output_chars`): CLI args provide defaults; per-tool JSON params override when provided (`tracked_globs` as a request parameter only on the two project coverage tools; a server-level `-g` also applies to `project_validate` predicates' `model.list` and `model.project_totals`)
+- **Tool-level options** (`root`, `coverage_file`, `raise_on_stale`, `file_globs`, `output_chars`): CLI args provide defaults; per-tool JSON params override when provided (`file_globs` as a request parameter only on the two project coverage tools; a server-level `-g` also applies to `project_validate` predicates' `model.list` and `model.project_totals`)
 - **CLI-only options** (`--format`, `--source`, etc.): Not applicable to MCP mode
 
-**Precedence for MCP tool config:** `JSON request param` > `CLI args used to start MCP` (including `COV_LOUPE_OPTS`) > built-in defaults (`root: '.'`, `raise_on_stale: false`, `coverage_file: nil`, `tracked_globs: []` - no filtering, no tracking).
+**Precedence for MCP tool config:** `JSON request param` > `CLI args used to start MCP` (including `COV_LOUPE_OPTS`) > built-in defaults (`root: '.'`, `raise_on_stale: false`, `coverage_file: nil`, `file_globs: []` - no filtering, and no check for files not in coverage data).
 
 CLI-only presentation flags (`-f/--format`, `-s/--source`, `-n/--context-lines`, `-C/--color`, and `-o/--sort-order`) never flow into MCP. Pass `sort_order` explicitly in each `project_coverage` tool request when you need non-default ordering.
 
@@ -505,11 +505,11 @@ The file tools and the project tools (`project_coverage`, `project_coverage_tota
 - `path` (file tools only, where it is required) - File path (relative or absolute); the project tools reject it
 - `root` (optional) - Project root directory (default: the server's `--root`, which is `.` unless set)
 - `coverage_file` (optional) - Path to the `coverage.json` file, or to a directory containing one. See [Configuring the Coverage File](../../README.md#configuring-the-coverage-file) for details.
-- `raise_on_stale` (optional) - Raise error on staleness (and, for the project tools, on a tracked file not in coverage data or a skipped coverage row): `false` or `true` (default: the server's `--raise-on-stale`, which is `false` unless set)
+- `raise_on_stale` (optional) - Raise error on staleness (and, for the project tools, on a file matching the file globs that is not in coverage data or a skipped coverage row): `false` or `true` (default: the server's `--raise-on-stale`, which is `false` unless set)
 - `error_mode` (optional) - Error handling: `"off"`, `"log"`, `"debug"` (defaults to the server's `--error-mode`, which is `log` unless set)
 - `output_chars` (optional) - Output character mode: `"default"`, `"fancy"`, or `"ascii"` (short codes: `d`, `f`, `a`). `"ascii"` draws table borders with ASCII characters and escapes non-ASCII as `\uXXXX` in successful JSON payloads. Data is never changed, so error results and non-JSON formats can contain non-ASCII characters. See [`--output-chars`](CLI_USAGE.md#output-chars).
 
-`project_coverage` and `project_coverage_totals` also accept `tracked_globs` (an array of glob patterns). `project_validate` does not accept it, but its predicates' model uses a server-level `-g` as its default. `project_coverage` additionally accepts `sort_order` (`"ascending"` or `"descending"`; short codes: `a`, `d`) and `format` (`"json"`, `"pretty_json"`, `"yaml"`, `"amazing_print"`, `"inspect"`, `"puts"`, `"pretty_print"`, `"table"`; short codes: `j`, `J`, `y`, `a`, `i`, `p`, `P`, `t`).
+`project_coverage` and `project_coverage_totals` also accept `file_globs` (an array of glob patterns). `project_validate` does not accept it, but its predicates' model uses a server-level `-g` as its default. `project_coverage` additionally accepts `sort_order` (`"ascending"` or `"descending"`; short codes: `a`, `d`) and `format` (`"json"`, `"pretty_json"`, `"yaml"`, `"amazing_print"`, `"inspect"`, `"puts"`, `"pretty_print"`, `"table"`; short codes: `j`, `J`, `y`, `a`, `i`, `p`, `P`, `t`).
 
 ### Tool Details
 
@@ -547,7 +547,7 @@ Lines SimpleCov marked `"ignored"` (excluded with `nocov` blocks or directive co
 
 **`project_coverage`** - Coverage for all files in various formats
 
-- Parameters: the [common parameters](#common-parameters), plus `sort_order` (`ascending`|`descending`, default `descending`), `tracked_globs` (array), `format` (`json`|`pretty_json`|`yaml`|`amazing_print`|`inspect`|`puts`|`pretty_print`|`table`)
+- Parameters: the [common parameters](#common-parameters), plus `sort_order` (`ascending`|`descending`, default `descending`), `file_globs` (array), `format` (`json`|`pretty_json`|`yaml`|`amazing_print`|`inspect`|`puts`|`pretty_print`|`table`)
 - Default format: `json`
 - Returns (format dependent):
   - `json`/`pretty_json`: a JSON object; `yaml`/`amazing_print`/`inspect`/`puts`/`pretty_print`: the same data rendered in that format, not JSON. The data is `{"schema_version": 1, "files": [...], "skipped_files": [...], "not_in_coverage_files": [...], "newer_files": [...], "deleted_files": [...], "length_mismatch_files": [...], "unreadable_files": [...], "timestamp_status": "ok|missing", "warnings": [...]}` (`warnings` is present only when `timestamp_status` is `"missing"` or [most files were not found under the project root](TROUBLESHOOTING.md#the-project-root-may-be-wrong))
@@ -556,10 +556,10 @@ Lines SimpleCov marked `"ignored"` (excluded with `nocov` blocks or directive co
 
 **`project_coverage_totals`** - Aggregated line totals
 
-- Parameters: the [common parameters](#common-parameters), plus `tracked_globs` (array)
-- Returns: `{"schema_version":1,"covered":N,"uncovered":N,"total":N,"percentage":Float|null,"tracking":{"enabled":Boolean,"globs":[String]},"file_counts":{"total":N,"with_coverage":{"total":N,"ok":N,"stale":{"total":N,"by_type":{"deleted":N,"newer":N,"length_mismatch":N,"unreadable":N}}},"without_coverage":{"total":N,"by_type":{"not_in_coverage":N,"unreadable":N,"skipped":N}}},"timestamp_status":"ok|missing","warnings":[String]}`
+- Parameters: the [common parameters](#common-parameters), plus `file_globs` (array)
+- Returns: `{"schema_version":1,"covered":N,"uncovered":N,"total":N,"percentage":Float|null,"file_globs":[String],"file_counts":{"total":N,"with_coverage":{"total":N,"ok":N,"stale":{"total":N,"by_type":{"deleted":N,"newer":N,"length_mismatch":N,"unreadable":N}}},"without_coverage":{"total":N,"by_type":{"not_in_coverage":N,"unreadable":N,"skipped":N}}},"timestamp_status":"ok|missing","warnings":[String]}`
 - The line metrics count fresh files only; `file_counts.with_coverage.ok` is how many.
-- `without_coverage` is only present when tracking is enabled (tracked globs provided).
+- `without_coverage` is only present when file globs are set.
 - `warnings` is present when `timestamp_status` is `"missing"` or [most files were not found under the project root](TROUBLESHOOTING.md#the-project-root-may-be-wrong).
 
 #### Policy Validation Tools
