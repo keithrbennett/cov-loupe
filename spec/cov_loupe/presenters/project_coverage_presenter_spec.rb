@@ -43,7 +43,7 @@ RSpec.describe CovLoupe::Presenters::ProjectCoveragePresenter do
       'skipped_files'         => [
         { 'file' => 'lib/skipped.rb', 'error' => 'boom' },
       ],
-      'missing_tracked_files' => ['lib/missing.rb'],
+      'not_in_coverage_files' => ['lib/missing.rb'],
       'newer_files'           => [],
       'deleted_files'         => ['lib/deleted.rb'],
       'length_mismatch_files' => ['lib/bad_length.rb'],
@@ -92,9 +92,9 @@ RSpec.describe CovLoupe::Presenters::ProjectCoveragePresenter do
     end
   end
 
-  describe '#relative_missing_tracked_files' do
+  describe '#relative_not_in_coverage_files' do
     it 'returns the missing tracked files' do
-      expect(presenter.relative_missing_tracked_files).to eq(['lib/missing.rb'])
+      expect(presenter.relative_not_in_coverage_files).to eq(['lib/missing.rb'])
     end
   end
 
@@ -133,7 +133,7 @@ RSpec.describe CovLoupe::Presenters::ProjectCoveragePresenter do
           tracked_globs: tracked_globs).and_return({
             'files'                 => files,
             'skipped_files'         => [],
-            'missing_tracked_files' => [],
+            'not_in_coverage_files' => [],
             'newer_files'           => [],
             'deleted_files'         => [],
             'length_mismatch_files' => [],

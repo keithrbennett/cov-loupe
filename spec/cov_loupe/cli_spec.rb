@@ -224,7 +224,7 @@ RSpec.describe CovLoupe::CoverageCLI do
       'app/models/order.rb', 'app/models/user.rb', 'app/controllers/orders_controller.rb',
       'lib/api/client.rb'
     )
-    expect(data['missing_tracked_files']).to eq(['app/controllers/admin/audit_logs_controller.rb'])
+    expect(data['not_in_coverage_files']).to eq(['app/controllers/admin/audit_logs_controller.rb'])
   end
 
   # Through the full entry point, where the global options are parsed.
@@ -264,7 +264,7 @@ RSpec.describe CovLoupe::CoverageCLI do
       data = JSON.parse(run_cli('--format', 'json', '--tracked-globs', 'lib/**/*.rb', command))
 
       expect(data.dig('file_counts', 'without_coverage')).not_to be_nil if command == 'totals'
-      expect(data['missing_tracked_files']).not_to be_empty if command == 'list'
+      expect(data['not_in_coverage_files']).not_to be_empty if command == 'list'
       expect_schema_valid(command, data)
     end
   end
@@ -388,7 +388,7 @@ RSpec.describe CovLoupe::CoverageCLI do
         relative_newer_files:           ['newer.rb'],
         relative_length_mismatch_files: ['mismatch.rb'],
         relative_unreadable_files:      ['unreadable.rb'],
-        relative_missing_tracked_files: [],
+        relative_not_in_coverage_files: [],
         relative_deleted_files:         [],
         root_warning:                   nil,
         relative_skipped_files:         [],
@@ -418,7 +418,7 @@ RSpec.describe CovLoupe::CoverageCLI do
         relative_newer_files:           [],
         relative_length_mismatch_files: [],
         relative_unreadable_files:      [],
-        relative_missing_tracked_files: [],
+        relative_not_in_coverage_files: [],
         relative_deleted_files:         [],
         root_warning:                   nil,
         relative_skipped_files:         [],

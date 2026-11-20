@@ -78,7 +78,7 @@ model = CovLoupe::CoverageModel.new(
   root: File.join(Dir.home, 'project'),          # non-default project root
   coverage_file: "build/coverage",                # coverage.json file, or its directory
   raise_on_stale: true,                          # enable strict staleness checks (raise on stale)
-  tracked_globs: ["lib/my_app/**/*.rb"]          # for 'list' staleness: flag new/missing files
+  tracked_globs: ["lib/my_app/**/*.rb"]          # for 'list' staleness: flag files not in coverage data
 )
 
 # List all files with coverage summary
@@ -138,7 +138,7 @@ If branch or method coverage is added later, it will arrive as optional objects 
 
 Some names recur at different levels with different values, and are unambiguous within their parent: a file's `covered` count versus `detailed_for` rows' `covered` boolean; `raw_for` `lines` (hit counts) versus `detailed_for` `lines` (row objects); the per-file `stale` string versus the `project_totals` `file_counts.with_coverage.stale` object; `total` coverable lines versus `file_counts` file totals; and `skipped_files` rows (objects) versus the other `*_files` path arrays.
 
-Staleness values share one vocabulary across payloads. A per-file `stale` value is one of `"ok"`, `"deleted"`, `"newer"`, `"length_mismatch"`, or `"unreadable"`. The non-`"ok"` values are also the `project_totals` `stale.by_type` keys and match the `list` arrays `deleted_files`, `newer_files`, `length_mismatch_files`, and `unreadable_files`. "Missing" refers only to absent coverage data (the `list` array `missing_tracked_files`, counted as `missing_tracked` in `project_totals`) or an absent coverage timestamp (`timestamp_status`).
+Staleness values share one vocabulary across payloads. A per-file `stale` value is one of `"ok"`, `"deleted"`, `"newer"`, `"length_mismatch"`, or `"unreadable"`. The non-`"ok"` values are also the `project_totals` `stale.by_type` keys and match the `list` arrays `deleted_files`, `newer_files`, `length_mismatch_files`, and `unreadable_files`. "Missing" refers only to absent coverage data (the `list` array `not_in_coverage_files`, counted as `not_in_coverage` in `project_totals`) or an absent coverage timestamp (`timestamp_status`).
 
 File paths in payloads (`file` values and the `list` path arrays) are relative to the project root, such as `'lib/foo.rb'`. A file outside the root keeps its absolute path. A relative path whose first directory starts with `~` gets a `./` prefix, so expanding it never resolves to a home directory. Library, CLI, and MCP payloads report the same paths. If you need absolute paths, expand them against the model's root: `File.expand_path(row['file'], model.root)`. `model.root` is the absolute project root, resolved when the model was created.
 
@@ -380,7 +380,7 @@ Returns `Hash` with file data and staleness metadata:
     }
   ],
   'skipped_files' => Array<Hash>,          # Skipped rows; each hash has 'file', 'error', 'error_class'
-  'missing_tracked_files' => Array<String>,# Tracked files missing from coverage
+  'not_in_coverage_files' => Array<String>,# Tracked files not in coverage data
   'newer_files' => Array<String>,          # Files newer than coverage
   'deleted_files' => Array<String>,        # Coverage entries for deleted files
   'length_mismatch_files' => Array<String>,# Files whose line counts differ from coverage
@@ -494,9 +494,9 @@ Returns `Hash`:
       }
     },
     'without_coverage' => {
-      'total' => Integer,        # Tracked files missing, unreadable, or skipped
+      'total' => Integer,        # Tracked files not in coverage data, unreadable, or skipped
       'by_type' => {
-        'missing_tracked' => Integer, # Count of the list's missing_tracked_files
+        'not_in_coverage' => Integer, # Count of the list's not_in_coverage_files
         'unreadable' => Integer,
         'skipped' => Integer
       }

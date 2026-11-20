@@ -18,7 +18,7 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
         files = list_result['files']
         expect(files.length).to eq(2)
 
-        %w[skipped_files missing_tracked_files newer_files deleted_files].each do |key|
+        %w[skipped_files not_in_coverage_files newer_files deleted_files].each do |key|
           expect(list_result[key]).to be_a(Array), "Expected list_result['#{key}'] to be an Array"
         end
 

@@ -201,7 +201,7 @@ module CovLoupe
   end
 
   # Project-level stale coverage (global) — coverage timestamp older than
-  # one or more source files, or new tracked files missing from coverage.
+  # one or more source files, or new tracked files not in coverage data.
   #
   # @api public
   class CoverageDataProjectStaleError < CoverageDataError
@@ -210,16 +210,16 @@ module CovLoupe
     # @api private
     DEFAULT_MESSAGE = 'Coverage data appears stale for project'
 
-    attr_reader :cov_timestamp, :newer_files, :missing_files, :deleted_files,
+    attr_reader :cov_timestamp, :newer_files, :not_in_coverage_files, :deleted_files,
       :length_mismatch_files, :unreadable_files, :coverage_file_path
 
     def initialize(message = nil, original_error = nil, cov_timestamp: nil, newer_files: [],
-      missing_files: [], deleted_files: [], length_mismatch_files: [], unreadable_files: [],
+      not_in_coverage_files: [], deleted_files: [], length_mismatch_files: [], unreadable_files: [],
       coverage_file_path: nil)
       super(message || default_message, original_error)
       @cov_timestamp = cov_timestamp
       @newer_files = Array(newer_files)
-      @missing_files = Array(missing_files)
+      @not_in_coverage_files = Array(not_in_coverage_files)
       @deleted_files = Array(deleted_files)
       @length_mismatch_files = Array(length_mismatch_files)
       @unreadable_files = Array(unreadable_files)
@@ -230,7 +230,7 @@ module CovLoupe
       base = "Coverage data stale (project): #{message}"
       base + formatter.format_project_details(
         newer_files:           @newer_files,
-        missing_files:         @missing_files,
+        not_in_coverage_files: @not_in_coverage_files,
         deleted_files:         @deleted_files,
         length_mismatch_files: @length_mismatch_files,
         unreadable_files:      @unreadable_files

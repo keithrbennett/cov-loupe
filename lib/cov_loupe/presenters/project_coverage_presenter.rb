@@ -36,8 +36,8 @@ module CovLoupe
       end
 
       # Returns the project-relative missing tracked files.
-      def relative_missing_tracked_files
-        payload['missing_tracked_files']
+      def relative_not_in_coverage_files
+        payload['not_in_coverage_files']
       end
 
       # Returns the project-relative newer files.

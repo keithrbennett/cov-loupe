@@ -505,7 +505,7 @@ The file tools and the project tools (`project_coverage`, `project_coverage_tota
 - `path` (file tools only, where it is required) - File path (relative or absolute); the project tools reject it
 - `root` (optional) - Project root directory (default: the server's `--root`, which is `.` unless set)
 - `coverage_file` (optional) - Path to the `coverage.json` file, or to a directory containing one. See [Configuring the Coverage File](../../README.md#configuring-the-coverage-file) for details.
-- `raise_on_stale` (optional) - Raise error on staleness (and, for the project tools, on a tracked file missing from coverage or a skipped coverage row): `false` or `true` (default: the server's `--raise-on-stale`, which is `false` unless set)
+- `raise_on_stale` (optional) - Raise error on staleness (and, for the project tools, on a tracked file not in coverage data or a skipped coverage row): `false` or `true` (default: the server's `--raise-on-stale`, which is `false` unless set)
 - `error_mode` (optional) - Error handling: `"off"`, `"log"`, `"debug"` (defaults to the server's `--error-mode`, which is `log` unless set)
 - `output_chars` (optional) - Output character mode: `"default"`, `"fancy"`, or `"ascii"` (short codes: `d`, `f`, `a`). `"ascii"` draws table borders with ASCII characters and escapes non-ASCII as `\uXXXX` in successful JSON payloads. Data is never changed, so error results and non-JSON formats can contain non-ASCII characters. See [`--output-chars`](CLI_USAGE.md#output-chars).
 
@@ -550,14 +550,14 @@ Lines SimpleCov marked `"ignored"` (excluded with `nocov` blocks or directive co
 - Parameters: the [common parameters](#common-parameters), plus `sort_order` (`ascending`|`descending`, default `descending`), `tracked_globs` (array), `format` (`json`|`pretty_json`|`yaml`|`amazing_print`|`inspect`|`puts`|`pretty_print`|`table`)
 - Default format: `json`
 - Returns (format dependent):
-  - `json`/`pretty_json`: a JSON object; `yaml`/`amazing_print`/`inspect`/`puts`/`pretty_print`: the same data rendered in that format, not JSON. The data is `{"schema_version": 1, "files": [...], "skipped_files": [...], "missing_tracked_files": [...], "newer_files": [...], "deleted_files": [...], "length_mismatch_files": [...], "unreadable_files": [...], "timestamp_status": "ok|missing", "warnings": [...]}` (`warnings` is present only when `timestamp_status` is `"missing"` or [most files were not found under the project root](TROUBLESHOOTING.md#the-project-root-may-be-wrong))
+  - `json`/`pretty_json`: a JSON object; `yaml`/`amazing_print`/`inspect`/`puts`/`pretty_print`: the same data rendered in that format, not JSON. The data is `{"schema_version": 1, "files": [...], "skipped_files": [...], "not_in_coverage_files": [...], "newer_files": [...], "deleted_files": [...], "length_mismatch_files": [...], "unreadable_files": [...], "timestamp_status": "ok|missing", "warnings": [...]}` (`warnings` is present only when `timestamp_status` is `"missing"` or [most files were not found under the project root](TROUBLESHOOTING.md#the-project-root-may-be-wrong))
   - Table: Plain text table with box-drawing characters (ASCII with `output_chars: "ascii"`), followed by any exclusion, timestamp, skipped-row, and wrong-root warnings
   - Each entry in `files` is `{"file", "covered", "uncovered", "total", "percentage", "stale"}`, the same shape as a `file_coverage_summary` result without `schema_version`; `percentage` is `null` when the file has no coverable lines (shown as `n/a` in the table).
 
 **`project_coverage_totals`** - Aggregated line totals
 
 - Parameters: the [common parameters](#common-parameters), plus `tracked_globs` (array)
-- Returns: `{"schema_version":1,"covered":N,"uncovered":N,"total":N,"percentage":Float|null,"tracking":{"enabled":Boolean,"globs":[String]},"file_counts":{"total":N,"with_coverage":{"total":N,"ok":N,"stale":{"total":N,"by_type":{"deleted":N,"newer":N,"length_mismatch":N,"unreadable":N}}},"without_coverage":{"total":N,"by_type":{"missing_tracked":N,"unreadable":N,"skipped":N}}},"timestamp_status":"ok|missing","warnings":[String]}`
+- Returns: `{"schema_version":1,"covered":N,"uncovered":N,"total":N,"percentage":Float|null,"tracking":{"enabled":Boolean,"globs":[String]},"file_counts":{"total":N,"with_coverage":{"total":N,"ok":N,"stale":{"total":N,"by_type":{"deleted":N,"newer":N,"length_mismatch":N,"unreadable":N}}},"without_coverage":{"total":N,"by_type":{"not_in_coverage":N,"unreadable":N,"skipped":N}}},"timestamp_status":"ok|missing","warnings":[String]}`
 - The line metrics count fresh files only; `file_counts.with_coverage.ok` is how many.
 - `without_coverage` is only present when tracking is enabled (tracked globs provided).
 - `warnings` is present when `timestamp_status` is `"missing"` or [most files were not found under the project root](TROUBLESHOOTING.md#the-project-root-may-be-wrong).

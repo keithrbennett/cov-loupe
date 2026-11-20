@@ -219,10 +219,10 @@ RSpec.describe CovLoupe do
           label: 'Coverage-only files',
         },
         {
-          type:  :missing,
-          key:   :missing_files,
-          desc:  'new in project, not in coverage',
-          label: 'Missing files',
+          type:  :not_in_coverage,
+          key:   :not_in_coverage_files,
+          desc:  nil,
+          label: 'Files not in coverage data',
         },
         {
           type:  :newer,

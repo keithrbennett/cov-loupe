@@ -24,7 +24,7 @@ RSpec.describe CovLoupe::StalenessMessageFormatter do
 
       result = formatter.format_project_details(
         newer_files:           ["/file/t\u00ebst\u2192.rb"],
-        missing_files:         [],
+        not_in_coverage_files: [],
         deleted_files:         [],
         length_mismatch_files: [],
         unreadable_files:      []

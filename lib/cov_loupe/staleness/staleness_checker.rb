@@ -91,7 +91,7 @@ module CovLoupe
 
     # Compute and return project staleness details (newer, missing, deleted files).
     # If in error mode, raises CoverageDataProjectStaleError when issues are found.
-    # Returns a hash { newer_files: [], missing_files: [], deleted_files: [], unreadable_files: [] }
+    # Returns a hash { newer_files: [], not_in_coverage_files: [], deleted_files: [], unreadable_files: [] }
     #
     # Does not check line counts. Use check_project_with_lines! for full staleness detection.
     def check_project!(coverage_map)
@@ -99,14 +99,14 @@ module CovLoupe
       coverage_files = coverage_map.keys
 
       newer, deleted, unreadable = compute_newer_and_deleted_files(coverage_files, ts)
-      missing = compute_missing_files(coverage_files)
+      missing = compute_not_in_coverage_files(coverage_files)
 
       staleness_details = {
-        newer_files:      newer,
-        missing_files:    missing,
-        deleted_files:    deleted,
-        unreadable_files: unreadable,
-        timestamp_status: ts.to_i > 0 ? 'ok' : 'missing',
+        newer_files:           newer,
+        not_in_coverage_files: missing,
+        deleted_files:         deleted,
+        unreadable_files:      unreadable,
+        timestamp_status:      ts.to_i > 0 ? 'ok' : 'missing',
       }
 
       if @mode == :error && (newer.any? || missing.any? || deleted.any? || unreadable.any?)
@@ -114,12 +114,12 @@ module CovLoupe
         raise CoverageDataProjectStaleError.new(
           nil,
           nil,
-          cov_timestamp:      ts,
-          newer_files:        newer,
-          missing_files:      missing,
-          deleted_files:      deleted,
-          unreadable_files:   unreadable,
-          coverage_file_path: coverage_file_path
+          cov_timestamp:         ts,
+          newer_files:           newer,
+          not_in_coverage_files: missing,
+          deleted_files:         deleted,
+          unreadable_files:      unreadable,
+          coverage_file_path:    coverage_file_path
         )
       end
 
@@ -138,7 +138,7 @@ module CovLoupe
       ts = coverage_timestamp
 
       newer, deleted, unreadable = compute_newer_and_deleted_files(coverage_files, ts)
-      missing = compute_missing_files(coverage_files)
+      missing = compute_not_in_coverage_files(coverage_files)
 
       file_statuses = {}
       length_mismatch = []
@@ -172,7 +172,7 @@ module CovLoupe
 
       staleness_details = {
         newer_files:           newer,
-        missing_files:         missing,
+        not_in_coverage_files: missing,
         deleted_files:         deleted,
         length_mismatch_files: length_mismatch,
         unreadable_files:      unreadable,
@@ -186,7 +186,7 @@ module CovLoupe
           nil,
           cov_timestamp:         ts,
           newer_files:           newer,
-          missing_files:         missing,
+          not_in_coverage_files: missing,
           deleted_files:         deleted,
           length_mismatch_files: length_mismatch,
           unreadable_files:      unreadable,
@@ -239,9 +239,9 @@ module CovLoupe
       [newer, deleted, unreadable]
     end
 
-    # Identifies tracked files that are missing from coverage.
+    # Identifies tracked files that are not in coverage data.
     # Returns array of relative paths for files matched by tracked_globs but not in coverage.
-    private def compute_missing_files(coverage_files)
+    private def compute_not_in_coverage_files(coverage_files)
       return [] unless @tracked_globs && Array(@tracked_globs).any?
 
       patterns = Array(@tracked_globs).map { |g| File.expand_path(g, @root) }

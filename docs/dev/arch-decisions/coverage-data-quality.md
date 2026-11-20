@@ -124,8 +124,8 @@ This allows:
 - Detects:
     - Files newer than coverage timestamp
     - Files deleted since coverage was collected
-    - Tracked files missing from coverage (newly added files)
-- Return a hash of the problem file lists (`newer_files`, `missing_files`, `deleted_files`, `unreadable_files`, plus `length_mismatch_files` from `check_project_with_lines!`) and `timestamp_status`
+    - Tracked files not in coverage data (newly added files)
+- Return a hash of the problem file lists (`newer_files`, `not_in_coverage_files`, `deleted_files`, `unreadable_files`, plus `length_mismatch_files` from `check_project_with_lines!`) and `timestamp_status`
 - In `:error` mode, raise `CoverageDataProjectStaleError` with those lists instead
 - `CoverageModel` uses `check_project_with_lines!` in `list` and `project_totals` (behind the `project_coverage` and `project_coverage_totals` MCP tools), passing coverage line arrays so length mismatches and unreadable files are also reported
 
@@ -134,7 +134,7 @@ This allows:
 - `project_totals` excludes any stale files ("deleted", "newer", "length_mismatch", "unreadable") from aggregate counts.
 - Totals include a `with_coverage` breakdown, plus a `without_coverage` breakdown when tracked globs are set, so callers can reconcile what was omitted.
 - The `without_coverage` payload includes counts for three categories:
-    - `missing_tracked`: Tracked files that have no coverage data in the coverage file
+    - `not_in_coverage`: Tracked files that have no coverage data in the coverage file
     - `unreadable`: Files that exist but could not be read (e.g., due to permission errors, I/O issues, or staleness check failures)
     - `skipped`: Files that were skipped during list processing due to coverage data errors (e.g., malformed entries)
 - The `unreadable` count comes from `list_result['unreadable_files']` (collected during staleness checking when files exist but cannot be accessed or validated), excluding files that already appear as a coverage row or a skipped row, so no file is counted twice.

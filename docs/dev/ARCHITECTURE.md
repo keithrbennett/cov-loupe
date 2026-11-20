@@ -94,7 +94,7 @@ Comprehensive test coverage exists:
 
 - **Environment defaults** – `COV_LOUPE_OPTS` applies baseline CLI flags before parsing the actual command line.
 - **Coverage file overrides** – The location of `coverage.json` can be specified via CLI options or in the MCP configuration. See [Configuring the Coverage File](../../README.md#configuring-the-coverage-file) for details.
-- **Tracked globs** – Glob patterns (e.g., `lib/**/*.rb`) that specify which files should have coverage. When provided, cov-loupe alerts you if any matching files are missing from the coverage data, helping catch untested files that were added to the project but never executed during test runs.
+- **Tracked globs** – Glob patterns (e.g., `lib/**/*.rb`) that specify which files should have coverage. When provided, cov-loupe alerts you if any matching files are not in the coverage data, helping catch untested files that were added to the project but never executed during test runs.
 - **Output character mode** – Global choice between Unicode and ASCII table borders and markers via `-O/--output-chars` (CLI) or `output_chars` parameter (MCP). Default mode chooses by output encoding (normally the locale's).
 - **Source display** – CLI-only flags: `--source` and `--context-lines` choose which source lines the per-file commands include (as annotated text, or a `source` array in structured formats), and `--color` colors the coverage markers.
 

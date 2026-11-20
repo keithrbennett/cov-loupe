@@ -24,7 +24,7 @@ RSpec.describe CovLoupe::CoverageReporter do
     allow(model).to receive(:list).with(sort_order: :ascending).and_return({
       'files'                 => files_data,
       'skipped_files'         => [],
-      'missing_tracked_files' => [],
+      'not_in_coverage_files' => [],
       'newer_files'           => [],
       'deleted_files'         => [],
     })

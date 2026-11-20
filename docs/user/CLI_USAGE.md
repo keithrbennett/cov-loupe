@@ -130,7 +130,7 @@ Files: total 7, ok 7, stale 0
     { "file": "lib/payments/refund_service.rb", "covered": 3, "uncovered": 2, "total": 5, "percentage": 60.0, "stale": "ok" }
   ],
   "skipped_files": [],
-  "missing_tracked_files": [],
+  "not_in_coverage_files": [],
   "newer_files": [],
   "deleted_files": [],
   "length_mismatch_files": [],
@@ -435,7 +435,7 @@ File breakdown:
   With coverage: 7 total, 7 ok, 0 stale
     Stale: deleted = 0, newer than coverage = 0, line mismatch = 0, unreadable = 0
   Without coverage: 3 total
-    Missing from coverage = 3, unreadable = 0, skipped (errors) = 0
+    Not in coverage data = 3, unreadable = 0, skipped (errors) = 0
 ```
 
 **Output (JSON format):**
@@ -654,7 +654,7 @@ clp -s uncovered -C false uncovered lib/api/client.rb
 
 ### `-S, --raise-on-stale BOOLEAN`
 
-Raise error if coverage is stale. Project queries (`list`, `totals`, the default report, and `validate` predicates that call `model.list` or `model.project_totals`) also raise if a tracked file is missing from coverage or a coverage row is skipped because its data is invalid. Requires an explicit boolean value. Default is `false` (report staleness and skipped rows instead of raising; `totals` counts skipped rows only when tracked globs are set, and otherwise leaves them out of its output, logging each only as an INFO line).
+Raise error if coverage is stale. Project queries (`list`, `totals`, the default report, and `validate` predicates that call `model.list` or `model.project_totals`) also raise if a tracked file is not in coverage data or a coverage row is skipped because its data is invalid. Requires an explicit boolean value. Default is `false` (report staleness and skipped rows instead of raising; `totals` counts skipped rows only when tracked globs are set, and otherwise leaves them out of its output, logging each only as an INFO line).
 
 ```sh
 # Enable raising an error if coverage is stale
@@ -671,7 +671,7 @@ clp --raise-on-stale false
 - **"newer"** (Timestamp): Source file modified after coverage was generated
 - **"length_mismatch"** (Length): Source file line count differs from coverage data
 - **"unreadable"** (Unreadable): Source file could not be read (permission or I/O errors), or its staleness check failed
-- Tracked files missing from coverage (with `--tracked-globs`; checked by `list`, `totals`, the default report, and `validate` predicates that call `model.list` or `model.project_totals`; the per-file commands ignore `-g`)
+- Tracked files not in coverage data (with `--tracked-globs`; checked by `list`, `totals`, the default report, and `validate` predicates that call `model.list` or `model.project_totals`; the per-file commands ignore `-g`)
 
 <a id="tracked-globs"></a>
 
@@ -733,7 +733,7 @@ clp -g "lib/**/*.rb,app/**/*.rb" -fJ list > coverage-report.json
 - **Include files without coverage** - Report files that should be tracked but aren't in the coverage file
 - **CI validation** - Use with `-S true`/`--raise-on-stale true` to catch coverage gaps
 
-**Important:** The `missing_tracked_files` array (in `list` output) only includes files that:
+**Important:** The `not_in_coverage_files` array (in `list` output) only includes files that:
 
 1. Match the tracked globs
 2. Exist in the filesystem
@@ -1100,7 +1100,7 @@ clp -g "lib/payments/**/*.rb" list
 clp -S true
 
 # Check with specific file patterns. On the demo fixture this exits 1: two files
-# these globs match are missing from coverage, which -S true also treats as stale
+# these globs match are not in coverage data, which -S true also treats as stale
 clp -S true -g "lib/payments/**/*.rb,lib/ops/jobs/**/*.rb" list
 
 # See which files are stale (don't error)

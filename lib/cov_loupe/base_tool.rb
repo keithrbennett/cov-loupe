@@ -48,7 +48,7 @@ module CovLoupe
         type:        'boolean',
         description: 'If true, raise error if coverage data is stale (deleted or unreadable ' \
           'source files, timestamp or line-count mismatch), or, for project tools, if a tracked ' \
-          "file is missing from coverage or a coverage row is skipped. Defaults to the server's " \
+          "file is not in coverage data or a coverage row is skipped. Defaults to the server's " \
           '--raise-on-stale (false unless set).',
       },
       error_mode:     {

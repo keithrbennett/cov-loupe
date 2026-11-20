@@ -40,7 +40,7 @@ RSpec.describe CovLoupe::Presenters::ProjectTotalsPresenter do
         'without_coverage' => {
           'total'   => 2,
           'by_type' => {
-            'missing_tracked' => 2,
+            'not_in_coverage' => 2,
             'unreadable'      => 0,
             'skipped'         => 0,
           },

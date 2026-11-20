@@ -63,7 +63,7 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
               'without_coverage' => {
                 'total'   => 1,
                 'by_type' => {
-                  'missing_tracked' => 1,
+                  'not_in_coverage' => 1,
                   'unreadable'      => 0,
                   'skipped'         => 0,
                 },
@@ -82,7 +82,7 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
           expect(output).to include('With coverage: 3 total, 2 ok, 1 stale')
           expect(output).to include('Stale: deleted = 0, newer than coverage = 1')
           expect(output).to include('Without coverage: 1 total')
-          expect(output).to include('Missing from coverage = 1')
+          expect(output).to include('Not in coverage data = 1')
         end
       end
 

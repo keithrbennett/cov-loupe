@@ -53,7 +53,13 @@
     - `project_totals` (CLI `totals`, MCP `project_coverage_totals`) replaces the `lines`
       object with top-level line metrics, drops `included_files` and `excluded_files` (use
       `file_counts.with_coverage.ok` and `.stale.total`), renames `files` to `file_counts`,
-      and renames the `without_coverage` count `missing_from_coverage` to `missing_tracked`.
+      and renames the `without_coverage` count `missing_from_coverage` to `not_in_coverage`.
+    - `list` (CLI `list`, MCP `project_coverage`) renames `missing_tracked_files` to
+      `not_in_coverage_files`, and `CoverageDataProjectStaleError#missing_files` becomes
+      `#not_in_coverage_files`, since "missing" could also mean a file deleted from disk
+      (reported as `deleted`). The CLI text changes to match: "Files not in coverage data"
+      replaces "Missing tracked files" (`list`) and "Missing files" (stale-project errors),
+      and "Not in coverage data =" replaces "Missing from coverage =" (`totals`).
     - The CLI and MCP `list`/`project_coverage` payloads no longer include `counts`.
     - Library file queries (`summary_for`, `uncovered_for`, `detailed_for`, `raw_for`) now
       include `stale`, as CLI and MCP output already did.

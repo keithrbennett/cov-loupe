@@ -80,8 +80,8 @@ module CovLoupe
 
         without_by_type = without_coverage['by_type']
         without_coverage_line = "  Without coverage: #{without_coverage['total']} total"
-        without_breakdown_line = '    Missing from coverage = ' \
-          "#{without_by_type[StaleStatus::MISSING_TRACKED]}, " \
+        without_breakdown_line = '    Not in coverage data = ' \
+          "#{without_by_type[StaleStatus::NOT_IN_COVERAGE]}, " \
           "unreadable = #{without_by_type[StaleStatus::UNREADABLE]}, " \
           "skipped (errors) = #{without_by_type[StaleStatus::SKIPPED]}"
         [without_coverage_line, without_breakdown_line]

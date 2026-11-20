@@ -55,7 +55,7 @@ module CovLoupe
     RELATIVIZER_ARRAY_KEYS = %w[
       newer_files
       deleted_files
-      missing_tracked_files
+      not_in_coverage_files
       skipped_files
       length_mismatch_files
       unreadable_files
@@ -89,7 +89,7 @@ module CovLoupe
     #   containing one
     # - raise_on_stale: boolean (default false). When true, raises if a source file is newer
     #   than the coverage, deleted, unreadable, or has a different line count; if a tracked
-    #   file is missing from the coverage (project queries); or if a coverage row is skipped.
+    #   file is not in the coverage data (project queries); or if a coverage row is skipped.
     # - tracked_globs: array of glob patterns, or one pattern string (default []). Used for
     #   filtering and tracking.
     # - logger: internal (@api private); a CovLoupe::Logger, defaulting to CovLoupe.logger.
@@ -147,13 +147,13 @@ module CovLoupe
     #
     # @param sort_order [Symbol] :descending (default) or :ascending for sorting by percentage
     # @param raise_on_stale [Boolean] When true, raises if any file is stale, a tracked file is
-    #   missing from coverage, or a coverage row is skipped
+    #   not in coverage data, or a coverage row is skipped
     # @param tracked_globs [Array<String>, String] Glob patterns to filter tracked files
     # @return [Hash] Hash containing:
     #   - 'schema_version': Payload schema version (Integer)
     #   - 'files': Array of file coverage data sorted by percentage
     #   - 'skipped_files': Files that could not be processed
-    #   - 'missing_tracked_files': Tracked files not in coverage data
+    #   - 'not_in_coverage_files': Tracked files not in coverage data
     #   - 'newer_files': Coverage data older than source files
     #   - 'deleted_files': Source files removed since coverage run
     #   - 'length_mismatch_files': Files with line count mismatches
@@ -192,7 +192,7 @@ module CovLoupe
       {
         'files'                 => CoverageRowSorter.sort(rows, sort_order: sort_order, root: @root),
         'skipped_files'         => filter_rows_by_globs(listing.skipped_rows, tracked_globs),
-        'missing_tracked_files' => project_staleness_details[:missing_files],
+        'not_in_coverage_files' => project_staleness_details[:not_in_coverage_files],
         'newer_files'           => project_staleness_details[:newer_files],
         'deleted_files'         => project_staleness_details[:deleted_files],
         'length_mismatch_files' => project_staleness_details[:length_mismatch_files],
@@ -204,7 +204,7 @@ module CovLoupe
     # Aggregates per-file coverage into project-wide totals.
     # Partitions files by staleness: stale files are excluded from line counts
     # but still counted in the file breakdown. When tracked_globs are provided,
-    # also reports files without coverage data (missing from coverage, skipped, unreadable).
+    # also reports files without coverage data (not in coverage data, skipped, unreadable).
     def project_totals(
       tracked_globs: @default_tracked_globs, raise_on_stale: @default_raise_on_stale
     )

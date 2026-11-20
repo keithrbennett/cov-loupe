@@ -73,7 +73,7 @@ RSpec.describe 'MCP structured payload schema version' do
       tracked_globs: ['lib/**/*.rb'], server_context: server_context)
     data = JSON.parse(response.content.first['text'])
 
-    expect(data['missing_tracked_files']).not_to be_empty
+    expect(data['not_in_coverage_files']).not_to be_empty
     expect_schema_valid('list', data)
   end
 

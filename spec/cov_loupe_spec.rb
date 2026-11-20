@@ -229,7 +229,7 @@ RSpec.describe CovLoupe do
         aggregate_failures do
           expect(list_status).to be_success, list_err
           expect(list_out).to include('lib/café.rb', 'Files: total 1, ok 1')
-          expect(list_out).not_to include('Missing tracked files')
+          expect(list_out).not_to include('Files not in coverage data')
           expect(list_out).to start_with('+-') # the C locale still selects ASCII borders
           expect(summary_status).to be_success, summary_err
           expect(summary_out).to include('lib/café.rb', '100.00%')

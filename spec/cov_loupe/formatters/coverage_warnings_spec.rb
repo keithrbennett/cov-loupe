@@ -7,7 +7,7 @@ RSpec.describe CovLoupe::Formatters::CoverageWarnings do
   let(:skipped) { [{ 'file' => path, 'error' => "bad \u2018data\u2019" }] }
   let(:presenter) do
     instance_double(CovLoupe::Presenters::ProjectCoveragePresenter,
-      relative_missing_tracked_files: [], relative_newer_files: [path], relative_deleted_files: [],
+      relative_not_in_coverage_files: [], relative_newer_files: [path], relative_deleted_files: [],
       relative_length_mismatch_files: [], relative_unreadable_files: [],
       relative_skipped_files: skipped)
   end

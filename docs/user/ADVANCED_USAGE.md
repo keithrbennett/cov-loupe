@@ -127,7 +127,7 @@ Detects system-wide staleness issues:
 **Conditions Checked:**
 
 1. **Newer files** - A file in the coverage data that was modified after coverage (requires timestamps - see [Timestamp Warnings](#timestamp-warnings))
-2. **Missing files** - Files matching `--tracked-globs` with no coverage data (checked only when globs are set)
+2. **Files not in coverage data** - Files matching `--tracked-globs` with no coverage data (checked only when globs are set)
 3. **Deleted files** - Coverage exists for non-existent files
 4. **Line count mismatches** - Source line count differs from the coverage array length
 5. **Unreadable files** - Source could not be read, or its staleness check failed
@@ -159,7 +159,7 @@ begin
   model.list(raise_on_stale: true)
 rescue CovLoupe::CoverageDataProjectStaleError => e
   puts "Newer files: #{e.newer_files.join(', ')}"
-  puts "Missing from coverage: #{e.missing_files.join(', ')}"
+  puts "Not in coverage data: #{e.not_in_coverage_files.join(', ')}"
   puts "Deleted but in coverage: #{e.deleted_files.join(', ')}"
   puts "Line count mismatches: #{e.length_mismatch_files.join(', ')}"
   puts "Unreadable: #{e.unreadable_files.join(', ')}"
@@ -180,7 +180,7 @@ Check your coverage tool configuration to ensure timestamps are recorded.
 
 - Time-based staleness checks (the `"newer"` indicator) cannot run without timestamps
 - Files modified after coverage collection won't be flagged as stale
-- Only line count mismatches, deleted or unreadable files, and (with tracked globs) tracked files missing from coverage will be detected
+- Only line count mismatches, deleted or unreadable files, and (with tracked globs) tracked files not in coverage data will be detected
 - The `timestamp_status` field in project-level JSON output will show `"missing"` instead of `"ok"`
 - Per-file commands and tools show no warning and have no `timestamp_status` field; in the CLI and MCP server, any command or tool that loads coverage without a timestamp logs an INFO line (on stderr by default; library logging is off by default)
 
@@ -450,7 +450,7 @@ The CLI is designed for CI/CD use with features that integrate naturally into pi
 bundle exec rspec
 
 # 2. Validate coverage freshness (fails with exit code 1 if any tracked file is stale
-#    or missing from coverage; on the demo fixture it fails, since two lib files are missing)
+#    or not in coverage data; on the demo fixture it fails, since two lib files are not in coverage data)
 clp -S true -g "lib/**/*.rb"
 
 # 3. Export data for CI artifacts or further processing
@@ -494,7 +494,7 @@ For GitHub Actions and GitLab CI examples, see [CI/CD Integration](examples/ci-c
 **Why opt-in filtering?**
 
 - **Coverage results are not hidden** - Results are not excluded because their filespecs did not match default tracked globs
-- **Meaningful validation** - `missing_tracked_files` only flags files you explicitly expect to have coverage
+- **Meaningful validation** - `not_in_coverage_files` only flags files you explicitly expect to have coverage
 - **Project flexibility** - Different projects use different directory structures
 
 **Important:** Files that are not in the coverage file are not visible with the default empty array. That includes files added since the last test run, and files never loaded during tests unless SimpleCov's `cover` globs include them (SimpleCov then records them at 0%).
@@ -502,7 +502,7 @@ For GitHub Actions and GitLab CI examples, see [CI/CD Integration](examples/ci-c
 **Two purposes of tracked globs:**
 
 1. **Limit results** - Only show files from the coverage file that match the patterns
-2. **Include files with or without coverage** - Report files that match the patterns but aren't in the coverage file (reported in `missing_tracked_files` for `list`, `missing_tracked` for `totals`)
+2. **Include files with or without coverage** - Report files that match the patterns but aren't in the coverage file (reported in `not_in_coverage_files` for `list`, `not_in_coverage` for `totals`)
 
 **When to set them:** with no tracked globs you see what SimpleCov reported. Set them to also catch files with no coverage data, using patterns for the files you expect to be covered (normally the globs you give SimpleCov's `cover`; files that its `skip` filters remove still match them and are reported as missing, so narrow the globs to leave those out). See [`--tracked-globs`](CLI_USAGE.md#tracked-globs) for the canonical setup example.
 
@@ -592,7 +592,7 @@ begin
 rescue CovLoupe::CoverageDataProjectStaleError => e
   # Handle missing coverage for critical files
   puts "Critical files missing coverage:"
-  e.missing_files.each { |f| puts "  - #{f}" }
+  e.not_in_coverage_files.each { |f| puts "  - #{f}" }
 end
 ```
 

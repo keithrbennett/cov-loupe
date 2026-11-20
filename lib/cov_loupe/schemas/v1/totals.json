@@ -63,9 +63,9 @@
         "total": {"type": "integer", "minimum": 0, "description": "Tracked files without usable coverage."},
         "by_type": {
           "type": "object",
-          "required": ["missing_tracked", "unreadable", "skipped"],
+          "required": ["not_in_coverage", "unreadable", "skipped"],
           "properties": {
-            "missing_tracked": {"type": "integer", "minimum": 0, "description": "Tracked files absent from coverage data."},
+            "not_in_coverage": {"type": "integer", "minimum": 0, "description": "Tracked files absent from coverage data."},
             "unreadable": {"type": "integer", "minimum": 0, "description": "Tracked files that could not be read."},
             "skipped": {"type": "integer", "minimum": 0, "description": "Files skipped because coverage data was invalid."}
           }

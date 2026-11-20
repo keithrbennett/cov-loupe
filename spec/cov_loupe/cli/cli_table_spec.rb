@@ -25,7 +25,7 @@ RSpec.describe CovLoupe::CoverageCLI do
         # Should show exclusions summary for files matching glob but without coverage
         expect(stderr).to include(
           'Files excluded from coverage:',
-          'Missing tracked files',
+          'Files not in coverage data',
           'lib/uncovered_file.rb'
         )
       end
@@ -37,7 +37,7 @@ RSpec.describe CovLoupe::CoverageCLI do
 
       aggregate_failures do
         expect(stdout).to include('File')
-        expect(stderr).not_to include('Files excluded from coverage:', 'Missing tracked files')
+        expect(stderr).not_to include('Files excluded from coverage:', 'Files not in coverage data')
       end
     end
   end

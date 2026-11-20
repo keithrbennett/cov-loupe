@@ -16,7 +16,7 @@ This small demo project powers the documentation examples that rely on partial c
 - If you edit a fixture source file, update its entry in `coverage/coverage.json` as well: a
   line count that disagrees with the source is reported as a line-mismatch staleness.
 
-Files include controllers, models, payments services, background jobs, and an API client. A few files are intentionally missing from the coverage file so the `--tracked-globs` examples surface gaps.
+Files include controllers, models, payments services, background jobs, and an API client. A few files are intentionally left out of the coverage file so the `--tracked-globs` examples surface gaps.
 
 Related guides:
 

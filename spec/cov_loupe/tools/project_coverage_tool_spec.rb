@@ -29,7 +29,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
       it 'includes all expected keys in JSON output' do
         output = run_with_default_format
         data = JSON.parse(output)
-        expected_keys = %w[files skipped_files missing_tracked_files newer_files
+        expected_keys = %w[files skipped_files not_in_coverage_files newer_files
           deleted_files length_mismatch_files unreadable_files timestamp_status]
         expected_keys.each do |key|
           expect(data).to have_key(key), "Expected key '#{key}' to be present"
@@ -251,7 +251,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
         test_payload = {
           'files'                 => [],
           'skipped_files'         => [],
-          'missing_tracked_files' => [],
+          'not_in_coverage_files' => [],
           'newer_files'           => [],
           'deleted_files'         => [],
           'length_mismatch_files' => [],
@@ -298,7 +298,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
           'files'                 => [{ 'file' => 'lib/foo.rb', 'percentage' => 100.0, 'covered' => 10,
                                       'total' => 10, 'stale' => 'ok' }],
           'skipped_files'         => [],
-          'missing_tracked_files' => ['lib/missing.rb'],
+          'not_in_coverage_files' => ['lib/missing.rb'],
           'newer_files'           => [],
           'deleted_files'         => [],
           'length_mismatch_files' => [],
@@ -312,7 +312,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
           relative_files:                 payload['files'],
           root_warning:                   nil,
           relative_skipped_files:         [],
-          relative_missing_tracked_files: ['lib/missing.rb'],
+          relative_not_in_coverage_files: ['lib/missing.rb'],
           relative_newer_files:           [],
           relative_deleted_files:         [],
           relative_length_mismatch_files: [],
@@ -329,7 +329,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
 
         expect(output).to include(
           'Files excluded from coverage:',
-          'Missing tracked files',
+          'Files not in coverage data',
           'lib/missing.rb'
         )
       end
@@ -341,7 +341,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
         payload = {
           'files'                 => [],
           'skipped_files'         => [],
-          'missing_tracked_files' => [],
+          'not_in_coverage_files' => [],
           'newer_files'           => [],
           'deleted_files'         => [],
           'length_mismatch_files' => [],
@@ -355,7 +355,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
           relative_files:                 [],
           root_warning:                   nil,
           relative_skipped_files:         [],
-          relative_missing_tracked_files: [],
+          relative_not_in_coverage_files: [],
           relative_newer_files:           [],
           relative_deleted_files:         [],
           relative_length_mismatch_files: [],
@@ -380,7 +380,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
       test_payload = {
         'files'                 => [],
         'skipped_files'         => [],
-        'missing_tracked_files' => [],
+        'not_in_coverage_files' => [],
         'newer_files'           => [],
         'deleted_files'         => [],
         'length_mismatch_files' => [],
@@ -396,7 +396,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
       output = described_class.call(root: root, server_context: server_context).content.first['text']
       data = JSON.parse(output)
 
-      expect(data['missing_tracked_files']).to be_empty
+      expect(data['not_in_coverage_files']).to be_empty
     end
   end
 
@@ -406,7 +406,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
         relative_files:                 [],
         root_warning:                   nil,
         relative_skipped_files:         [],
-        relative_missing_tracked_files: [],
+        relative_not_in_coverage_files: [],
         relative_newer_files:           [],
         relative_deleted_files:         [],
         relative_length_mismatch_files: [],
@@ -428,7 +428,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
     end
 
     {
-      relative_missing_tracked_files: ['Missing tracked files (2):', %w[lib/a.rb lib/b.rb]],
+      relative_not_in_coverage_files: ['Files not in coverage data (2):', %w[lib/a.rb lib/b.rb]],
       relative_newer_files:           ['Files newer than coverage (1):', %w[lib/newer.rb]],
       relative_deleted_files:         ['Deleted files with coverage (1):', %w[lib/gone.rb]],
       relative_length_mismatch_files: ['Line count mismatches (1):', %w[lib/mismatch.rb]],
@@ -447,7 +447,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
       output = table_output_with(relative_newer_files: %w[lib/newer.rb])
 
       expect(output).to include('Files newer than coverage (1):')
-      expect(output).not_to include('Missing tracked files', 'Deleted files', 'Unreadable files',
+      expect(output).not_to include('Files not in coverage data', 'Deleted files', 'Unreadable files',
         'Line count mismatches')
     end
 
@@ -553,7 +553,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
       test_payload = {
         'files'                 => [],
         'skipped_files'         => [],
-        'missing_tracked_files' => [],
+        'not_in_coverage_files' => [],
         'newer_files'           => [],
         'deleted_files'         => [],
         'length_mismatch_files' => [],

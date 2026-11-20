@@ -97,7 +97,7 @@ it exists), and tells the user to rerun the full suite. Do not write a report.
 These checks cannot prove that the last run was the complete suite. Say in
 the report that the analysis relies on the user's assurance that it was.
 
-`missing_tracked_files` (tracked files the suite never loaded) is not a
+`not_in_coverage_files` (tracked files the suite never loaded) is not a
 staleness failure; it is a finding for Step 2.
 
 ## Step 2: Establish the project baseline
@@ -106,7 +106,7 @@ staleness failure; it is a finding for Step 2.
    code SimpleCov is meant to measure (from its `track_files` and filter
    settings; typically `lib/**/*.rb`, or `app/**/*.rb,lib/**/*.rb` for Rails).
    Passing `tracked_globs` makes cov-loupe report tracked files that have
-   **no** coverage data at all (`missing_tracked_files`, `without_coverage`);
+   **no** coverage data at all (`not_in_coverage_files`, `without_coverage`);
    these are files never loaded by the suite and are often the biggest real
    gap.
 2. Get the full file list as JSON, sorted ascending (worst first).
@@ -315,7 +315,7 @@ citations.
 
 ### Data Caveats
 Reliance on the user's assurance that the last run was the complete, passing
-suite; tracked files missing from the coverage data; branch coverage being out
+suite; tracked files not in the coverage data; branch coverage being out
 of scope; ambiguous line assignments at area boundaries; anything else that
 limits confidence in the numbers.
 

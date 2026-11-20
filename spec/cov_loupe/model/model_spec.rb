@@ -11,7 +11,7 @@ RSpec.describe CovLoupe::CoverageModel do
   let(:root) { (FIXTURES_DIR / 'project1').to_s }
 
   def stub_staleness_checker(
-    newer_files: [], missing_files: [], deleted_files: [], length_mismatch_files: [],
+    newer_files: [], not_in_coverage_files: [], deleted_files: [], length_mismatch_files: [],
     unreadable_files: [], file_statuses: {}, timestamp_status: 'ok'
   )
     checker = instance_double(
@@ -22,7 +22,7 @@ RSpec.describe CovLoupe::CoverageModel do
     allow(CovLoupe::StalenessChecker).to receive(:new).and_return(checker)
     allow(checker).to receive(:check_project_with_lines!).and_return(
       newer_files:           newer_files,
-      missing_files:         missing_files,
+      not_in_coverage_files: not_in_coverage_files,
       deleted_files:         deleted_files,
       length_mismatch_files: length_mismatch_files,
       unreadable_files:      unreadable_files,
@@ -81,7 +81,7 @@ RSpec.describe CovLoupe::CoverageModel do
       expect(result).to be_a(Hash)
       expect(result.keys).to contain_exactly(
         'schema_version',
-        'files', 'skipped_files', 'missing_tracked_files', 'newer_files', 'deleted_files',
+        'files', 'skipped_files', 'not_in_coverage_files', 'newer_files', 'deleted_files',
         'length_mismatch_files', 'unreadable_files', 'timestamp_status'
       )
       expect(result['timestamp_status']).to be_a(Symbol).or be_a(String)
@@ -329,14 +329,14 @@ RSpec.describe CovLoupe::CoverageModel do
     end
   end
 
-  it 'validates tracked files missing coverage and stale files with missing timestamps' do
+  it 'validates tracked files not in coverage data and stale files with missing timestamps' do
     tracked_list = model.list(tracked_globs: ['lib/**/*.rb'])
     tracked_totals = model.project_totals(tracked_globs: ['lib/**/*.rb'])
     stale_model = described_class.new(root: (FIXTURES_DIR / 'project_no_timestamp').to_s)
     stale_list = stale_model.list
     stale_totals = stale_model.project_totals
 
-    expect(tracked_list['missing_tracked_files']).not_to be_empty
+    expect(tracked_list['not_in_coverage_files']).not_to be_empty
     expect(tracked_totals['file_counts']).to have_key('without_coverage')
     expect(stale_list['files'].first['stale']).to eq('length_mismatch')
     expect(stale_totals['percentage']).to be_nil
@@ -441,15 +441,15 @@ RSpec.describe CovLoupe::CoverageModel do
       expect(totals['tracking']).to include('enabled' => true)
       expect(totals['file_counts']['without_coverage']).to include('total' => 1)
       expect(totals['file_counts']['without_coverage']['by_type'])
-        .to include('missing_tracked' => 1)
+        .to include('not_in_coverage' => 1)
     end
 
     it 'counts a missing file matched by overlapping tracked globs once' do
       globs = ['lib/**/*.rb', 'lib/*.rb']
       totals = model.project_totals(tracked_globs: globs)
 
-      expect(model.list(tracked_globs: globs)['missing_tracked_files']).to eq(['lib/uncovered_file.rb'])
-      expect(totals['file_counts']['without_coverage']['by_type']).to include('missing_tracked' => 1)
+      expect(model.list(tracked_globs: globs)['not_in_coverage_files']).to eq(['lib/uncovered_file.rb'])
+      expect(totals['file_counts']['without_coverage']['by_type']).to include('not_in_coverage' => 1)
     end
 
     it 'counts unreadable tracked files in without_coverage breakdown' do
@@ -650,7 +650,7 @@ RSpec.describe CovLoupe::CoverageModel do
         off?:                      true,
         check_project_with_lines!: {
           newer_files:           [],
-          missing_files:         [],
+          not_in_coverage_files: [],
           deleted_files:         [],
           length_mismatch_files: [],
           unreadable_files:      [],

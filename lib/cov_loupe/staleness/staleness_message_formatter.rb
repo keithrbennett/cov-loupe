@@ -16,12 +16,12 @@ module CovLoupe
       @coverage_file_path = coverage_file_path
     end
 
-    def format_project_details(newer_files:, missing_files:, deleted_files:,
+    def format_project_details(newer_files:, not_in_coverage_files:, deleted_files:,
       length_mismatch_files:, unreadable_files: [])
       [
         format_coverage_time,
         *format_file_list(newer_files, 'Newer files'),
-        *format_file_list(missing_files, 'Missing files', 'new in project, not in coverage'),
+        *format_file_list(not_in_coverage_files, 'Files not in coverage data'),
         *format_file_list(deleted_files, 'Coverage-only files', 'deleted or moved in project'),
         *format_file_list(length_mismatch_files, 'Line count mismatches'),
         *format_file_list(unreadable_files, 'Unreadable files', 'permission denied or read errors'),

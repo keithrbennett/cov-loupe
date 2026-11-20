@@ -41,7 +41,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTotalsTool do
         'without_coverage' => {
           'total'   => 0,
           'by_type' => {
-            'missing_tracked' => 0,
+            'not_in_coverage' => 0,
             'unreadable'      => 0,
             'skipped'         => 0,
           },

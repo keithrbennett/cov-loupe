@@ -3,7 +3,7 @@
   "$id": "urn:cov-loupe:schema:v1:list",
   "title": "cov-loupe v1 project coverage list",
   "type": "object",
-  "required": ["schema_version", "files", "skipped_files", "missing_tracked_files", "newer_files", "deleted_files", "length_mismatch_files", "unreadable_files", "timestamp_status"],
+  "required": ["schema_version", "files", "skipped_files", "not_in_coverage_files", "newer_files", "deleted_files", "length_mismatch_files", "unreadable_files", "timestamp_status"],
   "properties": {
     "schema_version": {"const": 1, "description": "Version of this payload shape."},
     "files": {
@@ -12,7 +12,7 @@
       "description": "Coverage rows ordered by percentage."
     },
     "skipped_files": {"type": "array", "items": {"$ref": "#/$defs/skipped_row"}, "description": "Files skipped because coverage data could not be processed."},
-    "missing_tracked_files": {"$ref": "#/$defs/paths", "description": "Tracked files absent from coverage data."},
+    "not_in_coverage_files": {"$ref": "#/$defs/paths", "description": "Tracked files absent from coverage data."},
     "newer_files": {"$ref": "#/$defs/paths", "description": "Sources newer than the coverage timestamp."},
     "deleted_files": {"$ref": "#/$defs/paths", "description": "Coverage entries whose source files have been deleted."},
     "length_mismatch_files": {"$ref": "#/$defs/paths", "description": "Files whose source line count differs from coverage data."},

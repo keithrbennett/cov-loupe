@@ -35,7 +35,7 @@ module MockingHelpers
     CovLoupe::PathRelativizer.new(
       root:        root,
       scalar_keys: %w[file file_path],
-      array_keys:  %w[newer_files missing_tracked_files deleted_files]
+      array_keys:  %w[newer_files not_in_coverage_files deleted_files]
     )
   end
 

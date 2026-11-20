@@ -10,7 +10,7 @@ module CovLoupe
   # CoverageModel list result whose rows carry absolute paths.
   #
   # Stale files are excluded from line counts but still counted in the file breakdown.
-  # When tracked_globs are provided, files without coverage data (missing from coverage,
+  # When tracked_globs are provided, files without coverage data (not in coverage data,
   # skipped, or unreadable) are also reported.
   #
   # @api private
@@ -60,7 +60,7 @@ module CovLoupe
 
     private def without_coverage(list_result)
       by_type = {
-        StaleStatus::MISSING_TRACKED => Array(list_result['missing_tracked_files']).length,
+        StaleStatus::NOT_IN_COVERAGE => Array(list_result['not_in_coverage_files']).length,
         StaleStatus::UNREADABLE      => unreadable_without_row(list_result),
         StaleStatus::SKIPPED         => Array(list_result['skipped_files']).length,
       }

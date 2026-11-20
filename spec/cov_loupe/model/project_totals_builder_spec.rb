@@ -15,7 +15,7 @@ RSpec.describe CovLoupe::ProjectTotalsBuilder do
         { 'file' => File.join(root, 'lib/c.rb'), 'covered' => 0, 'total' => 5, 'stale' => 'unreadable' },
       ],
       'skipped_files'         => [{ 'file' => File.join(root, 'lib/d.rb') }],
-      'missing_tracked_files' => ['lib/e.rb'],
+      'not_in_coverage_files' => ['lib/e.rb'],
       # c.rb has a row and d.rb is skipped, so only f.rb counts as unreadable without a row.
       'unreadable_files'      => ['lib/c.rb', 'lib/d.rb', 'lib/f.rb'],
       'timestamp_status'      => 'ok',
@@ -41,7 +41,7 @@ RSpec.describe CovLoupe::ProjectTotalsBuilder do
         'with_coverage'    => with_coverage,
         'without_coverage' => {
           'total'   => 3,
-          'by_type' => { 'missing_tracked' => 1, 'unreadable' => 1, 'skipped' => 1 },
+          'by_type' => { 'not_in_coverage' => 1, 'unreadable' => 1, 'skipped' => 1 },
         },
       },
       'timestamp_status' => 'ok'

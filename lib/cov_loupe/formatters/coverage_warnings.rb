@@ -17,7 +17,7 @@ module CovLoupe
       ].freeze
 
       EXCLUDED_FILE_SECTIONS = {
-        relative_missing_tracked_files: 'Missing tracked files',
+        relative_not_in_coverage_files: 'Files not in coverage data',
         relative_newer_files:           'Files newer than coverage',
         relative_deleted_files:         'Deleted files with coverage',
         relative_length_mismatch_files: 'Line count mismatches',

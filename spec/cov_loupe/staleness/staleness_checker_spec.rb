@@ -348,7 +348,7 @@ RSpec.describe CovLoupe::StalenessChecker do
   end
 
   context 'when checking project-level missing tracked files' do
-    it 'raises error listing tracked files missing from coverage' do
+    it 'raises error listing tracked files not in coverage data' do
       tracked_root = Dir.mktmpdir('tracked')
       begin
         file = File.join(tracked_root, 'lib', 'uncovered.rb')
@@ -361,7 +361,7 @@ RSpec.describe CovLoupe::StalenessChecker do
         expect do
           checker.check_project!({})
         end.to raise_error(CovLoupe::CoverageDataProjectStaleError) { |error|
-          expect(error.missing_files).to include('lib/uncovered.rb')
+          expect(error.not_in_coverage_files).to include('lib/uncovered.rb')
         }
       ensure
         FileUtils.remove_entry(tracked_root)
@@ -374,7 +374,7 @@ RSpec.describe CovLoupe::StalenessChecker do
       checker = described_class.new(root: tmpdir, coverage_file: nil, mode: :off,
         tracked_globs: ['lib/**/*.rb', 'lib/*.rb'], timestamp: Time.now.to_i)
 
-      expect(checker.check_project!({})[:missing_files]).to eq(['lib/uncovered.rb'])
+      expect(checker.check_project!({})[:not_in_coverage_files]).to eq(['lib/uncovered.rb'])
     end
 
     it 'does not report files as newer when timestamp is 0 in project check' do
