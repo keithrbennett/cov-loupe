@@ -422,7 +422,7 @@ File breakdown:
   With coverage: 7 total, 7 ok, 0 stale
     Stale: deleted = 0, newer than coverage = 0, line mismatch = 0, unreadable = 0
   Without coverage: 0 total
-    Not in coverage data = n/a (no file globs), unreadable = 0, skipped (errors) = 0
+    Not in coverage data = n/a (no file globs), skipped (errors) = 0
 ```
 
 **With `--file-globs` enabled (`clp -g "lib/**/*.rb,app/**/*.rb" t`):**
@@ -437,7 +437,7 @@ File breakdown:
   With coverage: 7 total, 7 ok, 0 stale
     Stale: deleted = 0, newer than coverage = 0, line mismatch = 0, unreadable = 0
   Without coverage: 3 total
-    Not in coverage data = 3, unreadable = 0, skipped (errors) = 0
+    Not in coverage data = 3, skipped (errors) = 0
 ```
 
 **Output (JSON format):**
@@ -468,7 +468,6 @@ File breakdown:
       "total": 0,
       "by_type": {
         "not_in_coverage": null,
-        "unreadable": 0,
         "skipped": 0
       }
     }
@@ -482,7 +481,7 @@ File breakdown:
 - The line metrics (`covered`, `uncovered`, `total`, `percentage`) count fresh coverage entries only; `file_counts.with_coverage.ok` is how many files they include, and `file_counts.with_coverage.stale.total` how many stale files they exclude.
 - `with_coverage.stale.by_type` keys match the per-file `stale` values: `deleted`, `newer`,
   `length_mismatch`, `unreadable`.
-- `without_coverage` counts files without usable coverage data: `skipped` (coverage rows with invalid data), `unreadable` (unreadable files with no coverage row; one with a row is counted as stale under `with_coverage`), and `not_in_coverage` (files matching the file globs that the coverage data does not list). `not_in_coverage` is `null` when no file globs are set, since there is then no list of files to check, and `without_coverage.total` adds up the counts that are not `null`.
+- `without_coverage` counts files without usable coverage data: `skipped` (coverage rows with invalid data) and `not_in_coverage` (files matching the file globs that the coverage data does not list). Only files in the coverage data are read (to check staleness), so an unreadable file is counted under `with_coverage` as stale, or as `skipped` if its coverage data is invalid. `not_in_coverage` is `null` when no file globs are set, since there is then no list of files to check, and `without_coverage.total` adds up the counts that are not `null`.
 - Respects `-g` / `--file-globs` when you only want to aggregate a subset of files.
 - Totals exclude stale files (`"deleted"`, `"newer"`, `"length_mismatch"`, `"unreadable"`) so the aggregate reflects only fresh coverage data.
 - Honors `-S true` / `--raise-on-stale true` to raise if coverage data is out of date.

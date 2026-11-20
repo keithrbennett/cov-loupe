@@ -160,7 +160,7 @@ RSpec.describe CovLoupe::CoverageModel do
 
       totals = model.project_totals
       expect(totals['file_counts']['without_coverage']).to eq(
-        'total' => 1, 'by_type' => { 'not_in_coverage' => nil, 'unreadable' => 0, 'skipped' => 1 }
+        'total' => 1, 'by_type' => { 'not_in_coverage' => nil, 'skipped' => 1 }
       )
       expect(totals['file_counts']['total']).to eq(totals['file_counts']['with_coverage']['total'] + 1)
       expect_schema_valid('totals', totals)
@@ -473,24 +473,7 @@ RSpec.describe CovLoupe::CoverageModel do
       expect(totals['file_counts']['without_coverage']['by_type']).to include('not_in_coverage' => 1)
     end
 
-    it 'counts unreadable files matching the file globs in without_coverage breakdown' do
-      abs_unreadable = File.expand_path('lib/unreadable.rb', root)
-
-      stub_staleness_checker(
-        unreadable_files: [abs_unreadable]
-      )
-
-      totals = model.project_totals(file_globs: ['lib/**/*.rb'])
-
-      aggregate_failures do
-        expect(totals['file_globs']).to eq(['lib/**/*.rb'])
-        expect(totals['file_counts']['without_coverage']).to include('total' => 1)
-        expect(totals['file_counts']['without_coverage']['by_type'])
-          .to include('unreadable' => 1)
-      end
-    end
-
-    it 'does not double-count unreadable files that have coverage rows' do
+    it 'counts an unreadable file with a coverage row once, as stale' do
       abs_foo = File.expand_path('lib/foo.rb', root)
 
       stub_staleness_checker(
@@ -502,7 +485,9 @@ RSpec.describe CovLoupe::CoverageModel do
 
       aggregate_failures do
         expect(totals['file_counts']['with_coverage']['stale']['by_type']).to include('unreadable' => 1)
-        expect(totals['file_counts']['without_coverage']['by_type']).to include('unreadable' => 0)
+        expect(totals['file_counts']['without_coverage'])
+          .to eq('total' => 0, 'by_type' => { 'not_in_coverage' => 0, 'skipped' => 0 })
+        expect(totals['file_counts']['total']).to eq(2)
       end
     end
 

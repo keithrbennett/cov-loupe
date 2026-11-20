@@ -305,7 +305,7 @@ totals = model.project_totals
 #      'file_counts' => {
 #        'total' => 4,
 #        'with_coverage' => { 'total' => 4, 'ok' => 4, 'stale' => { ... } },
-#        'without_coverage' => { 'total' => 0, 'by_type' => { 'not_in_coverage' => nil, 'unreadable' => 0, 'skipped' => 0 } }
+#        'without_coverage' => { 'total' => 0, 'by_type' => { 'not_in_coverage' => nil, 'skipped' => 0 } }
 #      },
 #      'timestamp_status' => 'ok'
 #    }
@@ -498,7 +498,6 @@ Returns `Hash`:
       'total' => Integer,        # Files without usable coverage data: sum of the non-nil by_type counts
       'by_type' => {
         'not_in_coverage' => Integer | nil, # Count of the list's not_in_coverage_files; nil without file_globs
-        'unreadable' => Integer,
         'skipped' => Integer
       }
     }

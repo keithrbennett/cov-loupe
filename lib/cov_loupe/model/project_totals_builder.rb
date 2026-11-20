@@ -2,7 +2,6 @@
 
 require_relative '../coverage/coverage_calculator'
 require_relative '../paths/glob_utils'
-require_relative '../paths/path_utils'
 require_relative '../staleness/stale_status'
 
 module CovLoupe
@@ -10,18 +9,16 @@ module CovLoupe
   # CoverageModel list result whose rows carry absolute paths.
   #
   # Stale files are excluded from line counts but still counted in the file breakdown.
-  # Files without usable coverage data (skipped, unreadable and, when file_globs are
-  # provided, not in coverage data) are always reported.
+  # Files without usable coverage data (skipped and, when file_globs are provided, not in
+  # coverage data) are always reported. There is no unreadable count here: only files in the
+  # coverage data are read, so an unreadable file already has a row (counted as stale) or a
+  # skipped entry, and counting it again would double count it.
   #
   # @api private
   class ProjectTotalsBuilder
     # Per-file stale values, which double as the stale.by_type keys.
     STALE_TYPES = (StaleStatus::VALID_STATUSES - [StaleStatus::OK]).freeze
     private_constant :STALE_TYPES
-
-    def initialize(root:)
-      @root = root
-    end
 
     # @param list_result [Hash] unversioned list result with absolute paths
     # @param file_globs [Array<String>, String, nil] glob patterns; matching files are counted
@@ -63,19 +60,9 @@ module CovLoupe
     private def without_coverage(list_result, globs_set:)
       by_type = {
         StaleStatus::NOT_IN_COVERAGE => (Array(list_result['not_in_coverage_files']).length if globs_set),
-        StaleStatus::UNREADABLE      => unreadable_without_row(list_result),
         StaleStatus::SKIPPED         => Array(list_result['skipped_files']).length,
       }
       { 'total' => by_type.values.compact.sum, 'by_type' => by_type }
-    end
-
-    # Unreadable files that already appear as a coverage row (counted under with_coverage)
-    # or as a skipped file must not be counted again in the without-coverage bucket.
-    private def unreadable_without_row(list_result)
-      accounted = (list_result['files'] + Array(list_result['skipped_files'])).to_set { |r| r['file'] }
-      Array(list_result['unreadable_files']).count do |path|
-        !accounted.include?(PathUtils.expand_from_root(path, @root))
-      end
     end
   end
 end

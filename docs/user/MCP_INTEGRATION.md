@@ -557,7 +557,7 @@ Lines SimpleCov marked `"ignored"` (excluded with `nocov` blocks or directive co
 **`project_coverage_totals`** - Aggregated line totals
 
 - Parameters: the [common parameters](#common-parameters), plus `file_globs` (array)
-- Returns: `{"schema_version":1,"covered":N,"uncovered":N,"total":N,"percentage":Float|null,"file_globs":[String],"file_counts":{"total":N,"with_coverage":{"total":N,"ok":N,"stale":{"total":N,"by_type":{"deleted":N,"newer":N,"length_mismatch":N,"unreadable":N}}},"without_coverage":{"total":N,"by_type":{"not_in_coverage":N|null,"unreadable":N,"skipped":N}}},"timestamp_status":"ok|missing","warnings":[String]}`
+- Returns: `{"schema_version":1,"covered":N,"uncovered":N,"total":N,"percentage":Float|null,"file_globs":[String],"file_counts":{"total":N,"with_coverage":{"total":N,"ok":N,"stale":{"total":N,"by_type":{"deleted":N,"newer":N,"length_mismatch":N,"unreadable":N}}},"without_coverage":{"total":N,"by_type":{"not_in_coverage":N|null,"skipped":N}}},"timestamp_status":"ok|missing","warnings":[String]}`
 - The line metrics count fresh files only; `file_counts.with_coverage.ok` is how many.
 - `without_coverage` is always present. Its `not_in_coverage` count is `null` when no file globs are set, since there is then no list of files to check.
 - `warnings` is present when `timestamp_status` is `"missing"` or [most files were not found under the project root](TROUBLESHOOTING.md#the-project-root-may-be-wrong).

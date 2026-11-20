@@ -27,7 +27,7 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
         output = capture_command_output(command, [])
 
         expect(output).to include('File globs: (none)', 'Without coverage: 0 total',
-          'Not in coverage data = n/a (no file globs), unreadable = 0, skipped (errors) = 0')
+          'Not in coverage data = n/a (no file globs), skipped (errors) = 0')
       end
 
       it 'shows file breakdown with stale and without coverage details' do
@@ -60,7 +60,6 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
                 'total'   => 1,
                 'by_type' => {
                   'not_in_coverage' => 1,
-                  'unreadable'      => 0,
                   'skipped'         => 0,
                 },
               },
@@ -95,7 +94,7 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
                                                        'stale' => { 'total' => 0, 'by_type' => {} } },
                                'without_coverage' => {
                                  'total'   => 0,
-                                 'by_type' => { 'not_in_coverage' => nil, 'unreadable' => 0, 'skipped' => 0 },
+                                 'by_type' => { 'not_in_coverage' => nil, 'skipped' => 0 },
                                } }
           },
           timestamp_status: 'ok'
@@ -138,7 +137,7 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
             },
             'without_coverage' => {
               'total'   => 0,
-              'by_type' => { 'not_in_coverage' => nil, 'unreadable' => 0, 'skipped' => 0 },
+              'by_type' => { 'not_in_coverage' => nil, 'skipped' => 0 },
             },
           }
         }

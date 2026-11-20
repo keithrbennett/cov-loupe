@@ -81,7 +81,6 @@ module CovLoupe
         without_coverage_line = "  Without coverage: #{without_coverage['total']} total"
         without_breakdown_line = '    Not in coverage data = ' \
           "#{not_in_coverage.nil? ? 'n/a (no file globs)' : not_in_coverage}, " \
-          "unreadable = #{without_by_type[StaleStatus::UNREADABLE]}, " \
           "skipped (errors) = #{without_by_type[StaleStatus::SKIPPED]}"
         [without_coverage_line, without_breakdown_line]
       end

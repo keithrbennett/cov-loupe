@@ -205,15 +205,15 @@ module CovLoupe
     # Aggregates per-file coverage into project-wide totals.
     # Partitions files by staleness: stale files are excluded from line counts
     # but still counted in the file breakdown. Files without usable coverage data (skipped,
-    # unreadable without a coverage row, and, when file_globs are provided, not in coverage
-    # data) are counted under without_coverage; not_in_coverage is nil without file_globs.
+    # and, when file_globs are provided, not in coverage data) are counted under
+    # without_coverage; not_in_coverage is nil without file_globs.
     def project_totals(
       file_globs: @default_file_globs, raise_on_stale: @default_raise_on_stale
     )
       list_result = unversioned_list(sort_order: :ascending, raise_on_stale: raise_on_stale,
         file_globs: file_globs)
       PayloadSchema.add(
-        ProjectTotalsBuilder.new(root: @root).build(list_result, file_globs: file_globs)
+        ProjectTotalsBuilder.new.build(list_result, file_globs: file_globs)
       )
     end
 

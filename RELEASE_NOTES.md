@@ -43,6 +43,12 @@
   counted, and `file_counts.total` includes them. Its `not_in_coverage` count is `null`
   when no file globs are set, since there is then no list of files to check. See
   [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#totals-always-include-without_coverage).
+- **Totals drop `without_coverage.by_type.unreadable`.** Only files with a coverage entry are
+  read, so every unreadable file was already counted as stale under `with_coverage`, or as
+  skipped if its coverage data was invalid, and 6.x counted it a second time here. Read
+  `with_coverage.stale.by_type.unreadable` instead (plus `skipped`, if needed); the CLI
+  `totals` "Without coverage" line no longer shows `unreadable = N`. See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#totals-drop-without_coverageby_typeunreadable).
 - **The library rejects an invalid `sort_order`.** `CoverageModel#list` and
   `CoverageModel#format_table` sorted ascending for any `sort_order` other than the symbol
   `:descending`, including a misspelling, `nil`, and the string `'descending'`. They now

@@ -39,7 +39,6 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTotalsTool do
           'total'   => 0,
           'by_type' => {
             'not_in_coverage' => 0,
-            'unreadable'      => 0,
             'skipped'         => 0,
           },
         },
@@ -110,7 +109,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTotalsTool do
             },
             'without_coverage' => {
               'total'   => 0,
-              'by_type' => { 'not_in_coverage' => nil, 'unreadable' => 0, 'skipped' => 0 },
+              'by_type' => { 'not_in_coverage' => nil, 'skipped' => 0 },
             },
           },
           'timestamp_status' => status

@@ -133,11 +133,10 @@ This allows:
 
 - `project_totals` excludes any stale files ("deleted", "newer", "length_mismatch", "unreadable") from aggregate counts.
 - Totals always include `with_coverage` and `without_coverage` breakdowns, so callers can reconcile what was omitted.
-- The `without_coverage` payload includes counts for three categories:
+- The `without_coverage` payload includes counts for two categories:
     - `not_in_coverage`: Files matching the file globs that have no coverage data in the coverage file; `null` when no file globs are set, since there is then no list of files to check (a `0` would claim a check that did not happen)
-    - `unreadable`: Files that exist but could not be read (e.g., due to permission errors, I/O issues, or staleness check failures) and have no coverage row; an unreadable file with a coverage row is counted as stale under `with_coverage` instead
     - `skipped`: Files that were skipped during list processing due to coverage data errors (e.g., malformed entries)
-- The `unreadable` count comes from `list_result['unreadable_files']` (collected during staleness checking when files exist but cannot be accessed or validated), excluding files that already appear as a coverage row or a skipped row, so no file is counted twice.
+- There is no `unreadable` category in `without_coverage`. Only files in the coverage data are read (to check staleness), so an unreadable file is counted under `with_coverage` as stale, or as `skipped` if its coverage data is invalid. Files matching the file globs that have no coverage entry are never read, only listed, so they count as `not_in_coverage` whether readable or not.
 
 #### File Globs Feature
 

@@ -56,10 +56,9 @@
         "total": {"type": "integer", "minimum": 0, "description": "Files without usable coverage data: the sum of the by_type counts that are not null."},
         "by_type": {
           "type": "object",
-          "required": ["not_in_coverage", "unreadable", "skipped"],
+          "required": ["not_in_coverage", "skipped"],
           "properties": {
             "not_in_coverage": {"type": ["integer", "null"], "minimum": 0, "description": "Files matching the file globs that are absent from coverage data; null when no file globs are set, since there is then no list of files to check."},
-            "unreadable": {"type": "integer", "minimum": 0, "description": "Files that could not be read and are not already counted as a coverage row or a skipped file."},
             "skipped": {"type": "integer", "minimum": 0, "description": "Files skipped because coverage data was invalid."}
           }
         }

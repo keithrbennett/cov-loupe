@@ -4,7 +4,7 @@ require 'spec_helper'
 require 'cov_loupe/model/project_totals_builder'
 
 RSpec.describe CovLoupe::ProjectTotalsBuilder do
-  subject(:builder) { described_class.new(root: root) }
+  subject(:builder) { described_class.new }
 
   let(:root) { File.expand_path('/proj') }
   let(:list_result) do
@@ -16,8 +16,6 @@ RSpec.describe CovLoupe::ProjectTotalsBuilder do
       ],
       'skipped_files'         => [{ 'file' => File.join(root, 'lib/d.rb') }],
       'not_in_coverage_files' => ['lib/e.rb'],
-      # c.rb has a row and d.rb is skipped, so only f.rb counts as unreadable without a row.
-      'unreadable_files'      => ['lib/c.rb', 'lib/d.rb', 'lib/f.rb'],
       'timestamp_status'      => 'ok',
     }
   end
@@ -37,29 +35,29 @@ RSpec.describe CovLoupe::ProjectTotalsBuilder do
       'covered' => 3, 'uncovered' => 1, 'total' => 4, 'percentage' => 75.0,
       'file_globs' => ['lib/**/*.rb'],
       'file_counts' => {
-        'total'            => 6,
+        'total'            => 5,
         'with_coverage'    => with_coverage,
         'without_coverage' => {
-          'total'   => 3,
-          'by_type' => { 'not_in_coverage' => 1, 'unreadable' => 1, 'skipped' => 1 },
+          'total'   => 2,
+          'by_type' => { 'not_in_coverage' => 1, 'skipped' => 1 },
         },
       },
       'timestamp_status' => 'ok'
     )
   end
 
-  it 'counts skipped and unreadable files, with not_in_coverage null, when no file globs are set' do
+  it 'counts skipped files, with not_in_coverage null, when no file globs are set' do
     # list_result still lists a file not in coverage: without globs it must be ignored, not counted.
     result = builder.build(list_result, file_globs: [])
 
     aggregate_failures do
       expect(result['file_globs']).to eq([])
       expect(result['file_counts']).to eq(
-        'total'            => 5,
+        'total'            => 4,
         'with_coverage'    => with_coverage,
         'without_coverage' => {
-          'total'   => 2,
-          'by_type' => { 'not_in_coverage' => nil, 'unreadable' => 1, 'skipped' => 1 },
+          'total'   => 1,
+          'by_type' => { 'not_in_coverage' => nil, 'skipped' => 1 },
         }
       )
     end

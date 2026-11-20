@@ -443,6 +443,21 @@ RSpec.describe CovLoupe::StalenessChecker do
       expect(details[:unreadable_files]).to include('test.rb')
     end
 
+    # ProjectTotalsBuilder relies on this: totals have no without_coverage unreadable count.
+    it 'lists an unreadable glob-matched file absent from coverage as not in coverage, not unreadable' do
+      covered = File.join(tmpdir, 'covered.rb')
+      [covered, test_file].each { |path| create_test_file(path, "x\n") }
+      %i[binread mtime].each do |method|
+        allow(File).to receive(method).and_call_original
+        allow(File).to receive(method).with(test_file).and_raise(Errno::EACCES.new('Permission denied'))
+      end
+      globbing = described_class.new(root: tmpdir, coverage_file: nil, file_globs: ['*.rb'],
+        timestamp: Time.at(100))
+
+      details = globbing.check_project_with_lines!({ covered => [1] }, coverage_files: [covered])
+      expect(details).to include(not_in_coverage_files: ['test.rb'], unreadable_files: [])
+    end
+
     it 'reports unreadable files with read errors in check_project_with_lines!' do
       create_test_file(test_file, "line1\nline2\n")
       coverage_map = { test_file => [1, 1] }
