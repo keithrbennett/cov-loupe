@@ -23,8 +23,8 @@ RSpec.describe CovLoupe::Formatters::SourceFormatter do
 
   before do
     allow(model).to receive(:raw_for).with(path).and_return(
-      'file'  => path,
-      'lines' => coverage_lines
+      'file'      => path,
+      'line_hits' => coverage_lines
     )
     allow(File).to receive(:file?).with(abs_path).and_return(true)
     allow(File).to receive(:readlines).with(abs_path, chomp: true, encoding: 'UTF-8:UTF-8')
@@ -118,7 +118,7 @@ RSpec.describe CovLoupe::Formatters::SourceFormatter do
         bad_coverage = [1, 1, bad_object, nil, nil]
 
         allow(model).to receive(:raw_for).with(path)
-          .and_return('file' => path, 'lines' => bad_coverage)
+          .and_return('file' => path, 'line_hits' => bad_coverage)
 
         result = formatter.format_source_for(model, path, mode: :full)
         expect(result).to eq('[source not available]')
@@ -164,7 +164,7 @@ RSpec.describe CovLoupe::Formatters::SourceFormatter do
           File.write(File.join(dir, 'foo.rb'), "x = 'café'\n")
           allow(model).to receive(:root).and_return(dir)
           allow(model).to receive(:raw_for).with('foo.rb')
-            .and_return('file' => 'foo.rb', 'lines' => [1])
+            .and_return('file' => 'foo.rb', 'line_hits' => [1])
           allow(File).to receive_messages(file?: true)
           # and_call_original drops the keywords on JRuby; pass them on explicitly.
           allow(File).to(receive(:readlines).and_wrap_original { |m, *args, **kw| m.call(*args, **kw) })
@@ -187,7 +187,7 @@ RSpec.describe CovLoupe::Formatters::SourceFormatter do
         File.binwrite(File.join(dir, 'latin1.rb'), "x = 'caf\xE9'\ny = 1\n")
         allow(model).to receive(:root).and_return(dir)
         allow(model).to receive(:raw_for).with('latin1.rb')
-          .and_return('file' => 'latin1.rb', 'lines' => [1, 0])
+          .and_return('file' => 'latin1.rb', 'line_hits' => [1, 0])
         allow(File).to receive_messages(file?: true)
         allow(File).to(receive(:readlines).and_wrap_original { |m, *args, **kw| m.call(*args, **kw) })
       end
@@ -357,8 +357,8 @@ RSpec.describe CovLoupe::Formatters::SourceFormatter do
       allow(CovLoupe).to receive(:logger).and_return(mock_logger)
       allow(mock_logger).to receive(:safe_log)
       allow(model).to receive(:raw_for).with(path).and_return(
-        'file'  => path,
-        'lines' => coverage_lines
+        'file'      => path,
+        'line_hits' => coverage_lines
       )
       allow(File).to receive(:file?).with(abs_path).and_return(true)
       allow(File).to receive(:readlines).with(abs_path, chomp: true, encoding: 'UTF-8:UTF-8')
@@ -374,7 +374,7 @@ RSpec.describe CovLoupe::Formatters::SourceFormatter do
       bad_coverage = [1, 1, bad_object, nil, nil]
 
       allow(model).to receive(:raw_for).with(path)
-        .and_return('file' => path, 'lines' => bad_coverage)
+        .and_return('file' => path, 'line_hits' => bad_coverage)
 
       formatter.format_source_for(model, path, mode: :full)
 
@@ -390,7 +390,7 @@ RSpec.describe CovLoupe::Formatters::SourceFormatter do
       bad_coverage = [1, 1, bad_object, nil, nil]
 
       allow(model).to receive(:raw_for).with(path)
-        .and_return('file' => path, 'lines' => bad_coverage)
+        .and_return('file' => path, 'line_hits' => bad_coverage)
 
       formatter.format_source_for(model, path, mode: :full)
 
@@ -406,7 +406,7 @@ RSpec.describe CovLoupe::Formatters::SourceFormatter do
       bad_coverage = [1, 1, bad_object, nil, nil]
 
       allow(model).to receive(:raw_for).with(path)
-        .and_return('file' => path, 'lines' => bad_coverage)
+        .and_return('file' => path, 'line_hits' => bad_coverage)
 
       result = formatter.format_source_for(model, path, mode: :full)
 

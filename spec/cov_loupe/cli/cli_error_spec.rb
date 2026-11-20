@@ -148,9 +148,9 @@ RSpec.describe CovLoupe::CoverageCLI do
         when 'summary'
           expect(out).to include('66.66%')
         when 'raw'
-          # Raw command with JSON format shows the lines array
+          # Raw command with JSON format shows the line_hits array
           data = JSON.parse(out)
-          expect(data['lines']).to eq([nil, nil, 1, 0, nil, 2])
+          expect(data['line_hits']).to eq([nil, nil, 1, 0, nil, 2])
         when 'uncovered'
           expect(out).to include('2')
         when 'detailed'

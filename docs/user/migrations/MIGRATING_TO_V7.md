@@ -55,6 +55,7 @@ Line metrics now have one flat shape in every payload, and keys that meant diffe
 |---|---|---|
 | `summary_for`, `uncovered_for`, `detailed_for` (CLI `summary`/`uncovered`/`detailed`, MCP `file_coverage_summary`/`file_uncovered_lines`/`file_coverage_detailed`) | `'summary' => { 'covered', 'total', 'percentage' }` | top-level `'covered'`, `'uncovered'`, `'total'`, `'percentage'` |
 | `uncovered_for` | `'uncovered' => [line numbers]` | `'uncovered_lines' => [line numbers]`; `'uncovered'` is now the count |
+| `raw_for` (CLI `raw`, MCP `file_coverage_raw`) | `'lines' => [hit counts]` | `'line_hits' => [hit counts]`, so `'lines'` always means `detailed_for`'s per-line objects; the CLI `raw` table's `Coverage` column is now `Hits` |
 | `project_totals` (CLI `totals`, MCP `project_coverage_totals`) | `'lines' => { 'covered', 'uncovered', 'total', 'percentage', 'included_files', 'excluded_files' }` | top-level `'covered'`, `'uncovered'`, `'total'`, `'percentage'`; use `file_counts.with_coverage.ok` and `.stale.total` for the file counts |
 | `project_totals` | `'files' => { ... }` | `'file_counts' => { ... }` (same contents) |
 | `project_totals` | `'tracking' => { 'enabled', 'globs' }` | `'file_globs' => [...]`; see [Tracked Globs Renamed to File Globs](#tracked-globs-renamed-to-file-globs) |
@@ -74,6 +75,7 @@ A `summary_for` result is now the file's `list` row plus `schema_version`.
 - Replace `result['summary']['percentage']` (and `covered`/`total`) with `result['percentage']`.
 - Replace `project_totals['lines']['percentage']` with `project_totals['percentage']`, for example in a `validate` predicate: `->(m) { m.project_totals['percentage'].to_f >= 85 }`.
 - Replace `uncovered_for(path)['uncovered']` with `['uncovered_lines']`.
+- Replace `raw_for(path)['lines']` with `['line_hits']` (CLI `raw` JSON and MCP `file_coverage_raw` too). The old key is not aliased: it now reads as `nil`. Scripts that match the CLI `raw` table should look for the `Hits` column header (was `Coverage`).
 - Replace `totals['files']` with `totals['file_counts']`, and `missing_from_coverage` with `not_in_coverage`.
 - Replace `list['missing_tracked_files']` with `list['not_in_coverage_files']`, and `CoverageDataProjectStaleError#missing_files` with `#not_in_coverage_files`. "Missing" was ambiguous: it could also mean a file in the coverage data that is gone from disk, which is reported as `deleted`. Scripts that match CLI text should look for "Files not in coverage data" (was "Missing tracked files" in `list` and "Missing files" in stale-project errors) and "Not in coverage data =" (was "Missing from coverage =" in `totals`).
 - Replace `lines['included_files']` with `file_counts['with_coverage']['ok']`, and `lines['excluded_files']` with `file_counts['with_coverage']['stale']['total']`.

@@ -30,7 +30,7 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
         expect(bar['percentage']).to be_within(0.01).of(33.33)
 
         raw = model.raw_for('lib/foo.rb')
-        expect(raw['lines']).to eq([nil, nil, 1, 0, nil, 2])
+        expect(raw['line_hits']).to eq([nil, nil, 1, 0, nil, 2])
 
         summary = model.summary_for('lib/foo.rb')
         expect(summary).to include('covered' => 2, 'total' => 3)
@@ -127,8 +127,8 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
           {
             tool:          CovLoupe::Tools::FileCoverageRawTool,
             args:          { path: 'lib/foo.rb', root: project_root, coverage_file: coverage_dir },
-            expected_keys: %w[file lines],
-            check:         ->(data) { expect(data['lines']).to eq([nil, nil, 1, 0, nil, 2]) },
+            expected_keys: %w[file line_hits],
+            check:         ->(data) { expect(data['line_hits']).to eq([nil, nil, 1, 0, nil, 2]) },
           },
           {
             tool:          CovLoupe::Tools::ProjectCoverageTool,

@@ -49,9 +49,9 @@ module CovLoupe
         },
         {
           tool:       FileCoverageRawTool,
-          label:      'Raw SimpleCov lines array',
-          use_when:   'User needs the raw SimpleCov `lines` array for a file.',
-          avoid_when: 'User expects human-friendly summaries or explanations.',
+          label:      'Raw SimpleCov line hit counts',
+          use_when:   "User needs SimpleCov's unprocessed hit-count array for a file.",
+          avoid_when: 'User wants per-line details or explanations (use file_coverage_detailed).',
           inputs:     ['path (required)', 'root/coverage_file/raise_on_stale (optional)'],
         },
         {

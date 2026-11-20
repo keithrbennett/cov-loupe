@@ -134,9 +134,9 @@ The schema version increments when a key is removed, renamed, or moved, or when 
 
 Line metrics have one shape everywhere: `covered`, `uncovered`, `total` (coverable lines), and `percentage`, as top-level keys of the file payloads (`summary_for`, `uncovered_for`, `detailed_for`), of each `list` row, and of `project_totals`. A `summary_for` payload is therefore a `list` row plus `schema_version`. `percentage` always means line coverage: covered lines divided by coverable lines, truncated (not rounded) to two decimals, or `nil` when there are no coverable lines.
 
-If branch or method coverage is added later, it will arrive as optional objects beside the line metrics, named with a `_coverage` suffix (for example `branch_coverage: { covered, uncovered, total, percentage }`), and will be absent, not `null`, when the coverage file has no such data. Per-item data keeps plain plural names (`branches` beside `lines`, `uncovered_branches` beside `uncovered_lines`). The existing line metric keys will keep their meaning.
+If branch or method coverage is added later, it will arrive as optional objects beside the line metrics, named with a `_coverage` suffix (for example `branch_coverage: { covered, uncovered, total, percentage }`), and will be absent, not `null`, when the coverage file has no such data. Per-item data keeps plain plural names for lists of per-item objects or numbers (`branches` beside `lines`, `uncovered_branches` beside `uncovered_lines`), and a `_hits` suffix for a positional array of hit counts (`branch_hits` beside `line_hits`). The existing line metric keys will keep their meaning.
 
-Some names recur at different levels with different values, and are unambiguous within their parent: a file's `covered` count versus `detailed_for` rows' `covered` boolean; `raw_for` `lines` (hit counts) versus `detailed_for` `lines` (row objects); the per-file `stale` string versus the `project_totals` `file_counts.with_coverage.stale` object; `total` coverable lines versus `file_counts` file totals; and `skipped_files` rows (objects) versus the other `*_files` path arrays.
+Some names recur at different levels with different values, and are unambiguous within their parent: a file's `covered` count versus `detailed_for` rows' `covered` boolean; the per-file `stale` string versus the `project_totals` `file_counts.with_coverage.stale` object; `total` coverable lines versus `file_counts` file totals; and `skipped_files` rows (objects) versus the other `*_files` path arrays.
 
 Staleness values share one vocabulary across payloads. A per-file `stale` value is one of `"ok"`, `"deleted"`, `"newer"`, `"length_mismatch"`, or `"unreadable"`. The non-`"ok"` values are also the `project_totals` `stale.by_type` keys and match the `list` arrays `deleted_files`, `newer_files`, `length_mismatch_files`, and `unreadable_files`. "Missing" refers only to absent coverage data (the `list` array `not_in_coverage_files`, counted as `not_in_coverage` in `project_totals`) or an absent coverage timestamp (`timestamp_status`).
 
@@ -239,7 +239,7 @@ detailed = model.detailed_for("lib/foo.rb")
 
 ### `raw_for(path, raise_on_stale: model default)`
 
-Returns raw SimpleCov lines array for a specific file. Lines SimpleCov marked `"ignored"` (excluded with `nocov` blocks or directive comments) are returned as `null` and, like other `null` lines, are not counted in covered or total lines or in percentages.
+Returns SimpleCov's raw per-line hit counts (its `lines` array) for a specific file, as `line_hits`. Lines SimpleCov marked `"ignored"` (excluded with `nocov` blocks or directive comments) are returned as `null` and, like other `null` lines, are not counted in covered or total lines or in percentages.
 
 **Parameters:**
 
@@ -253,7 +253,7 @@ Returns raw SimpleCov lines array for a specific file. Lines SimpleCov marked `"
 **Example:**
 ```ruby
 raw = model.raw_for("lib/foo.rb")
-# => { 'schema_version' => 1, 'file' => 'lib/foo.rb', 'lines' => [nil, 1, 0, 3, ...], 'stale' => 'ok' }
+# => { 'schema_version' => 1, 'file' => 'lib/foo.rb', 'line_hits' => [nil, 1, 0, 3, ...], 'stale' => 'ok' }
 ```
 
 ### `format_table(rows = nil, sort_order: :descending, raise_on_stale: model default, file_globs: model default, output_chars: :default)`
@@ -460,10 +460,10 @@ Returns `Hash`:
 
 ```ruby
 {
-  'schema_version' => Integer, # Currently 1; first top-level key
-  'file' => String,              # Project-relative path (absolute if outside the root)
-  'lines' => Array<Integer | nil>,  # SimpleCov lines array (nil = irrelevant, 0 = uncovered, >0 = hit count)
-  'stale' => String       # "ok", "deleted", "newer", "length_mismatch", or "unreadable"
+  'schema_version' => Integer,           # Currently 1; first top-level key
+  'file' => String,                      # Project-relative path (absolute if outside the root)
+  'line_hits' => Array<Integer | nil>,   # SimpleCov lines array (nil = not code or ignored, 0 = uncovered, >0 = hit count)
+  'stale' => String                      # "ok", "deleted", "newer", "length_mismatch", or "unreadable"
 }
 ```
 

@@ -67,7 +67,7 @@ module CovLoupe
         Subcommands:
           detailed, d <path>       Show per-line rows with hits/covered
           list, l                  Show files coverage (default: table, or use --format)
-          raw, r <path>            Show the SimpleCov 'lines' array
+          raw, r <path>            Show SimpleCov's per-line hit counts
           summary, s <path>        Show covered/total/% for a file
           totals, t                Show aggregated line totals and overall %
           uncovered, u <path>      Show uncovered lines and a summary

@@ -19,7 +19,7 @@ RSpec.describe CovLoupe::Commands::RawCommand do
       it 'prints the raw coverage lines for the requested file' do
         output = capture_command_output(command, %w[lib/foo.rb])
 
-        expect(output).to include('│', 'lib/foo.rb', 'Line', 'Coverage')
+        expect(output).to include('│', 'lib/foo.rb', 'Line', 'Hits')
       end
     end
 
@@ -28,16 +28,16 @@ RSpec.describe CovLoupe::Commands::RawCommand do
         mock_presenter(
           CovLoupe::Presenters::CoveragePayloadPresenter,
           payload:       {
-            'file'  => 'lib/perfect.rb',
-            'lines' => [1, 1, 1],
-            'stale' => 'ok',
+            'file'      => 'lib/perfect.rb',
+            'line_hits' => [1, 1, 1],
+            'stale'     => 'ok',
           },
           relative_path: 'lib/perfect.rb'
         )
 
         output = capture_command_output(command, ['lib/perfect.rb'])
 
-        expect(output).to include('│', '│    1 │        1 │')
+        expect(output).to include('│', '│    1 │    1 │')
         expect(output).not_to include('All lines covered!')
       end
     end
@@ -52,9 +52,9 @@ RSpec.describe CovLoupe::Commands::RawCommand do
 
         payload = JSON.parse(output)
         expect(payload['file']).to eq('lib/foo.rb')
-        expect(payload['lines']).to be_an(Array)
-        expect(payload['lines'][2]).to eq(1) # specific value
-        expect(payload['lines'][3]).to eq(0) # specific value
+        expect(payload['line_hits']).to be_an(Array)
+        expect(payload['line_hits'][2]).to eq(1) # specific value
+        expect(payload['line_hits'][3]).to eq(0) # specific value
         expect(payload['stale']).to eq('length_mismatch')
       end
     end
@@ -63,7 +63,7 @@ RSpec.describe CovLoupe::Commands::RawCommand do
       before { stub_staleness_check('length_mismatch') }
 
       # Use an array for expected_json_keys as we don't need exact value matching for these generic format tests
-      it_behaves_like 'a command with formatted output', %w[lib/foo.rb], %w[file lines stale]
+      it_behaves_like 'a command with formatted output', %w[lib/foo.rb], %w[file line_hits stale]
     end
   end
 end

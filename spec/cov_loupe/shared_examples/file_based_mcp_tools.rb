@@ -91,14 +91,14 @@ FILE_BASED_TOOL_CONFIGS = {
   raw:       {
     tool_class:             CovLoupe::Tools::FileCoverageRawTool,
     model_method:           :raw_for,
-    expected_keys:          %w[file lines stale],
+    expected_keys:          %w[file line_hits stale],
     description:            'raw coverage data',
     mock_data:              {
-      'file'  => '/abs/path/lib/foo.rb',
-      'lines' => [nil, 1, 0],
+      'file'      => '/abs/path/lib/foo.rb',
+      'line_hits' => [nil, 1, 0],
     },
     additional_validations: ->(data, _item) {
-      expect(data['lines']).to be_an(Array)
+      expect(data['line_hits']).to be_an(Array)
     },
   },
 

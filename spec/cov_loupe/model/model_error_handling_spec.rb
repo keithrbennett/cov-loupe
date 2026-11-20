@@ -336,7 +336,7 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
           when :summary_for
             expect(result).to include('covered', 'total', 'percentage')
           when :raw_for
-            expect(result['lines']).to eq([1, 0, 1, nil])
+            expect(result['line_hits']).to eq([1, 0, 1, nil])
           when :uncovered_for
             expect(result['uncovered_lines']).to be_an(Array)
             # summary counts non-nil elements only: [1, 0, 1, nil] => total: 3

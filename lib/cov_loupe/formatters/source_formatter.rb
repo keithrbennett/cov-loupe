@@ -33,7 +33,7 @@ module CovLoupe
         return '[source not available]' unless raw
 
         abs = PathUtils.expand_from_root(raw['file'], model.root)
-        lines_cov = raw['lines']
+        lines_cov = raw['line_hits']
         src = File.file?(abs) ? File.readlines(abs, chomp: true, encoding: SOURCE_ENCODING) : nil
         return '[source not available]' unless src
 
@@ -57,7 +57,7 @@ module CovLoupe
         return nil unless raw
 
         abs = PathUtils.expand_from_root(raw['file'], model.root)
-        lines_cov = raw['lines']
+        lines_cov = raw['line_hits']
         src = File.file?(abs) ? File.readlines(abs, chomp: true, encoding: SOURCE_ENCODING) : nil
         return nil unless src
 

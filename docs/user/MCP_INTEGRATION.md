@@ -369,7 +369,7 @@ cov-loupe exposes 8 MCP tools by default, and 9 when started with `--allow-code-
 |------|---------|----------------|
 | `file_coverage_summary` | File coverage summary | `path` |
 | `file_coverage_detailed` | Per-line coverage | `path` |
-| `file_coverage_raw` | Raw SimpleCov array | `path` |
+| `file_coverage_raw` | SimpleCov's unprocessed hit-count array | `path` |
 | `file_uncovered_lines` | List uncovered lines | `path` |
 | `project_coverage` | Project-wide coverage (JSON, table, YAML, etc.) | `sort_order`, `file_globs`, `format` |
 | `project_coverage_totals` | Aggregated line totals | `file_globs` |
@@ -535,9 +535,9 @@ file has no coverable lines (for example, a file containing only comments).
 {"schema_version": 1, "file": "...", "lines": [{"line": 1, "hits": 1, "covered": true}, ...], "covered": 12, "uncovered": 2, "total": 14, "percentage": 85.71, "stale": "ok"}
 ```
 
-**`file_coverage_raw`** - Raw SimpleCov lines array
+**`file_coverage_raw`** - Raw SimpleCov per-line hit counts
 ```json
-{"schema_version": 1, "file": "...", "lines": [1, 0, null, 5, 2, null, 1], "stale": "ok"}
+{"schema_version": 1, "file": "...", "line_hits": [1, 0, null, 5, 2, null, 1], "stale": "ok"}
 ```
 Lines SimpleCov marked `"ignored"` (excluded with `nocov` blocks or directive comments) are returned as `null` and, like other `null` lines, are not counted in covered or total lines or in percentages.
 

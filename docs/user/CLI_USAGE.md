@@ -341,7 +341,7 @@ Coverage: 6/7 lines (85.71%)
 
 ### `raw <path>`, `r <path>`
 
-Show the raw SimpleCov lines array.
+Show SimpleCov's raw per-line hit counts (its `lines` array) as `line_hits`.
 
 ```sh
 clp raw app/models/order.rb
@@ -357,30 +357,30 @@ clp -fJ r app/models/order.rb
 ```
 File: app/models/order.rb
 
-┌──────┬──────────┐
-│ Line │ Coverage │
-├──────┼──────────┤
-│    1 │      nil │
-│    2 │      nil │
-│    3 │      nil │
-│    4 │      nil │
-│    5 │      nil │
-│    6 │        1 │
-│    7 │        1 │
-│    8 │        1 │
-│    9 │      nil │
-│   10 │      nil │
-│   11 │        1 │
-│   12 │        1 │
-│   13 │      nil │
-│   14 │      nil │
-│   15 │        1 │
-│   16 │        0 │
-│   17 │      nil │
-│   18 │      nil │
-│   19 │      nil │
-│   20 │      nil │
-└──────┴──────────┘
+┌──────┬──────┐
+│ Line │ Hits │
+├──────┼──────┤
+│    1 │  nil │
+│    2 │  nil │
+│    3 │  nil │
+│    4 │  nil │
+│    5 │  nil │
+│    6 │    1 │
+│    7 │    1 │
+│    8 │    1 │
+│    9 │  nil │
+│   10 │  nil │
+│   11 │    1 │
+│   12 │    1 │
+│   13 │  nil │
+│   14 │  nil │
+│   15 │    1 │
+│   16 │    0 │
+│   17 │  nil │
+│   18 │  nil │
+│   19 │  nil │
+│   20 │  nil │
+└──────┴──────┘
 ```
 
 **Output (JSON format, condensed here; `-fJ` prints it fully indented):**
@@ -388,7 +388,7 @@ File: app/models/order.rb
 {
   "schema_version": 1,
   "file": "app/models/order.rb",
-  "lines": [null, null, null, null, null, 1, 1, 1, null, null, 1, 1, null, null, 1, 0, null, null, null, null],
+  "line_hits": [null, null, null, null, null, 1, 1, 1, null, null, 1, 1, null, null, 1, 0, null, null, null, null],
   "stale": "ok"
 }
 ```

@@ -65,8 +65,8 @@ RSpec.describe CovLoupe::CoverageCLI do
       { cmd: 'summary', args: ['lib/foo.rb'], key: 'percentage', check: ->(d) {
         d['covered'] == 2
       } },
-      { cmd: 'raw', args: ['lib/foo.rb'], key: 'lines', check: ->(d) {
-        d['lines'] == [nil, nil, 1, 0, nil, 2]
+      { cmd: 'raw', args: ['lib/foo.rb'], key: 'line_hits', check: ->(d) {
+        d['line_hits'] == [nil, nil, 1, 0, nil, 2]
       } },
       { cmd: 'uncovered', args: ['lib/foo.rb'], key: 'uncovered_lines', check: ->(d) {
         d['uncovered_lines'] == [4]
@@ -152,7 +152,7 @@ RSpec.describe CovLoupe::CoverageCLI do
     end
   end
 
-  it 'prints raw lines as text' do
+  it 'prints raw line hits as text' do
     output = run_cli('raw', 'lib/foo.rb')
     expect(output).to include('File: lib/foo.rb', '│') # Table format
   end

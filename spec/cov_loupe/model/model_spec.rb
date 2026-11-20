@@ -187,10 +187,10 @@ RSpec.describe CovLoupe::CoverageModel do
     end
   end
 
-  it 'returns a raw_for lines array that does not alias cached coverage data' do
-    original = model.raw_for('lib/foo.rb')['lines'].dup
-    model.raw_for('lib/foo.rb')['lines'].clear
-    expect(model.raw_for('lib/foo.rb')['lines']).to eq(original)
+  it 'returns a raw_for line_hits array that does not alias cached coverage data' do
+    original = model.raw_for('lib/foo.rb')['line_hits'].dup
+    model.raw_for('lib/foo.rb')['line_hits'].clear
+    expect(model.raw_for('lib/foo.rb')['line_hits']).to eq(original)
   end
 
   it 'puts schema_version first in every public coverage hash' do
@@ -543,11 +543,11 @@ RSpec.describe CovLoupe::CoverageModel do
       end
     end
 
-    it 'raw_for returns the lines and staleness' do
+    it 'raw_for returns the line hits and staleness' do
       result = model.raw_for('lib/foo.rb')
 
       expect(result).to eq('schema_version' => 1, 'file' => 'lib/foo.rb',
-        'lines' => [nil, nil, 1, 0, nil, 2], 'stale' => 'ok')
+        'line_hits' => [nil, nil, 1, 0, nil, 2], 'stale' => 'ok')
       expect_schema_valid('raw', result)
     end
 
@@ -969,8 +969,8 @@ end['covered']).to eq(3)
           # raw_for
           raw = model_with_deleted.raw_for('lib/deleted.rb')
           expect(raw).to include(
-            'file'  => 'lib/deleted.rb',
-            'lines' => [1, 0, 1]
+            'file'      => 'lib/deleted.rb',
+            'line_hits' => [1, 0, 1]
           )
 
           # uncovered_for

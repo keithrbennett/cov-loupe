@@ -115,11 +115,11 @@ module CovLoupe
       @volume_case_sensitive = PathUtils.volume_case_sensitive?(@root)
     end
 
-    # Returns { 'schema_version' => 1, 'file' => <relative_path>, 'lines' => [hits|nil,...],
+    # Returns { 'schema_version' => 1, 'file' => <relative_path>, 'line_hits' => [hits|nil,...],
     #           'stale' => <status> }
     def raw_for(path, raise_on_stale: @default_raise_on_stale)
       # file_payload relativizes into a deep copy, so callers can't mutate the cached lines
-      file_payload(path, raise_on_stale) { |lines| { 'lines' => lines } }
+      file_payload(path, raise_on_stale) { |lines| { 'line_hits' => lines } }
     end
 
     # Returns { 'schema_version' => 1, 'file' => <relative_path>, <line metrics>, 'stale' => <status> }

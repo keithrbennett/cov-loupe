@@ -72,6 +72,9 @@
     - `project_totals` replaces the `tracking` object with a `file_globs` array (see the
       `--file-globs` bullet above).
     - `uncovered_for` renames its line-number array `uncovered` to `uncovered_lines`.
+    - `raw_for` (CLI `raw`, MCP `file_coverage_raw`) renames its hit-count array `lines` to
+      `line_hits`, since `detailed_for` uses `lines` for per-line objects. The CLI `raw`
+      table's `Coverage` column is now `Hits`, as in `detailed`.
     - `project_totals` (CLI `totals`, MCP `project_coverage_totals`) replaces the `lines`
       object with top-level line metrics, drops `included_files` and `excluded_files` (use
       `file_counts.with_coverage.ok` and `.stale.total`), renames `files` to `file_counts`,

@@ -20,8 +20,8 @@ RSpec.describe CovLoupe::Presenters::CoveragePayloadPresenter do
       payload_method: :raw_for,
       model_method:   :raw_for,
       payload:        {
-        'file'  => 'lib/foo.rb',
-        'lines' => [1, 0, nil, 2],
+        'file'      => 'lib/foo.rb',
+        'line_hits' => [1, 0, nil, 2],
       },
       stale:          'length_mismatch',
     },

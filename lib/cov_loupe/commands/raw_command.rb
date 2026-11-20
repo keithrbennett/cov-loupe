@@ -20,8 +20,8 @@ module CovLoupe
           puts
 
           # Table format for raw coverage data
-          headers = %w[Line Coverage]
-          rows = data['lines'].each_with_index.map do |coverage, index|
+          headers = %w[Line Hits]
+          rows = data['line_hits'].each_with_index.map do |coverage, index|
             [
               (index + 1).to_s,
               coverage.nil? ? 'nil' : coverage.to_s,
