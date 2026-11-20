@@ -85,9 +85,9 @@ module CovLoupe
       type:        'string',
       description: 'Sort order for coverage percentages. ' \
                    "'#{DEFAULT_SORT_ORDER}' (default) lists highest coverage first. " \
-                   'Accepts: a[scending], d[escending].',
+                   "Accepts: #{OptionNormalizers.sort_order_choices(', ')}.",
       default:     DEFAULT_SORT_ORDER,
-      enum:        %w[ascending descending a d],
+      enum:        OptionNormalizers.sort_order_values,
     }.freeze
 
     PATH_PROPERTY = {

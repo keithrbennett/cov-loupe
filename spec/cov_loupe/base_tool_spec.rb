@@ -83,6 +83,18 @@ RSpec.describe CovLoupe::BaseTool do
     it_behaves_like 'friendly response and logged'
   end
 
+  describe 'SORT_ORDER_PROPERTY' do
+    it 'lists the sort orders in its enum and description' do
+      property = described_class::SORT_ORDER_PROPERTY
+
+      aggregate_failures do
+        expect(property[:enum]).to eq(%w[ascending descending a d])
+        expect(property[:description]).to include('Accepts: a[scending], d[escending].')
+        expect(property[:default]).to eq('descending')
+      end
+    end
+  end
+
   describe '.with_error_handling error mode resolution' do
     [
       ['an explicit error_mode', :off, :debug, :off],

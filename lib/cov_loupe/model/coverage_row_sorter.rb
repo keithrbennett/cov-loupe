@@ -11,8 +11,9 @@ module CovLoupe
   #
   # @api private
   module CoverageRowSorter
+    # The valid sort orders. The CLI and MCP derive their accepted values, abbreviations and
+    # help text from this list.
     SORT_ORDERS = %i[ascending descending].freeze
-    private_constant :SORT_ORDERS
 
     # @param rows [Array<Hash>] rows with 'file' and 'percentage' keys
     # @param sort_order [Symbol] :ascending or :descending
@@ -34,7 +35,8 @@ module CovLoupe
     module_function def validate_sort_order!(sort_order)
       return if SORT_ORDERS.include?(sort_order)
 
-      raise ArgumentError, "Invalid sort_order: #{sort_order.inspect}; expected :ascending or :descending"
+      raise ArgumentError,
+        "Invalid sort_order: #{sort_order.inspect}; expected #{SORT_ORDERS.map(&:inspect).join(' or ')}"
     end
   end
 end

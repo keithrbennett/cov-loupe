@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative '../model/coverage_row_sorter'
+
 module CovLoupe
   # Shared normalization logic for CLI and MCP tool options. Each normalizer raises
   # OptionParser::InvalidArgument on an invalid value, with only the value as its argument.
@@ -11,12 +13,26 @@ module CovLoupe
   #
   # @api private
   module OptionNormalizers
-    SORT_ORDER_MAP = {
-      'a'          => :ascending,
-      'ascending'  => :ascending,
-      'd'          => :descending,
-      'descending' => :descending,
-    }.freeze
+    # @param values [Array<Symbol>] the values to abbreviate
+    # @return [Hash{Symbol => String}] each value mapped to its first letter
+    # @raise [RuntimeError] if two values share a first letter, so one abbreviation would be
+    #   advertised for one value and resolve to another
+    module_function def first_letter_abbreviations(values)
+      abbreviations = values.to_h { |value| [value, value.to_s[0]] }
+      return abbreviations.freeze if abbreviations.values.uniq.size == abbreviations.size
+
+      raise "Values must have distinct first letters: #{values.inspect}"
+    end
+
+    # Each sort order's abbreviation. The CLI, the MCP schema and the help and error text all
+    # take the abbreviations from here.
+    SORT_ORDER_ABBREVIATIONS = first_letter_abbreviations(CoverageRowSorter::SORT_ORDERS)
+
+    # Each sort order is accepted by its abbreviation or its full name.
+    SORT_ORDER_MAP = SORT_ORDER_ABBREVIATIONS.each_with_object({}) do |(order, abbreviation), map|
+      map[abbreviation] = order
+      map[order.to_s] = order
+    end.freeze
 
     SOURCE_MODE_MAP = {
       'n'         => :none,
@@ -106,6 +122,20 @@ module CovLoupe
       'a'       => :ascii,
       'ascii'   => :ascii,
     }.freeze
+
+    # @param separator [String] the text between choices
+    # @return [String] the sort orders for help and error text, such as 'a[scending]|d[escending]'
+    module_function def sort_order_choices(separator = '|')
+      SORT_ORDER_ABBREVIATIONS.map do |order, abbreviation|
+        "#{abbreviation}[#{order.to_s.delete_prefix(abbreviation)}]"
+      end.join(separator)
+    end
+
+    # @return [Array<String>] the accepted sort order strings, full names first, then
+    #   abbreviations, such as %w[ascending descending a d]
+    module_function def sort_order_values
+      SORT_ORDER_ABBREVIATIONS.keys.map(&:to_s) + SORT_ORDER_ABBREVIATIONS.values
+    end
 
     module_function def normalize_sort_order(value)
       normalized = SORT_ORDER_MAP[value.to_s.downcase]

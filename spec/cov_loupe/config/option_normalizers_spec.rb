@@ -32,6 +32,23 @@ RSpec.describe CovLoupe::OptionNormalizers do
       ['invalid']
   end
 
+  describe 'sort order values derived from CoverageRowSorter::SORT_ORDERS' do
+    it 'builds the map, values and choice text from the sort orders' do
+      aggregate_failures do
+        expect(described_class::SORT_ORDER_MAP.values.uniq).to eq(CovLoupe::CoverageRowSorter::SORT_ORDERS)
+        expect(described_class::SORT_ORDER_MAP.keys).to match_array(described_class.sort_order_values)
+        expect(described_class.sort_order_values).to eq(%w[ascending descending a d])
+        expect(described_class.sort_order_choices).to eq('a[scending]|d[escending]')
+        expect(described_class.sort_order_choices(', ')).to eq('a[scending], d[escending]')
+      end
+    end
+
+    it 'rejects values that share a first letter' do
+      expect { described_class.first_letter_abbreviations(%i[all ascending descending]) }
+        .to raise_error(RuntimeError, /distinct first letters/)
+    end
+  end
+
   describe '.normalize_source_mode' do
     it_behaves_like 'a normalizer', :normalize_source_mode,
       [
@@ -157,6 +174,7 @@ RSpec.describe CovLoupe::OptionNormalizers do
 
   describe 'constant maps' do
     %i[
+      SORT_ORDER_ABBREVIATIONS
       SORT_ORDER_MAP
       SOURCE_MODE_MAP
       ERROR_MODE_MAP
