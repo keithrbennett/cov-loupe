@@ -157,6 +157,13 @@ RSpec.describe CovLoupe::CoverageModel do
         )
       )
       expect_schema_valid('list', result)
+
+      totals = model.project_totals
+      expect(totals['file_counts']['without_coverage']).to eq(
+        'total' => 1, 'by_type' => { 'not_in_coverage' => nil, 'unreadable' => 0, 'skipped' => 1 }
+      )
+      expect(totals['file_counts']['total']).to eq(totals['file_counts']['with_coverage']['total'] + 1)
+      expect_schema_valid('totals', totals)
     end
 
     it 'reports newer_files' do
@@ -353,6 +360,7 @@ RSpec.describe CovLoupe::CoverageModel do
     expect(globbed_totals['file_counts']).to have_key('without_coverage')
     expect(stale_list['files'].first['stale']).to eq('length_mismatch')
     expect(stale_totals['percentage']).to be_nil
+    expect(stale_totals['file_counts']['without_coverage']['by_type']['not_in_coverage']).to be_nil
     expect_schema_valid('list', globbed_list)
     expect_schema_valid('totals', globbed_totals)
     expect_schema_valid('list', stale_list)

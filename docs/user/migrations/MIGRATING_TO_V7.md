@@ -28,6 +28,7 @@ This document describes the breaking changes introduced in version 7.0.0.
 - [Options Can Follow the Subcommand](#options-can-follow-the-subcommand)
 - [Library `sort_order` Must Be `:ascending` or `:descending`](#library-sort_order-must-be-ascending-or-descending)
 - [Tracked Globs Renamed to File Globs](#tracked-globs-renamed-to-file-globs)
+- [Totals Always Include `without_coverage`](#totals-always-include-without_coverage)
 
 ---
 
@@ -522,3 +523,18 @@ model.list(sort_order: sort_order)
 What the option does is unchanged: it limits project results to matching files, and reports matching files that have no coverage data.
 
 **Migration:** replace `--tracked-globs` with `--file-globs` in scripts, `COV_LOUPE_OPTS` and MCP server arguments (`-g` is unchanged); replace the `tracked_globs:` keyword and MCP argument with `file_globs`; and replace `totals['tracking']['enabled']` with `totals['file_globs'].any?` and `totals['tracking']['globs']` with `totals['file_globs']`. The old CLI option is now an `invalid option` usage error, the old keyword raises `ArgumentError` (`unknown keyword`), and the old MCP argument is rejected as a "disallowed additional property".
+
+## Totals Always Include `without_coverage`
+
+In 6.x, `project_totals` (CLI `totals`, MCP `project_coverage_totals`) included `files.without_coverage` only when tracked globs were set. Without them, a coverage row skipped for invalid data, such as a file with only branch coverage, appeared nowhere in the totals, and `files.total` left it out. (7.0 renames `files` to `file_counts` and `missing_from_coverage` to `not_in_coverage`; see [Payload Keys Reshaped](#payload-keys-reshaped).)
+
+In 7.0, `without_coverage` is always present, so skipped rows are always counted, and `file_counts.total` includes them. (`unreadable` there counts only unreadable files with no coverage row; one with a row is counted as stale under `with_coverage`, as before.) Its `not_in_coverage` count needs file globs: without them there is no list of files that should have coverage, so the count is `null` (`nil` in Ruby) rather than a `0` that would claim a check that did not happen. `without_coverage.total` adds up the counts that are not `null`. The CLI `totals` text always shows the "Without coverage" lines, with `Not in coverage data = n/a (no file globs)` when no globs are set.
+
+| Payload | 6.x, no tracked globs | 7.0, no file globs |
+|---|---|---|
+| `files.without_coverage` (7.0: `file_counts.without_coverage`) | absent | `{ "total": N, "by_type": { "not_in_coverage": null, "unreadable": N, "skipped": N } }` |
+| `files.total` (7.0: `file_counts.total`) | files with coverage rows only | files with coverage rows, plus skipped ones and unreadable ones with no row |
+
+With file globs set, `without_coverage` was already present, so the payload changes only by the renames above and one fix: 6.x counted every unreadable file in `without_coverage.by_type.unreadable`, even one already counted elsewhere: as stale under `with_coverage` if it had a coverage row, or as `skipped` if its row was skipped. Such a file was counted twice, inflating `files.total`; 7.0 counts it only once.
+
+**Migration:** code that tested whether `without_coverage` is present to tell if globs were set should check `file_globs.any?` instead. Code that adds up `by_type` values should skip `null` (for example `by_type.values.compact.sum` in Ruby), or read `without_coverage.total`.

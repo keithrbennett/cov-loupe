@@ -115,6 +115,8 @@ RSpec.describe CovLoupe::Scripts::ReleaseSmokeTest do
     ['totals', '[1]', 'totals reads coverage data'],
     ['totals', '{"file_counts":{"total":7,"with_coverage":{"ok":6}}}', 'totals reads coverage data'],
     ['totals', '{"file_counts":{"total":0,"with_coverage":{"ok":0}}}', 'totals reads coverage data'],
+    ['totals', '{"file_counts":{"total":8,"with_coverage":{"ok":7},"without_coverage":{"total":1}}}',
+      'totals reads coverage data'],
     ['-m', '"text"', 'MCP server answers a help call'],
     ['-m', '{"jsonrpc":"2.0","id":1,"result":{"isError":true}}', 'MCP server answers a help call'],
     ['-m', nil, 'MCP server answers a help call'],

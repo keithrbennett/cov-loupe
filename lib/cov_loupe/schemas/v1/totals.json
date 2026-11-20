@@ -13,11 +13,11 @@
     "file_globs": {"type": "array", "items": {"type": "string"}, "description": "Active file glob patterns; empty when none were given."},
     "file_counts": {
       "type": "object",
-      "required": ["total", "with_coverage"],
+      "required": ["total", "with_coverage", "without_coverage"],
       "properties": {
         "total": {"type": "integer", "minimum": 0, "description": "Files with or without coverage."},
         "with_coverage": {"$ref": "#/$defs/with_coverage"},
-        "without_coverage": {"$ref": "#/$defs/without_coverage", "description": "Present only when file globs are set."}
+        "without_coverage": {"$ref": "#/$defs/without_coverage"}
       }
     },
     "timestamp_status": {"type": "string", "enum": ["ok", "missing"], "description": "Whether the coverage timestamp is available."},
@@ -53,13 +53,13 @@
       "type": "object",
       "required": ["total", "by_type"],
       "properties": {
-        "total": {"type": "integer", "minimum": 0, "description": "Files matching the file globs that have no usable coverage."},
+        "total": {"type": "integer", "minimum": 0, "description": "Files without usable coverage data: the sum of the by_type counts that are not null."},
         "by_type": {
           "type": "object",
           "required": ["not_in_coverage", "unreadable", "skipped"],
           "properties": {
-            "not_in_coverage": {"type": "integer", "minimum": 0, "description": "Files matching the file globs that are absent from coverage data."},
-            "unreadable": {"type": "integer", "minimum": 0, "description": "Files matching the file globs that could not be read."},
+            "not_in_coverage": {"type": ["integer", "null"], "minimum": 0, "description": "Files matching the file globs that are absent from coverage data; null when no file globs are set, since there is then no list of files to check."},
+            "unreadable": {"type": "integer", "minimum": 0, "description": "Files that could not be read and are not already counted as a coverage row or a skipped file."},
             "skipped": {"type": "integer", "minimum": 0, "description": "Files skipped because coverage data was invalid."}
           }
         }

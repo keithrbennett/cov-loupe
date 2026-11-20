@@ -76,12 +76,11 @@ module CovLoupe
       end
 
       private def format_without_coverage_lines(without_coverage)
-        return [nil, nil] unless without_coverage
-
         without_by_type = without_coverage['by_type']
+        not_in_coverage = without_by_type[StaleStatus::NOT_IN_COVERAGE]
         without_coverage_line = "  Without coverage: #{without_coverage['total']} total"
         without_breakdown_line = '    Not in coverage data = ' \
-          "#{without_by_type[StaleStatus::NOT_IN_COVERAGE]}, " \
+          "#{not_in_coverage.nil? ? 'n/a (no file globs)' : not_in_coverage}, " \
           "unreadable = #{without_by_type[StaleStatus::UNREADABLE]}, " \
           "skipped (errors) = #{without_by_type[StaleStatus::SKIPPED]}"
         [without_coverage_line, without_breakdown_line]

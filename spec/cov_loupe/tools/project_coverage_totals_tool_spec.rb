@@ -94,8 +94,8 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTotalsTool do
           'total' => 0, 'covered' => 0, 'uncovered' => 0, 'percentage' => 0,
           'file_globs' => [],
           'file_counts' => {
-            'total'         => 0,
-            'with_coverage' => {
+            'total'            => 0,
+            'with_coverage'    => {
               'total' => 0,
               'ok'    => 0,
               'stale' => {
@@ -107,6 +107,10 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTotalsTool do
                   'unreadable'      => 0,
                 },
               },
+            },
+            'without_coverage' => {
+              'total'   => 0,
+              'by_type' => { 'not_in_coverage' => nil, 'unreadable' => 0, 'skipped' => 0 },
             },
           },
           'timestamp_status' => status

@@ -421,6 +421,8 @@ Lines (7 ok files): 47 total, 38 covered, 9 uncovered (80.85%)
 File breakdown:
   With coverage: 7 total, 7 ok, 0 stale
     Stale: deleted = 0, newer than coverage = 0, line mismatch = 0, unreadable = 0
+  Without coverage: 0 total
+    Not in coverage data = n/a (no file globs), unreadable = 0, skipped (errors) = 0
 ```
 
 **With `--file-globs` enabled (`clp -g "lib/**/*.rb,app/**/*.rb" t`):**
@@ -461,6 +463,14 @@ File breakdown:
           "unreadable": 0
         }
       }
+    },
+    "without_coverage": {
+      "total": 0,
+      "by_type": {
+        "not_in_coverage": null,
+        "unreadable": 0,
+        "skipped": 0
+      }
     }
   },
   "timestamp_status": "ok"
@@ -472,7 +482,7 @@ File breakdown:
 - The line metrics (`covered`, `uncovered`, `total`, `percentage`) count fresh coverage entries only; `file_counts.with_coverage.ok` is how many files they include, and `file_counts.with_coverage.stale.total` how many stale files they exclude.
 - `with_coverage.stale.by_type` keys match the per-file `stale` values: `deleted`, `newer`,
   `length_mismatch`, `unreadable`.
-- `without_coverage` is only present when file globs are set.
+- `without_coverage` counts files without usable coverage data: `skipped` (coverage rows with invalid data), `unreadable` (unreadable files with no coverage row; one with a row is counted as stale under `with_coverage`), and `not_in_coverage` (files matching the file globs that the coverage data does not list). `not_in_coverage` is `null` when no file globs are set, since there is then no list of files to check, and `without_coverage.total` adds up the counts that are not `null`.
 - Respects `-g` / `--file-globs` when you only want to aggregate a subset of files.
 - Totals exclude stale files (`"deleted"`, `"newer"`, `"length_mismatch"`, `"unreadable"`) so the aggregate reflects only fresh coverage data.
 - Honors `-S true` / `--raise-on-stale true` to raise if coverage data is out of date.
@@ -654,7 +664,7 @@ clp -s uncovered -C false uncovered lib/api/client.rb
 
 ### `-S, --raise-on-stale BOOLEAN`
 
-Raise error if coverage is stale. Project queries (`list`, `totals`, the default report, and `validate` predicates that call `model.list` or `model.project_totals`) also raise if a file matching the file globs is not in coverage data or a coverage row is skipped because its data is invalid. Requires an explicit boolean value. Default is `false` (report staleness and skipped rows instead of raising; `totals` counts skipped rows only when file globs are set, and otherwise leaves them out of its output, logging each only as an INFO line).
+Raise error if coverage is stale. Project queries (`list`, `totals`, the default report, and `validate` predicates that call `model.list` or `model.project_totals`) also raise if a file matching the file globs is not in coverage data or a coverage row is skipped because its data is invalid. Requires an explicit boolean value. Default is `false` (report staleness and skipped rows instead of raising; `totals` counts skipped rows under `without_coverage`).
 
 ```sh
 # Enable raising an error if coverage is stale
@@ -739,7 +749,7 @@ clp -g "lib/**/*.rb,app/**/*.rb" -fJ list > coverage-report.json
 2. Exist in the filesystem
 3. Are NOT in the coverage file
 
-Without globs, this array is empty (no expectations = no violations).
+Without globs, this array is empty (no expectations = no violations), while the totals `without_coverage.by_type.not_in_coverage` count is `null`, since no check was made.
 
 ### `-l, --log-file PATH`
 

@@ -106,7 +106,8 @@ never loaded) is not a staleness failure; it is a finding for Step 2.
    code SimpleCov is meant to measure (from its `cover` (formerly `track_files`) and filter
    settings; typically `lib/**/*.rb`, or `app/**/*.rb,lib/**/*.rb` for Rails).
    Passing `file_globs` makes cov-loupe report matching files that have
-   **no** coverage data at all (`not_in_coverage_files`, `without_coverage`);
+   **no** coverage data at all (`not_in_coverage_files` in the list,
+   `without_coverage.by_type.not_in_coverage` in totals);
    these are files never loaded by the suite and are often the biggest real
    gap.
 2. Get the full file list as JSON, sorted ascending (worst first).

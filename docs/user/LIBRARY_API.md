@@ -290,7 +290,7 @@ Returns aggregated coverage totals across all files.
 
 **Parameters:**
 
-- `file_globs` (Array<String> or String, optional): Count only files matching these patterns, and count matching files that have no coverage data under `without_coverage`. Defaults to model setting.
+- `file_globs` (Array<String> or String, optional): Count only files matching these patterns, and count matching files that have no coverage data under `without_coverage` (`not_in_coverage` is `nil` without them). Defaults to model setting.
 - `raise_on_stale` (Boolean, optional): Whether to raise error if project is stale. Defaults to model setting.
 
 **Returns:** `Hash` - See [project_totals return type](#project_totals)
@@ -302,7 +302,11 @@ totals = model.project_totals
 #      'schema_version' => 1,
 #      'covered' => 100, 'uncovered' => 23, 'total' => 123, 'percentage' => 81.3,
 #      'file_globs' => [],
-#      'file_counts' => { 'total' => 4, 'with_coverage' => { 'total' => 4, 'ok' => 4, 'stale' => { ... } } },
+#      'file_counts' => {
+#        'total' => 4,
+#        'with_coverage' => { 'total' => 4, 'ok' => 4, 'stale' => { ... } },
+#        'without_coverage' => { 'total' => 0, 'by_type' => { 'not_in_coverage' => nil, 'unreadable' => 0, 'skipped' => 0 } }
+#      },
 #      'timestamp_status' => 'ok'
 #    }
 
@@ -312,7 +316,7 @@ lib_totals = model.project_totals(file_globs: 'lib/**/*.rb')
 
 When `raise_on_stale: true` is set, the method raises on stale coverage instead of returning totals. Otherwise, totals exclude stale files (with staleness indicators `"deleted"`, `"newer"`, `"length_mismatch"`, `"unreadable"`) from line counts and report stale breakdowns under `file_counts['with_coverage']['stale']`. `file_counts['with_coverage']['ok']` is the number of files the line counts include.
 
-Note: The `without_coverage` hash is present only when `file_globs` is non-empty.
+Note: `without_coverage.by_type.not_in_coverage` is `nil` when `file_globs` is empty, since there is then no list of files to check; the other counts are always integers.
 
 ### `staleness_for(path)`
 
@@ -476,7 +480,7 @@ Returns `Hash`:
   'percentage' => Float | nil,     # Overall line coverage percent; nil if no measurable lines
   'file_globs' => Array<String>,   # Active file globs (empty when none were given)
   'file_counts' => {
-    'total' => Integer,          # Total number of files (with + without coverage; without only when file globs are set)
+    'total' => Integer,          # Total number of files (with + without coverage)
     'with_coverage' => {
       'total' => Integer,        # Files with coverage entries (skipped rows excluded)
       'ok' => Integer,           # Fresh coverage entries (the files the line metrics include)
@@ -491,9 +495,9 @@ Returns `Hash`:
       }
     },
     'without_coverage' => {
-      'total' => Integer,        # Files matching the file globs that are not in coverage data, unreadable, or skipped
+      'total' => Integer,        # Files without usable coverage data: sum of the non-nil by_type counts
       'by_type' => {
-        'not_in_coverage' => Integer, # Count of the list's not_in_coverage_files
+        'not_in_coverage' => Integer | nil, # Count of the list's not_in_coverage_files; nil without file_globs
         'unreadable' => Integer,
         'skipped' => Integer
       }
@@ -503,7 +507,7 @@ Returns `Hash`:
 }
 ```
 
-Note: The `without_coverage` hash is present only when `file_globs` is non-empty.
+Note: `without_coverage.by_type.not_in_coverage` is `nil` when `file_globs` is empty, since there is then no list of files to check; the other counts are always integers.
 
 ## Error Handling
 

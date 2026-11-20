@@ -10,8 +10,8 @@ module CovLoupe
   # CoverageModel list result whose rows carry absolute paths.
   #
   # Stale files are excluded from line counts but still counted in the file breakdown.
-  # When file_globs are provided, files without coverage data (not in coverage data,
-  # skipped, or unreadable) are also reported.
+  # Files without usable coverage data (skipped, unreadable and, when file_globs are
+  # provided, not in coverage data) are always reported.
   #
   # @api private
   class ProjectTotalsBuilder
@@ -29,7 +29,7 @@ module CovLoupe
     #   files, then 'file_globs', 'file_counts', and 'timestamp_status' entries
     def build(list_result, file_globs:)
       patterns = GlobUtils.normalize_patterns(file_globs)
-      without = without_coverage(list_result) if patterns.any?
+      without = without_coverage(list_result, globs_set: patterns.any?)
       fresh_rows = list_result['files'].reject { |row| StaleStatus.stale?(row['stale']) }
 
       CoverageCalculator.aggregate(fresh_rows).merge(
@@ -41,10 +41,10 @@ module CovLoupe
 
     private def file_counts(with, without)
       {
-        'total'            => with['total'] + (without&.fetch('total') || 0),
+        'total'            => with['total'] + without['total'],
         'with_coverage'    => with,
         'without_coverage' => without,
-      }.compact
+      }
     end
 
     private def with_coverage(rows)
@@ -58,13 +58,15 @@ module CovLoupe
       }
     end
 
-    private def without_coverage(list_result)
+    # Without file globs there is no list of files that should have coverage, so whether any
+    # are not in the coverage data is unknown: not_in_coverage is nil, not 0.
+    private def without_coverage(list_result, globs_set:)
       by_type = {
-        StaleStatus::NOT_IN_COVERAGE => Array(list_result['not_in_coverage_files']).length,
+        StaleStatus::NOT_IN_COVERAGE => (Array(list_result['not_in_coverage_files']).length if globs_set),
         StaleStatus::UNREADABLE      => unreadable_without_row(list_result),
         StaleStatus::SKIPPED         => Array(list_result['skipped_files']).length,
       }
-      { 'total' => by_type.values.sum, 'by_type' => by_type }
+      { 'total' => by_type.values.compact.sum, 'by_type' => by_type }
     end
 
     # Unreadable files that already appear as a coverage row (counted under with_coverage)

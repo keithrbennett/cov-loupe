@@ -36,6 +36,13 @@
   were given). The CLI `totals` text says `File globs:`. The old names are removed, not
   aliased. `--f` is now ambiguous (`--format` or `--file-globs`); use `-f` or `--format`. See
   [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#tracked-globs-renamed-to-file-globs).
+- **Totals always include `without_coverage`.** Without file globs, `totals` (and
+  `project_totals`, MCP `project_coverage_totals`) left out coverage rows skipped for invalid
+  data, such as a file with only branch coverage, and `file_counts.total` did not count
+  them. `file_counts.without_coverage` is now always present, so skipped rows are always
+  counted, and `file_counts.total` includes them. Its `not_in_coverage` count is `null`
+  when no file globs are set, since there is then no list of files to check. See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#totals-always-include-without_coverage).
 - **The library rejects an invalid `sort_order`.** `CoverageModel#list` and
   `CoverageModel#format_table` sorted ascending for any `sort_order` other than the symbol
   `:descending`, including a misspelling, `nil`, and the string `'descending'`. They now

@@ -48,12 +48,20 @@ RSpec.describe CovLoupe::ProjectTotalsBuilder do
     )
   end
 
-  it 'omits the without-coverage bucket when no file globs are set' do
+  it 'counts skipped and unreadable files, with not_in_coverage null, when no file globs are set' do
+    # list_result still lists a file not in coverage: without globs it must be ignored, not counted.
     result = builder.build(list_result, file_globs: [])
 
     aggregate_failures do
       expect(result['file_globs']).to eq([])
-      expect(result['file_counts']).to eq('total' => 3, 'with_coverage' => with_coverage)
+      expect(result['file_counts']).to eq(
+        'total'            => 5,
+        'with_coverage'    => with_coverage,
+        'without_coverage' => {
+          'total'   => 2,
+          'by_type' => { 'not_in_coverage' => nil, 'unreadable' => 1, 'skipped' => 1 },
+        }
+      )
     end
   end
 end

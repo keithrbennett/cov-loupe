@@ -22,13 +22,12 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
         expect(output).to include('File globs:', 'Lines', '50.00%')
       end
 
-      it 'omits without coverage breakdown when no file globs are set' do
-        # Set no file globs
+      it 'shows the without coverage breakdown, not in coverage data as n/a, with no file globs' do
         cli_context.config.file_globs = []
         output = capture_command_output(command, [])
 
-        expect(output).to include('File globs: (none)')
-        expect(output).not_to include('Without coverage')
+        expect(output).to include('File globs: (none)', 'Without coverage: 0 total',
+          'Not in coverage data = n/a (no file globs), unreadable = 0, skipped (errors) = 0')
       end
 
       it 'shows file breakdown with stale and without coverage details' do
@@ -91,9 +90,13 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
           payload:          {
             'total' => 0, 'covered' => 0, 'uncovered' => 0, 'percentage' => nil,
             'file_globs' => [],
-            'file_counts' => { 'total'         => 0,
-                               'with_coverage' => { 'total' => 0, 'ok' => 0,
-                                              'stale' => { 'total' => 0, 'by_type' => {} } } }
+            'file_counts' => { 'total'            => 0,
+                               'with_coverage'    => { 'total' => 0, 'ok' => 0,
+                                                       'stale' => { 'total' => 0, 'by_type' => {} } },
+                               'without_coverage' => {
+                                 'total'   => 0,
+                                 'by_type' => { 'not_in_coverage' => nil, 'unreadable' => 0, 'skipped' => 0 },
+                               } }
           },
           timestamp_status: 'ok'
         )
@@ -101,7 +104,7 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
 
         output = capture_command_output(command, [])
 
-        expect(output).to include('n/a')
+        expect(output).to include('0 uncovered (n/a)')
       end
     end
 
@@ -119,8 +122,8 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
           'total' => 0, 'covered' => 0, 'uncovered' => 0, 'percentage' => 0,
           'file_globs' => [],
           'file_counts' => {
-            'total'         => 0,
-            'with_coverage' => {
+            'total'            => 0,
+            'with_coverage'    => {
               'total' => 0,
               'ok'    => 0,
               'stale' => {
@@ -132,6 +135,10 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
                   'unreadable'      => 0,
                 },
               },
+            },
+            'without_coverage' => {
+              'total'   => 0,
+              'by_type' => { 'not_in_coverage' => nil, 'unreadable' => 0, 'skipped' => 0 },
             },
           }
         }

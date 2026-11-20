@@ -154,6 +154,9 @@ module CovLoupe
         return 'totals output has no file_counts' unless counts.is_a?(Hash)
 
         # Every demo file must be packaged and fresh: a missing file shows as stale (deleted).
+        without = counts.dig('without_coverage', 'total').to_i
+        return "#{without} demo files have no usable coverage data" if without.positive?
+
         ok = counts.dig('with_coverage', 'ok')
         "#{ok.inspect} of #{counts['total']} demo files are fresh" unless counts['total'].to_i.positive? &&
           ok == counts['total']
