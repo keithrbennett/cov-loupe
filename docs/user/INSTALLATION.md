@@ -53,7 +53,7 @@ The gem uses a single require path:
 require "cov_loupe"
 ```
 
-The executable is `cov-loupe` (with hyphen). If your shell reports `command not found`, either the gem's executable directory is not on your `PATH` (check with `gem environment`; version managers such as rbenv may need `rbenv rehash`), or the gem was installed with Bundler only, in which case run `bundle exec cov-loupe`.
+The executable is `cov-loupe` (with hyphen). If your shell reports `command not found`, either the gem's executable directory is not on your `PATH` (check with `gem environment`; if your Ruby version manager uses shims, see its docs for refreshing them after a gem install), or the gem was installed with Bundler only, in which case run `bundle exec cov-loupe`.
 
 ## Verification
 
@@ -83,17 +83,19 @@ cov-loupe
 
 ### macOS
 
-The system Ruby that ships with macOS is older than the required 3.3, so install a current Ruby with a version manager or Homebrew. Recommended: use rbenv or asdf, not rvm (see note below).
-
-**Note:** RVM may not work in sandboxed environments (e.g., AI coding assistants) because it requires `/bin/ps`, which sandbox restrictions often block. Use rbenv or chruby instead for sandboxed environments.
+The system Ruby that ships with macOS is older than the required 3.3. Use the Ruby your project's tests run under if it is 3.3 or later; otherwise install a current Ruby with Homebrew or a Ruby version manager (see [Installing Ruby](https://www.ruby-lang.org/en/documentation/installation/)).
 
 ### Linux
 
-Works with any Ruby 3.3 or later. If your distribution's packaged Ruby is older, install a current Ruby with a version manager such as rbenv or asdf.
+Works with any Ruby 3.3 or later. If your distribution's packaged Ruby is older, see [Installing Ruby](https://www.ruby-lang.org/en/documentation/installation/).
 
 ### Windows
 
 Should work with Ruby installed via RubyInstaller. PATH configuration may differ.
+
+## RVM
+
+If you use RVM, see Troubleshooting for [sandboxed environments](TROUBLESHOOTING.md#running-the-test-suite-with-rvm-codex-macos), [MCP clients that cannot find cov-loupe](TROUBLESHOOTING.md#path-issues-with-version-managers), and [`Resolving dependencies...` before MCP startup](TROUBLESHOOTING.md#rubygems-wrapper-prints-to-stdout-before-mcp-startup).
 
 ## Upgrading
 

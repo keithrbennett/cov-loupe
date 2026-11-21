@@ -299,7 +299,7 @@ See [CLI Usage Guide](docs/user/CLI_USAGE.md) for complete details.
 - **"cannot load such file -- mcp"** - The `mcp` gem is not installed for the Ruby you are running. Reinstall cov-loupe (`gem install cov-loupe`) or run `bundle install`.
 - **"Could not find coverage.json"** - Ensure SimpleCov is configured in your test suite, then run tests to generate coverage. See the [Configuring the Coverage File](#configuring-the-coverage-file) section for more details.
 - **MCP server won't connect** - Check PATH and Ruby version in [MCP Troubleshooting](docs/user/MCP_INTEGRATION.md#troubleshooting)
-- **RVM in sandboxed environments (macOS)** - RVM requires `/bin/ps` which may be blocked by sandbox restrictions. Use rbenv or chruby instead.
+- **RVM in sandboxed environments (macOS)** - RVM requires `/bin/ps`, which sandboxes may block. See [Troubleshooting](docs/user/TROUBLESHOOTING.md#running-the-test-suite-with-rvm-codex-macos).
 
 For more detailed help, see the full [Troubleshooting Guide](docs/user/TROUBLESHOOTING.md).
 

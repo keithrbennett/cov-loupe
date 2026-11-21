@@ -205,6 +205,7 @@ Check the following when you see an `Unable to use log target` message:
 
    # Update your MCP client config to use this path
    ```
+   See [Path Issues with Version Managers](#path-issues-with-version-managers) for which path to use, including under RVM.
 
 6. **Use CLI as fallback:**
 
@@ -309,22 +310,21 @@ Use either a wrapper that exports `NOEXEC_DISABLE=1` or normal `cov-loupe -m mcp
 
 **Cause:** MCP client doesn't have your shell environment (PATH, RVM, etc.).
 
-**Solution:** Use absolute paths in MCP configuration:
+**Solution:** Put a full absolute path to cov-loupe in your MCP configuration, not a `~` path, which may not expand. The path must start a Ruby that has cov-loupe installed. Which Ruby that is depends on your version manager:
+
+- **Shim-based managers** (such as rbenv): `which cov-loupe` prints a shim. A shim picks the Ruby from the client's working directory, so cov-loupe must be installed for the Ruby each project selects.
+- **RVM:** use the wrapper RVM generates, which sets up that Ruby's environment. A bare path to the executable needs RVM's `GEM_HOME` and `GEM_PATH`, which an MCP client does not set.
+
+Check the path again after you upgrade or remove a Ruby.
 
 ```bash
-# For rbenv/asdf - get the full absolute path
+# Shim-based managers
 which cov-loupe
 # Example output: /home/username/.rbenv/shims/cov-loupe
-# Use this exact path in your MCP config
 
-# For RVM, use the wrapper RVM generates when the gem is installed; it sets up
-# the Ruby environment. Print its absolute path (for the current Ruby):
+# RVM: the wrapper for the current Ruby
 rvm wrapper show cov-loupe
 # Example output: /home/username/.rvm/gems/ruby-3.3.8/wrappers/cov-loupe
-
-# Use the FULL path in MCP config (NOT the ~ version):
-# Good: /home/username/.rvm/gems/ruby-3.3.8/wrappers/cov-loupe
-# Bad:  ~/.rvm/gems/ruby-3.3.8/wrappers/cov-loupe  (~ may not expand)
 ```
 
 ## Diagnostic Commands
