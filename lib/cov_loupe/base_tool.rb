@@ -52,14 +52,6 @@ module CovLoupe
           'coverage data or a coverage row is skipped. ' \
           "Defaults to the server's --raise-on-stale (false unless set).",
       },
-      error_mode:     {
-        type:        'string',
-        description: "Error handling mode: 'off' (no logging; errors are still returned), " \
-                     "'log' (log errors), " \
-                     "'debug' (verbose with backtraces). Defaults to the server's --error-mode " \
-                     "('log' unless set).",
-        enum:        %w[off log debug],
-      },
       output_chars:   {
         type:        'string',
         description: "Output character mode: 'default' (UTF-8 encoding uses fancy, else ascii), " \
@@ -70,8 +62,6 @@ module CovLoupe
         enum:        %w[default fancy ascii d f a],
       },
     }.freeze
-
-    ERROR_MODE_PROPERTY = COMMON_PROPERTIES[:error_mode].freeze
 
     FILE_GLOBS_PROPERTY = {
       type:        'array',
@@ -125,15 +115,15 @@ module CovLoupe
     # Yields to the block and rescues any error, delegating to handle_mcp_error.
     # This eliminates duplicate rescue blocks across all tools.
     #
+    # Errors are handled in the server's configured error mode (--error-mode).
+    #
     # @param tool_name [String] Name of the tool for error reporting
-    # @param error_mode [Symbol, String, nil] Error handling mode (:off, :log, :debug);
-    #   nil falls back to the server's configured error mode
     # @param server_context [AppContext, nil] Server context with app_config
-    def self.with_error_handling(tool_name, error_mode:, server_context: nil)
+    def self.with_error_handling(tool_name, server_context: nil)
       CovLoupe.logger.raise_if_initialization_failed!
       yield
     rescue => e
-      error_mode ||= server_context&.app_config&.error_mode || :log
+      error_mode = server_context&.app_config&.error_mode || :log
       handle_mcp_error(e, tool_name, error_mode: error_mode)
     end
 
@@ -144,23 +134,10 @@ module CovLoupe
     #
     # @param error [Exception] The error to handle
     # @param tool_name [String] Name of the tool for error reporting
-    # @param error_mode [Symbol, String] Error handling mode
+    # @param error_mode [Symbol] Error handling mode (:off, :log, :debug), from the server config
     # @return [MCP::Tool::Response] Error response (isError: true)
     def self.handle_mcp_error(error, tool_name, error_mode: :log)
-      # Safely normalize error_mode to a symbol, defaulting to :log for invalid inputs
-      # This prevents crashes when MCP clients send invalid types (null, numbers, objects, etc.)
-      safe_mode = case error_mode
-                  when Symbol then error_mode
-                  when String then error_mode.to_sym
-                  else :log
-      end
-
-      # Validate against VALID_ERROR_MODES and fallback to :log if invalid
-      # This prevents ArgumentError when handling errors with invalid error_mode values
-      safe_mode = :log unless ErrorHandler::VALID_ERROR_MODES.include?(safe_mode)
-
-      # Create error handler with the specified mode
-      error_handler = ErrorHandlerFactory.for_mcp_server(error_mode: safe_mode)
+      error_handler = ErrorHandlerFactory.for_mcp_server(error_mode: error_mode)
 
       # Normalize to a CovLoupe::Error so we can handle/log uniformly
       normalized = error.is_a?(CovLoupe::Error) \
@@ -306,17 +283,16 @@ module CovLoupe
 
     # Runs a file-based tool request by deriving the payload method from the tool class.
     # @param path [String] File path to analyze
-    # @param error_mode [String, nil] Error handling mode (nil uses the server's)
     # @param output_chars [String, Symbol, nil] Output character mode
     # @param server_context [AppContext] Server context
     # @param model_option_overrides [Hash] Tool call parameters that override model defaults
     # @return [MCP::Tool::Response] JSON response
-    def self.call_with_file_payload(path:, error_mode:, server_context:, output_chars: nil,
+    def self.call_with_file_payload(path:, server_context:, output_chars: nil,
       **model_option_overrides)
       tool_name = name.split('::').last
       output_chars_sym = resolve_output_chars(output_chars, server_context)
 
-      with_error_handling(tool_name, error_mode: error_mode, server_context: server_context) do
+      with_error_handling(tool_name, server_context: server_context) do
         model, config = create_configured_model(server_context: server_context,
           **model_option_overrides)
         presenter = Presenters::CoveragePayloadPresenter.new(

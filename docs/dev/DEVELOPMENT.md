@@ -71,10 +71,10 @@ module CovLoupe
       input_schema(**input_schema_def)
 
       def self.call(path:, root: nil, coverage_file: nil, raise_on_stale: nil,
-        error_mode: nil, output_chars: nil, server_context:)
+        output_chars: nil, server_context:)
         output_chars_sym = resolve_output_chars(output_chars, server_context)
-        # A nil error_mode falls back to the server's --error-mode.
-        with_error_handling('MyTool', error_mode: error_mode, server_context: server_context) do
+        # Errors are handled in the server's --error-mode.
+        with_error_handling('MyTool', server_context: server_context) do
           model = create_model(
             server_context: server_context,
             root: root,

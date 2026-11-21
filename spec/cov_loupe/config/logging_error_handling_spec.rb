@@ -233,7 +233,7 @@ RSpec.describe CovLoupe::Logger do
       ).with(logger: logger)
 
       response = CovLoupe.with_context(context) do
-        CovLoupe::BaseTool.with_error_handling('test_tool', error_mode: :log) do
+        CovLoupe::BaseTool.with_error_handling('test_tool') do
           raise 'business error'
         end
       end

@@ -21,7 +21,8 @@ RSpec.describe CovLoupe::Tools::HelpTool do
       'project_coverage', 'project_coverage_totals', 'version')
     expect(data['tools']).to all(include('use_when', 'avoid_when', 'inputs'))
     expect(data['tools'].map { |entry| entry['inputs'] })
-      .to all(include('error_mode/output_chars (optional)'))
+      .to all(include('output_chars (optional)'))
+    expect(data['tools'].flat_map { |entry| entry['inputs'] }.join).not_to include('error_mode')
   end
 
   [false, true].each do |allow|

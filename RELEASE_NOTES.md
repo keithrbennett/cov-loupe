@@ -7,6 +7,10 @@
 
 ### Breaking
 
+- **MCP tools no longer take `error_mode`.** How much the server logs about a failed call is
+  now set only by the server's `--error-mode`; a call that passes `error_mode` fails as a
+  disallowed additional property. `format` and `output_chars` are unchanged. See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#mcp-tools-no-longer-take-error_mode).
 - **Options can come after the subcommand.** `cov-loupe list --format json` and
   `cov-loupe summary lib/foo.rb -f json` now work, so an agent permission rule such as
   `Bash(cov-loupe list:*)` can allow a subcommand with any options. The options that select
@@ -382,7 +386,7 @@
   every error the CLI reports except invalid options, whatever the log target. `CoverageCLI` and custom error handlers are internal as
   of 7.0; see [Public API and Versioning](docs/user/LIBRARY_API.md#public-api-and-versioning).
 - **Fixed `uncovered` and `detailed` crashing on files with no coverable lines.** Their text output raised `TypeError` when a file's coverage percentage was `nil` (for example, a file containing only comments); it now shows `n/a`, as `summary` and `totals` already did. `detailed` and `uncovered` print `No coverable lines.` for such files. The `project_validate` tool description and the code examples in the README, docs and `examples/` now handle `nil` percentages, and the Library API docs, the MCP integration docs and the descriptions of every MCP tool that returns a `percentage` show it as nullable. In the `validate` predicate examples, per-file checks skip files with no coverable lines, and project-total checks treat a `nil` total (nothing measurable, including when every file is stale) as failing.
-- **Fixed the MCP server ignoring `--error-mode`.** Tools always used `log` unless a call passed `error_mode`, so starting the server with `--error-mode off` still logged errors and `--error-mode debug` logged no backtraces. A call without `error_mode` now uses the server's mode, and the tools' input schemas no longer advertise `log` as the default. Likewise, they no longer advertise static defaults for `root`, `raise_on_stale`, and `output_chars`, which come from the server's `--root`, `--raise-on-stale`, and `--output-chars`.
+- **Fixed the MCP server ignoring `--error-mode`.** Tools always used `log` unless a call passed `error_mode`, so starting the server with `--error-mode off` still logged errors and `--error-mode debug` logged no backtraces. Tools now use the server's mode (and no longer take `error_mode`; see Breaking). Likewise, they no longer advertise static defaults for `root`, `raise_on_stale`, and `output_chars`, which come from the server's `--root`, `--raise-on-stale`, and `--output-chars`.
 - **Fixed misaligned source output without color.** With `-C false` (or when stdout is not a terminal), `--source` rows were one column to the right of the header.
 - **The gem now includes `docs/QUICKSTART.md`**, which the README links to.
 - **Fixed the stale-coverage hint in `list` warnings.** The "files excluded" and "rows skipped" warnings told you to run with `--raise-on-stale`, which fails without a value; they now say `--raise-on-stale true`.
@@ -390,7 +394,7 @@
 - **Fixed the ambiguous `--coverage-file` hint.** When a relative path resolved under both the current directory and the project root, the error suggested `./`, which does not disambiguate; it now suggests an absolute path. The duplicate-path error also gained a missing space between its sentences.
 - **`totals` now warns about missing coverage timestamps in every format.** With `-f json` and the other structured formats it reported `timestamp_status: "missing"` but omitted the stderr warning that `list` prints; it now prints it, as the table format already did.
 - **Valid-value hints for every enumerated option.** An invalid `--format`/`-f` or `--output-chars`/`-O` value, or an invalid `-e` (short for `--error-mode`), now gets the "Valid values for ..." hint that `--source`, `--sort-order`, and `--error-mode` already got.
-- **The MCP `help` and `version` tools describe the common arguments.** `help` now lists `error_mode`/`output_chars` among every tool's inputs, and the `version` tool no longer says it takes no arguments.
+- **The MCP `help` and `version` tools describe the common arguments.** `help` now lists `output_chars` among every tool's inputs, and the `version` tool no longer says it takes no arguments.
 - **Fixed `CoverageReporter.report` with an absolute `SimpleCov.coverage_dir`.** The default coverage location joined the directory onto `SimpleCov.root` even when it was absolute; it is now expanded against the root, as SimpleCov does. An explicit `root:` now also sets where that directory is looked for; it used to be looked for under `SimpleCov.root`.
 - **Documentation links work in the installed gem and on GitHub.** Links now point to real files (`README.md`, `LICENSE`, `examples/*/README.md`, ...) rather than to the documentation site's wrapper pages, and the gem now includes the developer docs (`docs/dev/`) they link to. The gem no longer includes `AGENTS.md` or `CLAUDE.md`, which are instructions for agents working in the repository.
 - **Fixed duplicate files not in coverage data.** A file matched by more than one `--file-globs` pattern (for example `lib/**/*.rb` and `lib/*.rb`) was listed twice in `not_in_coverage_files` and counted twice in the `totals` `not_in_coverage` count; it is now listed and counted once.

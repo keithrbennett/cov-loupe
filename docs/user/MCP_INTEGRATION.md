@@ -374,8 +374,8 @@ cov-loupe exposes 8 MCP tools by default, and 9 when started with `--allow-code-
 | `project_coverage` | Project-wide coverage (JSON, table, YAML, etc.) | `sort_order`, `file_globs`, `format` |
 | `project_coverage_totals` | Aggregated line totals | `file_globs` |
 | `project_validate` | Validate coverage policies (only with `--allow-code-predicates`) | `code` or `file` |
-| `help` | Tool discovery | (only the common `error_mode` and `output_chars`) |
-| `version` | Version information | (only the common `error_mode` and `output_chars`) |
+| `help` | Tool discovery | (only the common `output_chars`) |
+| `version` | Version information | (only the common `output_chars`) |
 
 ### JSON Response Format
 
@@ -475,7 +475,7 @@ When the MCP server starts, you can pass CLI options via the startup command. Th
 | `-c`, `--coverage-file` | ✅ Default | `coverage_file` | Request param overrides; CLI sets default |
 | `-S`, `--raise-on-stale BOOLEAN` | ✅ Default | `raise_on_stale` | Request param overrides; CLI sets default (`false` or `true`) |
 | `-g`, `--file-globs` | ✅ Default | `file_globs` | Request param overrides; CLI sets default (array). Accepted per request only by `project_coverage` and `project_coverage_totals`; a server-level `-g` is also the default for the model `project_validate` predicates receive |
-| `--error-mode` | ✅ Yes | `error_mode` | Sets server-wide error handling; can override per tool |
+| `--error-mode` | ✅ Yes | N/A | Sets server-wide error handling (cannot override per tool) |
 | `-l`, `--log-file` | ✅ Yes | N/A | Sets server log location (cannot override per tool) |
 | `-O`, `--output-chars` | ✅ Default | `output_chars` | Request param overrides; CLI sets default (`default`, `fancy`, or `ascii`) |
 | `-f`, `--format` | ❌ No | N/A | CLI-only presentation flag (not used by MCP) |
@@ -488,7 +488,7 @@ When the MCP server starts, you can pass CLI options via the startup command. Th
 
 **Key Takeaways:**
 
-- **Server-level options** (`--error-mode`, `--log-file`, `--allow-code-predicates`): Set once when server starts, apply to all tool calls (a call's `error_mode` overrides `--error-mode` for that call)
+- **Server-level options** (`--error-mode`, `--log-file`, `--allow-code-predicates`): Set once when server starts, apply to all tool calls
 - **Tool-level options** (`root`, `coverage_file`, `raise_on_stale`, `file_globs`, `output_chars`): CLI args provide defaults; per-tool JSON params override when provided (`file_globs` as a request parameter only on the two project coverage tools; a server-level `-g` also applies to `project_validate` predicates' `model.list` and `model.project_totals`)
 - **CLI-only options** (`--format`, `--source`, etc.): Not applicable to MCP mode
 
@@ -500,13 +500,12 @@ CLI-only presentation flags (`-f/--format`, `-s/--source`, `-n/--context-lines`,
 
 ### Common Parameters
 
-The file tools and the project tools (`project_coverage`, `project_coverage_totals`, `project_validate`) accept these parameters in the JSON request (`help` and `version` take only `error_mode` and `output_chars`):
+The file tools and the project tools (`project_coverage`, `project_coverage_totals`, `project_validate`) accept these parameters in the JSON request (`help` and `version` take only `output_chars`):
 
 - `path` (file tools only, where it is required) - File path (relative or absolute); the project tools reject it
 - `root` (optional) - Project root directory (default: the server's `--root`, which is `.` unless set)
 - `coverage_file` (optional) - Path to the `coverage.json` file, or to a directory containing one. See [Configuring the Coverage File](../../README.md#configuring-the-coverage-file) for details.
 - `raise_on_stale` (optional) - Raise error on staleness (and, for the project tools, on a file matching the file globs that is not in coverage data or a skipped coverage row): `false` or `true` (default: the server's `--raise-on-stale`, which is `false` unless set)
-- `error_mode` (optional) - Error handling: `"off"`, `"log"`, `"debug"` (defaults to the server's `--error-mode`, which is `log` unless set)
 - `output_chars` (optional) - Output character mode: `"default"`, `"fancy"`, or `"ascii"` (short codes: `d`, `f`, `a`). `"ascii"` draws table borders with ASCII characters and escapes non-ASCII as `\uXXXX` in successful JSON payloads. Data is never changed, so error results and non-JSON formats can contain non-ASCII characters. See [`--output-chars`](CLI_USAGE.md#output-chars).
 
 `project_coverage` and `project_coverage_totals` also accept `file_globs` (an array of glob patterns). `project_validate` does not accept it, but its predicates' model uses a server-level `-g` as its default. `project_coverage` additionally accepts `sort_order` (`"ascending"` or `"descending"`; short codes: `a`, `d`) and `format` (`"json"`, `"pretty_json"`, `"yaml"`, `"amazing_print"`, `"inspect"`, `"puts"`, `"pretty_print"`, `"table"`; short codes: `j`, `J`, `y`, `a`, `i`, `p`, `P`, `t`).
@@ -570,7 +569,7 @@ The server registers `project_validate` only when started with `--allow-code-pre
 
 It is off by default because the predicate is Ruby written by the MCP client, usually an LLM, and the user may never see it. The server runs as its own process, outside any shell sandbox or command-approval prompts the client applies, so a client steered by prompt injection could run arbitrary code with your privileges. Enable it only if you accept that risk, for example on a large project where a predicate's single Boolean is far smaller than the `project_coverage` output an LLM would otherwise have to read. Clients that have a shell can run `cov-loupe validate` instead, which goes through the client's usual command controls.
 
-- Parameters: Either `code` (Ruby string) OR `file` (path to Ruby file; a relative path is resolved against `root`, unlike the CLI's `validate`, which resolves it against the current directory), plus optional `root`, `coverage_file`, `raise_on_stale`, `error_mode`, `output_chars`. A predicate must not print to stdout, which carries the MCP protocol; use `$stderr`
+- Parameters: Either `code` (Ruby string) OR `file` (path to Ruby file; a relative path is resolved against `root`, unlike the CLI's `validate`, which resolves it against the current directory), plus optional `root`, `coverage_file`, `raise_on_stale`, `output_chars`. A predicate must not print to stdout, which carries the MCP protocol; use `$stderr`
 - Returns: `{"schema_version": 1, "result": Boolean}`. The predicate's return value is coerced by truthiness (as in the CLI exit code), so `result` is always a Boolean; a false result still has `isError: false` because the tool call succeeded.
 - Execution errors (syntax error in the predicate, missing predicate file, etc.) return `isError: true` with the friendly error message in `content`
 - Security Warning: Predicates execute as arbitrary Ruby code with full system privileges. Only use predicate files from trusted sources.

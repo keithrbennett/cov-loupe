@@ -53,12 +53,11 @@ The cov-loupe MCP server isn't available. Use the cov-loupe CLI instead:
 | `sort_order` | `project_coverage` | `-o`, `--sort-order` |
 | `format` | `project_coverage` | `-f`, `--format` (use `-fJ` or `-fj` for JSON) |
 | `code` / `file` | `project_validate` | `validate -i <code>` / `validate <file>` |
-| `error_mode` | All tools | `-e`, `--error-mode` |
 | `output_chars` | All tools | `-O`, `--output-chars` |
 
-Arguments the MCP server takes at startup rather than per call, such as `--log-file` and
-`--allow-code-predicates`, have no per-call CLI counterpart; pass `-l`/`--log-file` on the
-command line instead.
+Arguments the MCP server takes at startup rather than per call, such as `-e`/`--error-mode`,
+`--log-file`, and `--allow-code-predicates`, have no per-call MCP counterpart; with the CLI,
+pass `-e`/`--error-mode` or `-l`/`--log-file` on the command line instead.
 
 ## Differences Between the Interfaces
 

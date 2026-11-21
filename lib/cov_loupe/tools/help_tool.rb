@@ -17,13 +17,12 @@ module CovLoupe
         type:                 'object',
         additionalProperties: false,
         properties:           {
-          error_mode:   ERROR_MODE_PROPERTY,
           output_chars: COMMON_PROPERTIES[:output_chars],
         }
       )
 
       # Every tool accepts these, so they are added to each entry's inputs.
-      COMMON_INPUTS = ['error_mode/output_chars (optional)'].freeze
+      COMMON_INPUTS = ['output_chars (optional)'].freeze
 
       TOOL_GUIDE = [
         {
@@ -87,11 +86,10 @@ module CovLoupe
       ].freeze
 
       class << self
-        def call(error_mode: nil, output_chars: nil, server_context:, **_unused)
+        def call(output_chars: nil, server_context:, **_unused)
           # Resolve (and validate) output_chars for formatting the successful result
           output_chars_sym = resolve_output_chars(output_chars, server_context)
-          with_error_handling('HelpTool', error_mode: error_mode,
-            server_context: server_context) do
+          with_error_handling('HelpTool', server_context: server_context) do
             entries = TOOL_GUIDE
               .select { |guide| guide[:tool].available_in?(server_context) }
               .map { |guide| format_entry(guide) }

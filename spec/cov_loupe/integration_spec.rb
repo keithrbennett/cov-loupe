@@ -455,6 +455,9 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
             name:      'project_coverage_totals',
             arguments: { root: project_root, coverage_file: coverage_dir, tracked_globs: ['lib/*.rb'] },
           },
+          # removed error_mode argument (the server's --error-mode applies)
+          { id: 208, name: 'version', arguments: { error_mode: 'debug' } },
+          { id: 209, name: 'file_coverage_summary', arguments: { path: 'lib/foo.rb', error_mode: 'off' } },
         ].each do |request|
           response = jsonrpc_tool_call(request[:id], request[:name], request[:arguments])
           expect_jsonrpc_tool_error(response, request[:id])

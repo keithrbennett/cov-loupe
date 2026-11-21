@@ -28,7 +28,7 @@ RSpec.describe CovLoupe::Tools do
         allow(model).to receive(method).and_raise(StandardError, error_msg)
       end
 
-      default_args = { error_mode: 'log', server_context: server_context }
+      default_args = { server_context: server_context }
       response = tool_class.call(**default_args, **call_args)
 
       expect_mcp_tool_error(response)
@@ -42,7 +42,7 @@ RSpec.describe CovLoupe::Tools do
     message = "boom in lib/caf\u00e9\u2192.rb"
     allow(CovLoupe::CoverageModel).to receive(:new).and_raise(StandardError, message)
 
-    response = CovLoupe::Tools::FileCoverageSummaryTool.call(path: 'lib/x.rb', error_mode: 'off',
+    response = CovLoupe::Tools::FileCoverageSummaryTool.call(path: 'lib/x.rb',
       output_chars: 'ascii', server_context: server_context)
 
     expect_mcp_tool_error(response)
@@ -55,7 +55,7 @@ RSpec.describe CovLoupe::Tools do
 
   describe CovLoupe::Tools::HelpTool do
     it 'returns tool information without errors' do
-      response = described_class.call(error_mode: 'log', server_context: server_context)
+      response = described_class.call(server_context: server_context)
 
       expect(response).to be_a(MCP::Tool::Response)
       expect(response).not_to be_error

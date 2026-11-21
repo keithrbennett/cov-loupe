@@ -21,16 +21,6 @@ RSpec.describe CovLoupe::Tools::VersionTool do
       expect(item['text']).to eq("CovLoupe version: #{CovLoupe::VERSION}")
     end
 
-    context 'when error_mode is specified' do
-      %w[off log debug].each do |mode|
-        it "accepts error_mode '#{mode}' without affecting output" do
-          response = described_class.call(error_mode: mode, server_context: server_context)
-          item = response.content.first
-          expect(item['text']).to eq("CovLoupe version: #{CovLoupe::VERSION}")
-        end
-      end
-    end
-
     context 'when additional arguments are passed' do
       it 'ignores additional arguments gracefully' do
         response = described_class.call(
@@ -50,7 +40,7 @@ RSpec.describe CovLoupe::Tools::VersionTool do
         allow(CovLoupe).to receive(:const_missing).with(:VERSION)
           .and_raise(StandardError, 'Version access error')
 
-        response = described_class.call(error_mode: 'log', server_context: server_context)
+        response = described_class.call(server_context: server_context)
 
         expect_mcp_tool_error(response)
         item = response.content.first
@@ -66,7 +56,7 @@ RSpec.describe CovLoupe::Tools::VersionTool do
         # Replace VERSION with our mock object
         stub_const('CovLoupe::VERSION', version_obj)
 
-        response = described_class.call(error_mode: 'log', server_context: server_context)
+        response = described_class.call(server_context: server_context)
 
         expect_mcp_tool_error(response)
         item = response.content.first
@@ -74,14 +64,17 @@ RSpec.describe CovLoupe::Tools::VersionTool do
         expect(item['text']).to include('Error')
       end
 
-      it 'respects error_mode setting when handling errors' do
+      it "respects the server's error mode when handling errors" do
         # Force an error using a mock VERSION that raises an exception
         version_obj = double('VERSION')
         allow(version_obj).to receive(:to_s).and_raise(StandardError, 'Version error')
         stub_const('CovLoupe::VERSION', version_obj)
 
         %w[off debug].each do |mode|
-          response = described_class.call(error_mode: mode, server_context: server_context)
+          expect(CovLoupe::ErrorHandlerFactory).to receive(:for_mcp_server)
+            .with(error_mode: mode.to_sym).and_call_original
+          context = mcp_server_context(app_config: CovLoupe::AppConfig.new(error_mode: mode.to_sym))
+          response = described_class.call(server_context: context)
 
           expect_mcp_tool_error(response)
           item = response.content.first

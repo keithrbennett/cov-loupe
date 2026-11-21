@@ -13,7 +13,7 @@ module CovLoupe
       description <<~DESC
         Use this when you want aggregated coverage counts for the entire project.
         It reports covered/total lines, uncovered line counts, and the overall percentage (covered lines / coverable lines across included, non-stale files).
-        Inputs: optional project root, alternate coverage file path, raise_on_stale flag, file_globs, error mode, and output_chars.
+        Inputs: optional project root, alternate coverage file path, raise_on_stale flag, file_globs, and output_chars.
         Output: JSON {"schema_version":Integer,"covered","uncovered","total","percentage","file_globs":[string,...],"file_counts":{"total","with_coverage","without_coverage"},"timestamp_status":"ok"|"missing","warnings"?:[string,...]}.
         The line metrics ("covered", "uncovered", "total", "percentage") count only fresh files; file_counts.with_coverage.ok is how many.
         without_coverage.by_type.not_in_coverage is null when no file_globs are set; "warnings" only when timestamp_status is "missing" or most files were not found under the project root.
@@ -31,10 +31,9 @@ module CovLoupe
 
       class << self
         def call(root: nil, coverage_file: nil, raise_on_stale: nil,
-          file_globs: nil, error_mode: nil, output_chars: nil, server_context:)
+          file_globs: nil, output_chars: nil, server_context:)
           output_chars_sym = resolve_output_chars(output_chars, server_context)
-          with_error_handling('ProjectCoverageTotalsTool', error_mode: error_mode,
-            server_context: server_context) do
+          with_error_handling('ProjectCoverageTotalsTool', server_context: server_context) do
             model, config = create_configured_model(
               server_context: server_context,
               root:           root,

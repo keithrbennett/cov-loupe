@@ -12,17 +12,16 @@ module CovLoupe
       description <<~DESC
         Use this when you need the raw SimpleCov per-line hit counts (its `lines` array) for a file as stored on disk ("ignored" markers become null).
         Do not use this for human-friendly explanations; choose file_coverage_detailed or file_coverage_summary instead.
-        Inputs: file path (required) plus optional root/coverage_file/raise_on_stale/error_mode/output_chars.
+        Inputs: file path (required) plus optional root/coverage_file/raise_on_stale/output_chars.
         Output: JSON object with "schema_version" (Integer), "file", "line_hits" (SimpleCov's `lines` array of integers/nulls, one per source line as recorded), and "stale": "ok" | "deleted" | "newer" | "length_mismatch" | "unreadable".
         Example: "Fetch the raw coverage array for spec/support/foo_helper.rb".
       DESC
       input_schema(**input_schema_def)
       class << self
         def call(path:, root: nil, coverage_file: nil, raise_on_stale: nil,
-          error_mode: nil, output_chars: nil, server_context:)
+          output_chars: nil, server_context:)
           call_with_file_payload(
             path:           path,
-            error_mode:     error_mode,
             output_chars:   output_chars,
             server_context: server_context,
             root:           root,

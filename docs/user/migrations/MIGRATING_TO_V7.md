@@ -30,6 +30,7 @@ This document describes the breaking changes introduced in version 7.0.0.
 - [Tracked Globs Renamed to File Globs](#tracked-globs-renamed-to-file-globs)
 - [Totals Always Include `without_coverage`](#totals-always-include-without_coverage)
 - [Totals Drop `without_coverage.by_type.unreadable`](#totals-drop-without_coverageby_typeunreadable)
+- [MCP Tools No Longer Take `error_mode`](#mcp-tools-no-longer-take-error_mode)
 
 ---
 
@@ -550,3 +551,9 @@ In 6.x, when tracked globs were set, `project_totals` counted every unreadable f
 7.0 removes `without_coverage.by_type.unreadable` and counts each unreadable file once, as stale or skipped. The CLI `totals` text drops `unreadable = N` from the "Without coverage" line.
 
 **Migration:** code that reads `without_coverage.by_type.unreadable` should read `with_coverage.stale.by_type.unreadable` instead, plus `without_coverage.by_type.skipped` if it should also count files whose coverage data is invalid (skipped files are not distinguished by cause).
+
+## MCP Tools No Longer Take `error_mode`
+
+In 6.x, every MCP tool accepted an `error_mode` argument (`off`, `log`, or `debug`) that set how much the server logged about a failed call. How much the server writes to its own log is the server operator's choice, not the client's, so 7.0 removes the argument. Every call uses the server's `--error-mode` (`log` unless set). A call that still passes `error_mode` fails with `isError: true`, reporting it as a disallowed additional property. Error responses to the client are unchanged; the mode only ever affected server-side logging.
+
+**Migration:** remove `error_mode` from MCP tool calls. To change the logging, start the server with `--error-mode off|log|debug` (for example in the MCP client's server configuration).
