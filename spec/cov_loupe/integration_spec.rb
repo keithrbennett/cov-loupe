@@ -192,7 +192,7 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
 
       expect do
         model.summary_for('lib/nonexistent.rb')
-      end.to raise_error(CovLoupe::FileError, /No coverage entry found/)
+      end.to raise_error(CovLoupe::CoverageEntryNotFoundError, /No coverage entry found/)
     end
 
     it 'handles invalid coverage_file paths gracefully' do
@@ -205,7 +205,7 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
       _output, error, status = run_fixture_cli_with_status('summary', 'lib/nonexistent.rb')
 
       expect(status).to eq(1)
-      expect(error).to include('File error:', 'No coverage entry found')
+      expect(error).to include('Coverage data error:', 'No coverage entry found')
     end
   end
 
@@ -401,6 +401,8 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
           }
         )
         expect_jsonrpc_tool_error(file_error_resp, 8)
+        expect(file_error_resp.dig('result', 'content', 0, 'text'))
+          .to include('Coverage data error:', 'No coverage entry found')
 
         project_scope_error_resp = jsonrpc_tool_call(
           11,

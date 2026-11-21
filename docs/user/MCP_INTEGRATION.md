@@ -438,7 +438,7 @@ JSON-RPC `error` responses are reserved for protocol- and dispatch-level failure
     "content": [
       {
         "type": "text",
-        "text": "Error: File error: No coverage entry found for /path/to/project/nonexistent.rb"
+        "text": "Error: Coverage data error: No coverage entry found for /path/to/project/nonexistent.rb"
       }
     ]
   }

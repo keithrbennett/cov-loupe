@@ -64,7 +64,7 @@ module CovLoupe
         lines = lines_for(abs_path, entry)
         lines_by_path[abs_path] = lines
         { 'file' => abs_path }.merge(CoverageCalculator.summary(lines))
-      rescue FileError, CoverageDataError => e
+      rescue CoverageDataError => e
         @logger.safe_log("Skipping coverage row for #{abs_path}: #{e.message}")
         errors[abs_path] = e
         nil

@@ -185,7 +185,7 @@ Returns coverage summary for a specific file.
 
 **Returns:** `Hash` - See [summary_for return type](#summary_for)
 
-**Raises:** `CovLoupe::FileError` if file not in coverage data; when `raise_on_stale` is true, `CovLoupe::CoverageDataStaleError` if stale, `CovLoupe::FileNotFoundError` if the file was deleted, and `CovLoupe::FileError` if it is unreadable
+**Raises:** `CovLoupe::CoverageEntryNotFoundError` if file not in coverage data, `CovLoupe::AmbiguousCoverageEntryError` if several coverage entries match it; when `raise_on_stale` is true, `CovLoupe::CoverageDataStaleError` if stale, `CovLoupe::FileNotFoundError` if the file was deleted, and `CovLoupe::FileError` if it is unreadable
 
 **Example:**
 ```ruby
@@ -207,7 +207,7 @@ Returns list of uncovered line numbers for a specific file.
 
 **Returns:** `Hash` - See [uncovered_for return type](#uncovered_for)
 
-**Raises:** `CovLoupe::FileError` if file not in coverage data; when `raise_on_stale` is true, `CovLoupe::CoverageDataStaleError` if stale, `CovLoupe::FileNotFoundError` if the file was deleted, and `CovLoupe::FileError` if it is unreadable
+**Raises:** `CovLoupe::CoverageEntryNotFoundError` if file not in coverage data, `CovLoupe::AmbiguousCoverageEntryError` if several coverage entries match it; when `raise_on_stale` is true, `CovLoupe::CoverageDataStaleError` if stale, `CovLoupe::FileNotFoundError` if the file was deleted, and `CovLoupe::FileError` if it is unreadable
 
 **Example:**
 ```ruby
@@ -227,7 +227,7 @@ Returns per-line coverage details with hit counts.
 
 **Returns:** `Hash` - See [detailed_for return type](#detailed_for)
 
-**Raises:** `CovLoupe::FileError` if file not in coverage data; when `raise_on_stale` is true, `CovLoupe::CoverageDataStaleError` if stale, `CovLoupe::FileNotFoundError` if the file was deleted, and `CovLoupe::FileError` if it is unreadable
+**Raises:** `CovLoupe::CoverageEntryNotFoundError` if file not in coverage data, `CovLoupe::AmbiguousCoverageEntryError` if several coverage entries match it; when `raise_on_stale` is true, `CovLoupe::CoverageDataStaleError` if stale, `CovLoupe::FileNotFoundError` if the file was deleted, and `CovLoupe::FileError` if it is unreadable
 
 **Example:**
 ```ruby
@@ -248,7 +248,7 @@ Returns SimpleCov's raw per-line hit counts (its `lines` array) for a specific f
 
 **Returns:** `Hash` - See [raw_for return type](#raw_for)
 
-**Raises:** `CovLoupe::FileError` if file not in coverage data; when `raise_on_stale` is true, `CovLoupe::CoverageDataStaleError` if stale, `CovLoupe::FileNotFoundError` if the file was deleted, and `CovLoupe::FileError` if it is unreadable
+**Raises:** `CovLoupe::CoverageEntryNotFoundError` if file not in coverage data, `CovLoupe::AmbiguousCoverageEntryError` if several coverage entries match it; when `raise_on_stale` is true, `CovLoupe::CoverageDataStaleError` if stale, `CovLoupe::FileNotFoundError` if the file was deleted, and `CovLoupe::FileError` if it is unreadable
 
 **Example:**
 ```ruby
@@ -320,13 +320,15 @@ Note: `without_coverage.by_type.not_in_coverage` is `nil` when `file_globs` is e
 
 ### `staleness_for(path)`
 
-Returns the staleness of one file without raising.
+Returns the staleness of one file.
 
 **Parameters:**
 
 - `path` (String): File path (absolute or relative to root)
 
-**Returns:** `String` - One of `"ok"`, `"deleted"`, `"newer"`, `"length_mismatch"`, or `"unreadable"`. `"unreadable"` also covers a check that could not be completed, including for a path with no coverage entry; this method does not raise `CovLoupe::FileError`.
+**Returns:** `String` - One of `"ok"`, `"deleted"`, `"newer"`, `"length_mismatch"`, or `"unreadable"`. `"unreadable"` means the source file could not be read, or its staleness check failed.
+
+**Raises:** what the file queries raise for the same path: `CovLoupe::CoverageEntryNotFoundError` if the file is not in the coverage data, `CovLoupe::AmbiguousCoverageEntryError` if several coverage entries match it, another `CovLoupe::CoverageDataError` (such as `CorruptCoverageDataError`) if its entry is malformed, and coverage-file errors such as `CovLoupe::CoverageFileNotFoundError`. It never raises for staleness itself.
 
 **Example:**
 ```ruby
@@ -521,12 +523,14 @@ All public cov-loupe exceptions inherit from `CovLoupe::Error`, which provides `
   - **`PredicateError`** - A `validate` predicate could not be loaded or raised an error
   - **`UnknownError`** - An unexpected error that fits no other class
   - **`TextEncodingError`** - Text could not be converted between encodings outside coverage loading, such as CLI or MCP output to a stream that transcodes to a non-UTF-8 encoding
-  - **`FileError`** - Requested file not in coverage data, or another file or path problem
+  - **`FileError`** - A file or path problem, such as a source file that cannot be read
     - **`FileNotFoundError`** - File does not exist
     - **`FilePermissionError`** - Permission denied
     - **`NotAFileError`** - Path is a directory, not a file
     - **`CoverageFileNotFoundError`** - `coverage.json` not found
-  - **`CoverageDataError`** - Coverage data cannot be used: invalid JSON, an unsupported `meta.schema_version`, or a bad structure
+  - **`CoverageDataError`** - Coverage data cannot be used: invalid JSON, an unsupported `meta.schema_version`, a bad structure, or no single entry for a requested file
+    - **`CoverageEntryNotFoundError`** - The requested file is not in the coverage data
+    - **`AmbiguousCoverageEntryError`** - Several coverage entries match the requested path
     - **`CorruptCoverageDataError`** - A file's coverage entry has no usable `lines` array; raised on load when a non-empty coverage map has no entry with one (line coverage disabled)
     - **`CoverageDataStaleError`** - A file's coverage is stale (only with `raise_on_stale: true`)
     - **`CoverageDataProjectStaleError`** - Project coverage is stale (only with `raise_on_stale: true`)
@@ -543,10 +547,10 @@ begin
   summary = model.summary_for("lib/foo.rb")
   percentage = summary['percentage']
   puts "Coverage: #{percentage ? "#{percentage}%" : 'n/a'}"
-rescue CovLoupe::CoverageFileNotFoundError => e # subclass of FileError, so rescue it first
+rescue CovLoupe::CoverageFileNotFoundError => e
   puts "Coverage data not found: #{e.message}"
   puts "Run your tests first: bundle exec rspec"
-rescue CovLoupe::FileError => e
+rescue CovLoupe::CoverageEntryNotFoundError => e
   puts "File not in coverage data: #{e.message}"
 rescue CovLoupe::Error => e
   puts "Coverage error: #{e.message}"
@@ -587,7 +591,7 @@ def find_coverage(model, possible_paths)
   possible_paths.each do |path|
     begin
       return model.summary_for(path)
-    rescue CovLoupe::FileError
+    rescue CovLoupe::CoverageEntryNotFoundError, CovLoupe::AmbiguousCoverageEntryError
       next
     end
   end
@@ -632,7 +636,7 @@ results = files_to_check.map do |path|
       coverage: summary['percentage'],
       status: summary['percentage'].nil? || summary['percentage'] >= 80 ? :ok : :low
     }
-  rescue CovLoupe::FileError
+  rescue CovLoupe::CoverageEntryNotFoundError, CovLoupe::AmbiguousCoverageEntryError
     {
       file: path,
       coverage: nil,

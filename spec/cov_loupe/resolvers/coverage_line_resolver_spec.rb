@@ -46,7 +46,7 @@ RSpec.describe CovLoupe::Resolvers::CoverageLineResolver do
         end
       end
 
-      it 'raises FileError when absolute path does not start with root and no exact match' do
+      it 'raises a coverage entry error when absolute path does not start with root and no exact match' do
         cov_data = {
           'lib/baz.rb' => { 'lines' => [1, 1] },
         }
@@ -54,10 +54,10 @@ RSpec.describe CovLoupe::Resolvers::CoverageLineResolver do
         resolver = described_class.new(cov_data, root: root, volume_case_sensitive: true)
 
         # Basename fallback has been removed to prevent silent data corruption.
-        # This now raises FileError as expected.
+        # This raises CoverageEntryNotFoundError as expected.
         expect do
           resolver.lookup_lines('/other/directory/lib/baz.rb')
-        end.to raise_error(CovLoupe::FileError, /No coverage entry found/)
+        end.to raise_error(CovLoupe::CoverageEntryNotFoundError, /No coverage entry found/)
       end
     end
 
@@ -73,16 +73,16 @@ RSpec.describe CovLoupe::Resolvers::CoverageLineResolver do
 
       [
         {
-          desc:  'raises FileError when file is not found in coverage data',
+          desc:  'raises CoverageEntryNotFoundError when file is not found in coverage data',
           path:  '/project/lib/missing.rb',
-          error: CovLoupe::FileError,
+          error: CovLoupe::CoverageEntryNotFoundError,
           msg:   /No coverage entry found/,
         },
         {
-          desc:      'raises FileError when coverage data is empty',
+          desc:      'raises CoverageEntryNotFoundError when coverage data is empty',
           path:      '/any/path.rb',
           empty_cov: true,
-          error:     CovLoupe::FileError,
+          error:     CovLoupe::CoverageEntryNotFoundError,
           msg:       /No coverage entry found/,
         },
         {
@@ -177,7 +177,7 @@ RSpec.describe CovLoupe::Resolvers::CoverageLineResolver do
 
           if tc[:raises]
             expect { resolver.lookup_lines('/project/lib/foo.rb') }
-              .to raise_error(CovLoupe::FileError, /No coverage entry found/)
+              .to raise_error(CovLoupe::CoverageEntryNotFoundError, /No coverage entry found/)
           else
             expect(resolver.lookup_lines('/project/lib/foo.rb')).to eq([1, 0])
           end
@@ -201,7 +201,7 @@ RSpec.describe CovLoupe::Resolvers::CoverageLineResolver do
         expect(lines).to eq([1, 2, 3])
       end
 
-      it 'raises FileError for ambiguous normalized matches on case-insensitive filesystems' do
+      it 'raises a coverage entry error for ambiguous normalized matches on case-insensitive filesystems' do
         # Simulate case-insensitive volume where 'Foo.rb' and 'foo.rb' both normalize to 'foo.rb'
         allow(CovLoupe).to receive(:windows?).and_return(false)
 
@@ -215,7 +215,7 @@ RSpec.describe CovLoupe::Resolvers::CoverageLineResolver do
         # Both keys normalize to the same path, causing ambiguity
         expect do
           resolver.lookup_lines('lib/FOO.rb')
-        end.to raise_error(CovLoupe::FileError, /Multiple coverage entries match path/)
+        end.to raise_error(CovLoupe::AmbiguousCoverageEntryError, /Multiple coverage entries match path/)
       end
     end
 
@@ -240,7 +240,7 @@ RSpec.describe CovLoupe::Resolvers::CoverageLineResolver do
           windows: false, sensitive: true,
           data: { 'lib/Helper.rb' => { 'lines' => [1, 2] } },
           lookup: 'lib\\helper.rb',
-          error: CovLoupe::FileError
+          error: CovLoupe::CoverageEntryNotFoundError
         },
         {
           desc: 'normalizes case on case-insensitive volumes',

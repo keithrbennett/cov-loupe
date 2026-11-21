@@ -100,7 +100,8 @@ module CovLoupe
 
         # If multiple matches, raise ambiguity error
         if match_keys.length > 1
-          raise FileError, "Multiple coverage entries match path #{path}: #{match_keys.join(', ')}"
+          raise AmbiguousCoverageEntryError,
+            "Multiple coverage entries match path #{path}: #{match_keys.join(', ')}"
         end
 
         # Single match found, return it
@@ -113,7 +114,7 @@ module CovLoupe
       end
 
       private def raise_not_found_error(file_abs)
-        raise FileError, "No coverage entry found for #{normalize_path(file_abs)}"
+        raise CoverageEntryNotFoundError, "No coverage entry found for #{normalize_path(file_abs)}"
       end
 
       # Entry may store exact line coverage.

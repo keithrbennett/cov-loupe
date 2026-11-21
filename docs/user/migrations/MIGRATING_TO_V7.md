@@ -31,6 +31,7 @@ This document describes the breaking changes introduced in version 7.0.0.
 - [Totals Always Include `without_coverage`](#totals-always-include-without_coverage)
 - [Totals Drop `without_coverage.by_type.unreadable`](#totals-drop-without_coverageby_typeunreadable)
 - [MCP Tools No Longer Take `error_mode`](#mcp-tools-no-longer-take-error_mode)
+- [Coverage Entry Lookup Errors Are `CoverageDataError`s](#coverage-entry-lookup-errors-are-coveragedataerrors)
 
 ---
 
@@ -557,3 +558,18 @@ In 6.x, when tracked globs were set, `project_totals` counted every unreadable f
 In 6.x, every MCP tool accepted an `error_mode` argument (`off`, `log`, or `debug`) that set how much the server logged about a failed call. How much the server writes to its own log is the server operator's choice, not the client's, so 7.0 removes the argument. Every call uses the server's `--error-mode` (`log` unless set). A call that still passes `error_mode` fails with `isError: true`, reporting it as a disallowed additional property. Error responses to the client are unchanged; the mode only ever affected server-side logging.
 
 **Migration:** remove `error_mode` from MCP tool calls. To change the logging, start the server with `--error-mode off|log|debug` (for example in the MCP client's server configuration).
+
+## Coverage Entry Lookup Errors Are `CoverageDataError`s
+
+In 6.x, a file query (`summary_for`, `raw_for`, `uncovered_for`, `detailed_for`; CLI `summary` and the other file commands; the MCP file tools) for a path with no coverage entry raised `CovLoupe::FileError` ("No coverage entry found for ..."), and so did a path that matched several entries ("Multiple coverage entries match path ..."). That class also meant a source file that could not be read. These are coverage-data problems, not file problems, so 7.0 raises two new `CoverageDataError` subclasses instead:
+
+| Case | 6.x | 7.0 |
+|---|---|---|
+| No coverage entry matches the path | `FileError` | `CoverageEntryNotFoundError` |
+| Several coverage entries match the path | `FileError` | `AmbiguousCoverageEntryError` |
+
+They are not `FileError` subclasses, so `rescue CovLoupe::FileError` no longer catches them. The message is unchanged, but its prefix in CLI and MCP output is now `Coverage data error:` (was `File error:`). The CLI exit code stays 1.
+
+`CoverageModel#staleness_for` returned `"error"` (now `"unreadable"`; see [Staleness Values Renamed](#staleness-values-renamed)) for a path with no coverage entry, and for any other failed lookup, instead of raising. It now raises what the file queries raise for the same path: these two errors, a `CoverageDataError` (such as `CorruptCoverageDataError`) for a malformed entry, or a coverage-file error. It returns `"unreadable"` only when the source file could not be read or its staleness check failed.
+
+**Migration:** replace `rescue CovLoupe::FileError` around file queries with `rescue CovLoupe::CoverageEntryNotFoundError` (and `AmbiguousCoverageEntryError` if you handle it), or rescue `CovLoupe::CoverageDataError` or `CovLoupe::Error` to catch both. Keep `rescue CovLoupe::FileError` where you handle unreadable or deleted files. Rescue around `staleness_for` calls whose path may not be in the coverage data, and stop treating its `"unreadable"` result as "not in coverage". Scripts that match CLI text should look for `Coverage data error: No coverage entry found`.

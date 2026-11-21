@@ -7,7 +7,7 @@ RSpec.describe CovLoupe::Resolvers::CoverageLineResolver do
     let(:root) { '/project' }
 
     context 'when basename matches but path does not' do
-      it 'raises FileError when only basename matches (no basename fallback)' do
+      it 'raises a coverage entry error when only basename matches (no basename fallback)' do
         abs_path = '/project/lib/foo.rb'
         # Data is stored under a different path but same filename
         cov_data = {
@@ -19,7 +19,7 @@ RSpec.describe CovLoupe::Resolvers::CoverageLineResolver do
         # Basename matching has been removed to prevent silent data corruption
         expect do
           resolver.lookup_lines(abs_path)
-        end.to raise_error(CovLoupe::FileError, /No coverage entry found/)
+        end.to raise_error(CovLoupe::CoverageEntryNotFoundError, /No coverage entry found/)
       end
 
       it 'returns exact match when both basename and path match' do
@@ -35,7 +35,7 @@ RSpec.describe CovLoupe::Resolvers::CoverageLineResolver do
         expect(lines).to eq([1, 1, 1])
       end
 
-      it 'raises FileError when path does not match despite basename collision' do
+      it 'raises a coverage entry error when path does not match despite basename collision' do
         abs_path = '/project/lib/common.rb'
         cov_data = {
           '/path/a/common.rb' => { 'lines' => [1] },
@@ -45,7 +45,7 @@ RSpec.describe CovLoupe::Resolvers::CoverageLineResolver do
         resolver = described_class.new(cov_data, root: root, volume_case_sensitive: true)
         expect do
           resolver.lookup_lines(abs_path)
-        end.to raise_error(CovLoupe::FileError, /No coverage entry found/)
+        end.to raise_error(CovLoupe::CoverageEntryNotFoundError, /No coverage entry found/)
       end
     end
 

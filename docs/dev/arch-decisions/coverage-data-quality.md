@@ -42,8 +42,8 @@ We implemented a **staleness detection system** with configurable error modes th
 The `StalenessChecker` class (defined in `lib/cov_loupe/staleness/staleness_checker.rb`) detects four distinct types of staleness and reports `ok` otherwise:
 
 1. **Type "unreadable" (Unreadable)**: The source file could not be read, or its staleness check failed
-   - Returned by `file_staleness_status` on permission or I/O errors, and by `CoverageModel#staleness_for` when an exception is raised during staleness checking
-   - Example: File permission errors, resolver failures, or other unexpected issues
+   - Returned by `file_staleness_status` on permission or I/O errors, and by `CoverageModel#staleness_for` and the file queries' `stale` field when an exception is raised during the staleness check
+   - Example: File permission errors or other unexpected issues in the check. Lookup failures (no coverage entry, several matching entries, a malformed entry) are not staleness: they raise `CoverageDataError` subclasses
    - An exception raised during the staleness check is logged (a read error is not), and execution continues with an "unreadable" status instead of crashing
 
 2. **Type "deleted" (Deleted)**: The source file exists in coverage but has been deleted from disk

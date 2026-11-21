@@ -182,11 +182,11 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
         stub_foo_entry_fallback
       end
 
-      it 'skips files that raise FileError during coverage lookup' do
+      it 'skips files that raise AmbiguousCoverageEntryError during coverage lookup' do
         expect(mock_logger).to receive(:safe_log)
-          .with(a_string_including('Skipping coverage row', 'Missing file')).once
+          .with(a_string_including('Skipping coverage row', 'Multiple coverage entries')).once
 
-        stub_lookup_lines_error(CovLoupe::FileError, 'Missing file')
+        stub_lookup_lines_error(CovLoupe::AmbiguousCoverageEntryError, 'Multiple coverage entries')
 
         list_result = model.list(raise_on_stale: false)
         files = list_result['files']
@@ -198,8 +198,8 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
         expect(list_result['skipped_files']).to contain_exactly(
           hash_including(
             'file'        => 'lib/foo.rb',
-            'error'       => 'Missing file',
-            'error_class' => 'CovLoupe::FileError'
+            'error'       => 'Multiple coverage entries',
+            'error_class' => 'CovLoupe::AmbiguousCoverageEntryError'
           )
         )
       end
@@ -232,7 +232,7 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
       end
 
       [
-        CovLoupe::FileError.new('Missing file'),
+        CovLoupe::AmbiguousCoverageEntryError.new('Multiple coverage entries'),
         CovLoupe::CorruptCoverageDataError.new('Corrupted coverage entry'),
       ].each do |error|
         it "re-raises the original #{error.class.name} from the failed lookup" do
@@ -265,7 +265,7 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
         allow(File).to receive(:mtime).and_call_original
         allow(File).to receive(:mtime).with(bar_path).and_return(Time.at(VERY_OLD_TIMESTAMP + 1000))
 
-        stub_lookup_lines_error(CovLoupe::FileError, 'Corrupted coverage entry')
+        stub_lookup_lines_error(CovLoupe::CorruptCoverageDataError, 'Corrupted coverage entry')
 
         # Should raise staleness error first (bar.rb is newer than very old timestamp)
         # not the data error from foo.rb
@@ -282,31 +282,31 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
 
         it 'raises data error if no staleness issues when raise_on_stale is true' do
           # This test verifies that data errors ARE raised when there are no staleness issues
-          stub_lookup_lines_error(CovLoupe::FileError, 'Corrupted coverage entry')
+          stub_lookup_lines_error(CovLoupe::CorruptCoverageDataError, 'Corrupted coverage entry')
 
           # Should raise the data error since there are no staleness issues
           expect do
             model.list(raise_on_stale: true)
-          end.to raise_error(CovLoupe::FileError, 'Corrupted coverage entry')
+          end.to raise_error(CovLoupe::CorruptCoverageDataError, 'Corrupted coverage entry')
         end
       end
     end
   end
 
   describe 'resolve method error handling' do
-    it 'allows FileError from lookup_lines to propagate with detailed message' do
-      # Resolver raises FileError with detailed messages (e.g., basename collisions, not found)
+    it 'allows coverage entry errors from lookup_lines to propagate with detailed message' do
+      # Resolver raises coverage entry errors with detailed messages (e.g., basename collisions, not found)
       # The model should let these propagate to preserve helpful diagnostics
       model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH)
 
-      # Mock lookup_lines to raise FileError with a detailed message
+      # Mock lookup_lines to raise an ambiguity error with a detailed message
       error_message = 'Multiple coverage entries match basename foo.rb: lib/foo.rb, test/foo.rb'
       allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:lookup_lines)
-        .and_raise(CovLoupe::FileError.new(error_message))
+        .and_raise(CovLoupe::AmbiguousCoverageEntryError.new(error_message))
 
       expect do
         model.summary_for('nonexistent_file.rb')
-      end.to raise_error(CovLoupe::FileError) do |error|
+      end.to raise_error(CovLoupe::AmbiguousCoverageEntryError) do |error|
         expect(error.message).to include('Multiple coverage entries match basename')
       end
     end

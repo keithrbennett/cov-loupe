@@ -7,6 +7,13 @@
 
 ### Breaking
 
+- **Coverage entry lookup errors are `CoverageDataError`s.** A path with no coverage entry now
+  raises `CoverageEntryNotFoundError`, and one matching several entries
+  `AmbiguousCoverageEntryError`, both `CoverageDataError` subclasses; both were `FileError`,
+  which now means only file and path problems. CLI and MCP messages are prefixed
+  `Coverage data error:` (was `File error:`). `CoverageModel#staleness_for` now raises these
+  instead of returning `"unreadable"` for such a path. See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#coverage-entry-lookup-errors-are-coveragedataerrors).
 - **MCP tools no longer take `error_mode`.** How much the server logs about a failed call is
   now set only by the server's `--error-mode`; a call that passes `error_mode` fails as a
   disallowed additional property. `format` and `output_chars` are unchanged. See

@@ -23,6 +23,8 @@ module CovLoupe
   #     ├── UsageError             — command-line usage mistakes
   #     └── CoverageDataError      — coverage data problems
   #           ├── CorruptCoverageDataError
+  #           ├── CoverageEntryNotFoundError  — no coverage entry matches a path
+  #           ├── AmbiguousCoverageEntryError — several coverage entries match a path
   #           ├── CoverageDataStaleError      — single-file staleness
   #           └── CoverageDataProjectStaleError — project-wide staleness
   #
@@ -152,6 +154,16 @@ module CovLoupe
       "Corrupt coverage data: #{message}"
     end
   end
+
+  # No coverage entry matches the requested path: the file is not in the coverage data.
+  #
+  # @api public
+  class CoverageEntryNotFoundError < CoverageDataError; end
+
+  # Several coverage entries match the requested path.
+  #
+  # @api public
+  class AmbiguousCoverageEntryError < CoverageDataError; end
 
   # Shared module for stale error formatting
   #

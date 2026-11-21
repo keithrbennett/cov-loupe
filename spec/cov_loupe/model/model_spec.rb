@@ -52,13 +52,13 @@ RSpec.describe CovLoupe::CoverageModel do
   end
 
   describe 'resolve method error handling' do
-    it 'allows FileError from lookup_lines to propagate' do
+    it 'allows CoverageEntryNotFoundError from lookup_lines to propagate' do
       allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:lookup_lines)
-        .and_raise(CovLoupe::FileError, 'No coverage entry found for lib/some_file.rb')
+        .and_raise(CovLoupe::CoverageEntryNotFoundError, 'No coverage entry found for lib/some_file.rb')
 
       expect do
         model.summary_for('lib/some_file.rb')
-      end.to raise_error(CovLoupe::FileError, /No coverage entry found/)
+      end.to raise_error(CovLoupe::CoverageEntryNotFoundError, /No coverage entry found/)
     end
 
     it 'raises FileNotFoundError when check_file! raises ENOENT' do
@@ -686,21 +686,35 @@ RSpec.describe CovLoupe::CoverageModel do
   end
 
   describe '#staleness_for' do
-    it "returns 'unreadable' and logs error when staleness check fails" do
-      logger = instance_double(CovLoupe::Logger)
-      allow(CovLoupe).to receive(:logger).and_return(logger)
-      allow(logger).to receive(:safe_log)
+    it "returns 'ok' for a fresh file" do
+      expect(model.staleness_for('lib/foo.rb')).to eq('ok')
+    end
 
-      model_with_logger = described_class.new(root: root, logger: logger)
+    it 'raises lookup errors as CoverageDataErrors, not FileErrors' do
+      [CovLoupe::CoverageEntryNotFoundError, CovLoupe::AmbiguousCoverageEntryError].each do |klass|
+        expect(klass.ancestors).to include(CovLoupe::CoverageDataError)
+        expect(klass.ancestors).not_to include(CovLoupe::FileError)
+      end
+    end
 
-      # Make lookup_lines raise an error
+    it 'raises CoverageEntryNotFoundError for a file not in the coverage data' do
+      expect { model.staleness_for('lib/not_in_coverage.rb') }
+        .to raise_error(CovLoupe::CoverageEntryNotFoundError, /No coverage entry found/)
+    end
+
+    it 'raises AmbiguousCoverageEntryError when several coverage entries match' do
       allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:lookup_lines)
-        .and_raise(StandardError, 'Test error')
+        .and_raise(CovLoupe::AmbiguousCoverageEntryError, 'Multiple coverage entries match path lib/foo.rb')
 
-      result = model_with_logger.staleness_for('lib/foo.rb')
+      expect { model.staleness_for('lib/foo.rb') }.to raise_error(CovLoupe::AmbiguousCoverageEntryError)
+    end
 
-      expect(result).to eq('unreadable')
-      expect(logger).to have_received(:safe_log).with(/Failed to check staleness/)
+    it "returns 'unreadable' when the source file cannot be read" do
+      abs_foo = File.expand_path('lib/foo.rb', root)
+      allow(File).to receive(:file?).and_call_original
+      allow(File).to receive(:file?).with(abs_foo).and_raise(Errno::EACCES)
+
+      expect(model.staleness_for('lib/foo.rb')).to eq('unreadable')
     end
   end
 

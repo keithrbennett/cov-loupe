@@ -217,13 +217,15 @@ module CovLoupe
       )
     end
 
-    # file_staleness handles a failed check; this rescue covers a failed lookup.
+    # Returns the file's staleness status: "unreadable" if the source file cannot be read or
+    # the staleness check fails. Raises what the file queries raise for the same path:
+    # @raise [CoverageEntryNotFoundError] if no coverage entry matches the path
+    # @raise [AmbiguousCoverageEntryError] if more than one coverage entry matches the path
+    # @raise [CoverageDataError] if the matching entry is malformed (for example
+    #   CorruptCoverageDataError), or the coverage file cannot be loaded
     def staleness_for(path)
       file_abs = File.expand_path(path, @root)
       file_staleness(file_abs, lookup_lines(file_abs))
-    rescue => e
-      @logger.safe_log("Failed to check staleness for #{path}: #{e.message}")
-      StaleStatus::UNREADABLE
     end
 
     # Returns formatted table string for all files coverage data
@@ -278,7 +280,8 @@ module CovLoupe
     end
 
     # @return [Array<Integer, nil>] coverage lines for an absolute path
-    # @raise [FileError] if no entry, or more than one entry, matches the path
+    # @raise [CoverageEntryNotFoundError] if no entry matches the path
+    # @raise [AmbiguousCoverageEntryError] if more than one entry matches the path
     private def lookup_lines(file_abs)
       Resolvers::ResolverHelpers.lookup_lines(coverage_map, file_abs, root: @root,
         volume_case_sensitive: volume_case_sensitive)
@@ -371,7 +374,8 @@ module CovLoupe
     #
     # @param path [String] relative or absolute file path
     # @return [Array(String, Array)] tuple of [absolute_path, coverage_lines]
-    # @raise [FileError] if no coverage data exists for the file, or it matches several entries
+    # @raise [CoverageEntryNotFoundError] if no coverage data exists for the file
+    # @raise [AmbiguousCoverageEntryError] if the file matches several coverage entries
     # @raise [FileNotFoundError] if the file does not exist and raise_on_stale is true
     # @raise [CoverageDataStaleError] if staleness checking is enabled and data is stale
     private def coverage_data_for(path, raise_on_stale: @default_raise_on_stale)

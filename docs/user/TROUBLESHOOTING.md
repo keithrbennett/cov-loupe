@@ -118,7 +118,7 @@ exit non-zero and show the same message after the staleness summary.
 
 ### "No coverage entry found for ..."
 
-The model looks up files by absolute path, then by relative path (stripping the project root). If you still hit this error:
+This is a `CoverageEntryNotFoundError` (a `CoverageDataError`). The model looks up files by absolute path, then by relative path (stripping the project root). If you still hit this error:
 
 1. Verify the file is listed in the coverage table (`cov-loupe list | grep model.rb` or `cov-loupe l | grep model.rb`).
 2. Use the exact project-relative path that SimpleCov recorded (no symlinks; case-sensitivity
