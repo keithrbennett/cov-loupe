@@ -115,7 +115,7 @@ bundle exec rspec
 ls -l coverage/coverage.json
 ```
 
-This needs SimpleCov 1.0 or later; a `coverage.json` from 0.x is rejected (see [Quick Start](docs/QUICKSTART.md#2-generate-coverage)).
+This needs SimpleCov 1.0 or later. SimpleCov 0.x writes only `.resultset.json` by default, which cov-loupe doesn't read, and cov-loupe rejects the `coverage.json` that 0.x's separate `simplecov_json_formatter` gem writes (see [Quick Start](docs/QUICKSTART.md#2-generate-coverage)).
 
 ### Basic Usage
 
@@ -188,7 +188,7 @@ SimpleCov merges the results of the suites that ran (RSpec + Cucumber, etc.) bef
 
 ## Documentation Index
 
-Full documentation is available at **[https://keithrbennett.github.io/cov-loupe/](https://keithrbennett.github.io/cov-loupe/)**.
+The guides below are also published as a website at **[https://keithrbennett.github.io/cov-loupe/](https://keithrbennett.github.io/cov-loupe/)**.
 
 **User Guides:**
 
