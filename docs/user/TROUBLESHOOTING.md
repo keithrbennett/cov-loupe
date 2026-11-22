@@ -286,7 +286,7 @@ This does not change MCP itself. It only changes whether the RubyGems wrapper st
   export NOEXEC_DISABLE=1
   exec cov-loupe -m mcp "$@"
   ```
-  Then point your MCP client at that wrapper script. For copy-and-paste setup steps, including the command for each client, see [Step by Step: The Launch Wrapper](MCP_INTEGRATION.md#step-by-step-the-launch-wrapper).
+  Then point your MCP client at that wrapper script. If the client doesn't pass your shell's Ruby setup, the `exec` line needs an absolute path, such as RVM's wrapper (see [Path Issues with Version Managers](#path-issues-with-version-managers)). For copy-and-paste setup steps, including the command for each client, see [Step by Step: The Launch Wrapper](MCP_INTEGRATION.md#step-by-step-the-launch-wrapper).
 - Preferred fix: settle the current project's bundle, then retry normal startup:
   ```bash
   bundle install
@@ -315,7 +315,7 @@ Use either a wrapper that exports `NOEXEC_DISABLE=1` or normal `cov-loupe -m mcp
 - **Shim-based managers** (such as rbenv): `which cov-loupe` prints a shim. A shim picks the Ruby from the client's working directory, so cov-loupe must be installed for the Ruby each project selects.
 - **RVM:** use the wrapper RVM generates, which sets up that Ruby's environment. A bare path to the executable needs RVM's `GEM_HOME` and `GEM_PATH`, which an MCP client does not set.
 
-Check the path again after you upgrade or remove a Ruby.
+Check the path again after you upgrade or remove a Ruby. If you use the [launch wrapper](MCP_INTEGRATION.md#step-by-step-the-launch-wrapper), put this path in its `exec` line and keep registering the wrapper, so its `NOEXEC_DISABLE=1` still applies.
 
 ```bash
 # Shim-based managers

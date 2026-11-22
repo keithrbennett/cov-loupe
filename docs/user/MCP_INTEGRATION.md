@@ -28,7 +28,7 @@
 
 ## Setup by Client
 
-> **Tip:** If you use RVM (or otherwise see `Resolving dependencies...` printed before the MCP handshake), skip straight to [the launch wrapper](#step-by-step-the-launch-wrapper). It takes one minute and prevents a common startup failure in every client below.
+> **Tip:** If you use RVM (or otherwise see `Resolving dependencies...` printed before the MCP handshake), skip straight to [the launch wrapper](#step-by-step-the-launch-wrapper) (RVM users may need an absolute path in it; see its step 1). It takes one minute and prevents a common startup failure in every client below.
 
 > **Note:** This section is best-effort research meant to help you get started. Not every client has been fully verified, and these tools change quickly, so commands and file locations may differ by the time you read this. If something doesn't work, check your client's own documentation (e.g., `claude mcp --help`, `codex mcp --help`, `agy mcp --help`, `opencode mcp --help`).
 
@@ -333,11 +333,15 @@ chmod +x ~/.local/bin/cov-loupe-no-bundler
 
 The script already includes `-m mcp`, so the client commands below don't need it.
 
+The script finds `cov-loupe` on the `PATH` the client gives it. If your client doesn't pass your shell's Ruby setup (common with RVM), startup fails with `exec: cov-loupe: not found`; replace `cov-loupe` in the `exec` line with an absolute path that works without that setup, such as the one `rvm wrapper show cov-loupe` prints. See [Path Issues with Version Managers](TROUBLESHOOTING.md#path-issues-with-version-managers).
+
 **2. Check that it works.** You should see a JSON line and nothing else before it:
 
 ```sh
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"version","arguments":{}}}' | cov-loupe-no-bundler
 ```
+
+This runs in your shell, so it can't catch a client that lacks your Ruby setup; see the note under step 1.
 
 **3. Register `cov-loupe-no-bundler` instead of `cov-loupe -m mcp`.** If `cov-loupe` is already registered with your client, remove it first (see that client's section above):
 
@@ -353,7 +357,7 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"version","
 | OpenCode | In `opencode.json`: `"command": ["cov-loupe-no-bundler"]` |
 | Kilo | In `kilo.json`: `"command": ["cov-loupe-no-bundler"]` |
 
-If a client can't find the script (some launch servers with a minimal `PATH`), give it the absolute path instead, e.g. `/home/you/.local/bin/cov-loupe-no-bundler`.
+If a client can't find the script itself (some launch servers with a minimal `PATH`), register the script's absolute path instead, e.g. `/home/you/.local/bin/cov-loupe-no-bundler`.
 
 `NOEXEC_DISABLE=1` turns off the `rubygems-bundler` hook that RVM installs, which is what prints `Resolving dependencies...` to `stdout`. It doesn't change what `cov-loupe` does.
 
