@@ -2,7 +2,7 @@
 
 [Back to Examples](../EXAMPLES.md) | [Back to main README](../../../README.md)
 
-These examples assume your test suite runs SimpleCov 1.x, whose default HTML formatter (or its JSONFormatter) writes `coverage/coverage.json` for cov-loupe to read. See [Quick Start](../../QUICKSTART.md) to set it up.
+These examples assume your test suite runs SimpleCov 1.x, which writes the `coverage/coverage.json` that cov-loupe reads. See [Quick Start](../../QUICKSTART.md) to set it up.
 
 ## GitHub Actions
 
@@ -60,8 +60,7 @@ jobs:
           '
 
       - name: Upload coverage report
-        # Saves the coverage file as an artifact so you can download/inspect it 
-        # from the GitHub Actions run summary page.
+        # Saves the coverage report as an artifact you can download from the run's summary page
         uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -73,7 +72,7 @@ jobs:
 ```yaml
       - name: Verify coverage is fresh
         shell: bash
-        run: cov-loupe --raise-on-stale true list || exit 1
+        run: cov-loupe --raise-on-stale true list
 ```
 
 ## GitLab CI

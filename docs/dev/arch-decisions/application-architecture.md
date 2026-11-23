@@ -34,7 +34,7 @@ We considered three approaches:
 #### Key Constraints
 
 - MCP servers communicate via JSON-RPC over stdin/stdout, so any human-readable output would corrupt the protocol
-- CLI users expect immediate, readable output without ceremony
+- CLI users expect immediate, readable output with no extra setup
 - The gem should be simple to install and use for both audiences
 - Mode selection must be reliable and unambiguous
 
@@ -262,7 +262,9 @@ end
 1. Catches the exceptions a subcommand or the default report raises, and reports an unknown subcommand the same way (`with_user_facing_errors`); errors in the global options are reported earlier, by `CovLoupe.run`
 2. Uses the `for_cli` handler to log errors to a log file target (not to the default `stderr` target, where the message is already printed); a custom handler is called for every error except invalid options, which are reported during option parsing
 3. Displays `user_friendly_message` to the user
-4. Raises `CliExit` with the code from `CoverageCLI#exit_code_for` (see `CovLoupe::ExitCodes`): 1 runtime error, 2 usage or configuration error, 4 predicate error. The one exception is `validate`, which raises `CliExit` directly with 0 (pass) or 3 (validation failed) when the predicate runs to completion, since that outcome is not an error. `CovLoupe.run` lets `CliExit` end the process; `CovLoupe.execute` returns its status
+4. Raises `CliExit` with the code from `CoverageCLI#exit_code_for` (see `CovLoupe::ExitCodes`): 1 runtime error, 2 usage or configuration error, 4 predicate error. `CovLoupe.run` lets `CliExit` end the process; `CovLoupe.execute` returns its status
+
+The one exception is `validate`: when the predicate runs to completion, it raises `CliExit` directly with 0 (pass) or 3 (validation failed), since that outcome is not an error.
 
 **MCP Server Mode** (`lib/cov_loupe/base_tool.rb`):
 
@@ -281,7 +283,7 @@ end
 
 #### Positive
 
-1. **Excellent UX**: Each context gets appropriate error handling behavior
+1. **Fitting behavior**: Each context gets the error handling it needs
 2. **Robustness**: MCP server never crashes on tool errors
 3. **Debuggability**: CLI users can enable stack traces with error modes, MCP errors are logged
 4. **Clean library API**: No unwanted side effects (logging, stderr output) when used as a library
@@ -295,7 +297,7 @@ end
 
 #### Trade-offs
 
-- **Versus uniform error handling**: More code complexity, but dramatically better UX in each context
+- **Versus uniform error handling**: More code complexity, but much better behavior in each context
 - **Versus separate error classes per mode**: Single error hierarchy is simpler, factory pattern adds mode-specific behavior
 
 #### Implementation Notes

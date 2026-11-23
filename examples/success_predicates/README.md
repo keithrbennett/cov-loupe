@@ -30,11 +30,7 @@ cov-loupe validate examples/success_predicates/<filename>.rb
 cov-loupe validate -i '->(model) { model.list["files"].all? { |f| f["percentage"].nil? || f["percentage"] >= 80 } }'
 ```
 
-The predicate receives a `CoverageModel` instance and returns:
-
-- **Truthy value** → Exit code 0 (success)
-- **Falsy value** → Exit code 3 (validation failed)
-- **Error in the predicate itself** (syntax error, not callable, or an exception from its own code) → Exit code 4 (predicate error)
+The predicate receives a `CoverageModel` instance and returns a truthy value to pass (exit code 0) or a falsy value to fail (exit code 3). See [Exit Codes](#exit-codes) for the other cases.
 
 ## Available Examples
 
@@ -110,7 +106,6 @@ class MyPolicy
 end
 
 MyPolicy.new
-
 ```
 
 ### CoverageModel API
@@ -179,7 +174,7 @@ else
 end
 ```
 
-Both approaches execute arbitrary code with full system privileges, so the security considerations are identical. Choose the approach that best fits your use case.
+Both approaches execute arbitrary code with full system privileges, so the security considerations are identical.
 
 ## CI/CD Integration
 

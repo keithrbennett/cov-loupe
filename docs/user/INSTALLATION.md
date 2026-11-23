@@ -5,7 +5,7 @@
 ## Prerequisites
 
 - **Ruby >= 3.3** (the oldest Ruby that has not reached end of life)
-- A `coverage/coverage.json` written by SimpleCov 1.x (its default HTML formatter or its JSONFormatter writes it) in the project you inspect (SimpleCov is not installed with cov-loupe)
+- In the project you inspect, a `coverage/coverage.json` written by SimpleCov 1.x. SimpleCov's default HTML formatter writes it, as does its JSON formatter. cov-loupe does not install SimpleCov.
 
 ## Quick Install
 
@@ -53,7 +53,10 @@ The gem uses a single require path:
 require "cov_loupe"
 ```
 
-The executable is `cov-loupe` (with hyphen). If your shell reports `command not found`, either the gem's executable directory is not on your `PATH` (check with `gem environment`; if your Ruby version manager uses shims, see its docs for refreshing them after a gem install), or the gem was installed with Bundler only, in which case run `bundle exec cov-loupe`.
+The executable is `cov-loupe` (with a hyphen). If your shell reports `command not found`, the cause is usually one of these:
+
+- The gem's executable directory is not on your `PATH`. Check it with `gem environment`. If your Ruby version manager uses shims, see its documentation for refreshing them after a gem install.
+- The gem was installed only through Bundler. Run it with `bundle exec cov-loupe`.
 
 ## Verification
 
@@ -91,7 +94,7 @@ Works with any Ruby 3.3 or later. If your distribution's packaged Ruby is older,
 
 ### Windows
 
-Should work with Ruby installed via RubyInstaller. PATH configuration may differ.
+cov-loupe should work with Ruby installed via RubyInstaller. If `cov-loupe` is not found, check that the gem executable directory reported by `gem environment` is on your `PATH`.
 
 ## RVM
 

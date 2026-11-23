@@ -6,22 +6,27 @@ This document provides a checklist for releasing new versions of cov-loupe.
 
 ## Automated pre-release check
 
-`bin/pre-release-check` is the canonical preflight interface (`rake release:check`
-runs the same code; pass `rake "release:check[rerun_ci]"` for `--rerun-ci`). Run it
-from a clean `main` branch after committing **and pushing** the version and release
-notes; it requires a clean tree and `HEAD == origin/main`. The script looks for a successful `test.yml` run for the
-exact HEAD commit and reuses it. If that commit has a run still in progress, the
-script watches it. Otherwise, it starts a new run and waits for the result.
-Both push and manually dispatched runs count: the current `test.yml` workflow runs
-the same jobs for those events. If that changes, use `--rerun-ci` for a fresh check.
+`bin/pre-release-check` is the canonical preflight script. (`rake release:check`
+runs the same code; use `rake "release:check[rerun_ci]"` for `--rerun-ci`.) Run it
+on `main` after committing **and pushing** the version and release notes: it
+requires a clean tree and `HEAD == origin/main`.
+
+The script first checks CI for the exact HEAD commit:
+
+- If a `test.yml` run for that commit succeeded, it reuses the result.
+- If a run is still in progress, it watches it.
+- Otherwise, it starts a new run and waits for the result.
+
+Both push and manually dispatched runs count, because the current `test.yml`
+workflow runs the same jobs for both events. If that changes, use `--rerun-ci` for
+a fresh check.
 
 The script then builds the gem once and prints the commit SHA it was built from
-and the gem's SHA256. That gem file is the single authoritative release artifact:
-it must not be rebuilt after tagging, because the script verifies a clean tree,
-the `main` branch, and `HEAD == origin/main` before building, and the gemspec
-builds its file list from `git ls-files`. Tagging does not change the file
-contents, so rebuilding after tagging adds risk without adding value. Tagging,
-pushing, and `gem push` remain manual steps.
+and the gem's SHA256. That gem file is the release artifact; do not rebuild it
+after tagging. The script builds only after verifying a clean tree, the `main`
+branch, and `HEAD == origin/main`, and the gemspec takes its file list from
+`git ls-files`, so the gem already matches the commit you will tag. A rebuild
+could only add risk. Tagging, pushing, and `gem push` remain manual steps.
 
 Use `bin/pre-release-check --rerun-ci` to start a fresh run even when HEAD already
 passed. This is useful when CI configuration or external dependencies need a new
@@ -36,15 +41,19 @@ run, including with `--rerun-ci`, also needs Actions write access. The installed
 ## Pre-Release Checklist
 
 Before preparing a release, run `bundle exec rake "release:bump[VERSION]"`, replacing
-`VERSION` with the release version (for example, `7.1.0` or `7.1.0.pre.1`). The task
-validates the version, updates `lib/cov_loupe/version.rb`, and inserts a new
-`## vVERSION` heading directly below the `## Unreleased` heading in `RELEASE_NOTES.md`,
-moving all existing content under it. The `## Unreleased` heading itself is left in
-place as an empty placeholder for the next round of changes. It then prints the diff
-command and the commit/push/check commands to run next, and reminds you of the extra
-documentation work for a major release (the major version increased, or the version is a stable `X.0.0`, as when finalizing `X.0.0.pre.N`). Review the resulting diff
-and stage the files when ready. The task stops if the version is invalid, the
-`Unreleased` heading is missing or duplicated, or the release heading already exists.
+`VERSION` with the release version (for example, `7.1.0` or `7.1.0.pre.1`). The task:
+
+- validates the version and updates `lib/cov_loupe/version.rb`
+- inserts a `## vVERSION` heading directly below `## Unreleased` in `RELEASE_NOTES.md`,
+  so the existing unreleased notes move under the new heading, and leaves `## Unreleased`
+  in place, empty, for the next round of changes
+- prints the diff command and the commit, push, and check commands to run next
+- for a major release (the major version increased, or the version is a stable `X.0.0`,
+  as when finalizing `X.0.0.pre.N`), reminds you of the extra documentation work
+
+It stops if the version is invalid, the `Unreleased` heading is missing or duplicated,
+or the release heading already exists. Review the resulting diff and stage the files
+when ready.
 
 ### 1. Documentation Review
 
@@ -126,12 +135,12 @@ bin/pre-release-check
 ```bash
 bundle exec rake release:smoke_test
 ```
-    - Installs `cov-loupe-$VERSION.gem` into a temporary gem directory that holds only the
-      gem and copies of the installed gems its declared runtime dependencies resolve to, with
-      `GEM_PATH` limited to that directory. So a dependency missing from the gemspec is not
-      found, unless a declared dependency also depends on it or it is a default gem (such as
-      `json`), which Ruby always provides. Nothing is downloaded, so the dependencies must be
-      installed (`bundle install`).
+    - Installs `cov-loupe-$VERSION.gem` into a temporary gem directory, with `GEM_PATH`
+      limited to that directory. The directory holds only the gem and copies of the
+      installed gems its declared runtime dependencies resolve to, so a dependency missing
+      from the gemspec is not found (unless a declared dependency also depends on it, or it
+      is a default gem such as `json`, which Ruby always provides). Nothing is downloaded,
+      so the dependencies must already be installed (`bundle install`).
     - It then runs the installed executable: `--version` (against the version the gem
       declares), `--help`, `--path-for docs-local` (to confirm it runs from the installed gem,
       not this checkout, and that its README is packaged), `totals` against the demo
@@ -162,7 +171,7 @@ git tag -a "v$VERSION" -m "Version $VERSION" <build-commit-sha>
 ```bash
 git push origin main --follow-tags
 ```
-    - Only pushes of a final release tag (`vX.Y.Z`, e.g. `v7.0.0`) deploy the documentation; pre-release tags such as `v7.0.0.pre.1` do not. Pull requests and pushes to `main` that change documentation-related files build the site for validation, but only final release tag pushes deploy it.
+    - Pushing a final release tag (`vX.Y.Z`, e.g. `v7.0.0`) deploys the documentation; pre-release tags such as `v7.0.0.pre.1` do not. See [Publishing Documentation](DOC_SERVER.md#publishing-documentation).
 
 ### 6. Publish Gem
 

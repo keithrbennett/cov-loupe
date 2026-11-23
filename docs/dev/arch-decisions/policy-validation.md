@@ -111,7 +111,12 @@ raise CliExit, result ? ExitCodes::SUCCESS : ExitCodes::VALIDATION_FAILED
 
 `CliExit` is the `SystemExit` subclass raised wherever the CLI ends with a status: `CovLoupe.run` lets it end the process, and `CovLoupe.execute` rescues it to return the status. Raise it rather than calling `exit`, which `execute` would not catch.
 
-The command does not rescue errors. `PredicateEvaluator` wraps failures in the predicate itself (syntax errors, a missing or non-callable predicate, exceptions from its own code) in `PredicateError`. That includes a `UsageError` or `ConfigurationError` the predicate raises itself, since it is a predicate problem and not a command-line problem. Only `CoverageDataError` and `FileError` (raised by the model's own queries, such as a missing file or stale data) keep their type. `CoverageCLI#handle_user_facing_error` passes every such error to the error handler for logging (the built-in handler skips this for the default `stderr` log target), prints its message, and raises `CliExit` with `exit_code_for(error)`: 4 for `PredicateError` (validation failure is 3) and 1 for coverage-data and file errors. Usage errors in `validate`'s own arguments exit 2.
+The command does not rescue errors.
+
+- `PredicateEvaluator` wraps failures in the predicate itself (syntax errors, a missing or non-callable predicate, exceptions from its own code) in `PredicateError`. That includes a `UsageError` or `ConfigurationError` the predicate raises itself, since it is a predicate problem and not a command-line problem.
+- Only `CoverageDataError` and `FileError` (raised by the model's own queries, such as a missing file or stale data) keep their type.
+- `CoverageCLI#handle_user_facing_error` passes each such error to the error handler for logging (the built-in handler skips this for the default `stderr` log target), prints its message, and raises `CliExit` with `exit_code_for(error)`: 4 for `PredicateError` and 1 for coverage-data and file errors. (A failed validation exits 3.)
+- Usage errors in `validate`'s own arguments exit 2.
 
 #### Security Model: Treat as Executable Code
 
@@ -147,7 +152,6 @@ end
 **Class example:**
 
 ```ruby
-
 class CoveragePolicy
   def call(model)
     api_files = model.list['files'].select { |f| f['file'].start_with?('lib/api/') }
@@ -175,7 +179,7 @@ The predicate receives a full `CoverageModel` instance with access to:
 3. **Simplicity**: No custom DSL to learn, document, or maintain
 4. **Honesty**: Security model is clear and doesn't provide false confidence
 5. **Composability**: Users can require other libraries, define helper methods, etc.
-6. **Excellent examples**: We provide three well-documented example predicates in `examples/success_predicates/`
+6. **Examples**: Three documented example predicates in `examples/success_predicates/`
 
 #### Negative
 

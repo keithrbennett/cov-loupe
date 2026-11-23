@@ -57,7 +57,7 @@ The parts cov-loupe reads:
 - `meta.timestamp` is when the coverage was collected, normalized to epoch seconds for staleness checks. A missing or unparseable value becomes 0, which disables time-based checks.
 - `meta.root` is the absolute project root the tests ran under. It never sets the root: when the wrong-root warning fires and this path is a directory here, other than the current root, the warning suggests it. A missing, relative, or otherwise invalid value is ignored.
 
-A non-empty `coverage` map whose entries all lack a `lines` array (SimpleCov run with `disable_coverage :line`) is rejected on load (an empty map, which records no files, still loads), since cov-loupe reports line coverage only; without the check, every file would be skipped and the project would report no coverage with a success status.
+A non-empty `coverage` map whose entries all lack a `lines` array (SimpleCov run with `disable_coverage :line`) is rejected on load, since cov-loupe reports line coverage only. Without this check, every file would be skipped, and the project would report no coverage with a success status. An empty map, which records no files, still loads.
 
 Other keys (`$schema`, `total`, `groups`, `errors`, `branches`, `methods`, source text) are ignored.
 
@@ -71,7 +71,12 @@ Other keys (`$schema`, `total`, `groups`, `errors`, `branches`, `methods`, sourc
 
 cov-loupe only reads a file SimpleCov wrote earlier, so it has no functional need to load SimpleCov. Earlier versions loaded it lazily to merge multi-suite resultsets; `coverage.json` is already merged, so that is gone.
 
-A gem dependency (`>= 1.0`) was considered as a guard against SimpleCov 0.x, which writes only `.resultset.json` by default (the separate `simplecov_json_formatter` gem adds a `coverage.json` without `schema_version`, which the format check rejects). It was dropped because it constrains the SimpleCov installed alongside cov-loupe, not the one that wrote the file being read (cov-loupe may be installed globally or inspect another project), and it forces SimpleCov into bundles that only inspect coverage. Checking the file itself validates what cov-loupe actually consumes.
+A gem dependency (`>= 1.0`) was considered as a guard against SimpleCov 0.x, which writes only `.resultset.json` by default (the separate `simplecov_json_formatter` gem adds a `coverage.json` without `schema_version`, which the format check rejects). It was dropped for two reasons:
+
+- It constrains the SimpleCov installed alongside cov-loupe, not the one that wrote the file being read; cov-loupe may be installed globally or inspect another project.
+- It forces SimpleCov into bundles that only inspect coverage.
+
+Checking the file itself validates what cov-loupe actually consumes.
 
 ### Decision
 

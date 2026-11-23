@@ -2,15 +2,18 @@
 
 [Back to main README](../../README.md)
 
-> Examples use `clp`, an alias pointed at the demo fixture with partial coverage:
+> The examples use `clp`, an alias that points cov-loupe at the demo fixture, a small project with partial coverage:
 >
 > `alias clp='cov-loupe -R docs/fixtures/demo_project'`  # -R = --root
-> Run the examples from the root of a cov-loupe checkout, since the alias's path is relative. Without the gem
+>
+> The alias's path is relative, so run the examples from the root of a cov-loupe checkout. Without the gem
 > installed, use `alias clp='bundle exec exe/cov-loupe -R docs/fixtures/demo_project'` instead.
 >
-> Replace `clp` with `cov-loupe` if you want to target your own project/coverage file.
+> To run a command against your own project, replace `clp` with `cov-loupe`.
 >
-> The fixture's coverage timestamp is deliberately set far in the future, so the outputs below keep working on a fresh clone: `--raise-on-stale` / `-S` runs do not fail on timestamps, though those that also pass `-g` with globs matching fixture files that are not in coverage data fail by design. Timestamps and absolute paths in some messages still vary by machine and time zone.
+> The fixture's coverage timestamp is set far in the future, so `--raise-on-stale` / `-S` runs never fail on
+> timestamps, even on a fresh clone. Runs that also pass `-g` with globs matching fixture files that are not in
+> the coverage data do fail, by design. Timestamps and absolute paths in some messages vary by machine and time zone.
 
 ## Table of Contents
 
@@ -57,7 +60,7 @@ The MCP server logs to `stderr` by default; [Checking Logs](MCP_INTEGRATION.md#c
 
 ## Sorting Coverage Lists with n/a Entries
 
-When a file has no executable lines, its coverage percentage is reported as `n/a`. In list outputs, `n/a` entries are grouped separately from numeric percentages. The default descending sort order places `n/a` entries above `100%` coverage so they appear earlier in the list, while still keeping low numeric percentages toward the bottom for attention.
+When a file has no executable lines, its coverage percentage is reported as `n/a` (`null` in JSON). In list output, `n/a` entries are grouped separately from numeric percentages. The default descending order places them above the `100%` entries, so the lowest percentages stay at the bottom of the list, where they are easiest to see.
 
 If you need to treat `n/a` differently, post-process the JSON output of the CLI `list` command or the MCP `project_coverage` tool and apply your own sort or filtering rules.
 
@@ -122,9 +125,7 @@ end
 
 ### Project-Level Staleness
 
-Detects system-wide staleness issues:
-
-**Conditions Checked:**
+Project-level queries (`list`, `totals`, and their MCP equivalents) check for these conditions:
 
 1. **Newer files** - A file in the coverage data that was modified after coverage (requires timestamps - see [Timestamp Warnings](#timestamp-warnings))
 2. **Files not in coverage data** - Files matching `--file-globs` with no coverage data (checked only when globs are set)
@@ -136,9 +137,9 @@ With `raise_on_stale` true, a project query also raises if a coverage row is ski
 
 **CLI Usage:**
 
-You can see if _any_ files in the project are stale by running the (implicit here) `list` command
-with `--raise-on-stale true` and checking the exit code. The transcript below is illustrative —
-captured from a project with files newer than its coverage, not from the demo fixture:
+To check whether any file in the project is stale, run `list` (or no subcommand, since `list` is the default)
+with `--raise-on-stale true` and check the exit code. This transcript comes from a project with files newer
+than its coverage, not from the demo fixture:
 
 ```sh
 $ cov-loupe -S true list
@@ -156,7 +157,7 @@ $ echo $?
 model = CovLoupe::CoverageModel.new(raise_on_stale: true)
 
 begin
-  model.list(raise_on_stale: true)
+  model.list
 rescue CovLoupe::CoverageDataProjectStaleError => e
   puts "Newer files: #{e.newer_files.join(', ')}"
   puts "Not in coverage data: #{e.not_in_coverage_files.join(', ')}"
@@ -182,7 +183,8 @@ Check your coverage tool configuration to ensure timestamps are recorded.
 - Files modified after coverage collection won't be flagged as stale
 - Only line count mismatches, deleted or unreadable files, and (with file globs) matching files that are not in coverage data will be detected
 - The `timestamp_status` field in project-level JSON output will show `"missing"` instead of `"ok"`
-- Per-file commands and tools show no warning and have no `timestamp_status` field; in the CLI and MCP server, any command or tool that loads coverage without a timestamp logs an INFO line (on stderr by default; library logging is off by default)
+- Per-file commands and tools show no warning and have no `timestamp_status` field.
+- In the CLI and MCP server, any command or tool that loads coverage without a timestamp logs an INFO line (to stderr by default). Library logging is off by default.
 
 **Where it appears:**
 
@@ -250,9 +252,6 @@ coverage_a = model_a.list
 coverage_b = model_b.list
 ```
 
-
-
-
 ---
 
 ## Error Handling Strategies
@@ -317,12 +316,13 @@ status = CovLoupe.execute(%w[validate coverage_policy.rb])
 warn 'Coverage policy failed' unless status.zero?
 ```
 
-Unlike the `cov-loupe` executable, neither method installs `INT`/`TERM` handlers, checks the
-Ruby version, prints the version for a first `-v`/`--version` argument before checking the
-Ruby version, or sets
-`Encoding.default_external` to UTF-8 under the C locale (see
-[Library API](LIBRARY_API.md#quick-start) for why that matters for non-ASCII paths). Like the executable, both print the version for `-v` among the options before the
-subcommand.
+Unlike the `cov-loupe` executable, neither method:
+
+- installs `INT`/`TERM` signal handlers
+- checks the Ruby version (the executable handles a first `-v`/`--version` argument before that check, so it works under an unsupported Ruby)
+- sets `Encoding.default_external` to UTF-8 under the C locale (see [Library API](LIBRARY_API.md#quick-start) for why that matters for non-ASCII paths)
+
+Like the executable, both print the version for `-v` anywhere among the options before the subcommand.
 
 ```ruby
 CovLoupe.run(%w[--error-mode debug --log-file cov_loupe.log list])
@@ -344,8 +344,8 @@ Use the `validate` subcommand to enforce custom coverage policies in CI/CD.
 Example predicates are in [`examples/success_predicates/`](../../examples/success_predicates/README.md).
 
 The predicate can be any Ruby object that responds to `call` and accepts a `CoverageModel`
-as its argument. This is usually a lambda (proc), but it can also be a nonlambda proc, a class with a
-`self.call` method, or an instance of a class with a `call` method. The predicate should return a truthy value for success 
+as its argument: usually a lambda, but a non-lambda proc, a class with a `self.call` method,
+or an instance of a class with a `call` method also works. It returns a truthy value for success
 or `false`/`nil` for failure.
 
 > **⚠️ SECURITY WARNING**
@@ -364,7 +364,7 @@ or `false`/`nil` for failure.
 
 **Quick Usage:**
 ```sh
-# validate prints no result (only what the predicate itself prints); check the exit code
+# validate prints nothing except what the predicate prints; check the exit code
 # with `echo $?` (0 = pass, 3 = fail, 4 = error in the predicate)
 
 # Every file in the coverage data must be >= 80%
@@ -434,8 +434,6 @@ File.expand_path(data['file'], model.root)
 
 ## CI/CD Integration
 
-The CLI is designed for CI/CD use with features that integrate naturally into pipeline workflows:
-
 ### Key Integration Features
 
 - **Exit codes**: Non-zero on failure, making it suitable for pipeline failure conditions
@@ -449,8 +447,8 @@ The CLI is designed for CI/CD use with features that integrate naturally into pi
 # 1. Run tests to generate coverage
 bundle exec rspec
 
-# 2. Validate coverage freshness (fails with exit code 1 if any file in the coverage data, within the globs, is stale
-#    or a matching file is not in coverage data; on the demo fixture it fails, since two lib files are not in coverage data)
+# 2. Fail (exit 1) if a file matching the globs is stale or is not in the coverage data.
+#    On the demo fixture this fails, because two lib files are not in the coverage data.
 clp -S true -g "lib/**/*.rb"
 
 # 3. Export data for CI artifacts or further processing
@@ -469,13 +467,7 @@ bundle exec rspec
 clp validate coverage_policy.rb
 ```
 
-Exit codes:
-
-- `0` - Success (coverage meets requirements)
-- `1` - Runtime error (e.g., missing or stale coverage data with `--raise-on-stale true`)
-- `2` - Usage error (invalid options or arguments)
-- `3` - Validation failed (coverage policy not met)
-- `4` - Predicate error (invalid predicate or an error raised by its own code; coverage-data errors it triggers exit 1)
+For the exit codes, see [Exit Codes](CLI_USAGE.md#exit-codes).
 
 ### Platform-Specific Examples
 
@@ -489,22 +481,14 @@ For GitHub Actions and GitLab CI examples, see [CI/CD Integration](examples/ci-c
 
 ### File Globs Overview
 
-**Default behavior:** By default, `--file-globs` is empty (`[]`), which means all files in the coverage file are shown. This ensures transparency—you see exactly what SimpleCov measured without any filtering.
+By default, `--file-globs` is empty (`[]`), so every file in the coverage file is shown, exactly as SimpleCov measured it. Setting file globs does two things:
 
-**Why opt-in filtering?**
+1. **Limits results** - only files in the coverage file that match the patterns are shown
+2. **Reports missing files** - files on disk that match the patterns but are not in the coverage file are listed (in `not_in_coverage_files` for `list`, and counted in `not_in_coverage` for `totals`)
 
-- **Coverage results are not hidden** - Results are not excluded because their filespecs did not match default file globs
-- **Meaningful validation** - `not_in_coverage_files` only flags files you explicitly expect to have coverage
-- **Project flexibility** - Different projects use different directory structures
+Without file globs, files that are not in the coverage file are invisible. That includes files added since the last test run, and files never loaded during tests unless SimpleCov's `cover` globs include them (SimpleCov then records them at 0%).
 
-**Important:** Files that are not in the coverage file are not visible with the default empty array. That includes files added since the last test run, and files never loaded during tests unless SimpleCov's `cover` globs include them (SimpleCov then records them at 0%).
-
-**Two purposes of file globs:**
-
-1. **Limit results** - Only show files from the coverage file that match the patterns
-2. **Include files with or without coverage** - Report files that match the patterns but aren't in the coverage file (reported in `not_in_coverage_files` for `list`, `not_in_coverage` for `totals`)
-
-**When to set them:** with no file globs you see what SimpleCov reported. Set them to also catch files with no coverage data, using patterns for the files you expect to be covered (normally the globs you give SimpleCov's `cover`; files that its `skip` filters remove still match them and are reported as not in coverage data, so narrow the globs to leave those out). See [`--file-globs`](CLI_USAGE.md#file-globs) for the canonical setup example.
+See [`--file-globs`](CLI_USAGE.md#file-globs) for why there are no default patterns, which patterns to choose, and a setup example.
 
 ### Pattern Syntax
 
@@ -517,7 +501,23 @@ Uses Ruby's `File.fnmatch` with extended glob support:
 # Multiple patterns (comma-separated; a repeated -g replaces the earlier one)
 -g "lib/payments/**/*.rb,lib/ops/jobs/**/*.rb"
 
-# Exclude patterns: -g has no negation syntax, so filter the output instead
+# Brace alternatives (a comma inside {...} or [...] belongs to its pattern)
+-g "app/{models,controllers}/**/*.rb"
+-g "app/{models,controllers}/**/*.rb,lib/**/*.rb"
+
+# Nested directories
+-g "app/**/concerns/*.rb"
+```
+
+The CLI's `-g` value (on the command line or in `COV_LOUPE_OPTS`, including when it starts the MCP server) is split only on commas outside `{...}` and `[...]`, and an unclosed `{`, or an unclosed `[` outside braces, is a usage error. [`--file-globs`](CLI_USAGE.md#file-globs) gives the full rules, including literal commas and brackets, backslash escapes, and quoting in `COV_LOUPE_OPTS`.
+
+The MCP `file_globs` tool argument takes an array of patterns, and the Ruby API takes an array or a single pattern string. Neither splits on commas or checks for unclosed brackets, so a pattern with an unclosed bracket matches no files on CRuby (JRuby reads an unmatched `{` literally).
+
+### Excluding Files
+
+`-g` has no negation syntax. To exclude files, filter the JSON output instead:
+
+```sh
 clp -fJ list | jq '.files[] | select(.file | test("ops") | not)'
 
 # Ruby alternative:
@@ -529,16 +529,7 @@ clp -fJ list | ruby -r json -e '
 
 # Rexe alternative:
 clp -fJ list | rexe -ij -mb -oJ 'self["files"].reject { |f| f["file"].include?("ops") }'
-
-# Brace alternatives (a comma inside {...} or [...] belongs to its pattern)
--g "app/{models,controllers}/**/*.rb"
--g "app/{models,controllers}/**/*.rb,lib/**/*.rb"
-
-# Complex patterns
--g "app/**/concerns/*.rb"
 ```
-
-The CLI's `-g` value (on the command line or in `COV_LOUPE_OPTS`, including when it starts the MCP server) is split only on commas outside `{...}` and `[...]`, and an unclosed `{`, or an unclosed `[` outside braces, is a usage error. [`--file-globs`](CLI_USAGE.md#file-globs) gives the full rules, including literal commas and brackets, backslash escapes, and quoting in `COV_LOUPE_OPTS`. The MCP `file_globs` tool argument takes an array of patterns, and the Ruby API an array or a single pattern string; neither splits on commas or checks for unclosed brackets, so such a pattern there matches no files on CRuby (JRuby reads an unmatched `{` literally).
 
 ### Use Cases
 

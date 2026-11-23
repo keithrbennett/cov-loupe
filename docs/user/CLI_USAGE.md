@@ -4,13 +4,16 @@
 
 Complete reference for using cov-loupe from the command line.
 
-> Docs use `clp` as a shortcut pointing at the demo fixture with partial coverage:
+> The examples use `clp`, an alias that points cov-loupe at the demo fixture in `docs/fixtures/demo_project`. The
+> fixture is a small Rails-like project with deliberate coverage gaps, some of which the `--file-globs` examples use:
+>
 > `alias clp='cov-loupe -R docs/fixtures/demo_project'`  # -R = --root
-> Run the examples from the root of a cov-loupe checkout, since the alias's path is relative. Without the gem
-> installed, use `alias clp='bundle exec exe/cov-loupe -R docs/fixtures/demo_project'` instead.
-> Replace `clp` with `cov-loupe` to run commands against your own project.
-> The demo fixture is a small Rails-like project in `docs/fixtures/demo_project` with intentional coverage gaps for testing `--file-globs`.
-> Its coverage timestamp is deliberately set far in the future, so the outputs below are reproducible on a fresh clone.
+>
+> The alias's path is relative, so run the examples from the root of a cov-loupe checkout. Without the gem installed,
+> use `alias clp='bundle exec exe/cov-loupe -R docs/fixtures/demo_project'` instead. The fixture's coverage timestamp
+> is set far in the future, so the outputs below are reproducible on a fresh clone.
+>
+> To run a command against your own project, replace `clp` with `cov-loupe`.
 
 ## Table of Contents
 
@@ -56,8 +59,8 @@ clp -fJ t
 clp validate examples/success_predicates/project_coverage_minimum_predicate.rb
 clp v examples/success_predicates/project_coverage_minimum_predicate.rb
 clp v -i '->(m) { m.project_totals["percentage"].to_f >= 85 }'
-# validate prints no result (only what the predicate itself prints); check the exit code (0 pass, 3 fail). On the demo fixture
-# (80.85% total) these minimum-85% checks fail, so they exit 3.
+# validate prints nothing except what the predicate prints; check the exit code (0 = pass, 3 = fail).
+# The demo fixture's total is 80.85%, so these 85%-minimum checks exit 3.
 echo $?
 
 # Show version (no subcommand; use -v or --version; `v` without a dash runs validate)
@@ -86,7 +89,7 @@ Show coverage summary for all files (default subcommand).
 clp list
 clp l
 clp -o d l  # -o = --sort-order, d = descending
-clp -fJ l           
+clp -fJ l
 ```
 
 Default sort order is descending (highest coverage first) so the lowest-coverage files stay visible at the bottom of the scrollback. Files with no coverable lines (`n/a`) sort above 100%; see [Sorting Coverage Lists with n/a Entries](ADVANCED_USAGE.md#sorting-coverage-lists-with-na-entries).
@@ -139,9 +142,9 @@ Files: total 7, ok 7, stale 0
 }
 ```
 
-**Stale indicators:** deleted (source file deleted), newer (timestamp mismatch), length_mismatch (line count mismatch), unreadable (source file could not be read, or its staleness check failed)
+**Stale indicators:** `deleted` (source file no longer exists), `newer` (source file modified after the coverage run), `length_mismatch` (line count differs from the coverage data), `unreadable` (source file could not be read, or its staleness check failed). See [Staleness values](#staleness-values).
 
-**Skipped rows:** a coverage row with invalid data is left out of the report. It is listed in the exclusions summary on `stderr` (table format) or in `skipped_files` (structured formats, with a warning on `stderr`). The table-format exclusions summary also lists files not in coverage data and stale files, and a table with stale rows ends with a `Staleness:` legend line. With `--raise-on-stale true`, such a row is an error instead.
+**Skipped rows:** A coverage row with invalid data is left out of the report. In table format it is listed in the exclusions summary on `stderr`; in structured formats it appears in `skipped_files`, with a warning on `stderr`. With `--raise-on-stale true`, a skipped row is an error instead. The table-format exclusions summary also lists stale files and files not in the coverage data, and a table with stale rows ends with a `Staleness:` legend line.
 
 ### `summary <path>`, `s <path>`
 
@@ -478,13 +481,66 @@ File breakdown:
 
 **Notes:**
 
-- The line metrics (`covered`, `uncovered`, `total`, `percentage`) count fresh coverage entries only; `file_counts.with_coverage.ok` is how many files they include, and `file_counts.with_coverage.stale.total` how many stale files they exclude.
+- The line metrics (`covered`, `uncovered`, `total`, `percentage`) count fresh files only, so stale files (`deleted`, `newer`, `length_mismatch`, `unreadable`) do not affect them. `file_counts.with_coverage.ok` is the number of files included, and `file_counts.with_coverage.stale.total` the number of stale files excluded.
 - `with_coverage.stale.by_type` keys match the per-file `stale` values: `deleted`, `newer`,
   `length_mismatch`, `unreadable`.
-- `without_coverage` counts files without usable coverage data: `skipped` (coverage rows with invalid data) and `not_in_coverage` (files matching the file globs that the coverage data does not list). Only files in the coverage data are read (to check staleness), so an unreadable file is counted under `with_coverage` as stale, or as `skipped` if its coverage data is invalid. `not_in_coverage` is `null` when no file globs are set, since there is then no list of files to check, and `without_coverage.total` adds up the counts that are not `null`.
-- Respects `-g` / `--file-globs` when you only want to aggregate a subset of files.
-- Totals exclude stale files (`"deleted"`, `"newer"`, `"length_mismatch"`, `"unreadable"`) so the aggregate reflects only fresh coverage data.
-- Honors `-S true` / `--raise-on-stale true` to raise if coverage data is out of date.
+- `without_coverage` counts files without usable coverage data: `skipped` (coverage rows with invalid data) and `not_in_coverage` (files matching the file globs that the coverage data does not list).
+    - `not_in_coverage` is `null` when no file globs are set, since there is then no list of files to check. `without_coverage.total` adds up the counts that are not `null`.
+    - Only files listed in the coverage data are read (to check staleness). An unreadable file is therefore counted under `with_coverage` as stale, or as `skipped` if its coverage data is invalid.
+- Use `-g` / `--file-globs` to total only a subset of files.
+- With `-S true` / `--raise-on-stale true`, stale coverage data is an error.
+
+### `validate <file> | -i <code>`, `v <file> | -i <code>` (`-i` = `--inline`)
+
+Validate coverage against custom policies for CI/CD enforcement.
+
+> **⚠️ SECURITY WARNING**
+>
+> Validation predicates execute as **arbitrary Ruby code with full system privileges**. They have unrestricted access
+> to file system, network, system commands, and environment variables.
+>
+> **Only use predicate files from trusted sources.**
+> Review predicates before use, especially in CI/CD environments.
+
+The predicate must be a callable (lambda, proc, or object with `#call` method) that receives a `CoverageModel` and returns a truthy or falsy value; this applies to `-i` code too, so `-i 'true'` is an error. A predicate file path is resolved against the current directory, not `--root`, and the file is read as UTF-8 whatever the locale.
+
+**Predicate return values:**
+
+- Truthy (e.g., `true`) - Coverage meets your criteria (CLI exits with code 0)
+- Falsy (`false` or `nil`) - Coverage fails your criteria (CLI exits with code 3)
+- Error in the predicate itself (syntax error, not callable, or an exception raised by its own code) - Predicate error (CLI exits with code 4). Coverage-data errors triggered while the predicate queries the model, such as a missing file or stale data with `--raise-on-stale true`, exit with code 1 like any other command.
+
+**File mode (most common):**
+```sh
+# Use example predicate
+clp validate examples/success_predicates/all_files_above_threshold_predicate.rb
+clp v examples/success_predicates/all_files_above_threshold_predicate.rb
+
+# In CI/CD
+cov-loupe validate coverage_policy.rb
+cov-loupe v coverage_policy.rb
+```
+
+**String mode (inline code):**
+```sh
+# Simple inline validation
+clp validate -i '->(m) { m.list["files"].all? { |f| f["percentage"].nil? || f["percentage"] >= 80 } }'
+clp v -i '->(m) { m.list["files"].all? { |f| f["percentage"].nil? || f["percentage"] >= 80 } }'
+
+# Long form of -i, with an option after the subcommand
+clp validate --inline '->(m) { m.list["files"].size > 0 }' -S true
+clp v --inline '->(m) { m.list["files"].size > 0 }' -S true
+```
+
+**Example predicate file:**
+```ruby
+# coverage_policy.rb
+->(model) do
+  model.list["files"].all? { |f| f['percentage'].nil? || f['percentage'] >= 80 }
+end
+```
+
+See [examples/success_predicates/](../../examples/success_predicates/README.md) for more examples.
 
 ## Global Options
 
@@ -499,7 +555,12 @@ clp summary lib/api/client.rb --format json  # Same result
 
 Putting options after the subcommand lets an agent permission rule such as `Bash(cov-loupe list:*)` allow a subcommand with any options; see [CLI Fallback for LLMs](CLI_FALLBACK_FOR_LLMS.md#differences-between-the-interfaces).
 
-These options come only before the subcommand; after it they are a usage error: `-m`/`--mode`, `--[no-]allow-code-predicates`, `-h`/`--help`, `-v`/`--version` and `-p`/`--path-for`. Options after an unknown subcommand are not parsed; the unknown subcommand is reported. `validate`'s `-i` goes after `validate`. A standalone `--` before the subcommand is also an error (a `--` that is an option's value, as in `-g --`, is fine).
+Exceptions and special cases:
+
+- `-m`/`--mode`, `--[no-]allow-code-predicates`, `-h`/`--help`, `-v`/`--version`, and `-p`/`--path-for` must come before the subcommand; after it they are a usage error.
+- `validate`'s `-i` goes after `validate`.
+- A standalone `--` before the subcommand is an error. A `--` that is an option's value, as in `-g --`, is fine.
+- Options after an unknown subcommand are not parsed; the error reports the unknown subcommand.
 
 After the subcommand, an argument that starts with `-` is read as an option, so a path that starts with `-` must follow `--`:
 
@@ -572,11 +633,7 @@ clp -fJ summary lib/api/client.rb   # multi-line, indented JSON
 clp -fj summary lib/api/client.rb   # single-line JSON
 ```
 
-JSON output (`-fj` / `-fJ`) is useful for:
-
-- Parsing in scripts
-- Integration with other tools
-- Machine consumption
+Use JSON output (`-fj` / `-fJ`) when a script or another tool will read the result.
 
 ### `-o, --sort-order ORDER`
 
@@ -647,7 +704,7 @@ These options require explicit boolean values. Recognized literals (case-insensi
 
 ```sh
 clp --color false           # disable color
-clp --raise-on-stale yes    # enforce stale coverage failures
+clp --raise-on-stale yes    # fail when coverage is stale
 ```
 
 ### `-C, --color BOOLEAN`
@@ -676,10 +733,10 @@ clp --raise-on-stale false
 
 **Staleness conditions:**
 
-- **"deleted"** (Deleted): Source file no longer exists on disk
-- **"newer"** (Timestamp): Source file modified after coverage was generated
-- **"length_mismatch"** (Length): Source file line count differs from coverage data
-- **"unreadable"** (Unreadable): Source file could not be read (permission or I/O errors), or its staleness check failed
+- **`deleted`**: Source file no longer exists on disk
+- **`newer`**: Source file modified after coverage was generated
+- **`length_mismatch`**: Source file line count differs from coverage data
+- **`unreadable`**: Source file could not be read (permission or I/O errors), or its staleness check failed
 - Files matching the file globs that are not in coverage data (with `--file-globs`; checked by `list`, `totals`, the default report, and `validate` predicates that call `model.list` or `model.project_totals`; the per-file commands ignore `-g`)
 
 <a id="file-globs"></a>
@@ -689,8 +746,14 @@ clp --raise-on-stale false
 Comma-separated glob patterns. They limit results to matching files, and report matching files on disk that have no coverage data at all.
 
 - Put all patterns in one `-g` value; a repeated `-g` replaces the earlier one.
-- The value is split only on commas outside `{...}` and `[...]`, so brace alternatives and character classes stay whole: `-g 'app/{models,controllers}/**/*.rb,lib/**/*.rb'` is two patterns. To write a literal comma in a pattern, use `[,]`, which works everywhere. A comma escaped with a backslash (`\,`) also does not split, except on Windows, where a backslash is a path separator. A doubled backslash (`\\`) is an escaped backslash, so a comma after it does split. The backslash must reach cov-loupe, so quote it (`-g 'a\,b.rb,c.rb'`): Unix shells and `COV_LOUPE_OPTS` both remove an unquoted backslash. In `COV_LOUPE_OPTS` the quotes go inside the value: `COV_LOUPE_OPTS="-g 'a\,b.rb,c.rb'"`. Empty items, as in `'a,,b'` or a trailing comma, are ignored, so a value with no patterns at all, such as `''` or `','`, means no file globs. One contrived case is not followed: a `[` that opens inside braces and closes after them, as in `{a[1,2},b]`, is split at the comma after `}`, giving `{a[1,2}` and `b]`.
-- An unclosed `{`, or an unclosed `[` outside braces, is a usage error (exit 2) for every command, including the per-file ones that otherwise ignore `-g`, and at MCP server startup. A bad value in `COV_LOUPE_OPTS` is parsed before the command line, so it fails every command even when the command line passes its own `-g`; see [`COV_LOUPE_OPTS`](#cov_loupe_opts) for how such errors are reported. CRuby matches no files for such a pattern; JRuby reads an unmatched `{` literally, but it is rejected there too, so a value means the same on every engine. To match a literal `[`, write `[[]` (or `\[`, except on Windows). To match a literal `{`, escape it as `\{`, quoted like `\,` above so the backslash reaches cov-loupe; on Windows, where a backslash is a path separator, a literal `{` cannot be written in `-g`. See [Advanced Filtering](ADVANCED_USAGE.md#advanced-filtering-glob-patterns).
+- **Splitting.** The value is split only on commas outside `{...}` and `[...]`, so brace alternatives and character classes stay whole: `-g 'app/{models,controllers}/**/*.rb,lib/**/*.rb'` is two patterns. Empty items, as in `'a,,b'` or a trailing comma, are ignored, so a value with no patterns at all, such as `''` or `','`, means no file globs.
+- **Literal commas.** Write a literal comma as `[,]`, which works everywhere. A backslash-escaped comma (`\,`) also does not split, except on Windows, where a backslash is a path separator. A doubled backslash (`\\`) is an escaped backslash, so a comma after it does split.
+- **Quoting backslashes.** Unix shells and `COV_LOUPE_OPTS` both remove an unquoted backslash, so quote it: `-g 'a\,b.rb,c.rb'`. In `COV_LOUPE_OPTS` the quotes go inside the value: `COV_LOUPE_OPTS="-g 'a\,b.rb,c.rb'"`.
+- **Literal `[` and `{`.** To match a literal `[`, write `[[]` (or `\[`, except on Windows). To match a literal `{`, write `\{`, quoted as above so the backslash reaches cov-loupe. On Windows, where a backslash is a path separator, a literal `{` cannot be written in `-g`.
+- **Unclosed brackets.** An unclosed `{`, or an unclosed `[` outside braces, is a usage error (exit 2) for every command, including the per-file commands that otherwise ignore `-g`, and at MCP server startup. (CRuby would match no files for such a pattern, and JRuby would read an unmatched `{` literally; rejecting it makes a value mean the same on every engine.) Because `COV_LOUPE_OPTS` is parsed before the command line, a bad value there fails every command, even one that passes its own `-g`; see [`COV_LOUPE_OPTS`](#cov_loupe_opts) for how such errors are reported.
+- **One unsupported case.** A `[` that opens inside braces and closes after them, as in `{a[1,2},b]`, is split at the comma after `}`, giving `{a[1,2}` and `b]`.
+
+See [Advanced Filtering](ADVANCED_USAGE.md#advanced-filtering-glob-patterns) for more glob examples.
 
 **Default:** `[]` (empty - shows every file in the coverage file)
 
@@ -702,7 +765,11 @@ Comma-separated glob patterns. They limit results to matching files, and report 
 
 **Important:** Files that are not in the coverage file are not visible with the default empty array. That includes files added since the last test run, and files never loaded during tests unless SimpleCov's `cover` globs include them (SimpleCov then records them at 0%).
 
-**When to set it:** leave it unset to see what SimpleCov reported. Set it to also catch files with no coverage data. Use patterns that describe the files you expect to be covered, normally the globs you give SimpleCov's `cover`, so files outside them are not reported as missing. Files that SimpleCov's `skip` filters remove still match the globs, though, and are reported as missing; narrow the globs to leave them out. For example, with this SimpleCov setup, set the matching globs in `COV_LOUPE_OPTS` so every project-level command uses them:
+**When to set it:** Leave it unset to see exactly what SimpleCov reported. Set it to also catch files that have no coverage data.
+
+Use patterns that describe the files you expect to be covered, normally the globs you give SimpleCov's `cover`, so files outside them are not reported as missing. Files removed by SimpleCov's `skip` filters still match the globs, though, and are reported as missing; narrow the globs to leave them out.
+
+For example, with this SimpleCov setup, set the matching globs in `COV_LOUPE_OPTS` so every project-level command uses them:
 
 ```ruby
 # In spec_helper.rb or similar
@@ -752,20 +819,18 @@ Without globs, this array is empty (no expectations = no violations), while the 
 
 ### `-l, --log-file PATH`
 
-Log target. The default is `stderr`; use a file path for persistent logging.
-Use 'stderr' to log to standard error.
-Use 'off' to disable logging entirely (cross-platform alternative to /dev/null); use './off' for a file named `off`.
-Logging to 'stdout' is not permitted because it would corrupt command output.
-A relative log file path is resolved against the current directory, not `--root`.
+Log target. Values:
 
-With the default `stderr` target, the CLI does not log its parameters or errors there;
-an error appears there once, as the user-facing message (followed by its stack trace
-with `--error-mode debug`). Warnings and diagnostics about the coverage data can still
-appear on stderr. A file target also receives a `CLI parameters` line for each run whose
-options are valid and whose subcommand, if any, is known and, unless `--error-mode off`
-is used, a log entry for each error. Invalid options and option values are rejected
-before logging is set up, so they appear only on stderr; an unknown subcommand and other
-usage errors found by the subcommand, such as a missing path, are logged to the file.
+- `stderr` (default) - log to standard error
+- a file path - log to that file, for persistent logging. A relative path is resolved against the current directory, not `--root`.
+- `off` - disable logging entirely (a cross-platform alternative to `/dev/null`). Use `./off` for a file named `off`.
+
+`stdout` is not allowed, because log output would corrupt command output.
+
+What each target receives:
+
+- **`stderr`:** The CLI does not log its parameters or errors there. Each error appears there once, as the user-facing message (followed by its stack trace with `--error-mode debug`). Warnings and diagnostics about the coverage data can still appear on stderr.
+- **A log file:** A `CLI parameters` line for each run whose options are valid and whose subcommand, if any, is known; and, unless `--error-mode off` is set, an entry for each error. Invalid options and option values are rejected before logging is set up, so they appear only on stderr. An unknown subcommand and other usage errors found by the subcommand, such as a missing path, are logged to the file.
 
 ```sh
 clp -l /tmp/cov-loupe.log  # -l = --log-file
@@ -789,11 +854,12 @@ Error handling verbosity.
 | `l`                | `log`   | Log errors without stack traces (default) |
 | `d`                | `debug` | Log errors with full stack traces         |
 
-Error messages are always printed to stderr, and `debug` also prints a stack trace
-after the message: the first 5 lines with a log file, which gets the full trace, and
-otherwise (the default `stderr` target, or `off`) the full trace. With the `stderr` target, errors are
-not logged there a second time, so `off` and `log` look the same. With a log file,
-`log` and `debug` write each error to the file.
+Error messages are always printed to stderr. With `debug`, a stack trace follows the message:
+the full trace with the default `stderr` target or with `-l off`, or the first 5 lines when
+logging to a file (the file gets the full trace).
+
+With the `stderr` target, errors are not logged a second time, so `off` and `log` look the same.
+With a log file, `log` and `debug` also write each error to the file.
 
 ```sh
 clp --error-mode debug summary lib/api/client.rb
@@ -842,13 +908,13 @@ clp -O f list  # f = fancy
   characters such as accented letters, curly quotes, or Japanese
 - Log files
 
-cov-loupe never rewrites data for display. Ruby itself escapes non-ASCII characters as
-`\uXXXX` in the `inspect`, `pretty_print`, `amazing_print` and `puts` formats, and in error
+cov-loupe never rewrites data for display. Ruby itself, however, escapes non-ASCII characters
+as `\uXXXX` in the `inspect`, `pretty_print`, `amazing_print`, and `puts` formats, and in error
 messages that quote a path the way `inspect` does, when Ruby's default encodings are not UTF-8.
-Under the C locale (`LANG=C`) the `cov-loupe` executable sets `Encoding.default_external` to
-UTF-8, so the characters are shown as they are there (unless `Encoding.default_internal` is
-set to a non-UTF-8 encoding, for example with `RUBYOPT=-E:US-ASCII`; then the other formats
-can fail to write non-ASCII characters at all).
+Under the C locale (`LANG=C`), the `cov-loupe` executable sets `Encoding.default_external` to
+UTF-8, so those characters are shown unescaped. The exception is when `Encoding.default_internal`
+is set to a non-UTF-8 encoding (for example with `RUBYOPT=-E:US-ASCII`); then those formats can
+fail to write non-ASCII characters at all.
 
 **Use cases:**
 
@@ -857,19 +923,19 @@ can fail to write non-ASCII characters at all).
 - **Piped output** to files that should not contain box-drawing characters: `clp -O ascii list > coverage.txt`
 - **Force Unicode** when the locale is not UTF-8 but the terminal can draw it: `clp -O fancy list`
 
-**Note:** The default mode checks the output encoding, which normally follows your locale (e.g., `LANG`): UTF-8 gives Unicode, anything else ASCII. It cannot see what your terminal can actually draw. If table borders or the ✓ marker appear garbled, try `clp -O ascii`. Non-ASCII characters in your data are left as they are in every mode, except that ASCII mode escapes them as `\uXXXX` in JSON output.
+**Note:** The default mode checks the output encoding, which normally follows your locale (e.g., `LANG`). It cannot detect what your terminal can actually draw, so if table borders or the ✓ marker appear garbled, use `clp -O ascii`.
 
 **Limitation:** Table column widths are measured in characters, so wide (for example CJK) characters can leave the right border misaligned.
 
 ### `-m, --mode MODE`
 
-Specify execution mode: `cli` or `mcp` (or `c`/`m`; default: `cli`). Use `--mode mcp` to run as an MCP server.
-cov-loupe never switches to MCP mode on its own; without `--mode mcp` (on the command line or in `COV_LOUPE_OPTS`) it runs in CLI mode.
+Execution mode: `cli` or `mcp` (or `c`/`m`; default: `cli`). Use `--mode mcp` to run as an MCP server.
+cov-loupe never switches to MCP mode on its own; unless `--mode mcp` is given on the command line or in `COV_LOUPE_OPTS`, it runs in CLI mode.
 
 ```sh
 clp -m mcp               # MCP server mode (required for MCP), short option form
 clp --mode mcp           # MCP server mode (required for MCP), long option form
-clp -m cli list          # CLI mode (default), can use to override environment variable
+clp -m cli list          # CLI mode (default); overrides -m mcp in COV_LOUPE_OPTS
 ```
 
 ### `--[no-]allow-code-predicates`
@@ -880,58 +946,6 @@ MCP mode only: registers the `project_validate` tool, which runs Ruby predicates
 clp -m mcp --allow-code-predicates     # enable project_validate
 clp -m mcp --no-allow-code-predicates  # disable it, overriding COV_LOUPE_OPTS
 ```
-
-### `validate <file> | -i <code>`, `v <file> | -i <code>` (`-i` = `--inline`)
-
-Validate coverage against custom policies for CI/CD enforcement.
-
-> **⚠️ SECURITY WARNING**
->
-> Validation predicates execute as **arbitrary Ruby code with full system privileges**. They have unrestricted access
-> to file system, network, system commands, and environment variables.
->
-> **Only use predicate files from trusted sources.**
-> Review predicates before use, especially in CI/CD environments.
-
-The predicate must be a callable (lambda, proc, or object with `#call` method) that receives a `CoverageModel` and returns a truthy or falsy value; this applies to `-i` code too, so `-i 'true'` is an error. A predicate file path is resolved against the current directory, not `--root`, and the file is read as UTF-8 whatever the locale.
-
-**Predicate return values:**
-
-- Truthy (e.g., `true`) - Coverage meets your criteria (CLI exits with code 0)
-- Falsy (`false` or `nil`) - Coverage fails your criteria (CLI exits with code 3)
-- Error in the predicate itself (syntax error, not callable, or an exception raised by its own code) - Predicate error (CLI exits with code 4). Coverage-data errors triggered while the predicate queries the model, such as a missing file or stale data with `--raise-on-stale true`, exit with code 1 like any other command.
-
-**File mode (most common):**
-```sh
-# Use example predicate
-clp validate examples/success_predicates/all_files_above_threshold_predicate.rb
-clp v examples/success_predicates/all_files_above_threshold_predicate.rb
-
-# In CI/CD
-cov-loupe validate coverage_policy.rb
-cov-loupe v coverage_policy.rb
-```
-
-**String mode (inline code):**
-```sh
-# Simple inline validation
-clp validate -i '->(m) { m.list["files"].all? { |f| f["percentage"].nil? || f["percentage"] >= 80 } }'
-clp v -i '->(m) { m.list["files"].all? { |f| f["percentage"].nil? || f["percentage"] >= 80 } }'
-
-# Long form of -i, with an option after the subcommand
-clp validate --inline '->(m) { m.list["files"].size > 0 }' -S true
-clp v --inline '->(m) { m.list["files"].size > 0 }' -S true
-```
-
-**Example predicate file:**
-```ruby
-# coverage_policy.rb
-->(model) do
-  model.list["files"].all? { |f| f['percentage'].nil? || f['percentage'] >= 80 }
-end
-```
-
-See [examples/success_predicates/](../../examples/success_predicates/README.md) for more examples.
 
 ## Output Formats
 
@@ -964,12 +978,14 @@ Every structured CLI format and library coverage hash has integer `schema_versio
 }
 ```
 
+<a id="staleness-values"></a>
+
 **Staleness values:**
 
 - `"ok"` - Coverage data is current
 - `"deleted"` - Source file deleted (no longer exists on disk)
-- `"newer"` - Timestamp mismatch (file modified after coverage)
-- `"length_mismatch"` - Length mismatch (line count differs)
+- `"newer"` - Source file modified after the coverage run
+- `"length_mismatch"` - Source file's line count differs from the coverage data
 - `"unreadable"` - Source file could not be read, or its staleness check failed
 
 ## Environment Variables
@@ -994,9 +1010,14 @@ clp summary lib/api/client.rb  # Uses JSON (from env)
 clp -f table summary lib/api/client.rb  # Explicit override to table format
 ```
 
-**Parsing:** `COV_LOUPE_OPTS` is parsed on its own, before the command line, into the same settings, so it must be complete: an option at its end that needs a value is an error there, rather than taking the first command-line argument. An option that fails to parse in `COV_LOUPE_OPTS` fails every command, even one that passes the same option correctly. A setting that is invalid only as a final value, such as `--log-file stdout`, can be overridden on the command line. A word in `COV_LOUPE_OPTS` that is not an option (such as a subcommand), or a standalone `--`, is a usage error; see [Migrating to v7](migrations/MIGRATING_TO_V7.md#options-can-follow-the-subcommand).
+**Parsing:** `COV_LOUPE_OPTS` is parsed on its own, before the command line, into the same settings.
 
-**Errors:** an option's error message does not say whether the option came from `COV_LOUPE_OPTS` or the command line. When it is in `COV_LOUPE_OPTS` (an option or value there fails to parse, or a final setting is invalid because of it), the error is followed by a line saying so, with the value:
+- It must be complete: an option at its end that needs a value is an error, rather than taking the first command-line argument.
+- An option that fails to parse in `COV_LOUPE_OPTS` fails every command, even one that passes the same option correctly.
+- A setting that is invalid only as a final value, such as `--log-file stdout`, can be overridden on the command line.
+- A word that is not an option (such as a subcommand), or a standalone `--`, is a usage error; see [Migrating to v7](migrations/MIGRATING_TO_V7.md#options-can-follow-the-subcommand).
+
+**Errors:** An option's error message does not say whether the option came from `COV_LOUPE_OPTS` or the command line. When the error comes from `COV_LOUPE_OPTS` (an option or value there fails to parse, or a final setting is invalid because of it), a second line says so and shows the value:
 
 ```text
 Error: Unclosed '[' in --file-globs value: "lib/[ab". To match a literal '[', write '[[]'
@@ -1004,7 +1025,11 @@ The error is in COV_LOUPE_OPTS ("-g 'lib/[ab'"), which is read before the comman
 Run 'cov-loupe --help' for usage information.
 ```
 
-A `COV_LOUPE_OPTS` that cannot be split into arguments, such as one with an unclosed quote, gets no such line, because its message already names it (`Error: Invalid COV_LOUPE_OPTS format: ...`). Errors in the command line get no such line either, unless `COV_LOUPE_OPTS` has the same error, as when both set `--log-file stdout`. Neither do errors found after the options are parsed, such as a `-c` path that does not exist or an unknown subcommand, even when a value from `COV_LOUPE_OPTS` caused them.
+That second line is not added in these cases:
+
+- `COV_LOUPE_OPTS` cannot be split into arguments, for example because of an unclosed quote. The message already names it (`Error: Invalid COV_LOUPE_OPTS format: ...`).
+- The error is in the command line, unless `COV_LOUPE_OPTS` has the same error, as when both set `--log-file stdout`.
+- The error is found after the options are parsed, such as a `-c` path that does not exist or an unknown subcommand, even when a value from `COV_LOUPE_OPTS` caused it.
 
 **Examples:**
 ```sh
@@ -1020,8 +1045,6 @@ export COV_LOUPE_OPTS='-c "/path with spaces/coverage"'
 # Multiple options
 export COV_LOUPE_OPTS="-S true -fJ --error-mode debug"
 ```
-
-
 
 ## Examples
 
@@ -1099,8 +1122,6 @@ clp -o a list
 # Check specific directory
 clp -g "lib/payments/**/*.rb" list
 ```
-
-
 
 ### Staleness Checking
 

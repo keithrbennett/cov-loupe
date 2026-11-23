@@ -26,7 +26,10 @@ Starting with 7.0, cov-loupe follows [Semantic Versioning](https://semver.org/) 
 
 The public API is:
 
-- **Ruby library**: the classes, modules, methods, and constants tagged `@api public` in the source. The tags, not a list in these docs, define it. In outline, it is the `CovLoupe` entry methods (such as `run`, `execute`, `create_context`, and `with_context`), the classes and modules `CoverageModel`, `CoverageReporter`, `PayloadSchema`, and `ExitCodes`, the [exception classes](#exception-types), and the context objects returned by `create_context`; the tags give the exact members. Of a public method's arguments, only those documented in these guides or in its doc comment are public. To see the tags without reading the source, run `yard doc --api public` from the root of a cov-loupe source checkout (YARD is not a cov-loupe dependency; install it with `gem install yard`) and open `doc/index.html` for a reference containing only the public API, or browse the gem on [RubyDoc.info](https://www.rubydoc.info/gems/cov-loupe), which marks internal items as part of a private API.
+- **Ruby library**: the classes, modules, methods, and constants tagged `@api public` in the source. The tags, not a list in these docs, define it.
+    - In outline, it is the `CovLoupe` entry methods (such as `run`, `execute`, `create_context`, and `with_context`); the classes and modules `CoverageModel`, `CoverageReporter`, `PayloadSchema`, and `ExitCodes`; the [exception classes](#exception-types); and the context objects returned by `create_context`. The tags give the exact members.
+    - Of a public method's arguments, only those documented in these guides or in its doc comment are public.
+    - To see the tags without reading the source, either browse the gem on [RubyDoc.info](https://www.rubydoc.info/gems/cov-loupe), which marks internal items as part of a private API, or run `yard doc --api public` from the root of a cov-loupe source checkout and open `doc/index.html`. YARD is not a cov-loupe dependency; install it with `gem install yard`.
 - **Structured output**, **CLI**, and **MCP server** behavior, as described below.
 - **`validate` predicates**: a predicate is any object responding to `call`; it receives a `CoverageModel` and returns truthy to pass.
 
@@ -58,7 +61,7 @@ The shapes of library coverage hashes, structured CLI output (`-f json`, `pretty
 
 ### Not Covered
 
-- **Human-readable text**: table layouts, the Ruby-rendered output formats (`amazing_print`, `inspect`, `puts`, `pretty_print`), which depend on the Ruby version and other gems, `totals` and other text output, `--help` and `help` tool prose, error message wording, `user_friendly_message` text, log messages, and the string returned by `format_table` or `CoverageReporter.report`. Match on exception classes, exit codes, `isError`, and structured payloads instead.
+- **Human-readable text**: table layouts; the Ruby-rendered output formats (`amazing_print`, `inspect`, `puts`, `pretty_print`), which depend on the Ruby version and other gems; `totals` and other text output; `--help` and `help` tool prose; error message wording and `user_friendly_message` text; log messages; and the strings returned by `format_table` and `CoverageReporter.report`. Match on exception classes, exit codes, `isError`, and structured payloads instead.
 - **Error handlers**: library calls raise exceptions and never consult the context's configured error handler, so the error handler classes, the `error_handler:` keyword, and the handler protocol (`handle_error`, `convert_standard_error`) are internal. Rescue the [exception types](#exception-types) instead.
 
 ## Quick Start
@@ -94,13 +97,12 @@ detailed = model.detailed_for(target)
 raw = model.raw_for(target)
 ```
 
-Logging is configured through the active context. See the [logging initialization
-and target testing guide](LOGGING.md#log-file-initialization-and-target-testing)
-for startup probes, lazy file creation, and mode-specific logging failures. In
-an explicitly created library-mode context, logging is off by default and an
-unusable explicit log target raises `CovLoupe::LoggingError` when the context is
-created. The ambient default context is also quiet; CLI and MCP entry points
-create their own mode-specific contexts with `stderr` as the default target.
+Logging goes through the active context. In library use, logging is off by default, both in
+the ambient default context and in a context you create with `create_context`. Giving a
+context an unusable log target raises `CovLoupe::LoggingError` when the context is created.
+(The CLI and MCP entry points create their own contexts, which log to `stderr` by default.)
+See [Log file initialization and target testing](LOGGING.md#log-file-initialization-and-target-testing)
+for how targets are probed, when the file is created, and how each mode reports logging failures.
 
 Paths in `coverage.json` are UTF-8. Under the C locale (`LANG=C`), Ruby tags `ARGV`,
 `Dir.pwd`, `Dir.glob` and `File.expand_path` results as US-ASCII or BINARY, so non-ASCII
@@ -113,7 +115,12 @@ the `:default` output character mode draw Unicode table borders.)
 
 The hash returned by each public coverage query (`list`, `summary_for`, `uncovered_for`, `detailed_for`, `raw_for`, and `project_totals`) starts with `'schema_version' => CovLoupe::SCHEMA_VERSION`. The value is currently `1`. The key stays with the hash when you serialize it to JSON, YAML, or Marshal. It is independent of the gem's `CovLoupe::VERSION` and of SimpleCov's `schema_version` in the input `coverage.json` file. Methods returning text or status values do not add the key.
 
-The shipped [JSON Schema files](https://github.com/keithrbennett/cov-loupe/tree/main/lib/cov_loupe/schemas/v1) define the eight v1 payload shapes: `summary`, `raw`, `uncovered`, `detailed`, `list`, `totals`, `validate_result`, and `help`. Each file uses JSON Schema draft 2020-12. `CovLoupe::PayloadSchema.schema_path('list', version: 1)` returns the installed file path; an unknown name or version raises `ArgumentError`. Library, CLI, and MCP payloads are the same, except two optional keys: `source`, added to file payloads by the CLI's `--source` option, and `warnings`, added to `list` and `totals` by the MCP tools when `timestamp_status` is `missing` or most files were not found under the project root. The schema IDs use URNs until stable public schema URLs are available.
+The shipped [JSON Schema files](https://github.com/keithrbennett/cov-loupe/tree/main/lib/cov_loupe/schemas/v1) define the eight v1 payload shapes: `summary`, `raw`, `uncovered`, `detailed`, `list`, `totals`, `validate_result`, and `help`. Each file uses JSON Schema draft 2020-12, and the schema IDs use URNs until stable public schema URLs are available. `CovLoupe::PayloadSchema.schema_path('list', version: 1)` returns the installed file path; an unknown name or version raises `ArgumentError`.
+
+Library, CLI, and MCP payloads are the same, except for two optional keys:
+
+- `source`, added to file payloads by the CLI's `--source` option
+- `warnings`, added to `list` and `totals` by the MCP tools when `timestamp_status` is `missing` or most files were not found under the project root
 
 For a previously saved JSON result, load the schema matching the result's own version before using its coverage fields. Add `json_schemer` to your application's dependencies for this example:
 
@@ -130,7 +137,11 @@ raise 'Invalid saved coverage payload' unless schema.valid?(saved)
 files = saved.fetch('files')
 ```
 
-The schema version increments when a key is removed, renamed, or moved, or when a value's type or meaning changes. An incompatible change gets a new `vN` directory copied from the previous version and then edited; earlier version directories are never modified. Adding an optional key is compatible: add it to the current version's schema file without bumping the version. Consumers must ignore unknown keys at every level, not only the top level, so compatible additions remain readable; avoid relying on an exact key set or processing every key as coverage data. These rules apply from the 7.0.0 release; 7.0 pre-releases reported `schema_version` 1 with earlier payload shapes, so do not rely on payloads saved by a pre-release.
+**Compatibility rules.** The schema version increments when a key is removed, renamed, or moved, or when a value's type or meaning changes. An incompatible change gets a new `vN` schema directory, copied from the previous version and then edited; earlier version directories are never modified. Adding an optional key is compatible: it goes into the current version's schema file without a version bump.
+
+Consumers must therefore ignore unknown keys at every level, not only the top level, so that compatible additions remain readable. Do not rely on an exact key set, or treat every key as coverage data.
+
+These rules apply from the 7.0.0 release. 7.0 pre-releases reported `schema_version` 1 with earlier payload shapes, so do not rely on payloads saved by a pre-release.
 
 Line metrics have one shape everywhere: `covered`, `uncovered`, `total` (coverable lines), and `percentage`, as top-level keys of the file payloads (`summary_for`, `uncovered_for`, `detailed_for`), of each `list` row, and of `project_totals`. A `summary_for` payload is therefore a `list` row plus `schema_version`. `percentage` always means line coverage: covered lines divided by coverable lines, truncated (not rounded) to two decimals, or `nil` when there are no coverable lines.
 
@@ -314,9 +325,7 @@ totals = model.project_totals
 lib_totals = model.project_totals(file_globs: 'lib/**/*.rb')
 ```
 
-When `raise_on_stale: true` is set, the method raises on stale coverage instead of returning totals. Otherwise, totals exclude stale files (with staleness indicators `"deleted"`, `"newer"`, `"length_mismatch"`, `"unreadable"`) from line counts and report stale breakdowns under `file_counts['with_coverage']['stale']`. `file_counts['with_coverage']['ok']` is the number of files the line counts include.
-
-Note: `without_coverage.by_type.not_in_coverage` is `nil` when `file_globs` is empty, since there is then no list of files to check; the other counts are always integers.
+When `raise_on_stale: true` is set, the method raises on stale coverage instead of returning totals. Otherwise, the line counts exclude stale files (`"deleted"`, `"newer"`, `"length_mismatch"`, `"unreadable"`), and the stale breakdown is reported under `file_counts['with_coverage']['stale']`. `file_counts['with_coverage']['ok']` is the number of files the line counts include.
 
 ### `staleness_for(path)`
 
@@ -517,23 +526,23 @@ Note: `without_coverage.by_type.not_in_coverage` is `nil` when `file_globs` is e
 All public cov-loupe exceptions inherit from `CovLoupe::Error`, which provides `user_friendly_message` and `original_error`. Rescue a parent class to handle all of its subclasses, and list a subclass before its parent when rescuing both.
 
 - **`CovLoupe::Error`** - Base class
-  - **`ConfigurationError`** - Invalid configuration
-    - **`LoggingError`** - Unusable log target; `#target` names it
-  - **`UsageError`** - Invalid command-line usage
-  - **`PredicateError`** - A `validate` predicate could not be loaded or raised an error
-  - **`UnknownError`** - An unexpected error that fits no other class
-  - **`TextEncodingError`** - Text could not be converted between encodings outside coverage loading, such as CLI or MCP output to a stream that transcodes to a non-UTF-8 encoding
-  - **`FileError`** - A file or path problem, such as a source file that cannot be read
-    - **`FileNotFoundError`** - File does not exist
-    - **`FilePermissionError`** - Permission denied
-    - **`NotAFileError`** - Path is a directory, not a file
-    - **`CoverageFileNotFoundError`** - `coverage.json` not found
-  - **`CoverageDataError`** - Coverage data cannot be used: invalid JSON, an unsupported `meta.schema_version`, a bad structure, or no single entry for a requested file
-    - **`CoverageEntryNotFoundError`** - The requested file is not in the coverage data
-    - **`AmbiguousCoverageEntryError`** - Several coverage entries match the requested path
-    - **`CorruptCoverageDataError`** - A file's coverage entry has no usable `lines` array; raised on load when a non-empty coverage map has no entry with one (line coverage disabled)
-    - **`CoverageDataStaleError`** - A file's coverage is stale (only with `raise_on_stale: true`)
-    - **`CoverageDataProjectStaleError`** - Project coverage is stale (only with `raise_on_stale: true`)
+    - **`ConfigurationError`** - Invalid configuration
+        - **`LoggingError`** - Unusable log target; `#target` names it
+    - **`UsageError`** - Invalid command-line usage
+    - **`PredicateError`** - A `validate` predicate could not be loaded or raised an error
+    - **`UnknownError`** - An unexpected error that fits no other class
+    - **`TextEncodingError`** - Text could not be converted between encodings outside coverage loading, such as CLI or MCP output to a stream that transcodes to a non-UTF-8 encoding
+    - **`FileError`** - A file or path problem, such as a source file that cannot be read
+        - **`FileNotFoundError`** - File does not exist
+        - **`FilePermissionError`** - Permission denied
+        - **`NotAFileError`** - Path is a directory, not a file
+        - **`CoverageFileNotFoundError`** - `coverage.json` not found
+    - **`CoverageDataError`** - Coverage data cannot be used: invalid JSON, an unsupported `meta.schema_version`, a bad structure, or no single entry for a requested file
+        - **`CoverageEntryNotFoundError`** - The requested file is not in the coverage data
+        - **`AmbiguousCoverageEntryError`** - Several coverage entries match the requested path
+        - **`CorruptCoverageDataError`** - A file's coverage entry has no usable `lines` array; raised on load when a non-empty coverage map has no entry with one (line coverage disabled)
+        - **`CoverageDataStaleError`** - A file's coverage is stale (only with `raise_on_stale: true`)
+        - **`CoverageDataProjectStaleError`** - Project coverage is stale (only with `raise_on_stale: true`)
 
 An invalid value for a fixed-choice `CoverageModel` argument is a programming error, not a cov-loupe error: `list` and `format_table` raise Ruby's `ArgumentError` for an invalid `sort_order`, and `format_table` raises it for an invalid `output_chars` when there are rows to format. Rescuing `CovLoupe::Error` does not catch it. Other bad arguments, such as a `coverage_file` that does not exist, raise `CovLoupe::Error` subclasses as listed above.
 
@@ -621,7 +630,7 @@ require "cov_loupe"
 
 model = CovLoupe::CoverageModel.new
 
-# Analyze multiple files efficiently
+# Check a fixed set of files
 files_to_check = [
   "lib/auth_service.rb",
   "lib/payment_processor.rb",
@@ -938,10 +947,10 @@ end
 
 **Simple use case (most common):**
 ```ruby
-# For most use cases, just configure the global context once
+# Usually it is enough to set the process-wide default log target once
 CovLoupe.default_log_file = 'coverage_analysis.log'
 
-# All models automatically use the active global context
+# Models created afterwards log there
 model = CovLoupe::CoverageModel.new
 ```
 
@@ -950,10 +959,10 @@ model = CovLoupe::CoverageModel.new
 The `list` rows and the per-file methods (`summary_for`, `uncovered_for`, `detailed_for`, `raw_for`) return a `'stale'` field with one of these values:
 
 - `"ok"` - Coverage data is current
-- `"deleted"` - **Deleted**: File no longer exists on disk
-- `"newer"` - **Timestamp**: File modified more recently than coverage data
-- `"length_mismatch"` - **Length**: Source file line count differs from coverage data
-- `"unreadable"` - **Unreadable**: Source file could not be read, or its staleness check failed
+- `"deleted"` - File no longer exists on disk
+- `"newer"` - File modified more recently than coverage data
+- `"length_mismatch"` - Source file line count differs from coverage data
+- `"unreadable"` - Source file could not be read, or its staleness check failed
 
 When `raise_on_stale: true` is enabled in `CoverageModel.new`, the model raises `CovLoupe::CoverageDataStaleError` from per-file methods and `CovLoupe::CoverageDataProjectStaleError` from project-level methods (`list`, `project_totals`) when stale files are detected. A per-file method raises `CovLoupe::FileNotFoundError` instead for a deleted file and `CovLoupe::FileError` for an unreadable one.
 

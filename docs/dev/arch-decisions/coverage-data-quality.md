@@ -41,26 +41,26 @@ We implemented a **staleness detection system** with configurable error modes th
 
 The `StalenessChecker` class (defined in `lib/cov_loupe/staleness/staleness_checker.rb`) detects four distinct types of staleness and reports `ok` otherwise:
 
-1. **Type "unreadable" (Unreadable)**: The source file could not be read, or its staleness check failed
-   - Returned by `file_staleness_status` on permission or I/O errors, and by `CoverageModel#staleness_for` and the file queries' `stale` field when an exception is raised during the staleness check
-   - Example: File permission errors or other unexpected issues in the check. Lookup failures (no coverage entry, several matching entries, a malformed entry) are not staleness: they raise `CoverageDataError` subclasses
-   - An exception raised during the staleness check is logged (a read error is not), and execution continues with an "unreadable" status instead of crashing
+1. **`unreadable`**: The source file could not be read, or its staleness check failed
+    - Returned by `file_staleness_status` on permission or I/O errors, and by `CoverageModel#staleness_for` and the file queries' `stale` field when an exception is raised during the staleness check
+    - Example: File permission errors or other unexpected issues in the check. Lookup failures (no coverage entry, several matching entries, a malformed entry) are not staleness: they raise `CoverageDataError` subclasses
+    - An exception raised during the staleness check is logged (a read error is not), and execution continues with an "unreadable" status instead of crashing
 
-2. **Type "deleted" (Deleted)**: The source file exists in coverage but has been deleted from disk
-   - Returned by `file_staleness_status` when `File.file?(file_abs)` returns false
-   - Example: File was deleted after tests ran
+2. **`deleted`**: The source file exists in coverage but has been deleted from disk
+    - Returned by `file_staleness_status` when `File.file?(file_abs)` returns false
+    - Example: File was deleted after tests ran
 
-3. **Type "newer" (Timestamp)**: The source file's mtime is newer than coverage timestamp
-   - Detected by comparing `File.mtime(file_abs)` with coverage timestamp
-   - Example: File was edited after tests ran
+3. **`newer`**: The source file's mtime is newer than coverage timestamp
+    - Detected by comparing `File.mtime(file_abs)` with coverage timestamp
+    - Example: File was edited after tests ran
 
-4. **Type "length_mismatch" (Length)**: The source file line count doesn't match the coverage lines array length
-   - Detected by comparing the source's newline count (`File.binread(path).count("\n")`, matching SimpleCov's line counting) with `coverage_lines.length`
-   - Example: Lines were added/removed without changing mtime (rare but possible with version control)
+4. **`length_mismatch`**: The source file line count doesn't match the coverage lines array length
+    - Detected by comparing the source's newline count (`File.binread(path).count("\n")`, matching SimpleCov's line counting) with `coverage_lines.length`
+    - Example: Lines were added/removed without changing mtime (rare but possible with version control)
 
-5. **Type "ok" (Not stale)**: The file is not stale
-   - Returned when none of the above staleness conditions apply
-   - Indicates the coverage data is current and accurate
+5. **`ok`**: The file is not stale
+    - Returned when none of the above staleness conditions apply
+    - Indicates the coverage data is current and accurate
 
 #### Implementation Details
 
@@ -165,7 +165,7 @@ before merging results.
 
 #### Positive
 
-1. **Accurate detection**: Four types catch different staleness scenarios comprehensively
+1. **Accurate detection**: Four types catch different staleness scenarios
 2. **User control**: Modes allow errors or warnings based on use case
 3. **Detailed information**: Staleness errors include specific file lists and timestamps
 4. **Project awareness**: Can detect newly added files that lack coverage

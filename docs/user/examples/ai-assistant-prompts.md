@@ -8,7 +8,9 @@ The prompts use paths from the demo project (`lib/payments/`, `app/controllers/`
 
 ## Before You Start
 
-**Run the full test suite first.** cov-loupe's staleness checks compare the coverage file with your source files, so they can't tell that a *partial* run (for example, one spec file) produced it. A partial run makes most of your code look untested, and the analysis will be confidently wrong. If you regenerate coverage during a session, use the full suite: a subset run replaces the full-suite numbers in `coverage.json`. SimpleCov merges only runs with different command names, such as RSpec and Minitest results written within its merge timeout (10 minutes by default); a second run of the same suite replaces the first.
+**Run the full test suite first.** cov-loupe's staleness checks compare the coverage file with your source files, so they can't tell that the coverage came from a *partial* run (for example, a single spec file). A partial run makes most of your code look untested, and the analysis will be confidently wrong.
+
+If you regenerate coverage during a session, run the full suite again. SimpleCov merges only results with different command names, such as RSpec and Minitest results written within its merge timeout (10 minutes by default). A second run of the same suite replaces the first, so a subset run replaces the full-suite numbers in `coverage.json`.
 
 ## Explain What Is Not Tested
 

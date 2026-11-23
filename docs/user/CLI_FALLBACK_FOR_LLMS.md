@@ -2,7 +2,7 @@
 
 [Back to main README](../../README.md)
 
-When the MCP server integration isn't working or available, LLMs can run the `cov-loupe` CLI
+When the MCP server is unavailable or not working, LLMs can run the `cov-loupe` CLI
 instead. Every MCP tool has a CLI equivalent that returns the same JSON payload when run with
 `-fJ` (pretty JSON) or `-fj` (compact JSON). This page maps each tool and argument to its CLI
 form.
@@ -75,15 +75,18 @@ pass `-e`/`--error-mode` or `-l`/`--log-file` on the command line instead.
   cov-loupe is mostly read-only, `validate` runs arbitrary Ruby, so a rule letting an agent
   run any `cov-loupe` command without asking also lets it run any Ruby. Allow only the
   subcommands the agent needs instead, such as `cov-loupe list` and `cov-loupe totals`.
-- **Permission rules by subcommand:** options can follow the subcommand
-  (`cov-loupe list -fJ`), so a prefix rule such as `Bash(cov-loupe list:*)` matches a
-  subcommand with any options. After a subcommand other than `validate`, `-i`/`--inline` is
-  an invalid option, and `-m`/`--mode` and `--[no-]allow-code-predicates` are rejected (as are
-  `-h`, `-v` and `-p`), so such a rule cannot run Ruby or start the MCP server. It does allow
-  every other option: `-l`/`--log-file` creates or appends to a
-  file of the agent's choosing, and `-c`, `-R` and `-g` read any path. A prefix rule also
-  covers one command, not a shell string: depending on your harness, `cov-loupe list && ...`
-  may match it. A prefix rule is not a sandbox.
+- **Permission rules by subcommand:** Options can follow the subcommand
+  (`cov-loupe list -fJ`), so a prefix rule such as `Bash(cov-loupe list:*)` matches that
+  subcommand with any options. What such a rule allows:
+    - It cannot run Ruby or start the MCP server. After a subcommand other than `validate`,
+      `-i`/`--inline` is an invalid option, and `-m`/`--mode`, `--[no-]allow-code-predicates`,
+      `-h`, `-v`, and `-p` are rejected.
+    - It does allow every other option: `-l`/`--log-file` creates or appends to a file of the
+      agent's choosing, and `-c`, `-R`, and `-g` read any path.
+    - Depending on your harness, a prefix rule may also match a shell string that starts with
+      the command, such as `cov-loupe list && ...`.
+
+    A prefix rule is not a sandbox.
 
 ## Related Documentation
 

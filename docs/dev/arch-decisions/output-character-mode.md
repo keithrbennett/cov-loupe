@@ -42,7 +42,7 @@ environments; it no longer guarantees ASCII-only output.)
   with ASCII characters when requested, without changing data. (Originally: produce ASCII-only
   output, 0-127; see the Amendment.)
 - **Fancy mode**: Should use Unicode characters for enhanced readability when supported
-- **Auto-detection**: Default mode should intelligently choose based on environment
+- **Auto-detection**: Default mode should choose based on the environment
 - **MCP integration**: MCP tools must support the same output modes as CLI
 - **Comprehensive coverage**: Every output channel that draws decoration must take it from the mode
 - **Backward compatibility**: Existing behavior (Unicode) should remain the default when supported
@@ -50,19 +50,19 @@ environments; it no longer guarantees ASCII-only output.)
 ### Considered Approaches
 
 1. **Separate ASCII formatters**: Create duplicate formatter implementations for ASCII output
-   - Too much code duplication
-   - Maintenance burden (two implementations of each formatter)
+    - Too much code duplication
+    - Maintenance burden (two implementations of each formatter)
 
 2. **Post-process all output**: Apply ASCII conversion after formatting
-   - Inefficient (convert entire formatted output)
-   - Could corrupt already-encoded data (JSON structure)
-   - Alters user data along with the decoration (see the Amendment)
+    - Inefficient (convert entire formatted output)
+    - Could corrupt already-encoded data (JSON structure)
+    - Alters user data along with the decoration (see the Amendment)
 
 3. **Charsets for decoration**: Define a Unicode and an ASCII charset and choose one where the
    decoration is drawn
-   - Clean separation of concerns: decoration changes, data does not
-   - No conversion pass over output
-   - Consistent across all formatters
+    - Clean separation of concerns: decoration changes, data does not
+    - No conversion pass over output
+    - Consistent across all formatters
 
 ## Decision
 
@@ -155,11 +155,12 @@ Consequences of passing data through unchanged:
   non-UTF-8 encoding: when it was given one explicitly (for example with `IO#set_encoding`) or
   when `Encoding.default_internal` is set (for example with `RUBYOPT=-U` in a non-UTF-8 locale).
   By default Ruby's standard streams do not transcode and write the bytes as they are.
-  (This concerns output. On input, `coverage.json`, source and predicate files are always read as UTF-8,
-  and under the C locale the executable sets `Encoding.default_external` to UTF-8 so that
-  paths are UTF-8 too. When the output stream has no encoding, the `default` mode is decided
-  by `Encoding.default_external`: in the executable, its value as the process started, which
-  the executable records before changing it; for library callers, its current value.)
+- On input, by contrast, `coverage.json`, source files, and predicate files are always read as
+  UTF-8, and under the C locale the executable sets `Encoding.default_external` to UTF-8 so that
+  paths are UTF-8 too.
+- When the output stream has no encoding, the `default` mode is decided by
+  `Encoding.default_external`. In the executable, that is its value when the process started
+  (recorded before the executable changes it); for library callers, its current value.
 - Table column widths use `String#length`, so wide (CJK) characters can misalign the right
   border. This applies in both modes.
 
@@ -206,7 +207,7 @@ Consequences of passing data through unchanged:
 
 ### Testing Strategy
 
-Comprehensive test coverage ensures correctness:
+Tests cover:
 
 - Mode resolution and normalization tests
 - Formatter tests for both ASCII and fancy modes

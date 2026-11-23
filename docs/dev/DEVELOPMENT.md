@@ -104,7 +104,15 @@ before { setup_mcp_response_stub }
 
 ## Adding Features
 
-**CLI commands:** Add a command class under `lib/cov_loupe/commands/`, require it and register it in `CovLoupe::Commands::CommandFactory::COMMAND_MAP` (`command_factory.rb`), add its name to `CovLoupe::SUBCOMMANDS` (`lib/cov_loupe/subcommands.rb`; the CLI rejects names not listed there), optionally add an abbreviation to `CovLoupe::SUBCOMMAND_ABBREVIATIONS` (same file), describe it in the subcommand help in `OptionParserBuilder`, and add tests. Options of its own (like `validate`'s `-i`) are defined in `ConfigParser#parse_subcommand_options`, which parses the arguments after the subcommand; the command receives only its positional arguments.
+**CLI commands:**
+
+1. Add a command class under `lib/cov_loupe/commands/`.
+2. Require it and register it in `CovLoupe::Commands::CommandFactory::COMMAND_MAP` (`command_factory.rb`).
+3. Add its name to `CovLoupe::SUBCOMMANDS` in `lib/cov_loupe/subcommands.rb`; the CLI rejects names not listed there. Optionally add an abbreviation to `CovLoupe::SUBCOMMAND_ABBREVIATIONS` in the same file.
+4. Describe it in the subcommand help in `OptionParserBuilder`.
+5. Add tests.
+
+Options specific to the subcommand (like `validate`'s `-i`) are defined in `ConfigParser#parse_subcommand_options`, which parses the arguments after the subcommand; the command receives only its positional arguments.
 
 **MCP tools:** Create `*_tool.rb` in `lib/cov_loupe/tools/`, require it in `lib/cov_loupe/loaders/all_mcp.rb`, add it to `MCPServer::TOOLSET` in `mcp_server.rb`, and add an entry to `HelpTool::TOOL_GUIDE` (`spec/cov_loupe/mcp_server_spec.rb` checks that the two match). A tool that runs client-supplied code must override `executes_code?` to return true, so that it is registered only with `--allow-code-predicates`.
 

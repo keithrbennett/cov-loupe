@@ -48,28 +48,28 @@ The agent writes a timestamped Markdown report to `untracked/` if your project r
 
 **cov-loupe** makes SimpleCov coverage data queryable and actionable through three interfaces:
 
-- **CLI** - command-line execution of single reports or queries
-- **MCP server** - stdio (local, no network) server assists AI analysis of your coverage
-- **Ruby library** - Programmatic API for custom tooling
+- **CLI** - run a single report or query from the command line
+- **MCP server** - a local stdio server (no network access) that lets AI assistants query your coverage
+- **Ruby library** - a programmatic API for custom tooling
 
-Reads SimpleCov's `coverage.json`, the documented JSON formatter output that SimpleCov 1.0.0 and later write alongside the HTML report—no runtime dependency on your test suite.
+It reads `coverage.json`, the documented JSON output that SimpleCov 1.0.0 and later write alongside the HTML report. It does not load SimpleCov or run your tests.
 
 ### Key Features
 
 - ✅ **Multiple interfaces** - CLI, MCP server, and Ruby API
-- ✅ **Annotated source code** - `-s full|uncovered|none` / `--source full|uncovered|none` (in `summary`, `uncovered`, and `detailed`), with `-n N` / `--context-lines N` setting the context lines around uncovered code with `-s uncovered`
-- ✅ **Staleness detection** - Identify outdated coverage (deleted, newer, line count mismatched, or unreadable files)
-- ✅ **Multi-suite aware** - Reads SimpleCov's already-merged `coverage.json`, so RSpec + Cucumber (etc.) appear as one coverage map
-- ✅ **Flexible path resolution** - Works with absolute or relative paths
-- ✅ **Comprehensive error handling** - Context-aware messages for each mode
+- ✅ **Annotated source code** - `summary`, `uncovered`, and `detailed` can show source lines with coverage markers (`-s full` or `-s uncovered`); with `-s uncovered`, `-n N` sets how many context lines surround each uncovered line
+- ✅ **Staleness detection** - flags files whose coverage may be out of date: deleted, modified after the test run, with a changed line count, or unreadable
+- ✅ **Multi-suite aware** - reads SimpleCov's already-merged `coverage.json`, so RSpec, Cucumber, and other suites appear as one coverage map
+- ✅ **Flexible path resolution** - accepts absolute or relative paths
+- ✅ **Error handling suited to each interface** - readable messages in the CLI, exceptions in the library, and `isError` results over MCP
 
 ### Practical Use Cases
 
 - Get a full, risk-ranked analysis of your test suite with the [Test Coverage Analysis prompt](docs/user/prompts/test-coverage-analysis-prompt.md)
 - Query coverage data from AI assistants, e.g.:
-  - "Using the cov-loupe MCP server, analyze test coverage data and write a report to a markdown file containing a free text analysis of each issue and then two tables, one sorted in descending order of urgency, the other in ascending order of level of effort."
-  - "Using the cov-loupe MCP server, generate a table of directories and their average coverage rates, in ascending order of coverage."
-  - For prompts that explain what your tests miss and why it matters, see [AI Assistant Prompts](docs/user/examples/ai-assistant-prompts.md).
+    - "Using the cov-loupe MCP server, analyze test coverage data and write a report to a markdown file containing a free text analysis of each issue and then two tables, one sorted in descending order of urgency, the other in ascending order of level of effort."
+    - "Using the cov-loupe MCP server, generate a table of directories and their average coverage rates, in ascending order of coverage."
+    - For prompts that explain what your tests miss and why it matters, see [AI Assistant Prompts](docs/user/examples/ai-assistant-prompts.md).
 - Find files with the lowest coverage
 - Investigate specific files or directories
 - Generate CI/CD coverage reports
@@ -82,7 +82,7 @@ Reads SimpleCov's `coverage.json`, the documented JSON formatter output that Sim
 ```sh
 gem install cov-loupe
 
-# Or, for the most current version you may need to specify prerelease:
+# Or, to include prerelease versions:
 gem install --pre cov-loupe
 ```
 
@@ -115,7 +115,7 @@ bundle exec rspec
 ls -l coverage/coverage.json
 ```
 
-This needs SimpleCov 1.0 or later. SimpleCov 0.x writes only `.resultset.json` by default, which cov-loupe doesn't read, and cov-loupe rejects the `coverage.json` that 0.x's separate `simplecov_json_formatter` gem writes (see [Quick Start](docs/QUICKSTART.md#2-generate-coverage)).
+This requires SimpleCov 1.0 or later. By default, SimpleCov 0.x writes only `.resultset.json`, which cov-loupe does not read. cov-loupe also rejects the `coverage.json` written by `simplecov_json_formatter`, the separate gem used with 0.x (see [Quick Start](docs/QUICKSTART.md#2-generate-coverage)).
 
 ### Basic Usage
 
@@ -136,7 +136,7 @@ cov-loupe u lib/my_app/cli.rb
 
 **CLI - Find Project Resources:**
 
-The repo URL, documentation site URL, and path to the installed README are output in the header of the online help, e.g. (excerpt):
+The header of `cov-loupe --help` shows the repository URL, the documentation site URL, and the path to the installed README, for example (excerpt):
 
 ```
 Repository:            https://github.com/keithrbennett/cov-loupe
@@ -145,18 +145,18 @@ Documentation (Local): /path/to/gems/cov-loupe-VERSION/README.md
 Screencast:            https://www.bbs-software.com/screencasts/cov-loupe
 ```
 
-The `-p`/`--path-for` option prints the repository and documentation paths individually:
+The `-p`/`--path-for` option prints one of these values by itself:
 
-```
+```sh
 cov-loupe -p repo
 cov-loupe -p docs
 cov-loupe -p docs-local
 ```
 
-You can use your operating system's application open command (usually `open` for Mac, `xdg-open` on Linux, and `start` on Windows) to assemble this into a single command:
+Combine it with your operating system's open command (`open` on macOS, `xdg-open` on Linux, `start` on Windows) to open the documentation directly:
 
-```
-open `cov-loupe -p docs`
+```sh
+open "$(cov-loupe -p docs)"
 ```
 
 **Ruby Library:**
@@ -184,7 +184,11 @@ See [MCP Integration Guide](docs/user/MCP_INTEGRATION.md) for AI assistant setup
 
 ## Multi-Suite Coverage
 
-SimpleCov merges the results of the suites that ran (RSpec + Cucumber, etc.) before writing `coverage.json`, dropping results older than its merge timeout (10 minutes by default), so cov-loupe sees one combined coverage map and does no merging of its own. `coverage.json` has one timestamp for the merged result, so if only some suites were re-run after a change, staleness may be under-reported. To combine coverage from separate CI jobs, keep each job's `coverage/.resultset.json` and merge them with `SimpleCov.collate` (for example, `SimpleCov.collate Dir['coverage-*/.resultset.json']`), which ignores the merge timeout by default and writes a combined `coverage.json` through the configured formatters, as a test run does; `SimpleCov.collate` reads `.resultset.json` files, not `coverage.json`.
+SimpleCov merges the results of all suites that ran (RSpec, Cucumber, and so on) before it writes `coverage.json`, so cov-loupe sees one combined coverage map and does no merging of its own. SimpleCov drops results older than its merge timeout (10 minutes by default).
+
+`coverage.json` has a single timestamp for the merged result. If only some suites were re-run after a change, staleness may be under-reported.
+
+To combine coverage from separate CI jobs, save each job's `coverage/.resultset.json` and merge them with `SimpleCov.collate`, for example `SimpleCov.collate Dir['coverage-*/.resultset.json']`. `collate` reads `.resultset.json` files, not `coverage.json`. It ignores the merge timeout by default and writes a combined `coverage.json` through the configured formatters, as a test run does.
 
 ## Documentation Index
 
@@ -211,12 +215,12 @@ The guides below are also published as a website at **[https://keithrbennett.git
 - [Test Coverage Analysis Prompt](docs/user/prompts/test-coverage-analysis-prompt.md) - Full, risk-ranked analysis of your test suite by logical area
 - [Sample MCP Prompts](docs/user/prompts/README.md) - Ready-to-use ChatGPT/Claude/Gemini prompts
 - [Migration Guides](docs/user/migrations/README.md)
-  - [Migrate to v7](docs/user/migrations/MIGRATING_TO_V7.md)
-  - [Migrate to v6](docs/user/migrations/MIGRATING_TO_V6.md)
-  - [Migrate to v5](docs/user/migrations/MIGRATING_TO_V5.md)
-  - [Migrate to v4](docs/user/migrations/MIGRATING_TO_V4.md)
-  - [Migrate to v3](docs/user/migrations/MIGRATING_TO_V3.md)
-  - [Migrate to v2](docs/user/migrations/MIGRATING_TO_V2.md)
+    - [Migrate to v7](docs/user/migrations/MIGRATING_TO_V7.md)
+    - [Migrate to v6](docs/user/migrations/MIGRATING_TO_V6.md)
+    - [Migrate to v5](docs/user/migrations/MIGRATING_TO_V5.md)
+    - [Migrate to v4](docs/user/migrations/MIGRATING_TO_V4.md)
+    - [Migrate to v3](docs/user/migrations/MIGRATING_TO_V3.md)
+    - [Migrate to v2](docs/user/migrations/MIGRATING_TO_V2.md)
 
 **Developer Docs:**
 
@@ -276,11 +280,9 @@ export COV_LOUPE_OPTS="-c /path/to/your/coverage"
 # "args": ["-m", "mcp", "-c", "/path/to/your/coverage"]
 ```
 
-**MCP precedence:** For MCP tool calls, per-request JSON parameters win over the CLI args used to start the server (including `COV_LOUPE_OPTS`). Presentation flags such as `-f` and `-o` don't apply to MCP, though `-O` sets the default `output_chars`; see the [option table](docs/user/MCP_INTEGRATION.md#cli-options-in-mcp-mode). If neither is provided, built-in defaults are used (`root: '.'`, `raise_on_stale: false`, etc.). Coverage data is cached globally and automatically reloaded when the coverage file changes.
+**MCP precedence:** For MCP tool calls, arguments passed in the request override the CLI options used to start the server (including those from `COV_LOUPE_OPTS`). When neither sets a value, built-in defaults apply (`root: '.'`, `raise_on_stale: false`, and so on). Presentation options such as `-f` and `-o` do not apply to MCP, though `-O` sets the default `output_chars`; see the [option table](docs/user/MCP_INTEGRATION.md#cli-options-in-mcp-mode). The server caches coverage data and reloads it automatically when the coverage file changes.
 
-See [CLI Usage Guide](docs/user/CLI_USAGE.md) for complete details.
-
-
+See the [CLI Usage Guide](docs/user/CLI_USAGE.md) for complete details.
 
 ## Commands and Tools
 

@@ -51,9 +51,10 @@ Before you begin the analysis:
   cov-loupe's per-line output into area totals is expected (see Step 4).
 - Prefer the cov-loupe MCP server. If it is unavailable, use the CLI
   (`cov-loupe`, or `bundle exec cov-loupe` if it is in the Gemfile; run
-  `cov-loupe --help` for usage), putting the subcommand first and adding `-fJ` after it for JSON output. If it
-  reports "MCP mode takes no subcommand", COV_LOUPE_OPTS selects MCP mode; put
-  `-m cli` before the subcommand. Say in the report which one you used.
+  `cov-loupe --help` for usage), putting the subcommand first and adding
+  `-fJ` after it for JSON output. If it reports "MCP mode takes no
+  subcommand", COV_LOUPE_OPTS selects MCP mode; put `-m cli` before the
+  subcommand. Say in the report which one you used.
 - Use source and test files only to define the logical areas and to judge the
   importance of uncovered code.
 - Do not run the test suite, and do not modify source files, test files, or
@@ -103,8 +104,9 @@ never loaded) is not a staleness failure; it is a finding for Step 2.
 ## Step 2: Establish the project baseline
 
 1. Get overall totals with no globs, then with file globs matching the
-   code SimpleCov is meant to measure (from its `cover` (formerly `track_files`) and filter
-   settings; typically `lib/**/*.rb`, or `app/**/*.rb,lib/**/*.rb` for Rails).
+   code SimpleCov is meant to measure, taken from its `cover` setting
+   (formerly `track_files`) and its filters; typically `lib/**/*.rb`, or
+   `app/**/*.rb,lib/**/*.rb` for Rails.
    Passing `file_globs` makes cov-loupe report matching files that have
    **no** coverage data at all (`not_in_coverage_files` in the list,
    `without_coverage.by_type.not_in_coverage` in totals);
@@ -131,14 +133,14 @@ and more tokens than a file-level rollup; that is the point.
 2. Define **logical areas at whatever granularity is meaningful**. An area is
    a set of code units (classes, modules, methods, or line ranges) wherever
    they live. It can be:
-   - a broad grouping spanning several directories (e.g. "everything in the
-     checkout flow", "the public API"),
-   - a single namespace or class,
-   - a single method or a few methods within a class (e.g. the price
-     calculation inside an order model, or the argument parsing in a CLI
-     command),
-   - or a cross-cutting concern spanning many places (e.g. authorization,
-     error handling, input validation).
+    - a broad grouping spanning several directories (e.g. "everything in the
+      checkout flow", "the public API"),
+    - a single namespace or class,
+    - a single method or a few methods within a class (e.g. the price
+      calculation inside an order model, or the argument parsing in a CLI
+      command),
+    - or a cross-cutting concern spanning many places (e.g. authorization,
+      error handling, input validation).
 3. Arrange the areas in a hierarchy where that helps (a broad area containing
    narrower ones), and nest as deep as it is useful. Cross-cutting areas may
    overlap others; say so where they do.
@@ -190,9 +192,9 @@ and more tokens than a file-level rollup; that is the point.
 Decide for yourself which files and areas deserve a close look. Do not apply a
 fixed percentage cutoff: weigh each area's coverage against its criticality,
 so a critical area at a high percentage can still warrant scrutiny while a
-low-stakes area at a lower percentage may not. Always include every
-file matching the file globs that has no coverage data. State the reasoning behind your selection in the
-report.
+low-stakes area at a lower percentage may not. Always include every file
+matching the file globs that has no coverage data. State the reasoning behind
+your selection in the report.
 
 For each selected file or area:
 

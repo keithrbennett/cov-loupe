@@ -12,7 +12,7 @@ This document covers whether `Gemfile.lock` is committed, and how that choice in
 
 ### Context
 
-`b7cdc6834c89` committed `Gemfile.lock`, resolved on Ruby 4.0, to pin dependency versions and add the simplecov range-compat CI job. It backfired: the CI matrix (`.github/workflows/test.yml`) then ran Ruby 3.2 through 4.0 plus JRuby, and a single lock resolved on one Ruby couldn't serve all of them —
+`b7cdc6834c89` committed `Gemfile.lock`, resolved on Ruby 4.0, to pin dependency versions and add the simplecov range-compat CI job. That broke CI: the CI matrix (`.github/workflows/test.yml`) then ran Ruby 3.2 through 4.0 plus JRuby, and a single lock resolved on one Ruby couldn't serve all of them —
 
 - `parallel 2.2.0` (a transitive dep) requires Ruby >= 3.3, breaking the Ruby 3.2 job.
 - JRuby needs C-extension gems replaced with `java`-platform variants, which a CRuby-resolved lock doesn't carry without ongoing hand-maintenance (`bundle lock --add-platform ...`, re-run every time a locked gem changes).

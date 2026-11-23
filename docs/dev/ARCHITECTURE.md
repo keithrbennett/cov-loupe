@@ -2,7 +2,7 @@
 
 [Back to main README](../../README.md) | [Architecture Decision Records](arch-decisions/README.md)
 
-cov-loupe is organized around a single coverage data model that feeds three delivery channels: a command-line interface, an MCP server for LLM agents, and a light-weight Ruby API. The codebase is intentionally modular—shared logic for loading, normalizing, and validating SimpleCov data lives in `lib/cov_loupe/`, while adapters wrap that core for each runtime mode.
+cov-loupe is organized around a single coverage data model that feeds three delivery channels: a command-line interface, an MCP server for LLM agents, and a lightweight Ruby API. The codebase is intentionally modular—shared logic for loading, normalizing, and validating SimpleCov data lives in `lib/cov_loupe/`, while adapters wrap that core for each runtime mode.
 
 ## Runtime Entry Points
 
@@ -17,15 +17,17 @@ cov-loupe is organized around a single coverage data model that feeds three deli
 2. **Parsing and normalization** – `CoverageJsonLoader` reads the chosen `coverage.json` once (the document is already merged across suites, and `"ignored"` line markers become `nil`), and `CoverageRepository` maps all file keys to absolute paths anchored at the configured project root. The `meta.timestamp` is kept for staleness checks, and `meta.root` only to suggest a root in the wrong-root warning. SimpleCov itself is never loaded.
 3. **Path relativizing** – `PathRelativizer` (powered by the centralized `PathUtils` module) produces relative paths for payloads without mutating the canonical data. The model keys coverage data by absolute path and relativizes each path-bearing query result as it returns, so library, CLI, and MCP payloads share one shape. `StalenessChecker` already reports its path arrays in this form, so relativizing them again changes nothing.
 4. **Derived metrics** – `CoverageCalculator.summary`, `CoverageCalculator.uncovered`, and `CoverageCalculator.detailed` compute coverage stats from the raw `lines` arrays. `CoverageModel` exposes `summary_for`, `uncovered_for`, `detailed_for`, and `raw_for` helpers that wrap these calculations.
-5. **Staleness detection** – `StalenessChecker` compares source mtimes/line counts to coverage metadata. CLI flags and MCP arguments can promote warnings to hard failures (`--raise-on-stale true`) or simply mark rows as stale for display.
+5. **Staleness detection** – `StalenessChecker` compares source mtimes and line counts with the coverage metadata. By default, stale rows are only marked for display; `--raise-on-stale true` (or the `raise_on_stale` argument) turns staleness into an error.
 
 ## Interfaces
 
 ### CLI (`CovLoupe::CoverageCLI`)
 
-- Global options are defined in `OptionParserBuilder` on Ruby’s `OptionParser` and parsed by `CovLoupe.run` in two steps: `COV_LOUPE_OPTS` and the options before the subcommand (`order!`), then, for a known subcommand, the arguments after it (`permute!`, with the options in `OptionParserBuilder::BEFORE_SUBCOMMAND_ONLY` left out and `validate`'s `-i` added). It passes `CoverageCLI#run` the resulting config, the subcommand and its positional arguments, and `validate`'s inline code. They include `--coverage-file`, `--raise-on-stale`, `--format` (`-fJ` is `-f J`), and `--source`.
+- Global options (such as `--coverage-file`, `--raise-on-stale`, `--format`, and `--source`) are defined in `OptionParserBuilder` with Ruby's `OptionParser`. `CovLoupe.run` parses them in two steps, then passes `CoverageCLI#run` the resulting config, the subcommand and its positional arguments, and `validate`'s inline code:
+    1. `COV_LOUPE_OPTS` and the options before the subcommand, with `order!`.
+    2. For a known subcommand, the arguments after it, with `permute!`. This step leaves out the options in `OptionParserBuilder::BEFORE_SUBCOMMAND_ONLY` and adds `validate`'s `-i`.
 - Subcommands (`list`, `summary`, `raw`, `uncovered`, `detailed`, `totals`, `validate`) translate to calls on `CoverageModel`.
-- **Subcommand Abbreviations** – Frequent CLI users can use single-character abbreviations for most subcommands: `l` (list), `s` (summary), `u` (uncovered), `d` (detailed), `r` (raw), `t` (totals), and `v` (validate). The version is printed by the global `-v`/`--version` flag, not a subcommand.
+- **Subcommand Abbreviations** – Every subcommand has a single-character abbreviation: `l` (list), `s` (summary), `u` (uncovered), `d` (detailed), `r` (raw), `t` (totals), and `v` (validate). The version is printed by the global `-v`/`--version` flag, not a subcommand.
 - Uses `ErrorHandlerFactory.for_cli` to convert unexpected exceptions into friendly user messages while honoring `--error-mode`.
 - Formatting logic lives in `lib/cov_loupe/formatters/` (output formats, source display, warnings) and `lib/cov_loupe/coverage/coverage_table_formatter.rb` (the coverage table), shared with the MCP tools to keep presentation consistent.
 
@@ -57,7 +59,7 @@ cov-loupe is organized around a single coverage data model that feeds three deli
     - `CovLoupe.default_log_file` / `default_log_file=` adjust the baseline log sink that future contexts inherit.
     - `CovLoupe.active_log_file` / `active_log_file=` mutate only the current context (or create one on demand) without touching the default. A `CoverageModel` keeps the logger it was built with, so the change reaches models created afterward.
 - `ErrorHandlerFactory` wires the appropriate handler for the CLI and the MCP server, each of which installs its handler inside a fresh `AppContext` before executing user work. Library contexts carry a default `for_library` handler, but library calls raise exceptions and never consult it.
-- Diagnostics are written through `CovLoupe::Logger` to `stderr` by default in CLI and MCP modes; library mode is quiet by default. See the [logging initialization and target testing guide](../user/LOGGING.md#log-file-initialization-and-target-testing) for probe behavior, cached failures, and explicit file-target details. MCP tool-execution errors reach this logger, but argument-validation failures emitted by the MCP SDK before cov-loupe runs do not. Override the destination with CLI `--log-file`, set `CovLoupe.default_log_file` for future contexts, or temporarily tweak `CovLoupe.active_log_file` when a caller needs a different destination mid-run.
+- Diagnostics are written through `CovLoupe::Logger`, to `stderr` by default in CLI and MCP modes; library mode is quiet by default. Change the destination with the CLI's `--log-file`, with `CovLoupe.default_log_file` for future contexts, or with `CovLoupe.active_log_file` for the current context. MCP tool-execution errors reach this logger, but argument-validation failures, which the MCP SDK reports before cov-loupe runs, do not. See [Log file initialization and target testing](../user/LOGGING.md#log-file-initialization-and-target-testing) for how file targets are probed and how failures are reported.
 
 ## Output Character Mode
 
@@ -77,12 +79,12 @@ cov-loupe provides a global output character mode that chooses how cov-loupe dra
 
 ### What ASCII Mode Does Not Change
 
-- **Data** – File paths, source lines, error messages, backtraces, and YAML, AmazingPrint, `inspect`, `puts` and `pretty_print` output are never rewritten by cov-loupe, so they can contain non-ASCII characters in any mode (Ruby's own `inspect` escapes non-ASCII when its default encodings are not UTF-8; under the C locale the executable sets `Encoding.default_external` to UTF-8, so it does not, unless `Encoding.default_internal` is set to a non-UTF-8 encoding)
+- **Data** – File paths, source lines, error messages, backtraces, and YAML, AmazingPrint, `inspect`, `puts`, and `pretty_print` output are never rewritten by cov-loupe, so they can contain non-ASCII characters in any mode. Ruby's own `inspect` escapes non-ASCII when its default encodings are not UTF-8. Under the C locale the executable sets `Encoding.default_external` to UTF-8, which prevents that, unless `Encoding.default_internal` is set to a non-UTF-8 encoding.
 - **Log files** – Preserved in original encoding for debugging fidelity
 
 ### Testing
 
-Comprehensive test coverage exists:
+Tests cover:
 
 - Mode resolution and normalization tests
 - Formatter tests for ASCII mode (JSON escaping, table borders, source markers, data left unchanged)

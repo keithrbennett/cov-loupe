@@ -2,7 +2,7 @@
 
 [Back to main README](../../README.md)
 
-> **⚠️ Important:** The `-m/--mode mcp` flag is **required** to run cov-loupe as an MCP server. Without it (on the command line or in `COV_LOUPE_OPTS`), cov-loupe runs in CLI mode, prints a CLI report and exits, so the client never completes its MCP handshake. Configurations written for versions before 4.0 must add it; see [Migrating to v4](migrations/MIGRATING_TO_V4.md).
+> **⚠️ Important:** The `-m mcp` (`--mode mcp`) option is **required** to run cov-loupe as an MCP server, either on the command line or in `COV_LOUPE_OPTS`. Without it, cov-loupe runs in CLI mode, prints a report, and exits, so the client never completes its MCP handshake. Configurations written for versions before 4.0 must add it; see [Migrating to v4](migrations/MIGRATING_TO_V4.md).
 
 ## Table of Contents
 
@@ -28,18 +28,18 @@
 
 ## Setup by Client
 
-> **Tip:** If you use RVM (or otherwise see `Resolving dependencies...` printed before the MCP handshake), skip straight to [the launch wrapper](#step-by-step-the-launch-wrapper) (RVM users may need an absolute path in it; see its step 1). It takes one minute and prevents a common startup failure in every client below.
+> **Tip:** If you use RVM, or see `Resolving dependencies...` printed before the MCP handshake, set up [the launch wrapper](#step-by-step-the-launch-wrapper) before configuring a client; with RVM you may need an absolute path in it (see its step 1). The wrapper prevents a common startup failure in every client below and every project. Settling a project's bundle also works, but only for that project; see [Recommended Launch Patterns](#recommended-launch-patterns).
 
-> **Note:** This section is best-effort research meant to help you get started. Not every client has been fully verified, and these tools change quickly, so commands and file locations may differ by the time you read this. If something doesn't work, check your client's own documentation (e.g., `claude mcp --help`, `codex mcp --help`, `agy mcp --help`, `opencode mcp --help`).
+> **Note:** These instructions are a starting point, not a verified reference. Not every client has been fully tested, and these tools change quickly, so commands and file locations may have changed. If something doesn't work, check your client's own documentation (e.g., `claude mcp --help`, `codex mcp --help`, `agy mcp --help`, `opencode mcp --help`).
 
-> **Note:** If you try a one-shot, non-interactive test (for example, running your client with `-p` or `exec`) and it fails, it may be because there is nobody to answer the client's permission prompt for the MCP tool call, so the call is blocked or denied even though the server itself works. Pre-authorize the tool in your client's settings, or test interactively. See also [Confirm the server actually starts](#confirm-the-server-actually-starts).
+> **Note:** A one-shot, non-interactive test (for example, running your client with `-p` or `exec`) can fail even when the server works: nobody is there to answer the client's permission prompt for the MCP tool call, so the call is blocked or denied. Pre-authorize the tool in your client's settings, or test interactively. See also [Confirm the server actually starts](#confirm-the-server-actually-starts).
 
 ### Claude Code
 
-`mcp add` expects first the display name, then the executable (filename or path). The executable's filename is sufficient if it is in the PATH, but you may also specify the fully qualified path if necessary (e.g. `/a/b/cov-loupe`).
+`mcp add` takes the display name, then the executable, then `--` and the executable's arguments. If `cov-loupe` is on your `PATH`, its name is enough; otherwise give its full path (e.g. `/a/b/cov-loupe`).
 
 ```sh
-# Add the MCP server; equivalent to ...--scope local...
+# Add the MCP server (the default scope is local)
 claude mcp add cov-loupe cov-loupe -- -m mcp
 
 # For user-wide configuration
@@ -63,7 +63,7 @@ claude mcp remove --scope project cov-loupe
 
 ### Codex
 
-`mcp add` expects first the display name, then `--`, then the executable (filename or path) and its arguments. The executable's filename is sufficient if it is in the PATH, but you may also specify the fully qualified path if necessary (e.g. `/a/b/cov-loupe`).
+`mcp add` takes the display name, then `--`, then the executable and its arguments. If `cov-loupe` is on your `PATH`, its name is enough; otherwise give its full path (e.g. `/a/b/cov-loupe`).
 
 Using the Codex CLI:
 
@@ -90,9 +90,7 @@ args = ["-m", "mcp"]
 env_vars = ["GEM_HOME", "GEM_PATH"]  # Add this line manually
 ```
 
-**Warning:** If you run `codex mcp remove cov-loupe`, the `env_vars` line will be deleted along with the rest of the section.
-You'll need to manually add it back after running `codex mcp add` again.
-To avoid this, consider editing `~/.codex/config.toml` directly instead of using `remove`/`add` commands.
+**Warning:** `codex mcp remove cov-loupe` deletes the `env_vars` line along with the rest of the section, so after running `codex mcp add` again you must add it back by hand. To avoid this, edit `~/.codex/config.toml` directly instead of using `remove` and `add`.
 
 **Watch the position of `--`.** It goes right after the server name and *before* the command: `codex mcp add cov-loupe -- cov-loupe -m mcp` (name, `--`, command, arguments). If you put the command before the `--`, as in `codex mcp add cov-loupe cov-loupe -- -m mcp`, Codex stores the `--` as a literal argument: `args = ["--", "-m", "mcp"]`, and `cov-loupe` fails with `'--' is allowed only after a subcommand`. After adding, confirm that the `Args` column of `codex mcp list` shows `-m mcp` with no leading `--`.
 
@@ -307,17 +305,17 @@ For root-cause details, diagnostic commands, and the upstream RVM tracking issue
 
 ### Recommended Launch Patterns
 
-For MCP usage, start with the normal launch path and only bypass the RubyGems stub if startup is still noisy.
+If startup prints text before the handshake, try these in order. Step 1 fixes one project at a time; with RVM, or if you use cov-loupe in many projects, go straight to step 2.
 
-- Most reliable workaround for wrapper-heavy Ruby environments: launch through a tiny shell wrapper that exports `NOEXEC_DISABLE=1` before calling `cov-loupe -m mcp`. See [Step by Step: The Launch Wrapper](#step-by-step-the-launch-wrapper).
-- Preferred fix: in the current project, run `bundle install` so the bundle is settled, then retry normal `cov-loupe -m mcp` startup.
-- Good follow-up check: confirm `Gemfile.lock` exists and `bundle check` succeeds before retrying the MCP client.
-- Fallback: if you cannot settle the bundle or still need a launch path that does not depend on the working directory's bundle state, invoke the real executable directly instead of the RubyGems wrapper.
-- Good for local development from a checkout: point the MCP client at the checkout's [`exe/cov-loupe`](https://github.com/keithrbennett/cov-loupe/blob/main/exe/cov-loupe) directly.
+1. **Settle the project's bundle.** Run `bundle install` in the project, confirm that `Gemfile.lock` exists and `bundle check` succeeds, then retry the normal `cov-loupe -m mcp` startup. This fixes one project.
+2. **Use the launch wrapper.** A small shell script that exports `NOEXEC_DISABLE=1` before calling `cov-loupe -m mcp` works in every project, whatever the state of its bundle. This is the most reliable fix for RVM and similar environments. See [Step by Step: The Launch Wrapper](#step-by-step-the-launch-wrapper).
+3. **Bypass the RubyGems wrapper.** Invoke the real executable directly instead.
+
+For local development from a checkout, point the MCP client directly at the checkout's [`exe/cov-loupe`](https://github.com/keithrbennett/cov-loupe/blob/main/exe/cov-loupe).
 
 ### Step by Step: The Launch Wrapper
 
-If you would rather not think about Bundler at all, do this once. It works in every project directory, whether or not the project's bundle is settled.
+Set this up once, and it works in every project directory, whether or not the project's bundle is settled.
 
 **1. Create the wrapper** in a directory that is on your `PATH` (`~/.local/bin` is a common choice; check with `echo $PATH`):
 
@@ -394,15 +392,11 @@ Successful structured payloads begin with integer `schema_version`. Library cove
 }
 ```
 
-Whitespace varies by tool: the file tools, `project_coverage_totals`, and `project_validate` return indented JSON, while `help` and `project_coverage` with the default `format: json` return it on one line (`format: pretty_json` returns indented JSON; the other formats are not JSON; see above). Parse the JSON rather than relying on its layout.
+Whitespace varies by tool. The file tools, `project_coverage_totals`, and `project_validate` return indented JSON. `help` and `project_coverage` with the default `format: json` return it on one line, and `project_coverage` with `format: pretty_json` returns it indented. Parse the JSON rather than relying on its layout.
 
-**Reasoning:**
-While returning JSON in a `resource` part with `mimeType: "application/json"` is more semantically correct, major MCP clients (including Google's Gemini and Anthropic's Claude) were found to not support this format, causing validation errors. They expect a `resource` part to contain a `uri`.
+**Why a `text` part:** A `resource` part with `mimeType: "application/json"` would describe the content more precisely, but major MCP clients (including Gemini and Claude) rejected it with validation errors, because they expect a `resource` part to contain a `uri`. A plain `text` part works reliably across clients.
 
-To ensure maximum compatibility, the decision was made to use a simple `text` part. This is a pragmatic compromise that has proven to be reliable across different clients.
-
-**Further Reading:**
-This decision was informed by discussions with multiple AI models. For more details, see these conversations:
+These AI-model conversations informed the decision:
 
 - [Perplexity AI Discussion](https://www.perplexity.ai/search/title-resolving-a-model-contex-IfpFWU1FR5WQXQ8HcQctyg#0)
 - [ChatGPT Discussion](https://chatgpt.com/share/68e4d7e1-cad4-800f-80c2-58b33bfc31cb)
@@ -490,17 +484,15 @@ When the MCP server starts, you can pass CLI options via the startup command. Th
 | `-m`, `--mode` | ✅ Required | N/A | **Required for MCP mode:** `-m mcp` or `--mode mcp`. Default: `cli`. |
 | `--[no-]allow-code-predicates` | ✅ Yes | N/A | Registers `project_validate`, which runs client-supplied Ruby (see [Policy Validation Tools](#policy-validation-tools)). Default: off; `--no-allow-code-predicates` overrides a `COV_LOUPE_OPTS` setting. |
 
-**Key Takeaways:**
+**Summary:**
 
-- **Server-level options** (`--error-mode`, `--log-file`, `--allow-code-predicates`): Set once when server starts, apply to all tool calls
-- **Tool-level options** (`root`, `coverage_file`, `raise_on_stale`, `file_globs`, `output_chars`): CLI args provide defaults; per-tool JSON params override when provided (`file_globs` as a request parameter only on the two project coverage tools; a server-level `-g` also applies to `project_validate` predicates' `model.list` and `model.project_totals`)
-- **CLI-only options** (`--format`, `--source`, etc.): Not applicable to MCP mode
+- **Server-level options** (`--error-mode`, `--log-file`, `--allow-code-predicates`) are set once when the server starts and apply to every tool call.
+- **Tool-level options** (`root`, `coverage_file`, `raise_on_stale`, `file_globs`, `output_chars`) set defaults that a tool call's arguments override. Only the two project coverage tools accept `file_globs` per call, but a server-level `-g` also applies to the `model.list` and `model.project_totals` calls of `project_validate` predicates.
+- **CLI-only options** (`-f`, `-o`, `-s`, `-n`, `-C`) never reach the MCP server. To change the sort order, pass `sort_order` in each `project_coverage` call.
 
-**Precedence for MCP tool config:** `JSON request param` > `CLI args used to start MCP` (including `COV_LOUPE_OPTS`) > built-in defaults (`root: '.'`, `raise_on_stale: false`, `coverage_file: nil`, `file_globs: []` - no filtering, and no check for files not in coverage data).
+**Precedence for MCP tool config:** tool-call argument > CLI options used to start the server (including `COV_LOUPE_OPTS`) > built-in defaults (`root: '.'`, `raise_on_stale: false`, `coverage_file: nil`, and `file_globs: []`, which means no filtering and no check for files missing from the coverage data).
 
-CLI-only presentation flags (`-f/--format`, `-s/--source`, `-n/--context-lines`, `-C/--color`, and `-o/--sort-order`) never flow into MCP. Pass `sort_order` explicitly in each `project_coverage` tool request when you need non-default ordering.
-
-**Data caching:** Coverage data is cached in a global singleton (`ModelDataCache`) and shared by all `CoverageModel` instances that use the same coverage file and root. When the coverage file changes (based on file signature and MD5 digest), the cache automatically reloads fresh data. Model instances themselves are lightweight and created fresh for each tool request.
+**Data caching:** The server caches coverage data in a process-wide cache (`ModelDataCache`), shared by all `CoverageModel` instances that use the same coverage file and root. When the coverage file changes (detected by its file signature and MD5 digest), the cache reloads it. A new, lightweight model instance is created for each tool request.
 
 ### Common Parameters
 
@@ -544,7 +536,7 @@ file has no coverable lines (for example, a file containing only comments).
 ```
 Lines SimpleCov marked `"ignored"` (excluded with `nocov` blocks or directive comments) are returned as `null` and, like other `null` lines, are not counted in covered or total lines or in percentages.
 
-**Staleness values:** `"ok"` (fresh), `"deleted"` (source deleted), `"newer"` (timestamp), `"length_mismatch"` (length), `"unreadable"` (source could not be read, or its staleness check failed)
+**Staleness values:** `"ok"` (fresh), `"deleted"` (source file deleted), `"newer"` (source file modified after the coverage run), `"length_mismatch"` (line count differs from the coverage data), `"unreadable"` (source could not be read, or its staleness check failed)
 
 #### Project-Wide Tools
 
@@ -553,9 +545,10 @@ Lines SimpleCov marked `"ignored"` (excluded with `nocov` blocks or directive co
 - Parameters: the [common parameters](#common-parameters), plus `sort_order` (`ascending`|`descending`, default `descending`), `file_globs` (array), `format` (`json`|`pretty_json`|`yaml`|`amazing_print`|`inspect`|`puts`|`pretty_print`|`table`)
 - Default format: `json`
 - Returns (format dependent):
-  - `json`/`pretty_json`: a JSON object; `yaml`/`amazing_print`/`inspect`/`puts`/`pretty_print`: the same data rendered in that format, not JSON. The data is `{"schema_version": 1, "files": [...], "skipped_files": [...], "not_in_coverage_files": [...], "newer_files": [...], "deleted_files": [...], "length_mismatch_files": [...], "unreadable_files": [...], "timestamp_status": "ok|missing", "warnings": [...]}` (`warnings` is present only when `timestamp_status` is `"missing"` or [most files were not found under the project root](TROUBLESHOOTING.md#the-project-root-may-be-wrong))
-  - Table: Plain text table with box-drawing characters (ASCII with `output_chars: "ascii"`), followed by any exclusion, timestamp, skipped-row, and wrong-root warnings
-  - Each entry in `files` is `{"file", "covered", "uncovered", "total", "percentage", "stale"}`, the same shape as a `file_coverage_summary` result without `schema_version`; `percentage` is `null` when the file has no coverable lines (shown as `n/a` in the table).
+    - `json`/`pretty_json`: a JSON object. `yaml`/`amazing_print`/`inspect`/`puts`/`pretty_print`: the same data rendered in that format, not JSON. The data is `{"schema_version": 1, "files": [...], "skipped_files": [...], "not_in_coverage_files": [...], "newer_files": [...], "deleted_files": [...], "length_mismatch_files": [...], "unreadable_files": [...], "timestamp_status": "ok|missing", "warnings": [...]}`.
+    - `warnings` is present only when `timestamp_status` is `"missing"` or [most files were not found under the project root](TROUBLESHOOTING.md#the-project-root-may-be-wrong).
+    - Table: Plain text table with box-drawing characters (ASCII with `output_chars: "ascii"`), followed by any exclusion, timestamp, skipped-row, and wrong-root warnings
+    - Each entry in `files` is `{"file", "covered", "uncovered", "total", "percentage", "stale"}`, the same shape as a `file_coverage_summary` result without `schema_version`; `percentage` is `null` when the file has no coverable lines (shown as `n/a` in the table).
 
 **`project_coverage_totals`** - Aggregated line totals
 
@@ -620,19 +613,19 @@ Use these commands as smoke tests to confirm that the MCP server is installed, l
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"version","arguments":{}}}' | cov-loupe -m mcp
 
 # Test help tool (no parameters needed)
-echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"help","arguments":{}}}' | cov-loupe -m mcp
+echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"help","arguments":{}}}' | cov-loupe -m mcp
 
 # Test summary tool: run from your project root, replacing lib/my_app/order.rb with a file in your coverage
-echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"lib/my_app/order.rb","root":"."}}}' | cov-loupe -m mcp
+echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"lib/my_app/order.rb","root":"."}}}' | cov-loupe -m mcp
 
 # Optional error sanity check: the response should contain a `result` with `isError: true`
-echo '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"nonexistent.rb","root":"."}}}' | cov-loupe -m mcp
+echo '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"nonexistent.rb","root":"."}}}' | cov-loupe -m mcp
 
 # Optional validation sanity check: this also returns a `result` with `isError: true`
-echo '{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{}}}' | cov-loupe -m mcp
+echo '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{}}}' | cov-loupe -m mcp
 
 # Test with a project-specific root
-echo '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"app/models/order.rb","root":"docs/fixtures/demo_project"}}}' | cov-loupe -m mcp
+echo '{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"file_coverage_summary","arguments":{"path":"app/models/order.rb","root":"docs/fixtures/demo_project"}}}' | cov-loupe -m mcp
 ```
 
 **Important Notes:**
@@ -666,7 +659,12 @@ If these work, your setup is correct!
 
 #### Confirm the server actually starts
 
-A server can be registered and still fail to start, and most `list` commands only read the configuration. `claude mcp list` (shows `✔ Connected`), `opencode mcp list` (shows `connected`), and `cursor-agent mcp list` (shows `ready`, once approved) do try to start it; `codex mcp list`, `agy mcp list`, and Kimi's config do not, so `enabled` there proves nothing. Use a real request to be sure. Run these non-interactive checks from a project directory. Most call the `version` tool once; compare the answer with `cov-loupe --version`. The Copilot and Cursor rows instead check the connection log or the tool list:
+A server can be registered and still fail to start, and most `list` commands only read the configuration:
+
+- `claude mcp list` (shows `✔ Connected`), `opencode mcp list` (shows `connected`), and `cursor-agent mcp list` (shows `ready`, once approved) do try to start the server.
+- `codex mcp list`, `agy mcp list`, and Kimi's config do not, so `enabled` there proves nothing.
+
+To be sure, make a real request. Run these non-interactive checks from a project directory. Most call the `version` tool once; compare the answer with `cov-loupe --version`. The Copilot and Cursor rows instead check the connection log or the tool list:
 
 | Client | Command |
 |--------|---------|
@@ -678,13 +676,11 @@ A server can be registered and still fail to start, and most `list` commands onl
 | OpenCode | `opencode run -m <provider/model> "Call the cov-loupe MCP version tool and reply with only the version."` |
 | Pi | `pi -p "Call the cov-loupe MCP version tool and reply with only the version."` |
 
-Notes:
-
-- A model that can't reach the server may still answer, using the shell or a guess. If the version doesn't match `cov-loupe --version`, or the client didn't report a tool call to `cov-loupe`, treat it as a failure.
+A model that can't reach the server may still answer, using the shell or a guess. If the version doesn't match `cov-loupe --version`, or the client didn't report a tool call to `cov-loupe`, treat it as a failure.
 
 ### Checking Logs
 
-The MCP server logs tool-execution errors and other cov-loupe diagnostics to `stderr` by default. See the [logging initialization and target testing guide](LOGGING.md#log-file-initialization-and-target-testing) for details about startup probing, append-mode checks, cached failures, and explicit file targets. Argument-validation failures emitted by the MCP SDK before cov-loupe runs do not reach this logger.
+The MCP server logs tool-execution errors and other cov-loupe diagnostics to `stderr` by default. Argument-validation failures, which the MCP SDK reports before cov-loupe runs, do not reach this logger. See [Log file initialization and target testing](LOGGING.md#log-file-initialization-and-target-testing) for how file targets are checked at startup.
 
 ```sh
 # Watch an explicitly configured file in real-time
@@ -694,7 +690,7 @@ tail -f /path/to/your-configured-log-file.log
 grep ERROR /path/to/your-configured-log-file.log | tail -20
 ```
 
-To use a persistent log file, specify the `--log-file` (or `-l`) argument wherever and however you configure your MCP server. For example, include `-l /path/to/logfile.log` in your server configuration. To use standard error explicitly, use `-l stderr`. To disable logging entirely, use `-l off` (cross-platform alternative to `/dev/null`).
+To log to a file, add `--log-file` (or `-l`) to the server's arguments in your MCP client configuration, for example `-l /path/to/logfile.log`. Use `-l stderr` to name standard error explicitly, or `-l off` to disable logging entirely (a cross-platform alternative to `/dev/null`).
 
 **Warning:** Explicit log files may grow unbounded in long-running or CI usage. cov-loupe does not rotate them; use external rotation or periodically clean them up.
 
@@ -704,7 +700,7 @@ To use a persistent log file, specify the `--log-file` (or `-l`) argument wherev
 
 ### CLI Fallback
 
-**Important:** If the MCP server doesn't work, you can use the CLI directly with the `-fJ` (output in JSON format) flag.
+If the MCP server doesn't work, the agent can run the CLI directly with `-fJ` (pretty JSON output).
 
 See the **[CLI Fallback for LLMs Guide](CLI_FALLBACK_FOR_LLMS.md)** for a prompt to give your LLM and a mapping of each MCP tool and argument to its CLI subcommand and option. The [CLI Usage Guide](CLI_USAGE.md) has the full command reference and JSON output examples.
 
@@ -737,7 +733,7 @@ If `cov-loupe -m mcp` works in one repo but fails in another, especially with te
 
 ### Enable Debug Logging
 
-For troubleshooting, add error mode when configuring the server:
+For troubleshooting, add `--error-mode debug` to the server's arguments:
 
 ```sh
 # Claude Code

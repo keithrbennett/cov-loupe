@@ -40,6 +40,6 @@ For gemspec dependencies on prerelease gems, you must specify the prerelease ver
 spec.add_dependency 'cov-loupe', '~> 7.0.0.pre.1'
 ```
 
-## Key Point
+## Version Constraints Exclude Prereleases
 
 Version constraints like `~> 7.0` or `>= 7.0` will **not** match `7.0.0.pre.1`, because a prerelease sorts below its release (`7.0.0.pre.1 < 7.0`). Include the prerelease segment in the constraint, as above, for it to match.

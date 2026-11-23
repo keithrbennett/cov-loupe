@@ -2,13 +2,13 @@
 
 [Back to Developer Documentation](README.md)
 
-This project uses MkDocs to serve the Markdown documentation locally. The repository keeps the Python
-documentation dependencies separate from the Ruby gem dependencies in `.docs-venv`.
+This project uses MkDocs to serve the Markdown documentation locally. Its Python dependencies live in a
+virtual environment, `.docs-venv`, separate from the Ruby gem dependencies. They require Python 3.11 or newer.
 
-Source `bin/set-up-python-for-doc-server` (`source bin/set-up-python-for-doc-server`), and run `bin/start-doc-server` and the
-`docs:setup` and `docs:serve` Rake tasks, from the repository root; they use `.docs-venv` relative to the current directory. `bin/build-docs`,
-`bin/audit-docs-deps`, and `bin/update-docs-deps` resolve the repository paths themselves and work from any
-directory. The docs dependency set requires Python 3.11 or newer.
+Run `source bin/set-up-python-for-doc-server`, `bin/start-doc-server`, and the `docs:setup` and `docs:serve`
+Rake tasks from the repository root, because they look for `.docs-venv` in the current directory.
+`bin/build-docs`, `bin/audit-docs-deps`, and `bin/update-docs-deps` locate the repository themselves and work
+from any directory.
 
 ## First-Time Setup
 
@@ -46,10 +46,10 @@ source .docs-venv/bin/activate
 bin/start-doc-server
 ```
 
-`bin/start-doc-server` also checks `.docs-venv/bin/mkdocs` first, so it can usually find the project-local
-MkDocs executable even if the virtual environment is not currently active; when it uses `.docs-venv`, it
-first reinstalls `requirements-lock.txt` into it, as `bin/build-docs` does. It falls back to `mkdocs` on your
-`PATH`, and if neither exists it creates `.docs-venv` first.
+`bin/start-doc-server` looks for `.docs-venv/bin/mkdocs` first, so it finds the project's MkDocs even when
+the virtual environment is not active. When it uses `.docs-venv`, it first reinstalls `requirements-lock.txt`
+into it, as `bin/build-docs` does. Otherwise it uses `mkdocs` from your `PATH`, and if there is neither, it
+creates `.docs-venv`.
 
 The helper script does not forward extra flags. To pass MkDocs options, run MkDocs directly, for example
 `mkdocs serve --dev-addr 127.0.0.1:8001`.
@@ -103,9 +103,9 @@ or:
 bundle exec rake docs:build
 ```
 
-This runs `mkdocs build --strict`, using `.docs-venv` if it exists and otherwise `mkdocs` from your `PATH`
-(it creates `.docs-venv` if there is neither), and writes the site to `site/`. The command fails on strict MkDocs errors. The root `.gitignore`
-ignores both `site/` and `.docs-venv/`.
+This runs `mkdocs build --strict` and writes the site to `site/`; it fails on any strict-mode error. It uses
+`.docs-venv` if it exists, otherwise `mkdocs` from your `PATH`, and creates `.docs-venv` if there is neither.
+The root `.gitignore` ignores both `site/` and `.docs-venv/`.
 
 ## Publishing Documentation
 

@@ -16,7 +16,7 @@
 
 ### Running the Test Suite with RVM (Codex macOS)
 
-Codex's macOS sandbox forbids `/bin/ps`; RVM shells need it. When you run `bundle exec rspec` there, the shell falls back to macOS Ruby 2.6 and Bundler dies with `Gem::Resolver::APISet::GemParser` errors.
+Codex's macOS sandbox forbids `/bin/ps`, which RVM shells need. When you run `bundle exec rspec` there, the shell falls back to macOS Ruby 2.6, and Bundler fails with `Gem::Resolver::APISet::GemParser` errors.
 
 **Workarounds:**
 
@@ -28,7 +28,6 @@ Codex's macOS sandbox forbids `/bin/ps`; RVM shells need it. When you run `bundl
     GEM_PATH="$HOME/.rvm/gems/ruby-3.4.5@cov-loupe:$HOME/.rvm/gems/ruby-3.4.5@global" \
     $HOME/.rvm/rubies/ruby-3.4.5/bin/bundle exec rspec
   ```
-- Use a different AI coding agent and/or operating system.
 
 ## Coverage Data Issues
 
@@ -88,14 +87,28 @@ loads, and reports no coverage data.
 
 ### Stale Coverage Errors
 
-`--raise-on-stale true` (or `-S true`, or `raise_on_stale: true`) compares file mtimes and line counts
-to the coverage snapshot and raises if stale. When it fails:
+`--raise-on-stale true` (or `-S true`, or `raise_on_stale: true`) makes a query fail instead of
+reporting problems with the coverage data:
 
-- Regenerate coverage (`bundle exec rspec`) so the snapshot matches current sources.
-- Or drop back to warning-only behaviour using `--raise-on-stale false` / `raise_on_stale: false`.
+- **Per-file queries** (`summary`, `uncovered`, `detailed`, `raw`) fail if the source file was
+  modified after the coverage run or its line count differs from the coverage data. A deleted or
+  unreadable source file fails as a file error instead.
+- **Project queries** (`list`, `totals`, the default report, and `validate` predicates that call
+  `model.list` or `model.project_totals`) fail if any file in the coverage data is newer, has a
+  different line count, is deleted, or is unreadable. With file globs, they also fail for a
+  matching file that is not in the coverage data.
+- **Skipped rows:** project queries also fail if any coverage row has invalid data, whether or
+  not it matches the file globs.
 
-If you only care about a subset of files, supply `-g` / `--file-globs` (CLI) or `file_globs:`
-(API) so new files outside those globs do not trigger staleness.
+See [Stale Coverage Errors](ERROR_HANDLING.md#stale-coverage-errors) for the exception each case
+raises. When it fails:
+
+- Regenerate coverage (`bundle exec rspec`) so it matches the current sources.
+- Or report staleness without failing, with `--raise-on-stale false` / `raise_on_stale: false`.
+
+If you only care about a subset of files, pass `-g` / `--file-globs` (CLI) or `file_globs:`
+(API). Project queries then check staleness only for files matching those globs; a skipped
+coverage row still fails, as noted above.
 
 **Note:** If you see warnings about missing timestamps, time-based staleness checks may be skipped.
 See [Timestamp Warnings](ADVANCED_USAGE.md#timestamp-warnings) for details.
@@ -104,29 +117,32 @@ See [Timestamp Warnings](ADVANCED_USAGE.md#timestamp-warnings) for details.
 
 Coverage paths are project-relative, so cov-loupe looks for each source file under the project
 root, which defaults to the current directory. It warns when more than half of the files with
-coverage rows are not found there (rows skipped as malformed are not counted), for example when
-`--coverage-file` points into another project while the root is still the current directory.
-The same condition also fits source files that really were removed, or coverage generated on
-another machine. With file globs, the count covers only the files the globs match.
+coverage rows are not found there (rows skipped as malformed are not counted). With file globs,
+the count covers only the files the globs match.
 
-Set the root with `--root PATH` (CLI) or the `root` argument (MCP, Ruby). When `coverage.json`
+A typical cause is a `--coverage-file` that points into another project while the root is still
+the current directory. The same warning also appears when the source files really were removed,
+or when the coverage was generated on another machine.
+
+Set the root with `--root PATH` (CLI) or the `root` argument (MCP, Ruby). If `coverage.json`
 records an absolute root (`meta.root`, written by SimpleCov 1.x) that differs from the current
-one and is a directory on this machine, the warning names it as a suggestion; cov-loupe never
-switches to it on its own. The warning does not change the exit status; with
-`--raise-on-stale true`, the project-level commands (`list`, `totals`, and the default report)
-exit non-zero and show the same message after the staleness summary.
+one and is a directory on this machine, the warning suggests it; cov-loupe never switches to it
+on its own.
+
+The warning does not change the exit status. With `--raise-on-stale true`, however, the
+project-level commands (`list`, `totals`, and the default report) exit non-zero and show the
+same message after the staleness summary.
 
 ### "No coverage entry found for ..."
 
 This is a `CoverageEntryNotFoundError` (a `CoverageDataError`). The model looks up files by absolute path, then by relative path (stripping the project root). If you still hit this error:
 
-1. Verify the file is listed in the coverage table (`cov-loupe list | grep model.rb` or `cov-loupe l | grep model.rb`).
-2. Use the exact project-relative path that SimpleCov recorded (no symlinks; case-sensitivity
-depends on your volume - see note below).
+1. Verify the file is listed in the coverage table (`cov-loupe list | grep model.rb`).
+2. Use the exact project-relative path that SimpleCov recorded (no symlinks; whether case
+   matters depends on your volume, as described below).
+3. If the file is never loaded during tests, add tests for it or stop querying it.
 
-3. If the file truly never executes under tests, add coverage or exclude it from your workflow.
-
-**Note on case-sensitivity:** `cov-loupe` auto-detects volume case-sensitivity at startup. 
+**Note on case sensitivity:** `cov-loupe` detects whether the volume is case-sensitive at startup.
 On case-insensitive volumes (most macOS/Windows), `lib/Foo.rb` and `lib/foo.rb` are treated
 as the same file. On case-sensitive volumes (most Linux, some macOS), they are different files.
 
@@ -209,12 +225,12 @@ Check the following when you see an `Unable to use log target` message:
 
 6. **Use CLI as fallback:**
 
-   If MCP still isn't working, you can use the CLI with `-fJ` flag instead.
+   If MCP still isn't working, have the agent use the CLI with `-fJ` instead.
    See **[CLI Fallback for LLMs](CLI_FALLBACK_FOR_LLMS.md)** for complete guidance.
 
 7. **Check for Codex environment variable issues:**
-   If you are using Codex and the server fails to start due to missing gems, you need to manually add 
-   `env_vars = ["GEM_HOME", "GEM_PATH"]` to your `~/.codex/config.toml`. 
+   If you use Codex and the server fails to start because gems are missing, add
+   `env_vars = ["GEM_HOME", "GEM_PATH"]` to your `~/.codex/config.toml` by hand.
    See the [MCP Integration - Codex section](MCP_INTEGRATION.md#codex) for complete setup instructions.
 
 ### RubyGems Wrapper Prints to Stdout Before MCP Startup
@@ -250,11 +266,7 @@ Same launcher, same command, different working directory state.
 
 **Why `bundle install` often fixes it:**
 
-Running `bundle install` settles the bundle for that directory by creating/updating `Gemfile.lock` and installing required gems. After that, the launcher often stops printing dependency-resolution output, so MCP startup appears to recover.
-
-This is the first fix to try. After `bundle install`, retry normal `cov-loupe -m mcp` startup before changing your MCP command.
-
-This does not change MCP itself. It only changes whether the RubyGems wrapper stays quiet.
+`bundle install` settles the bundle for that directory: it creates or updates `Gemfile.lock` and installs the required gems. The launcher then usually has nothing to print, so MCP startup succeeds. It changes nothing about cov-loupe itself, only whether the RubyGems wrapper stays quiet.
 
 **How to confirm:**
 
@@ -278,31 +290,30 @@ This does not change MCP itself. It only changes whether the RubyGems wrapper st
    ```
    Any stdout output before the JSON-RPC payload is a problem for MCP startup (stderr is discarded here, since log lines there are harmless).
 
-**Recommended workarounds:**
+**Workarounds, in order.** Step 1 fixes one project at a time; with RVM, or if you use cov-loupe in many projects, go straight to step 2.
 
-- Most reliable workaround in wrapper-heavy environments: launch `cov-loupe` through a small shell wrapper that disables `rubygems-bundler` noexec before the stub starts:
-  ```bash
-  #!/usr/bin/env bash
-  export NOEXEC_DISABLE=1
-  exec cov-loupe -m mcp "$@"
-  ```
-  Then point your MCP client at that wrapper script. If the client doesn't pass your shell's Ruby setup, the `exec` line needs an absolute path, such as RVM's wrapper (see [Path Issues with Version Managers](#path-issues-with-version-managers)). For copy-and-paste setup steps, including the command for each client, see [Step by Step: The Launch Wrapper](MCP_INTEGRATION.md#step-by-step-the-launch-wrapper).
-- Preferred fix: settle the current project's bundle, then retry normal startup:
-  ```bash
-  bundle install
-  bundle check
-  cov-loupe -m mcp
-  ```
-- Fallback: bypass the RubyGems wrapper and invoke the real executable directly:
-  ```bash
-  ruby -e 'spec = Gem::Specification.find_by_name("cov-loupe"); puts File.join(spec.full_gem_path, "exe", "cov-loupe")'
-  ```
-  Then use that path in your MCP config with `-m mcp`.
-- For local development from a checkout, another fallback is to point the MCP client directly at the checkout's [`exe/cov-loupe`](https://github.com/keithrbennett/cov-loupe/blob/main/exe/cov-loupe) instead of the RubyGems stub.
+1. **Settle the project's bundle**, then retry normal startup. This fixes the problem for that project:
+   ```bash
+   bundle install
+   bundle check
+   cov-loupe -m mcp
+   ```
+2. **Use a launch wrapper** that disables the `rubygems-bundler` noexec hook before the stub starts. This works in every project, and is the most reliable fix in RVM and similar environments:
+   ```bash
+   #!/usr/bin/env bash
+   export NOEXEC_DISABLE=1
+   exec cov-loupe -m mcp "$@"
+   ```
+   Point your MCP client at the wrapper script. If the client doesn't pass your shell's Ruby setup, the `exec` line needs an absolute path, such as RVM's wrapper (see [Path Issues with Version Managers](#path-issues-with-version-managers)). For step-by-step setup, including the command for each client, see [Step by Step: The Launch Wrapper](MCP_INTEGRATION.md#step-by-step-the-launch-wrapper).
+3. **Bypass the RubyGems wrapper** and invoke the real executable, which does not depend on the working directory's bundle at all. Find its path with:
+   ```bash
+   ruby -e 'spec = Gem::Specification.find_by_name("cov-loupe"); puts File.join(spec.full_gem_path, "exe", "cov-loupe")'
+   ```
+   Then use that path, with `-m mcp`, in your MCP config.
 
-**Recommendation:**
+For local development from a checkout, point the MCP client directly at the checkout's [`exe/cov-loupe`](https://github.com/keithrbennett/cov-loupe/blob/main/exe/cov-loupe) instead of the RubyGems stub.
 
-Use either a wrapper that exports `NOEXEC_DISABLE=1` or normal `cov-loupe -m mcp` startup after the current project's bundle is settled. Only switch MCP clients to the real executable path if you need a fallback that is insulated from the working directory's Bundler state. For upstream discussion and any eventual fix, follow [rvm/rvm#5649](https://github.com/rvm/rvm/issues/5649).
+For upstream discussion and any eventual fix, follow [rvm/rvm#5649](https://github.com/rvm/rvm/issues/5649).
 
 ### Path Issues with Version Managers
 
@@ -358,17 +369,13 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"version","
 
 If the above doesn't solve your problem:
 
-1. **Check error mode** - Run with `--error-mode debug` for full stack traces:
+1. **Get stack traces** - Run with `--error-mode debug`:
    ```bash
    cov-loupe --error-mode debug summary lib/my_app/order.rb
    ```
 
-2. **Check diagnostics:**
+2. **Check the logs.** cov-loupe logs to stderr by default; for an MCP server, your MCP client captures it. To keep a log, pass `--log-file` (`-l`) and inspect that file:
    ```bash
-   # MCP hosts capture stderr by default.
-   # For a persistent file, configure --log-file PATH and inspect that path.
-
-   # Or specify custom log location (--log-file or -l)
    cov-loupe -l /tmp/debug.log summary lib/my_app/order.rb
    ```
 

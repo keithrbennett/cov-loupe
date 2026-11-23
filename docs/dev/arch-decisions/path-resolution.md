@@ -19,9 +19,9 @@ Early versions of cov-loupe included path normalization logic that converted bac
 Upon closer examination, this cross-OS scenario is unrealistic for several reasons:
 
 1. **CI/CD workflows** – While coverage files might be generated in CI (often Linux), developers typically either:
-   - Re-run tests locally to generate fresh coverage
-   - View coverage reports rendered by SimpleCov's HTML formatter
-   - Use hosted coverage services (Codecov, Coveralls)
+    - Re-run tests locally to generate fresh coverage
+    - View coverage reports rendered by SimpleCov's HTML formatter
+    - Use hosted coverage services (Codecov, Coveralls)
 
 2. **Docker development** – When tests run in containers, volume mounting ensures paths already match the host environment
 

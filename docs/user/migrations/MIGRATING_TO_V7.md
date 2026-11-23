@@ -324,7 +324,9 @@ In 6.x, every MCP tool accepted an `error_mode` argument (`off`, `log`, or `debu
 
 ## Payload Keys Reshaped
 
-Line metrics now have one flat shape in every payload, and keys that meant different things in different payloads were renamed. This applies to library hashes, structured CLI output, and MCP tool payloads. `list` rows keep every key they had, so code that reads `list['files']` is unaffected. Elsewhere, an old key now reads as `nil`, which usually raises an error, but code that converts it (`.to_f`, `.to_i`), uses `dig`, or supplies a `fetch` default gets `0` or `nil` silently, so search your code and saved predicates for the old names.
+Line metrics now have one flat shape in every payload, and keys that meant different things in different payloads were renamed. This applies to library hashes, structured CLI output, and MCP tool payloads. `list` rows keep every key they had, so code that reads `list['files']` is unaffected.
+
+Elsewhere, an old key now reads as `nil`. That usually raises an error, but code that converts it (`.to_f`, `.to_i`), uses `dig`, or supplies a `fetch` default silently gets `0` or `nil`, so search your code and saved predicates for the old names.
 
 | Payload | 6.x | 7.0 |
 |---|---|---|
@@ -402,7 +404,19 @@ Library methods such as `CoverageModel#summary_for`, `#list`, and `#project_tota
 
 ## Library Results Use Project-Relative Paths
 
-In 6.x, `CoverageModel#list`, `#summary_for`, `#uncovered_for`, `#detailed_for`, and `#raw_for` returned absolute file paths, while the CLI and MCP server reported project-relative ones; `CoverageModel#relativize` converted library results to the relative form. In 7.0 the library returns the same paths as the CLI and MCP server, so every payload has one shape. A path inside the project root is relative to the root; a path outside it stays absolute. This applies to every `file` value, including the `list` `files` and `skipped_files` rows. The other `list` path arrays (`missing_tracked_files`, now `not_in_coverage_files`; `newer_files`, `deleted_files`, `length_mismatch_files`, and `unreadable_files`) were already relative for files inside the root, but showed files outside it as `../` paths; they now show those as absolute paths, in the library, CLI, and MCP output alike. Staleness errors change the same way: `CoverageDataStaleError#file_path`, the `CoverageDataProjectStaleError` path arrays, and the error messages report files outside the root as absolute paths. A relative path whose first directory starts with `~` is reported with a `./` prefix (for example `./~vendor/a.rb`) in all modes, so `File.expand_path` does not treat it as a home directory. On input, relative `coverage.json` keys and `format_table` row paths starting with `~` resolve to a directory under the root. In 6.x, such relative `.resultset.json` keys were expanded as home directories (or raised for an unknown user), and such row paths were used as written, so no `tracked_globs` pattern matched them and the row was dropped; query path arguments and `file_globs` (`tracked_globs` in 6.x) still follow `File.expand_path`, so write `./~vendor/a.rb` to name such a directory there. `CoverageModel#relativize` is removed. `CoverageModel#format_table` called without rows now shows relative paths too (it showed absolute paths in 6.x). `validate` predicates receive library results, so a predicate that prints `f['file']` now prints relative paths. Table rows with equal coverage are ordered by absolute path, as in `list`; in 6.x the CLI and MCP tables ordered them by the displayed path, so ties involving files outside the root may order differently. Otherwise CLI and MCP output is unchanged, and `CoverageReporter.report` prints the same text apart from the `./~` prefix and the two-decimal percentages described in [Percentages Truncated, Not Rounded](#percentages-truncated-not-rounded).
+In 6.x, `CoverageModel#list`, `#summary_for`, `#uncovered_for`, `#detailed_for`, and `#raw_for` returned absolute file paths, while the CLI and MCP server reported project-relative ones; `CoverageModel#relativize` converted library results to the relative form. In 7.0 the library returns the same paths as the CLI and MCP server, so every payload has one shape: a path inside the project root is relative to the root, and a path outside it stays absolute. `CoverageModel#relativize` is removed.
+
+In detail:
+
+- **`file` values:** Every `file` value changes this way, including the `list` `files` and `skipped_files` rows.
+- **Other `list` path arrays:** `missing_tracked_files` (now `not_in_coverage_files`), `newer_files`, `deleted_files`, `length_mismatch_files`, and `unreadable_files` were already relative for files inside the root, but showed files outside it as `../` paths. They now show those as absolute paths, in the library, CLI, and MCP output alike.
+- **Staleness errors:** `CoverageDataStaleError#file_path`, the `CoverageDataProjectStaleError` path arrays, and the error messages also report files outside the root as absolute paths.
+- **Paths starting with `~`:** A relative path whose first directory starts with `~` is reported with a `./` prefix (for example `./~vendor/a.rb`) in all modes, so `File.expand_path` does not treat it as a home directory. On input, relative `coverage.json` keys and `format_table` row paths starting with `~` resolve to a directory under the root. In 6.x, such relative `.resultset.json` keys were expanded as home directories (or raised for an unknown user), and such row paths were used as written, so no `tracked_globs` pattern matched them and the row was dropped. Query path arguments and `file_globs` (`tracked_globs` in 6.x) still follow `File.expand_path`, so write `./~vendor/a.rb` to name such a directory there.
+- **`format_table`:** Called without rows, it now shows relative paths too (it showed absolute paths in 6.x).
+- **`validate` predicates:** They receive library results, so a predicate that prints `f['file']` now prints relative paths.
+- **Table order:** Table rows with equal coverage are ordered by absolute path, as in `list`. In 6.x the CLI and MCP tables ordered them by the displayed path, so ties involving files outside the root may order differently.
+
+Otherwise CLI and MCP output is unchanged, and `CoverageReporter.report` prints the same text apart from the `./~` prefix and the two-decimal percentages described in [Percentages Truncated, Not Rounded](#percentages-truncated-not-rounded).
 
 The path arguments the methods accept are unchanged: absolute paths and paths relative to the root both work, so a `file` value from one result can be passed straight to another query.
 
@@ -548,7 +562,12 @@ Run 'cov-loupe --help' for usage information.
 
 In 6.x, the CLI split the `-g`/`--tracked-globs` value (now `--file-globs`; see [Tracked Globs Renamed to File Globs](#tracked-globs-renamed-to-file-globs)) on every comma. A brace pattern such as `-g 'app/{models,controllers}/**/*.rb'` became two invalid globs that matched nothing, without an error, and an empty item (`-g 'a,,b'`) made project-level commands such as `list` and `totals` fail with `no implicit conversion of nil into String`.
 
-In 7.0, the value is split only on commas outside `{...}` and `[...]` and, except on Windows, not on a backslash-escaped comma (`\,`). Empty items are ignored. An unclosed `{`, or an unclosed `[` outside braces, is a usage error (exit 2) for every command, the per-file ones included, whether the value comes from the command line or `COV_LOUPE_OPTS`, and it stops the MCP server from starting. Such a value used to run with exit 0: it was split at every comma, the fragment holding the bracket matched nothing on CRuby (JRuby read an unmatched `{` literally), and the other fragments still applied. The MCP `file_globs` argument and the Ruby API take their patterns as an array (the Ruby API also takes one string, used as a single pattern) and do not split them, so this change does not affect them.
+In 7.0:
+
+- The value is split only on commas outside `{...}` and `[...]` and, except on Windows, not on a backslash-escaped comma (`\,`). Empty items are ignored.
+- An unclosed `{`, or an unclosed `[` outside braces, is a usage error (exit 2) for every command, the per-file ones included, whether the value comes from the command line or `COV_LOUPE_OPTS`. It also stops the MCP server from starting. Such a value used to run with exit 0: it was split at every comma, the fragment holding the bracket matched nothing on CRuby (JRuby read an unmatched `{` literally), and the other fragments still applied.
+
+The MCP `file_globs` argument and the Ruby API take their patterns as an array (the Ruby API also takes one string, used as a single pattern) and do not split them, so this change does not affect them.
 
 **Migration:** values without braces, brackets, or backslashes need no change. Fix any unclosed `{` or `[` the new error reports. To match a literal `[`, write `[[]` (or `\[`, except on Windows); to match a literal `{`, write `\{`, quoted so the shell keeps the backslash (not possible on Windows). If a value relied on splitting at a comma inside braces or brackets, or after a backslash, write those patterns separately. See [`--file-globs`](../CLI_USAGE.md#file-globs).
 
@@ -566,6 +585,10 @@ In 7.0, ASCII mode changes only what cov-loupe draws itself: table borders use `
 
 In 6.x, source files (for source display with `--source`) and `validate` predicate files were read in the locale's encoding. A file in a non-UTF-8 encoding such as ISO-8859-1 therefore worked under a matching locale, while under the C locale (`LANG=C`) predicate files with non-ASCII string literals and JSON source output with non-ASCII characters failed.
 
-In 7.0 they are always read as UTF-8, Ruby's default source encoding, whatever the locale. Non-ASCII UTF-8 files now work under every locale, including `LANG=C`. A file in another encoding is no longer decoded with the locale: source display shows its non-ASCII bytes raw in the table and escaped (such as `\xE9`) in the other text formats, JSON or YAML source output fails with `Source file is not valid UTF-8`, and a predicate file fails to evaluate if it has non-ASCII characters outside comments, such as in string literals.
+In 7.0 they are always read as UTF-8, Ruby's default source encoding, whatever the locale. Non-ASCII UTF-8 files now work under every locale, including `LANG=C`. A file in another encoding is no longer decoded with the locale:
+
+- Source display shows its non-ASCII bytes raw in the table and escaped (such as `\xE9`) in the other text formats.
+- JSON or YAML source output fails with `Source file is not valid UTF-8`.
+- A predicate file fails to evaluate if it has non-ASCII characters outside comments, such as in string literals.
 
 **Migration:** if your source or predicate files are UTF-8 (or ASCII), no change is needed. Otherwise convert them to UTF-8, for example with `iconv -f ISO-8859-1 -t UTF-8`. A magic comment such as `# encoding: ISO-8859-1` lets a predicate file parse, but its non-ASCII strings are then in that encoding and do not match the UTF-8 paths in the coverage data, so converting is the reliable fix.

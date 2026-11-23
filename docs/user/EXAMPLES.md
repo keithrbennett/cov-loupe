@@ -6,7 +6,7 @@ Practical examples for common tasks with cov-loupe, one page per topic.
 
 ## Ask Your AI Assistant
 
-- **[AI Assistant Prompts](examples/ai-assistant-prompts.md)** – Prompts for the MCP server that go beyond tables and counts: explain which behaviors your tests don't exercise and what would happen if they broke, rank gaps by risk instead of percentage, judge whether your tests would actually catch failures, review a branch, and write tests that are checked against real coverage data. Start here if you use cov-loupe with an AI assistant.
+- **[AI Assistant Prompts](examples/ai-assistant-prompts.md)** – Prompts that go beyond tables and counts: explain which behaviors your tests miss and what would happen if they broke, rank gaps by risk, judge whether your tests would catch failures, review a branch, and write tests checked against real coverage data. Start here if you use cov-loupe with an AI assistant.
 
 ## From the Command Line and Ruby
 

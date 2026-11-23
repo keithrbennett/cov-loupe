@@ -441,12 +441,12 @@
 - **Simplified `--version` output**: `-v`/`--version` now prints only the bare version string (e.g. `5.0.0`) and exits, instead of displaying a formatted table with `Gem Root` and `Documentation` fields. JSON format is no longer supported for version output.
 - Add `-s none` / `--source none` option to disable source code display (previously enabled via `-s full` or `-s uncovered`).
 - **`--resource NAME` renamed to `--path-for NAME`** (`-p NAME`); `--resource` is no longer accepted. The names are still `repo`, `docs`, and `docs-local`.
-  - Expose canonical resources in MCP `help` under the `resources` key (alongside `tools`).
-  - Share resource values from one source of truth (`CovLoupe::Resources::RESOURCE_MAP`) used by:
-      - CLI `--path-for`
-      - CLI help banner URLs
-      - MCP `help`
-      - MCP server startup instructions
+    - Expose canonical resources in MCP `help` under the `resources` key (alongside `tools`).
+    - Share resource values from one source of truth (`CovLoupe::Resources::RESOURCE_MAP`) used by:
+        - CLI `--path-for`
+        - CLI help banner URLs
+        - MCP `help`
+        - MCP server startup instructions
 - **Single-letter abbreviations for CLI subcommands** (added in 4.1.0, which had no release notes): All CLI subcommands can be abbreviated to their first letter. For example, `cov-loupe l` for `list`, `cov-loupe s` for `summary`, `cov-loupe r` for `raw`, `cov-loupe u` for `uncovered`, `cov-loupe d` for `detailed`, `cov-loupe t` for `totals`, `cov-loupe v` for `validate`.
 - **Totals key renamed**: The `lines.percent_covered` key in project totals (`project_coverage_totals`, the `totals` subcommand, and `CoverageModel#project_totals`) has been renamed to `percentage`, matching the per-file summaries. Update any code or scripts that read `percent_covered` to use `percentage` instead.
 - Make pass/fail symbols in source code display more prominent, change circle to X
@@ -679,9 +679,9 @@ This release represents a complete maturation of simplecov-mcp from experimental
 
 #### Improved Path Resolution
 - **Multi-strategy matching**:
-  1. Exact absolute path
-  2. Path without working directory prefix
-  3. Basename (filename) fallback
+    1. Exact absolute path
+    2. Path without working directory prefix
+    3. Basename (filename) fallback
 - **New `PathRelativizer` class** - Consistent relative path handling across codebase
 - **Configurable root** - `--root PATH` option to resolve relative paths against different directories
 
@@ -849,8 +849,8 @@ See `CLAUDE.md`, `AGENTS.md`, and `GEMINI.md` for AI agent integration notes.
    ```
 
 4. **Update MCP configurations:**
-   - Review `docs/user/MCP_INTEGRATION.md` for updated setup instructions
-   - Log file now defaults to `./simplecov_mcp.log` (was `~/simplecov_mcp.log`)
+    - Review `docs/user/MCP_INTEGRATION.md` for updated setup instructions
+    - Log file now defaults to `./simplecov_mcp.log` (was `~/simplecov_mcp.log`)
 
 5. **Handle new error types in library code:**
    ```ruby

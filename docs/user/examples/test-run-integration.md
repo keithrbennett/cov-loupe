@@ -4,7 +4,7 @@
 
 ## Display Low Coverage Files
 
-Add this to your `spec/spec_helper.rb` to automatically report files below a coverage threshold after each test run (cov-loupe must be in your Gemfile, e.g. its `:test` group, for `require 'cov_loupe'` to load under Bundler):
+Add this to your `spec/spec_helper.rb` to report the files below a coverage threshold after each test run. Under Bundler, `require 'cov_loupe'` works only if cov-loupe is in your Gemfile (for example, in its `:test` group).
 
 ```ruby
 require 'simplecov'
@@ -43,7 +43,7 @@ Lowest coverage files (< 80%):
 
 **Returns:** Formatted string, or `nil` if no files are below the threshold.
 
-**SimpleCov Integration:** When SimpleCov is loaded, `CoverageReporter.report` automatically uses SimpleCov's configured root and coverage directory. You can override these by passing explicit `root:` or `coverage_file:` parameters, or provide a custom `model:` instance.
+When SimpleCov is loaded, as in an `at_exit` hook, `report` uses SimpleCov's configured root and coverage directory. Passing `root:` replaces the root and looks for SimpleCov's coverage directory under the new root; passing `coverage_file:` or `model:` replaces the coverage location entirely.
 
 ## Custom Coverage Directory
 
@@ -60,7 +60,7 @@ end
 SimpleCov.at_exit do
   SimpleCov.result.format!
   require 'cov_loupe'
-  
+
   # CoverageReporter will automatically find the coverage in reports/coverage
   report = CovLoupe::CoverageReporter.report(threshold: 80, count: 5)
   puts report if report

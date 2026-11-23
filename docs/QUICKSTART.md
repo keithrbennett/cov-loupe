@@ -33,7 +33,7 @@ Then run your test suite:
 bundle exec rspec  # or your test command
 ```
 
-With SimpleCov 1.0 or later, this creates `coverage/coverage.json` (its default formatter writes it; 0.x does not, and a `coverage.json` from 0.x's separate `simplecov_json_formatter` gem lacks `meta.schema_version` and is rejected). cov-loupe reads the format written by SimpleCov 1.0 and later; SimpleCov is not installed with cov-loupe, so add it to your own project.
+With SimpleCov 1.0 or later, this creates `coverage/coverage.json`, the file cov-loupe reads. SimpleCov 0.x does not write it by default, and cov-loupe rejects the `coverage.json` written by `simplecov_json_formatter` (the separate gem used with 0.x) because it lacks `meta.schema_version`. cov-loupe does not install SimpleCov, so add it to your project as shown above.
 
 ## 3. View Coverage
 
@@ -43,7 +43,7 @@ Run it from your project root (or pass `-R path/to/project`):
 cov-loupe
 ```
 
-You'll see a table showing coverage for each file, sorted by highest coverage first (lowest at the bottom; files with no coverable lines, shown as `n/a`, come before 100%).
+You'll see a table of coverage for each file, sorted from highest to lowest coverage. Files with no coverable lines show `n/a` and are listed above the 100% files.
 
 ## Common Commands
 
@@ -78,6 +78,6 @@ If you're using Claude Code, Codex, or another MCP-compatible assistant:
 
 1. Configure your assistant to run `cov-loupe -m mcp` (see [MCP Integration Guide](user/MCP_INTEGRATION.md))
 2. Use ready-made prompts from [Prompt Library](user/prompts/README.md)
-3. Let AI analyze your coverage and suggest improvements
+3. Ask the assistant to analyze your coverage and suggest improvements
 
 [Back to main README](../README.md)
