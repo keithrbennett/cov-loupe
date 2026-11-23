@@ -35,6 +35,7 @@ module CovLoupe
   AppContext = Data.define(:error_handler, :log_target, :mode, :app_config, :logger) do
     # @api private
     def initialize(error_handler:, log_target: nil, mode: :library, app_config: nil, logger: nil)
+      validate_mode!(mode)
       logger ||= Logger.new(target: log_target, mode: mode)
       super
     end
@@ -46,6 +47,9 @@ module CovLoupe
     # the new instance would point to the old logger (e.g. logging to the
     # wrong file).
     def with(**kwargs)
+      # Check before building the new logger, which probes its target and may warn or raise.
+      validate_mode!(kwargs[:mode]) if kwargs.key?(:mode)
+
       target_changed = kwargs.key?(:log_target) && kwargs[:log_target] != log_target
       mode_changed = kwargs.key?(:mode) && kwargs[:mode] != mode
 
@@ -71,5 +75,16 @@ module CovLoupe
     def library_mode?
       mode == :library
     end
+
+    private def validate_mode!(mode)
+      return if AppContext::VALID_MODES.include?(mode)
+
+      raise ArgumentError,
+        "Invalid mode: #{mode.inspect}. Valid modes: #{AppContext::VALID_MODES.inspect}"
+    end
   end
+
+  # Defined outside the Data.define block, where a constant would land in CovLoupe instead.
+  # @api private
+  AppContext::VALID_MODES = %i[library cli mcp].freeze
 end

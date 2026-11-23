@@ -537,6 +537,11 @@ RSpec.describe CovLoupe do
       expect(context).to be_library_mode
       expect(context.error_handler.error_mode).to eq(:off)
     end
+
+    it 'rejects an invalid mode' do
+      expect { described_class.create_context(mode: :mpc) }
+        .to raise_error(ArgumentError, /Invalid mode: :mpc/)
+    end
   end
 
   describe '.version' do

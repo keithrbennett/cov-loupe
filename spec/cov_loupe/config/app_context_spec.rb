@@ -39,6 +39,27 @@ RSpec.describe CovLoupe::AppContext do
     end
   end
 
+  describe 'mode validation' do
+    [:mpc, 'mcp', nil].each do |bad_mode|
+      it "rejects mode #{bad_mode.inspect} in .new" do
+        expect { described_class.new(error_handler: error_handler, mode: bad_mode) }
+          .to raise_error(ArgumentError, /Invalid mode: #{Regexp.escape(bad_mode.inspect)}/)
+      end
+    end
+
+    it 'rejects an invalid mode in #with' do
+      context = described_class.new(error_handler: error_handler, mode: :cli)
+      expect { context.with(mode: :mpc) }.to raise_error(ArgumentError, /Invalid mode: :mpc/)
+    end
+
+    it 'checks the mode in #with before building a logger for a new log_target' do
+      context = described_class.new(error_handler: error_handler, mode: :cli)
+      expect(CovLoupe::Logger).not_to receive(:new)
+      expect { context.with(mode: :mpc, log_target: 'other.log') }
+        .to raise_error(ArgumentError, /Invalid mode: :mpc/)
+    end
+  end
+
   describe '#with' do
     let(:initial_target) { 'initial.log' }
     let(:initial_mode) { :cli }
