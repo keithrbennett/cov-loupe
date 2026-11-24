@@ -20,7 +20,7 @@
 
 **Hand one prompt to your AI coding agent and get a written report of where your tests fall short and why it matters.**
 
-The [Test Coverage Analysis prompt](docs/user/prompts/test-coverage-analysis-prompt.md) has the agent use cov-loupe to:
+With the [Test Coverage Analysis prompt](docs/user/prompts/test-coverage-analysis-prompt.md), your agent uses cov-loupe to:
 
 - **Map your code into logical areas**, from whole subsystems down to a single critical class or method inside a larger file, rather than reporting by file or directory
 - **Measure coverage for each area** from cov-loupe's line-level data, with totals that reconcile to the project's
@@ -30,17 +30,9 @@ The [Test Coverage Analysis prompt](docs/user/prompts/test-coverage-analysis-pro
 
 To run it:
 
-1. Install cov-loupe (`gem install cov-loupe`). Setting up the [MCP server](docs/user/MCP_INTEGRATION.md) is optional; without it, the agent uses the CLI.
+1. Install cov-loupe (`gem install cov-loupe`). [Setting up the MCP server](docs/user/MCP_INTEGRATION.md) is optional; without it, the agent uses the CLI, which is slower.
 2. Run your full test suite and make sure it passes. The prompt does not run tests; it checks that the coverage data is current and stops if it isn't.
-3. From your project root, give the prompt to your agent. The gem includes the prompt matching its version:
-
-   ```sh
-   PROMPT="$(dirname "$(cov-loupe -p docs-local)")/docs/user/prompts/test-coverage-analysis-prompt.md"
-
-   # Interactive: tell the agent to follow the prompt in "$PROMPT", or paste its contents.
-   # Headless:
-   claude -p "$(cat "$PROMPT")"
-   ```
+3. Start your agent in your project root and paste in the contents of the [prompt](docs/user/prompts/test-coverage-analysis-prompt.md). The installed gem also has a copy that matches its version, at `docs/user/prompts/test-coverage-analysis-prompt.md` in the directory that holds the README `cov-loupe -p docs-local` prints.
 
 The agent writes a timestamped Markdown report to `untracked/` if your project root has that directory (useful if you gitignore it), otherwise to the project root. It runs unattended and changes nothing else, so you can run several agents (Claude, Codex, Gemini, ...) at once against the same coverage data and compare their reports.
 
