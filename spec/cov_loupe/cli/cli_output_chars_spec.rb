@@ -22,17 +22,6 @@ RSpec.describe 'CLI --output-chars option' do
         expect(output).not_to include("\u2510") # top-right corner
       end
     end
-
-    it 'produces ASCII table borders for default (no subcommand) output' do
-      output = run_fixture_cli_output('--output-chars', 'ascii')
-
-      aggregate_failures do
-        expect(output).to include('+')
-        expect(output).to include('|')
-        expect(output).not_to include("\u250C")
-        expect(output).not_to include("\u2502")
-      end
-    end
   end
 
   describe '--output-chars fancy' do

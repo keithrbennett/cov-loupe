@@ -51,8 +51,9 @@ Before you begin the analysis:
   cov-loupe's per-line output into area totals is expected (see Step 4).
 - Prefer the cov-loupe MCP server. If it is unavailable, use the CLI
   (`cov-loupe`, or `bundle exec cov-loupe` if it is in the Gemfile; run
-  `cov-loupe --help` for usage), putting the subcommand first and adding
-  `-fJ` after it for JSON output. If it reports "MCP mode takes no
+  `cov-loupe --help` for usage). Every command needs a subcommand, such as
+  `cov-loupe list -fJ`: put the subcommand first and add `-fJ` after it
+  for JSON output. If it reports "MCP mode takes no
   subcommand", COV_LOUPE_OPTS selects MCP mode; put `-m cli` before the
   subcommand. Say in the report which one you used.
 - Use source and test files only to define the logical areas and to judge the

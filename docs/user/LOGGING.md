@@ -24,14 +24,14 @@ File logging has no built-in rotation. If you log to a file, clean it up or rota
 ## What the CLI logs
 
 - The `CLI parameters` line is written only to a log file, never to `stderr`. A log file gets
-  one for each run whose options are valid and whose subcommand, if any, is known.
+  one for each run whose options are valid and whose subcommand is known.
 - Each error is printed to stderr once, as the user-facing message, and is not also logged
   there. With `--error-mode debug`, the full stack trace follows the message (only its first
   5 lines when logging to a file, which gets the full trace).
 - With a log file, each error is also logged to the file, unless `--error-mode off` is set.
 - Invalid options and option values are rejected before logging is set up, so they appear only
-  on stderr. An unknown subcommand and other usage errors found by the subcommand, such as a
-  missing path, are logged to the file.
+  on stderr. A missing or unknown subcommand and other usage errors found by the subcommand,
+  such as a missing path, are logged to the file.
 - Warnings and diagnostics about the coverage data can appear on stderr with either target.
 
 ## Concurrent processes and agents

@@ -51,7 +51,7 @@ module CovLoupe
     private def configure_banner(parser)
       parser.banner = <<~BANNER
         #{HORIZONTAL_RULE}
-        Usage:                 cov-loupe [options] [subcommand] [options] [args]  (default subcommand: list)
+        Usage:                 cov-loupe [options] <subcommand> [options] [args]
         Repository:            #{Resources::REPOSITORY_URL}
         Documentation (Web):   #{Resources::DOCUMENTATION_WEB_URL}
         Documentation (Local): #{Resources::LOCAL_README_PATH}
@@ -124,7 +124,7 @@ module CovLoupe
       # splits only on commas outside {...} and [...]. Object passes the raw value through;
       # String would reject an empty value (-g ''), which Array accepted as no globs.
       parser.on('-g', '--file-globs PATTERNS', Object,
-        'Limit project-level results (list, totals, default report, validate predicates) to',
+        'Limit project-level results (list, totals, validate predicates) to',
         'files matching these comma-separated globs, and report matching files on disk that',
         'have no coverage data (e.g. files added since the last test run)',
         'In MCP mode, the default for project tools whose call passes no file_globs',

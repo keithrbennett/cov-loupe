@@ -11,7 +11,7 @@ RSpec.describe CovLoupe::CoverageCLI do
     expect(status).to eq(0)
     expect(err).to eq('')
     [
-      %r{Usage:\s+cov-loupe \[options\] \[subcommand\] \[options\] \[args\]\s+\(default subcommand: list\)},
+      /Usage:\s+cov-loupe \[options\] <subcommand> \[options\] \[args\]$/,
       %r{Repository:\s+https://github.com/keithrbennett/cov-loupe},
       %r{Documentation \(Web\):\s+https://keithrbennett.github.io/cov-loupe/},
       %r{Documentation \(Local\):\s+},

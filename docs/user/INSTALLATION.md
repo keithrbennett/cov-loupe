@@ -70,7 +70,7 @@ cov-loupe --version
 cov-loupe --help
 
 # Run on current project (requires coverage data)
-cov-loupe
+cov-loupe list
 ```
 
 ### Generate Test Coverage
@@ -79,7 +79,7 @@ If your project doesn't use SimpleCov 1.x yet, follow [Quick Start step 2](../QU
 
 ```sh
 ls -l coverage/coverage.json
-cov-loupe
+cov-loupe list
 ```
 
 ## Platform-Specific Notes

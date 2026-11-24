@@ -216,9 +216,9 @@ RSpec.describe CovLoupe do
         # Environment values arrive as raw bytes under LANG=C too
         list_out, list_err, list_status = run.call('list', opts: '--file-globs lib/café*.rb')
         summary_out, summary_err, summary_status = run.call('-c', 'coverage', 'summary', 'lib/café.rb')
-        # -U sets Encoding.default_internal, so $stdout transcodes to US-ASCII and the default
-        # report cannot write the non-ASCII path.
-        _out, transcode_err, transcode_status = run.call(extra_rubyopt: '-U')
+        # -U sets Encoding.default_internal, so $stdout transcodes to US-ASCII and list cannot
+        # write the non-ASCII path.
+        _out, transcode_err, transcode_status = run.call('list', extra_rubyopt: '-U')
         # With Encoding.default_internal set to US-ASCII, the MCP request must still be read as UTF-8.
         request = { jsonrpc: '2.0', id: 1, method: 'tools/call',
                     params: { name: 'file_coverage_summary', arguments: { path: 'lib/café.rb' } } }

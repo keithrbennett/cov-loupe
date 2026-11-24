@@ -137,9 +137,9 @@ With `raise_on_stale` true, a project query also raises if a coverage row is ski
 
 **CLI Usage:**
 
-To check whether any file in the project is stale, run `list` (or no subcommand, since `list` is the default)
-with `--raise-on-stale true` and check the exit code. This transcript comes from a project with files newer
-than its coverage, not from the demo fixture:
+To check whether any file in the project is stale, run `list` with `--raise-on-stale true` and check the
+exit code. This transcript comes from a project with files newer than its coverage, not from the demo
+fixture:
 
 ```sh
 $ cov-loupe -S true list
@@ -449,7 +449,7 @@ bundle exec rspec
 
 # 2. Fail (exit 1) if a file matching the globs is stale or is not in the coverage data.
 #    On the demo fixture this fails, because two lib files are not in the coverage data.
-clp -S true -g "lib/**/*.rb"
+clp -S true -g "lib/**/*.rb" list
 
 # 3. Export data for CI artifacts or further processing
 clp -fJ list > coverage-report.json
@@ -545,7 +545,7 @@ clp -g "lib/domain/**/*.rb" list
 **2. Ensure New Files Have Coverage:**
 ```sh
 # Fail if any file matching the file globs lacks coverage
-clp -S true -g "lib/features/**/*.rb"
+clp -S true -g "lib/features/**/*.rb" list
 ```
 
 **3. Multi-tier Reporting:**

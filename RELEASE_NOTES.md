@@ -7,6 +7,10 @@
 
 ### Breaking
 
+- **A subcommand is required; `list` is no longer the default.** `cov-loupe` with no
+  subcommand, or with options only (`cov-loupe -o a`), no longer shows the coverage table: it
+  exits 2 with `No subcommand given`, pointing to `cov-loupe list` (or `cov-loupe l`). See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#a-subcommand-is-required).
 - **Coverage entry lookup errors are `CoverageDataError`s.** A path with no coverage entry now
   raises `CoverageEntryNotFoundError`, and one matching several entries
   `AmbiguousCoverageEntryError`, both `CoverageDataError` subclasses; both were `FileError`,
@@ -381,12 +385,10 @@
   file. With the default `stderr` target, a CLI error is printed once, as its user-facing
   message, instead of also appearing as `ERROR` log lines; `--error-mode debug` follows it with
   the full stack trace (also with `--log-file off`; with a log file, stderr gets the first 5 lines
-  and the log the full trace). Unknown-subcommand errors now also reach a `--log-file`. Running
-  `cov-loupe` with no subcommand now reports an unexpected error the same way as a subcommand
-  does, instead of exiting with a raw Ruby backtrace.
+  and the log the full trace). Unknown-subcommand errors now also reach a `--log-file`.
 - **Custom CLI error handlers see an unexpected error once.** A handler passed to
   `CoverageCLI.new(error_handler:)` now receives an unexpected (non-`CovLoupe::Error`) error
-  from a subcommand or the default report once, as the original exception with
+  from a subcommand once, as the original exception with
   `reraise: false`. Previously it was called twice: first with `reraise: true`, expected to
   raise the converted error, then with that converted error. A handler may provide
   `convert_standard_error` to control the conversion. As before, the handler is called for

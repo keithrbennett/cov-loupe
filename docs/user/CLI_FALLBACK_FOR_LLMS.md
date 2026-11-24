@@ -31,7 +31,7 @@ The cov-loupe MCP server isn't available. Use the cov-loupe CLI instead:
 
 | MCP tool | CLI equivalent | Notes |
 |---|---|---|
-| `project_coverage` | `list` (`l`) | `list` is the default subcommand. MCP defaults to JSON; the CLI defaults to a table. |
+| `project_coverage` | `list` (`l`) | MCP defaults to JSON; the CLI defaults to a table. |
 | `project_coverage_totals` | `totals` (`t`) | |
 | `file_coverage_summary` | `summary <path>` (`s`) | |
 | `file_coverage_detailed` | `detailed <path>` (`d`) | |

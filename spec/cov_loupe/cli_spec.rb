@@ -393,7 +393,8 @@ RSpec.describe CovLoupe::CoverageCLI do
         root_warning:                   nil,
         relative_skipped_files:         [],
         relative_files:                 [],
-        timestamp_status:               'ok'
+        timestamp_status:               'ok',
+        payload:                        { 'files' => [] }
       )
       allow(CovLoupe::Presenters::ProjectCoveragePresenter)
         .to receive(:new).and_return(presenter_double)
@@ -442,7 +443,7 @@ RSpec.describe CovLoupe::CoverageCLI do
     it 'outputs warning to stderr when timestamps are missing' do
       stub_presenter_with_timestamp_status('missing', include_model: true)
 
-      [[], %w[--format json]].each do |args|
+      [%w[list], %w[--format json list]].each do |args|
         _stdout, stderr, _status = run_fixture_cli_with_status(*args)
 
         expect(stderr).to include(
@@ -457,7 +458,7 @@ RSpec.describe CovLoupe::CoverageCLI do
     it 'does not output warning when timestamps are present' do
       stub_presenter_with_timestamp_status('ok')
 
-      stdout, stderr, _status = run_fixture_cli_with_status
+      stdout, stderr, _status = run_fixture_cli_with_status('list')
 
       expect(stdout).not_to include('WARNING: Coverage timestamps are missing.')
       expect(stderr).not_to include('WARNING: Coverage timestamps are missing.')
@@ -474,6 +475,7 @@ RSpec.describe CovLoupe::CoverageCLI do
 
         args = ['--root', no_timestamp_fixture, '--coverage-file', no_timestamp_coverage_file]
         args += ['--format', tc[:format]] if tc[:format] != 'table'
+        args << 'list'
 
         stdout, stderr, _status = run_cli_with_status(*args)
         output = tc[:stream] == :stdout ? stdout : stderr

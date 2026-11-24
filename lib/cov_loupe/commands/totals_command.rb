@@ -56,10 +56,10 @@ module CovLoupe
       end
 
       private def warn_about_data_quality(presenter)
-        [
+        warn_nonempty(
           Formatters::CoverageWarnings.timestamp_warning(presenter),
-          Formatters::CoverageWarnings.root_warning(presenter),
-        ].each { |text| warn text unless text.empty? }
+          Formatters::CoverageWarnings.root_warning(presenter)
+        )
       end
 
       private def format_with_coverage_line(with_coverage)

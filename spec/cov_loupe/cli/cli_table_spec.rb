@@ -7,8 +7,8 @@ RSpec.describe CovLoupe::CoverageCLI do
     run_fixture_cli_output(*argv)
   end
 
-  it 'prints default table when no subcommand is given' do
-    output = run_cli
+  it 'prints the coverage table for list' do
+    output = run_cli('list')
 
     # Contains a header row and at least one data row with expected columns
     expect(output).to include('File', 'Covered', 'Total', 'lib/foo.rb', 'lib/bar.rb')

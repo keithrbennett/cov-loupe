@@ -122,15 +122,6 @@ RSpec.describe CovLoupe::CoverageCLI do
       end
     end
 
-    context 'with an unexpected error in the default report' do
-      it 'prints a friendly message without a backtrace' do
-        allow(CovLoupe::Presenters::ProjectCoveragePresenter).to receive(:new).and_raise(RuntimeError, 'boom')
-        _out, err, status = run_fixture_cli_with_status
-        expect(status).to eq(1)
-        expect(err).to eq("An unexpected error occurred: boom\n")
-      end
-    end
-
     # As when writing non-ASCII output to a stream that transcodes to US-ASCII
     context 'with an encoding error while reporting' do
       before do
@@ -138,13 +129,11 @@ RSpec.describe CovLoupe::CoverageCLI do
           .and_raise(Encoding::UndefinedConversionError, 'U+00E9 from UTF-8 to US-ASCII')
       end
 
-      { 'the list subcommand' => ['list'], 'the default report' => [] }.each do |desc, args|
-        it "reports a text encoding error without blaming the coverage data, for #{desc}" do
-          _out, err, status = run_fixture_cli_with_status(*args)
-          expect(status).to eq(1)
-          expect(err).to start_with('Text encoding error: U+00E9 from UTF-8 to US-ASCII.')
-          expect(err).not_to include('coverage data')
-        end
+      it 'reports a text encoding error without blaming the coverage data' do
+        _out, err, status = run_fixture_cli_with_status('list')
+        expect(status).to eq(1)
+        expect(err).to start_with('Text encoding error: U+00E9 from UTF-8 to US-ASCII.')
+        expect(err).not_to include('coverage data')
       end
     end
 
@@ -164,6 +153,31 @@ RSpec.describe CovLoupe::CoverageCLI do
           expect(File.read(log_path))
             .to include('ERROR: Error in CLI: CovLoupe::UsageError: Unknown subcommand')
           expect(File.read(log_path)).not_to include('CLI parameters')
+        end
+      end
+    end
+
+    context 'without a subcommand' do
+      [[], %w[-o a -fJ]].each do |args|
+        it "rejects #{args.empty? ? 'no arguments' : 'options alone'} and points to list" do
+          out, err, status = run_fixture_cli_with_status(*args)
+          expect(status).to eq(2)
+          expect(out).to eq('')
+          expect(err).to eq(
+            "No subcommand given. To show the coverage table, run 'cov-loupe list' (or 'cov-loupe l'). " \
+            "Valid subcommands: #{CovLoupe::SUBCOMMANDS.join(', ')}\n"
+          )
+        end
+      end
+
+      it 'logs it to the --log-file given' do
+        Dir.mktmpdir do |dir|
+          log_path = File.join(dir, 'cov-loupe.log')
+          _out, _err, status = run_cli_with_status('--log-file', log_path)
+          expect(status).to eq(2)
+          log = File.read(log_path)
+          expect(log).to include('ERROR: Error in CLI: CovLoupe::UsageError: No subcommand given')
+          expect(log).not_to include('CLI parameters')
         end
       end
     end
@@ -233,14 +247,6 @@ RSpec.describe CovLoupe::CoverageCLI do
           expect(handler.handled.map(&:last)).to eq(["subcommand 'totals'"])
         end
       end
-    end
-
-    it 'passes an unexpected error in the default report to the handler once' do
-      allow(CovLoupe::Presenters::ProjectCoveragePresenter).to receive(:new).and_raise(RuntimeError, 'boom')
-      err, status = run_with_handler('--log-file', 'stderr')
-      expect(status).to eq(1)
-      expect(err.scan('An unexpected error occurred: boom').size).to eq(1)
-      expect(handler.handled.map(&:last)).to eq(['default report'])
     end
 
     it "uses the handler's convert_standard_error when it provides one" do

@@ -50,6 +50,11 @@ module CovLoupe
         raise FilePermissionError, "Permission denied: #{path}"
       end
 
+      # Prints each warning text that is not empty to stderr.
+      protected def warn_nonempty(*texts)
+        texts.each { |text| warn text unless text.empty? }
+      end
+
       # Validates that no unexpected arguments remain after parsing.
       # Raises UsageError if extra args are present.
       protected def reject_extra_args(args, command_name)

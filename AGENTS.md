@@ -66,7 +66,7 @@ Use `bundle exec rspec spec/path_spec.rb` to target specific specs when needed.
 ### Manual Testing
 - Run the CLI locally during development:
   ```sh
-  bundle exec exe/cov-loupe
+  bundle exec exe/cov-loupe list
   ```
 - Inspect help output:
   ```sh

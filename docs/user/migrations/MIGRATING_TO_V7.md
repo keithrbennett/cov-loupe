@@ -7,6 +7,7 @@ This document describes the breaking changes introduced in version 7.0.0. Sectio
 ## Table of Contents
 
 - [Short Options `-c` and `-n` Reassigned](#short-options--c-and--n-reassigned)
+- [A Subcommand Is Required](#a-subcommand-is-required)
 - [Ruby 3.3 or Later Required](#ruby-33-or-later-required)
 - [Only `coverage.json` Is Read; SimpleCov 1.x Output Is Required](#only-coveragejson-is-read-simplecov-10-is-required)
 - [`resultset` Names Removed from the CLI, MCP Tools, and Library API](#resultset-names-removed-from-the-cli-mcp-tools-and-library-api)
@@ -67,6 +68,34 @@ export COV_LOUPE_OPTS="-c build/coverage"
 - Replace `-r` with `-c` (and `--resultset` with `--coverage-file`) wherever it names the coverage file: command lines, shell aliases, `COV_LOUPE_OPTS`, and MCP server `args`. `-r` now fails with `ambiguous option: -r` (it is a prefix of the long options `--root` and `--raise-on-stale`).
 - Replace `-c N` with `-n N` wherever it sets context lines. This is the one silent change: an old `-c 3` is now parsed as `--coverage-file 3` and fails with `Specified coverage file not found` rather than an unknown-option error.
 - The not-found tip in CLI mode now reads `Specify a coverage file: cov-loupe -c PATH`.
+
+## A Subcommand Is Required
+
+In 6.x, `cov-loupe` with no subcommand ran `list`, also when only options were given (`cov-loupe -o a`). In 7.0 there is no default subcommand: such a command prints nothing on stdout, exits 2 (usage error), and reports on stderr:
+
+```
+No subcommand given. To show the coverage table, run 'cov-loupe list' (or 'cov-loupe l'). Valid subcommands: list, summary, raw, uncovered, detailed, totals, validate
+```
+
+**Before (v6.x):**
+
+```sh
+cov-loupe
+cov-loupe -S true -g "lib/**/*.rb"
+```
+
+**After (v7.0):**
+
+```sh
+cov-loupe list
+cov-loupe -S true -g "lib/**/*.rb" list
+```
+
+**Migration:**
+
+- Add `list` (or `l`) to every invocation that has no subcommand: scripts, CI steps, shell aliases, and agent permission rules. A CI check such as `cov-loupe -S true` now fails with exit status 2 whatever the coverage, so it no longer passes or fails on staleness until `list` is added.
+- No setting restores the old default: `COV_LOUPE_OPTS` may contain only options, not a subcommand (see [`COV_LOUPE_OPTS` Is Parsed on Its Own](#cov_loupe_opts-is-parsed-on-its-own)). A shell alias that already supplies the options, such as `alias clp='cov-loupe -R path/to/project'`, keeps working; type the subcommand after it (`clp list`).
+- Invocations that only print and exit (`--help`, `--version`, `--path-for`) and MCP mode (`-m mcp`) take no subcommand and are unchanged.
 
 ## Ruby 3.3 or Later Required
 

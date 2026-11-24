@@ -45,7 +45,7 @@ only `.resultset.json` by default, which cov-loupe no longer reads; upgrade Simp
    ```
 2. If your coverage lives elsewhere, point the tools at it:
    ```bash
-   cov-loupe -c build/coverage/coverage.json  # -c = --coverage-file
+   cov-loupe -c build/coverage/coverage.json list  # -c = --coverage-file
    # or
    export COV_LOUPE_OPTS="-c build/coverage"
    ```
@@ -93,7 +93,7 @@ reporting problems with the coverage data:
 - **Per-file queries** (`summary`, `uncovered`, `detailed`, `raw`) fail if the source file was
   modified after the coverage run or its line count differs from the coverage data. A deleted or
   unreadable source file fails as a file error instead.
-- **Project queries** (`list`, `totals`, the default report, and `validate` predicates that call
+- **Project queries** (`list`, `totals`, and `validate` predicates that call
   `model.list` or `model.project_totals`) fail if any file in the coverage data is newer, has a
   different line count, is deleted, or is unreadable. With file globs, they also fail for a
   matching file that is not in the coverage data.
@@ -130,7 +130,7 @@ one and is a directory on this machine, the warning suggests it; cov-loupe never
 on its own.
 
 The warning does not change the exit status. With `--raise-on-stale true`, however, the
-project-level commands (`list`, `totals`, and the default report) exit non-zero and show the
+project-level commands (`list` and `totals`) exit non-zero and show the
 same message after the staleness summary.
 
 ### "No coverage entry found for ..."

@@ -40,7 +40,7 @@ With SimpleCov 1.0 or later, this creates `coverage/coverage.json`, the file cov
 Run it from your project root (or pass `-R path/to/project`):
 
 ```sh
-cov-loupe
+cov-loupe list  # or: cov-loupe l
 ```
 
 You'll see a table of coverage for each file, sorted from highest to lowest coverage. Files with no coverable lines show `n/a` and are listed above the 100% files.

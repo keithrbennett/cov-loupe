@@ -1,13 +1,9 @@
 # frozen_string_literal: true
 
-require 'json'
 require_relative 'config/app_config'
 require_relative 'commands/command_factory'
-require_relative 'presenters/project_coverage_presenter'
 require_relative 'exit_codes'
 require_relative 'subcommands'
-require_relative 'formatters/coverage_warnings'
-require_relative 'payload_schema'
 require_relative 'resources'
 
 module CovLoupe
@@ -15,8 +11,7 @@ module CovLoupe
   #
   # Dispatches to subcommand classes via CommandFactory, with the options (coverage file
   # path, format, sort order, etc.), before and after the subcommand, already parsed by
-  # CovLoupe.run. When no subcommand is given, the default report (equivalent to `list`) is
-  # shown.
+  # CovLoupe.run. A subcommand is required.
   #
   # @api private
   class CoverageCLI
@@ -34,7 +29,7 @@ module CovLoupe
       @error_handler = nil # Created on first use, from config's error mode
     end
 
-    # Runs a subcommand, or the default report, with options already parsed into config.
+    # Runs a subcommand with options already parsed into config.
     # @param args [Array<String>] the subcommand and its positional arguments (for a known
     #   subcommand, CovLoupe.run has removed the options after it)
     # @param config [AppConfig] the parsed global options; the caller must have validated them
@@ -48,13 +43,11 @@ module CovLoupe
 
       CovLoupe.with_context(build_context) do
         # Raised, not just built, so that --error-mode debug has a backtrace to show.
-        if cmd && !SUBCOMMANDS.include?(cmd)
-          with_user_facing_errors('CLI') do
-            raise UsageError, "Unknown subcommand: '#{cmd}'. Valid subcommands: #{SUBCOMMANDS.join(', ')}"
-          end
+        unless SUBCOMMANDS.include?(cmd)
+          with_user_facing_errors('CLI') { raise UsageError, subcommand_error_message(cmd) }
         end
         log_cli_params(cmd)
-        cmd ? run_subcommand(cmd, args.drop(1)) : run_default_report
+        run_subcommand(cmd, args.drop(1))
       end
     end
 
@@ -70,7 +63,7 @@ module CovLoupe
     private def log_cli_params(cmd)
       return unless CovLoupe.logger.file_target?
 
-      params = { mode: :cli, subcommand: cmd || 'default' }
+      params = { mode: :cli, subcommand: cmd }
       params[:root] = config.root if config.root
       params[:coverage_file] = config.coverage_file if config.coverage_file
       params[:format] = config.format if config.format
@@ -81,39 +74,13 @@ module CovLoupe
       CovLoupe.logger.info("CLI parameters: #{params.inspect}")
     end
 
-    def show_default_report(sort_order: :descending, output: $stdout)
-      model = CoverageModel.new(**config.model_options)
-      presenter = Presenters::ProjectCoveragePresenter.new(
-        model:          model,
-        sort_order:     sort_order,
-        raise_on_stale: config.raise_on_stale,
-        file_globs:     config.file_globs
-      )
-
-      if config.format == :table
-        file_summaries = presenter.relative_files
-        output.puts model.format_table(
-          file_summaries,
-          sort_order:     sort_order,
-          raise_on_stale: config.raise_on_stale,
-          file_globs:     nil,
-          output_chars:   config.output_chars
-        )
-        # The exclusions summary already lists skipped rows.
-        warn_report_text(Formatters::CoverageWarnings.exclusions_summary(presenter))
+    private def subcommand_error_message(cmd)
+      problem = if cmd
+        "Unknown subcommand: '#{cmd}'."
       else
-        require_relative 'formatters/formatters'
-        output.puts Formatters.format(PayloadSchema.add(presenter.payload), config.format,
-          output_chars: config.output_chars)
-        warn_report_text(Formatters::CoverageWarnings.skipped_rows_warning(presenter))
+        "No subcommand given. To show the coverage table, run 'cov-loupe list' (or 'cov-loupe l')."
       end
-
-      warn_report_text(Formatters::CoverageWarnings.timestamp_warning(presenter))
-      warn_report_text(Formatters::CoverageWarnings.root_warning(presenter))
-    end
-
-    private def warn_report_text(text)
-      warn text unless text.empty?
+      "#{problem} Valid subcommands: #{SUBCOMMANDS.join(', ')}"
     end
 
     private def error_handler
@@ -126,10 +93,6 @@ module CovLoupe
         command = Commands::CommandFactory.create(cmd, self)
         command.execute(args)
       end
-    end
-
-    private def run_default_report
-      with_user_facing_errors('default report') { show_default_report(sort_order: config.sort_order) }
     end
 
     private def with_user_facing_errors(log_context)

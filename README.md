@@ -111,11 +111,11 @@ This requires SimpleCov 1.0 or later. By default, SimpleCov 0.x writes only `.re
 
 ### Basic Usage
 
-**CLI - View Coverage Table:** This is the default command, so any of the following will work:
+**CLI - View Coverage Table:**
 ```sh
-cov-loupe
-cov-loupe l
 cov-loupe list
+# or use the abbreviation
+cov-loupe l
 ```
 
 **CLI - Check Specific File:**
@@ -262,7 +262,7 @@ For non-standard locations:
 
 ```sh
 # Command-line option (highest priority) - use -c or --coverage-file
-cov-loupe -c /path/to/your/coverage
+cov-loupe -c /path/to/your/coverage list
 
 # Environment variable (project-wide default)
 export COV_LOUPE_OPTS="-c /path/to/your/coverage"
@@ -309,7 +309,7 @@ bundle install
 bundle exec rspec
 
 # Test locally
-bundle exec exe/cov-loupe
+bundle exec exe/cov-loupe list
 
 # Build and install (the gem is written to pkg/)
 bundle exec rake install

@@ -29,8 +29,7 @@ Complete reference for using cov-loupe from the command line.
 ## Quick Reference
 
 ```sh
-# Show coverage table for all files (default or 'l')
-clp
+# Show coverage table for all files ('list' or 'l')
 clp list
 clp l
 
@@ -81,9 +80,11 @@ Note: `-l` with a dash sets `--log-file`; `l` without a dash runs the `list` sub
 
 ## Subcommands
 
+Every CLI command needs a subcommand; there is no default. Only `--help`, `--version`, `--path-for`, and MCP mode (`-m mcp`) run without one.
+
 ### `list`, `l`
 
-Show coverage summary for all files (default subcommand).
+Show coverage summary for all files.
 
 ```sh
 clp list
@@ -544,7 +545,7 @@ See [examples/success_predicates/](../../examples/success_predicates/README.md) 
 
 ## Global Options
 
-These options can be used with every subcommand, though some affect only certain subcommands (for example, `-o` affects only `list` and the default report, and `-s`/`-n` only the per-file commands noted below).
+These options can be used with every subcommand, though some affect only certain subcommands (for example, `-o` affects only `list`, and `-s`/`-n` only the per-file commands noted below).
 
 Options can come before or after the subcommand, and after it they can be mixed with its arguments. A later value overrides an earlier one, and the command line overrides `COV_LOUPE_OPTS`:
 
@@ -585,7 +586,7 @@ files in the coverage data are not found under it; see
 [Troubleshooting](TROUBLESHOOTING.md#the-project-root-may-be-wrong).
 
 ```sh
-clp -R /path/to/project  # -R = --root
+clp -R /path/to/project list  # -R = --root
 ```
 
 ### `-p`, `--path-for NAME`
@@ -637,7 +638,7 @@ Use JSON output (`-fj` / `-fJ`) when a script or another tool will read the resu
 
 ### `-o, --sort-order ORDER`
 
-Sort order for `list`, including the default report when no subcommand is given.
+Sort order for `list`.
 
 **Values:**
 
@@ -703,8 +704,8 @@ These options require explicit boolean values. Recognized literals (case-insensi
 | `1`    | `0`     |
 
 ```sh
-clp --color false           # disable color
-clp --raise-on-stale yes    # fail when coverage is stale
+clp -s full --color false summary lib/api/client.rb  # disable color
+clp --raise-on-stale yes list                        # fail when coverage is stale
 ```
 
 ### `-C, --color BOOLEAN`
@@ -720,15 +721,15 @@ clp -s uncovered -C false uncovered lib/api/client.rb
 
 ### `-S, --raise-on-stale BOOLEAN`
 
-Raise error if coverage is stale. Project queries (`list`, `totals`, the default report, and `validate` predicates that call `model.list` or `model.project_totals`) also raise if a file matching the file globs is not in coverage data or a coverage row is skipped because its data is invalid. Requires an explicit boolean value. Default is `false` (report staleness and skipped rows instead of raising; `totals` counts skipped rows under `without_coverage`).
+Raise error if coverage is stale. Project queries (`list`, `totals`, and `validate` predicates that call `model.list` or `model.project_totals`) also raise if a file matching the file globs is not in coverage data or a coverage row is skipped because its data is invalid. Requires an explicit boolean value. Default is `false` (report staleness and skipped rows instead of raising; `totals` counts skipped rows under `without_coverage`).
 
 ```sh
 # Enable raising an error if coverage is stale
-clp -S true
-clp --raise-on-stale yes
+clp -S true list
+clp --raise-on-stale yes list
 
 # Explicitly disable raising an error (useful to override COV_LOUPE_OPTS)
-clp --raise-on-stale false
+clp --raise-on-stale false list
 ```
 
 **Staleness conditions:**
@@ -737,7 +738,7 @@ clp --raise-on-stale false
 - **`newer`**: Source file modified after coverage was generated
 - **`length_mismatch`**: Source file line count differs from coverage data
 - **`unreadable`**: Source file could not be read (permission or I/O errors), or its staleness check failed
-- Files matching the file globs that are not in coverage data (with `--file-globs`; checked by `list`, `totals`, the default report, and `validate` predicates that call `model.list` or `model.project_totals`; the per-file commands ignore `-g`)
+- Files matching the file globs that are not in coverage data (with `--file-globs`; checked by `list`, `totals`, and `validate` predicates that call `model.list` or `model.project_totals`; the per-file commands ignore `-g`)
 
 <a id="file-globs"></a>
 
@@ -830,12 +831,12 @@ Log target. Values:
 What each target receives:
 
 - **`stderr`:** The CLI does not log its parameters or errors there. Each error appears there once, as the user-facing message (followed by its stack trace with `--error-mode debug`). Warnings and diagnostics about the coverage data can still appear on stderr.
-- **A log file:** A `CLI parameters` line for each run whose options are valid and whose subcommand, if any, is known; and, unless `--error-mode off` is set, an entry for each error. Invalid options and option values are rejected before logging is set up, so they appear only on stderr. An unknown subcommand and other usage errors found by the subcommand, such as a missing path, are logged to the file.
+- **A log file:** A `CLI parameters` line for each run whose options are valid and whose subcommand is known; and, unless `--error-mode off` is set, an entry for each error. Invalid options and option values are rejected before logging is set up, so they appear only on stderr. A missing or unknown subcommand and other usage errors found by the subcommand, such as a missing path, are logged to the file.
 
 ```sh
-clp -l /tmp/cov-loupe.log  # -l = --log-file
-clp -l stderr                   # Log to standard error
-clp -l off                      # Disable logging entirely
+clp -l /tmp/cov-loupe.log list  # -l = --log-file
+clp -l stderr list              # Log to standard error
+clp -l off list                 # Disable logging entirely
 ```
 
 **Default:** `stderr` — see the [logging initialization and target testing guide](LOGGING.md#log-file-initialization-and-target-testing).
@@ -923,7 +924,7 @@ fail to write non-ASCII characters at all.
 - **Piped output** to files that should not contain box-drawing characters: `clp -O ascii list > coverage.txt`
 - **Force Unicode** when the locale is not UTF-8 but the terminal can draw it: `clp -O fancy list`
 
-**Note:** The default mode checks the output encoding, which normally follows your locale (e.g., `LANG`). It cannot detect what your terminal can actually draw, so if table borders or the ✓ marker appear garbled, use `clp -O ascii`.
+**Note:** The default mode checks the output encoding, which normally follows your locale (e.g., `LANG`). It cannot detect what your terminal can actually draw, so if table borders or the ✓ marker appear garbled, use `clp -O ascii list`.
 
 **Limitation:** Table column widths are measured in characters, so wide (for example CJK) characters can leave the right border misaligned.
 
@@ -1051,8 +1052,8 @@ export COV_LOUPE_OPTS="-S true -fJ --error-mode debug"
 ### Basic Coverage Check
 
 ```sh
-# Show all files sorted by highest coverage first (default)
-clp
+# Show all files sorted by highest coverage first (the default sort order)
+clp list
 
 # Find the 5 files with worst coverage (the first 3 lines are the table's top border, header, and separator)
 clp -o a list | head -8
@@ -1127,7 +1128,7 @@ clp -g "lib/payments/**/*.rb" list
 
 ```sh
 # Check if coverage is stale (for CI/CD)
-clp -S true
+clp -S true list
 
 # Check with specific file patterns. On the demo fixture this exits 1: two files
 # these globs match are not in coverage data, which -S true also treats as stale
@@ -1157,14 +1158,14 @@ clp -s full --color false uncovered lib/api/client.rb
 
 ```sh
 # Fail build if coverage is stale
-clp -S true || exit 1
+clp -S true list || exit 1
 
 # Generate JSON report for artifact
 mkdir -p artifacts
 clp -fJ list > artifacts/coverage-report.json
 
 # Check specific directory in monorepo
-cov-loupe -R services/api -c services/api/coverage  # -R = --root, -c = --coverage-file
+cov-loupe -R services/api -c services/api/coverage list  # -R = --root, -c = --coverage-file
 ```
 
 ### Debugging
@@ -1181,7 +1182,7 @@ clp -l /tmp/cov-loupe-debug.log summary lib/api/client.rb
 
 - `0` - Success
 - `1` - Error (file not found, coverage data missing, stale coverage with `-S true` / `--raise-on-stale true`, etc.)
-- `2` - Usage error (invalid option, option value, or subcommand arguments, including an argument that is not valid text in its encoding; invalid configuration such as `--log-file stdout`)
+- `2` - Usage error (missing or unknown subcommand; invalid option, option value, or subcommand arguments, including an argument that is not valid text in its encoding; invalid configuration such as `--log-file stdout`)
 - `3` - Validation failed: the `validate` predicate ran and returned a falsy value
 - `4` - Predicate error: the `validate` predicate itself could not be loaded or raised an error (coverage-data errors it triggers exit `1`)
 
