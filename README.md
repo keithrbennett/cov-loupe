@@ -308,12 +308,17 @@ bundle install
 # Run tests
 bundle exec rspec
 
-# Test locally
+# Test locally (reads the coverage/coverage.json that the test run above wrote)
 bundle exec exe/cov-loupe list
+
+# Or test against another project root that has coverage data (see below)
+bundle exec exe/cov-loupe list -R /path/to/other/project
 
 # Build and install (the gem is written to pkg/)
 bundle exec rake install
 ```
+
+cov-loupe's own spec suite is already set up to run SimpleCov. Another project has coverage data only if its test suite runs SimpleCov 1.x and has been run at least once; see [Generate Coverage Data](#generate-coverage-data).
 
 See [docs/dev/DEVELOPMENT.md](docs/dev/DEVELOPMENT.md) for more.
 
