@@ -3,25 +3,37 @@
 [Back to main README](README.md)
 
 
-## Unreleased
+## Unreleased (Breaking)
 
-### Breaking
+### Breaking Changes
+
+#### Ruby Version
+
+- **Ruby 3.3 or later is required.** The minimum supported Ruby is now 3.3 (was 3.2).
+  Ruby 3.2 has reached end of life, and 3.3 is the oldest Ruby still maintained. See [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#ruby-33-or-later-required).
+
+#### Coverage File
+
+- **Only `coverage.json` is read, and it must be in the format written by SimpleCov 1.x.** cov-loupe now reads SimpleCov's documented JSON formatter output, which SimpleCov 1.0.0 and later write alongside the HTML report. `.resultset.json`, SimpleCov's internal merge cache, is no longer read.
+    - **Old:** `.resultset.json` was the input; SimpleCov was loaded at runtime to merge multi-suite resultsets.
+    - **New:** `coverage.json` is the input. It is already merged across suites, so SimpleCov is never loaded. It is discovered at `coverage/coverage.json` under the project root (see below).
+    - `simplecov` is no longer a gem dependency (6.x required `>= 0.21`). Instead, `meta.schema_version` in `coverage.json` is checked on load: any 1.x is accepted, and a missing value or another major version raises `Unsupported coverage.json format (meta.schema_version: ...)`, naming the file, the value found, and `meta.simplecov_version` when present. This rejects `coverage.json` files written for SimpleCov 0.x by the separate `simplecov_json_formatter` gem, which have no `schema_version`.
+    - Lines marked `"ignored"` by SimpleCov (`:nocov:` regions and `# simplecov:disable` directives) are treated as non-executable, so cov-loupe's percentages match SimpleCov's own report.
+    - The not-found message is now `Could not find coverage.json under "<root>"`, and stale-coverage errors label the file `Coverage file - <path>`.
+    - Projects that cannot upgrade SimpleCov should stay on cov-loupe 6.x. See [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md).
+- **Only `coverage/coverage.json` is searched by default.** With no `--coverage-file`, cov-loupe looks only at `coverage/coverage.json` under the project root, where SimpleCov writes it. 6.x tried `.resultset.json`, `coverage/.resultset.json`, and `tmp/.resultset.json` in turn; use `--coverage-file` (`-c`) for any location other than the default.
+- **The `resultset` names are replaced by `coverage_file` names.** The `--coverage-file` option (`-c`; see below), the `coverage_file` MCP tool argument, `CoverageModel.new(coverage_file:)`, `#coverage_file_path`, `CoverageReporter.report(coverage_file:)`, `CovLoupe::CoverageFileNotFoundError`, and `Resolvers::CoverageFilePathResolver` are the only spellings. `--resultset`, the `resultset` tool argument, `resultset:` keywords, `#resultset_path`, `ResultsetNotFoundError`, `ResultsetPathResolver`, `ResolverHelpers.find_resultset`, and `AppConfig#resultset` are gone, with no deprecation period. `ResultsetLoader` is replaced by `CoverageJsonLoader`, whose `Result` has `coverage_map`, `timestamp`, and `recorded_root` (`meta.root`).
+    - `ResolverHelpers.create_resultset_resolver` and its `candidates:` keyword are removed. Instantiate `CoverageFilePathResolver.new(root:)` directly.
+    - Direct callers of `CoverageRepository` and `CoverageJsonLoader` must also update `resultset_path:` to `coverage_file:` and `resolved_coverage_file:` respectively; `CoverageRepository#resultset_path` is now `#resolved_coverage_file`.
+    - `CoverageFilePathResolver`, `ResolverHelpers`, `CoverageRepository`, `CoverageJsonLoader`, and `AppConfig` are internal as of 7.0 and may change in any release.
+    - See [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md) for the full rename table.
+
+#### Command Line
 
 - **A subcommand is required; `list` is no longer the default.** `cov-loupe` with no
   subcommand, or with options only (`cov-loupe -o a`), no longer shows the coverage table: it
   exits 2 with `No subcommand given`, pointing to `cov-loupe list` (or `cov-loupe l`). See
   [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#a-subcommand-is-required).
-- **Coverage entry lookup errors are `CoverageDataError`s.** A path with no coverage entry now
-  raises `CoverageEntryNotFoundError`, and one matching several entries
-  `AmbiguousCoverageEntryError`, both `CoverageDataError` subclasses; both were `FileError`,
-  which now means only file and path problems. CLI and MCP messages are prefixed
-  `Coverage data error:` (was `File error:`). `CoverageModel#staleness_for` now raises these
-  instead of returning `"unreadable"` for such a path. See
-  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#coverage-entry-lookup-errors-are-coveragedataerrors).
-- **MCP tools no longer take `error_mode`.** How much the server logs about a failed call is
-  now set only by the server's `--error-mode`; a call that passes `error_mode` fails as a
-  disallowed additional property. `format` and `output_chars` are unchanged. See
-  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#mcp-tools-no-longer-take-error_mode).
 - **Options can come after the subcommand.** `cov-loupe list --format json` and
   `cov-loupe summary lib/foo.rb -f json` now work, so an agent permission rule such as
   `Bash(cov-loupe list:*)` can allow a subcommand with any options. The options that select
@@ -44,6 +56,9 @@
       `Unknown option for validate: --bogus`.
     - The executable prints the version for `-v`/`--version` only as the first argument or
       among the options before the subcommand, not anywhere (for example `list -v`).
+- **Short options `-c` and `-n` reassigned.** The coverage file option is `-c`/`--coverage-file` (6.x: `-r`/`--resultset`), and `--context-lines` is now `-n` (was `-c`).
+    - `-r` now fails with `ambiguous option: -r`. An old `-c N` for context lines is parsed as `--coverage-file N` and fails with a not-found error, so update shell aliases, `COV_LOUPE_OPTS`, and MCP server `args`.
+    - The CLI not-found tip now reads `Specify a coverage file: cov-loupe -c PATH`.
 - **`--tracked-globs` is renamed `--file-globs`.** "Tracked" could be read as git-tracked
   files, and SimpleCov 1.x has deprecated its `track_files`. The CLI option is now
   `-g`/`--file-globs`, the library keyword and MCP argument are `file_globs`, and the
@@ -51,30 +66,38 @@
   were given). The CLI `totals` text says `File globs:`. The old names are removed, not
   aliased. `--f` is now ambiguous (`--format` or `--file-globs`); use `-f` or `--format`. See
   [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#tracked-globs-renamed-to-file-globs).
-- **Totals always include `without_coverage`.** Without file globs, `totals` (and
-  `project_totals`, MCP `project_coverage_totals`) left out coverage rows skipped for invalid
-  data, such as a file with only branch coverage, and `file_counts.total` did not count
-  them. `file_counts.without_coverage` is now always present, so skipped rows are always
-  counted, and `file_counts.total` includes them. Its `not_in_coverage` count is `null`
-  when no file globs are set, since there is then no list of files to check. See
-  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#totals-always-include-without_coverage).
-- **Totals drop `without_coverage.by_type.unreadable`.** Only files with a coverage entry are
-  read, so every unreadable file was already counted as stale under `with_coverage`, or as
-  skipped if its coverage data was invalid, and 6.x counted it a second time here. Read
-  `with_coverage.stale.by_type.unreadable` instead (plus `skipped`, if needed); the CLI
-  `totals` "Without coverage" line no longer shows `unreadable = N`. See
-  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#totals-drop-without_coverageby_typeunreadable).
-- **The library rejects an invalid `sort_order`.** `CoverageModel#list` and
-  `CoverageModel#format_table` sorted ascending for any `sort_order` other than the symbol
-  `:descending`, including a misspelling, `nil`, and the string `'descending'`. They now
-  raise `ArgumentError` for anything but `:ascending` or `:descending`, before any staleness
-  check. Code that passed `'ascending'` or `nil` and got an ascending sort must pass
-  `:ascending`; code that passed `'descending'` was silently getting ascending order and
-  must pass `:descending`. This includes `validate` predicates, which receive a
-  `CoverageModel`: a predicate that passes a string now fails with a predicate error (exit
-  4). The CLI and MCP, which take strings, already rejected invalid values and are
-  unchanged. See
-  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#library-sort_order-must-be-ascending-or-descending).
+- **`--file-globs` keeps brace patterns whole; an unclosed `{` or `[` is a usage error.**
+  The CLI split the value on every comma, so `-g 'app/{models,controllers}/**/*.rb'`
+  became two invalid globs that matched nothing, without an error. It now splits only on
+  commas outside `{...}` and `[...]` and, except on Windows, not on a backslash-escaped comma
+  (`\,`). An unclosed `{`, or an unclosed `[` outside braces, is now a usage error (exit 2)
+  for every command, including in `COV_LOUPE_OPTS` and at MCP server startup. Such a value
+  used to run with exit 0: it was split at every comma, the fragment holding the bracket
+  matched nothing on CRuby (JRuby read an unmatched `{` literally), and the other
+  fragments still applied. Empty items (`-g 'a,,b'`) are ignored; they used to make
+  project-level commands such as `list` and `totals` fail with "no implicit conversion of
+  nil into String". Other values without braces, brackets, or backslashes split as before.
+  The `-g` help now says what the option limits and reports, and how to write literal
+  brackets. See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#file-globs-split-outside-braces-and-brackets).
+- **`COV_LOUPE_OPTS` must be complete on its own.** It is now parsed on its own, before the
+  command line, so an option at its end that needs a value is an error
+  (`missing argument`) instead of taking the first command-line argument as its value.
+  See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#cov_loupe_opts-is-parsed-on-its-own).
+- **`--output-chars ascii` no longer changes data.** The mode exists for terminals that cannot
+  draw fancy table borders, but it used to rewrite all output: accented Latin letters and some
+  symbols were transliterated and every other non-ASCII character became `?`, altering file
+  paths, source lines and error messages. Now it changes only what cov-loupe draws itself (table
+  borders and the covered-line marker), and data is shown exactly as it is. This applies to the
+  MCP `output_chars` argument and the library's `output_chars: :ascii` too, and to `default`
+  when it picks ASCII mode for a non-UTF-8 terminal. In ASCII mode, successful JSON payloads
+  still escape non-ASCII characters as `\uXXXX`; other output is no longer guaranteed to be
+  ASCII-only. See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#output-chars-ascii-no-longer-changes-data).
+
+#### Output and Payloads
+
 - **Payload keys reshaped for schema v1.** Line metrics now have one flat shape everywhere,
   and keys whose names meant different things in different payloads were renamed. This
   applies to library hashes, structured CLI output, and MCP tool payloads; `schema_version`
@@ -84,8 +107,8 @@
       top-level `covered`, `uncovered`, `total`, and `percentage`. A `summary_for` result is
       now the file's `list` row plus `schema_version`.
     - `list` rows keep their keys and gain an `uncovered` count.
-    - `project_totals` replaces the `tracking` object with a `file_globs` array (see the
-      `--file-globs` bullet above).
+    - `project_totals` replaces the `tracking` object with a `file_globs` array (see
+      "`--tracked-globs` is renamed `--file-globs`" under Command Line above).
     - `uncovered_for` renames its line-number array `uncovered` to `uncovered_lines`.
     - `raw_for` (CLI `raw`, MCP `file_coverage_raw`) renames its hit-count array `lines` to
       `line_hits`, since `detailed_for` uses `lines` for per-line objects. The CLI `raw`
@@ -110,15 +133,95 @@
   tool descriptions are updated. The Library API docs now state the compatibility rules for
   later branch or method coverage. See
   [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#payload-keys-reshaped).
-- **`off` disables logging.** `--log-file off` (any case, surrounding whitespace ignored),
-  `COV_LOUPE_OPTS`, and the Ruby API now treat `off` as the reserved word that disables
-  logging, like `stderr` is reserved. The old `':off'` spelling is no longer recognized and
-  would now be used as a log file name, so replace it with `off`. The symbol `:off` is
-  accepted (it previously raised `CovLoupe::LoggingError`). A log file literally named
-  `off` must now be written `./off`. A disabled logger's `target` is now `'off'` instead of
-  `':off'`; `CovLoupe.default_log_file`, `CovLoupe.active_log_file`, and
-  `AppContext#log_target` return the value you set, unchanged. See
-  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md).
+- **Totals always include `without_coverage`.** Without file globs, `totals` (and
+  `project_totals`, MCP `project_coverage_totals`) left out coverage rows skipped for invalid
+  data, such as a file with only branch coverage, and `file_counts.total` did not count
+  them. `file_counts.without_coverage` is now always present, so skipped rows are always
+  counted, and `file_counts.total` includes them. Its `not_in_coverage` count is `null`
+  when no file globs are set, since there is then no list of files to check. See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#totals-always-include-without_coverage).
+- **Totals drop `without_coverage.by_type.unreadable`.** Only files with a coverage entry are
+  read, so every unreadable file was already counted as stale under `with_coverage`, or as
+  skipped if its coverage data was invalid, and 6.x counted it a second time here. Read
+  `with_coverage.stale.by_type.unreadable` instead (plus `skipped`, if needed); the CLI
+  `totals` "Without coverage" line no longer shows `unreadable = N`. See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#totals-drop-without_coverageby_typeunreadable).
+- **Staleness values renamed.** Per-file `stale` values `"missing"` and `"error"` are now
+  `"deleted"` and `"unreadable"`, and the totals `stale.by_type` key `missing_from_disk` is now
+  `deleted`, matching the `deleted_files`/`unreadable_files` list arrays. Text output follows:
+  `totals` prints `Stale: deleted = N` (was `missing on disk`), and the `list` legend uses the
+  new names. Code that used the internal constant `StaleStatus::MISSING_FROM_DISK` should
+  compare against the string `"deleted"`. See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#staleness-values-renamed).
+- **Coverage percentages are truncated, not rounded, to two decimals.** Rounding could
+  report incomplete coverage as `100.0` (for example, 99,999 of 100,000 lines), so a
+  `percentage >= 100` policy passed with uncovered lines. Every `percentage` in library
+  hashes, CLI output, and MCP payloads can now be up to `0.01` lower (2 of 3 lines is
+  `66.66`, was `66.67`), so `validate` predicates with thresholds close to the value can change
+  result. `CoverageReporter.report` now shows two decimals (was one) so it cannot round
+  up to `100.0%` either. See [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#percentages-truncated-not-rounded).
+- **Source and predicate files are read as UTF-8 in every locale.** They used to be read in
+  the locale's encoding, so a file in a non-UTF-8 encoding (such as ISO-8859-1) worked under a
+  matching locale. Now source display (`--source`) of such a file shows its non-ASCII bytes
+  raw in the table and escaped (such as `\xE9`) in the other text formats, and JSON or YAML
+  output fails with "Source file is not valid UTF-8"; a `validate` predicate file in such an
+  encoding fails to evaluate if it has non-ASCII characters outside comments, such as in
+  string literals. Convert such files to
+  UTF-8 (a `# encoding:` magic comment lets a predicate parse, but its non-ASCII strings then
+  do not match the UTF-8 coverage data). UTF-8 files, which are Ruby's default, are
+  unaffected. See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#source-and-predicate-files-are-read-as-utf-8).
+
+#### Errors and Exit Codes
+
+- **CLI exit codes were remapped.** `validate` now exits `3` when the predicate
+  returns a falsy value (was `1`) and `4` when the predicate cannot be loaded or
+  raises an error of its own (was `2`); coverage-data errors it triggers exit
+  `1`. `validate` also no longer labels missing or stale coverage data as a
+  "Predicate error" (previously exit `2`); it now exits `1` with the normal error
+  message. Predicate errors now go through the central error handler, so they are
+  logged like other CLI errors: to the log file when `--log-file` is a file (not to
+  the default `stderr` target, where the message is already printed). Usage errors (invalid
+  options or arguments, invalid configuration) now
+  consistently exit `2`; some were `1`. Exit `1` is reserved for runtime errors
+  such as missing or stale coverage data. Invalid global options now also get
+  the enum-value and subcommand suggestions previously unreachable from the real
+  executable. Scripts that test `validate` for `$? -eq 1` must be updated. Codes are defined in
+  `CovLoupe::ExitCodes`. See [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#cli-exit-codes-remapped).
+- **Coverage entry lookup errors are `CoverageDataError`s.** A path with no coverage entry now
+  raises `CoverageEntryNotFoundError`, and one matching several entries
+  `AmbiguousCoverageEntryError`, both `CoverageDataError` subclasses; both were `FileError`,
+  which now means only file and path problems. CLI and MCP messages are prefixed
+  `Coverage data error:` (was `File error:`). `CoverageModel#staleness_for` now raises these
+  instead of returning `"unreadable"` for such a path. See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#coverage-entry-lookup-errors-are-coveragedataerrors).
+- **Predicate evaluation wraps more errors in `PredicateError`.** `PredicateEvaluator` now
+  re-raises only `PredicateError`, `CoverageDataError` and `FileError` unchanged; any other
+  error raised while a predicate runs, including a `UsageError` or `ConfigurationError`
+  the predicate raises itself, becomes a `PredicateError` with the original attached. This
+  also applies to library callers and to the MCP `project_validate` tool, which reports
+  such errors as `Predicate error: ...`.
+- **Unexpected `ArgumentError`s are reported as unexpected errors.** An `ArgumentError`
+  that reaches the error handler outside coverage loading is now an `UnknownError`
+  ("An unexpected error occurred: ...", exit `1` in the CLI) instead of a
+  `ConfigurationError` or `UsageError` ("Invalid configuration: ..."). User-input
+  validation raises `UsageError`/`ConfigurationError` directly and is unaffected.
+
+#### MCP Server
+
+- **MCP tools no longer take `error_mode`.** How much the server logs about a failed call is
+  now set only by the server's `--error-mode`; a call that passes `error_mode` fails as a
+  disallowed additional property. `format` and `output_chars` are unchanged. See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#mcp-tools-no-longer-take-error_mode).
+- **`project_validate` is opt-in in the MCP server.** The server now registers
+  `project_validate` only when started with `--allow-code-predicates`. Without it, the tool is
+  absent from `tools/list` and `help`, and calls return a JSON-RPC `-32602` error whose `data`
+  is `"Tool not found: project_validate"`. The tool runs client-supplied Ruby with full
+  privileges, outside any sandbox the MCP client applies to shell commands. The CLI `validate` subcommand is unchanged. See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#project_validate-requires---allow-code-predicates).
+
+#### Ruby Library API
+
 - **Public API declared.** Only the public API defined in
   [Public API and Versioning](docs/user/LIBRARY_API.md#public-api-and-versioning) follows
   Semantic Versioning: Ruby classes and methods tagged `@api public` in the source (among
@@ -152,50 +255,24 @@
   equal coverage are ordered by absolute path, as in `list`, so ties involving files outside
   the root may order differently. CLI and MCP output is otherwise unchanged. See
   [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#library-results-use-project-relative-paths).
-- **`project_validate` is opt-in in the MCP server.** The server now registers
-  `project_validate` only when started with `--allow-code-predicates`. Without it, the tool is
-  absent from `tools/list` and `help`, and calls return a JSON-RPC `-32602` error whose `data`
-  is `"Tool not found: project_validate"`. The tool runs client-supplied Ruby with full
-  privileges, outside any sandbox the MCP client applies to shell commands. The CLI `validate` subcommand is unchanged. See
-  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#project_validate-requires---allow-code-predicates).
-- **Staleness values renamed.** Per-file `stale` values `"missing"` and `"error"` are now
-  `"deleted"` and `"unreadable"`, and the totals `stale.by_type` key `missing_from_disk` is now
-  `deleted`, matching the `deleted_files`/`unreadable_files` list arrays. Text output follows:
-  `totals` prints `Stale: deleted = N` (was `missing on disk`), and the `list` legend uses the
-  new names. Code that used the internal constant `StaleStatus::MISSING_FROM_DISK` should
-  compare against the string `"deleted"`. See
-  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#staleness-values-renamed).
-- **Ruby 3.3 or later is required.** The minimum supported Ruby is now 3.3 (was 3.2).
-  Ruby 3.2 has reached end of life, and 3.3 is the oldest Ruby still maintained. See [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#ruby-33-or-later-required).
-- **CLI exit codes were remapped.** `validate` now exits `3` when the predicate
-  returns a falsy value (was `1`) and `4` when the predicate cannot be loaded or
-  raises an error of its own (was `2`); coverage-data errors it triggers exit
-  `1`. `validate` also no longer labels missing or stale coverage data as a
-  "Predicate error" (previously exit `2`); it now exits `1` with the normal error
-  message. Predicate errors now go through the central error handler, so they are
-  logged like other CLI errors: to the log file when `--log-file` is a file (not to
-  the default `stderr` target, where the message is already printed). Usage errors (invalid
-  options or arguments, invalid configuration) now
-  consistently exit `2`; some were `1`. Exit `1` is reserved for runtime errors
-  such as missing or stale coverage data. Invalid global options now also get
-  the enum-value and subcommand suggestions previously unreachable from the real
-  executable. Scripts that test `validate` for `$? -eq 1` must be updated. Codes are defined in
-  `CovLoupe::ExitCodes`. See [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#cli-exit-codes-remapped).
-- **Predicate evaluation wraps more errors in `PredicateError`.** `PredicateEvaluator` now
-  re-raises only `PredicateError`, `CoverageDataError` and `FileError` unchanged; any other
-  error raised while a predicate runs, including a `UsageError` or `ConfigurationError`
-  the predicate raises itself, becomes a `PredicateError` with the original attached. This
-  also applies to library callers and to the MCP `project_validate` tool, which reports
-  such errors as `Predicate error: ...`.
-- **Unexpected `ArgumentError`s are reported as unexpected errors.** An `ArgumentError`
-  that reaches the error handler outside coverage loading is now an `UnknownError`
-  ("An unexpected error occurred: ...", exit `1` in the CLI) instead of a
-  `ConfigurationError` or `UsageError` ("Invalid configuration: ..."). User-input
-  validation raises `UsageError`/`ConfigurationError` directly and is unaffected.
+- **The library rejects an invalid `sort_order`.** `CoverageModel#list` and
+  `CoverageModel#format_table` sorted ascending for any `sort_order` other than the symbol
+  `:descending`, including a misspelling, `nil`, and the string `'descending'`. They now
+  raise `ArgumentError` for anything but `:ascending` or `:descending`, before any staleness
+  check. Code that passed `'ascending'` or `nil` and got an ascending sort must pass
+  `:ascending`; code that passed `'descending'` was silently getting ascending order and
+  must pass `:descending`. This includes `validate` predicates, which receive a
+  `CoverageModel`: a predicate that passes a string now fails with a predicate error (exit
+  4). The CLI and MCP, which take strings, already rejected invalid values and are
+  unchanged. See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#library-sort_order-must-be-ascending-or-descending).
 - **`CoverageCLI::SUBCOMMANDS` moved to `CovLoupe::SUBCOMMANDS`.** The list of valid
   subcommands now lives in its own file so startup option-error handling does not
   need to load the whole CLI. Both constants are internal; for the public list of
   subcommands, see [CLI Usage](docs/user/CLI_USAGE.md#subcommands).
+
+#### Logging
+
 - **Logging defaults and fallback behavior changed.** CLI and MCP sessions now
   log to `stderr` by default, while library usage is quiet by default. The
   previous implicit `./cov_loupe.log` target and `COV-LOUPE-LOG-ERROR.log`
@@ -210,102 +287,31 @@
   persistent log file until the first diagnostic is written. The internal
   context is quiet for library callers; CLI and MCP entry points create their
   own mode-specific logging contexts.
+- **`off` disables logging.** `--log-file off` (any case, surrounding whitespace ignored),
+  `COV_LOUPE_OPTS`, and the Ruby API now treat `off` as the reserved word that disables
+  logging, like `stderr` is reserved. The old `':off'` spelling is no longer recognized and
+  would now be used as a log file name, so replace it with `off`. The symbol `:off` is
+  accepted (it previously raised `CovLoupe::LoggingError`). A log file literally named
+  `off` must now be written `./off`. A disabled logger's `target` is now `'off'` instead of
+  `':off'`; `CovLoupe.default_log_file`, `CovLoupe.active_log_file`, and
+  `AppContext#log_target` return the value you set, unchanged. See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md).
 - **Stderr log targets are normalized consistently.** Values such as `stderr`,
   `STDERR`, values with surrounding whitespace, and (in the library) the symbol
   `:stderr` now all select the
   standard-error stream instead of being interpreted as file paths.
-- **Only `coverage.json` is read, and it must be in the format written by SimpleCov 1.x.** cov-loupe now reads SimpleCov's documented JSON formatter output, which SimpleCov 1.0.0 and later write alongside the HTML report. `.resultset.json`, SimpleCov's internal merge cache, is no longer read.
-    - **Old:** `.resultset.json` was the input; SimpleCov was loaded at runtime to merge multi-suite resultsets.
-    - **New:** `coverage.json` is the input. It is already merged across suites, so SimpleCov is never loaded. It is discovered at `coverage/coverage.json` under the project root (see below).
-    - `simplecov` is no longer a gem dependency (6.x required `>= 0.21`). Instead, `meta.schema_version` in `coverage.json` is checked on load: any 1.x is accepted, and a missing value or another major version raises `Unsupported coverage.json format (meta.schema_version: ...)`, naming the file, the value found, and `meta.simplecov_version` when present. This rejects `coverage.json` files written for SimpleCov 0.x by the separate `simplecov_json_formatter` gem, which have no `schema_version`.
-    - Lines marked `"ignored"` by SimpleCov (`:nocov:` regions and `# simplecov:disable` directives) are treated as non-executable, so cov-loupe's percentages match SimpleCov's own report.
-    - The not-found message is now `Could not find coverage.json under "<root>"`, and stale-coverage errors label the file `Coverage file - <path>`.
-    - Projects that cannot upgrade SimpleCov should stay on cov-loupe 6.x. See [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md).
-- **The `resultset` names are replaced by `coverage_file` names.** The `--coverage-file` option (`-c`; see below), the `coverage_file` MCP tool argument, `CoverageModel.new(coverage_file:)`, `#coverage_file_path`, `CoverageReporter.report(coverage_file:)`, `CovLoupe::CoverageFileNotFoundError`, and `Resolvers::CoverageFilePathResolver` are the only spellings. `--resultset`, the `resultset` tool argument, `resultset:` keywords, `#resultset_path`, `ResultsetNotFoundError`, `ResultsetPathResolver`, `ResolverHelpers.find_resultset`, and `AppConfig#resultset` are gone, with no deprecation period. `ResultsetLoader` is replaced by `CoverageJsonLoader`, whose `Result` has `coverage_map`, `timestamp`, and `recorded_root` (`meta.root`).
-    - `ResolverHelpers.create_resultset_resolver` and its `candidates:` keyword are removed. Instantiate `CoverageFilePathResolver.new(root:)` directly.
-    - Direct callers of `CoverageRepository` and `CoverageJsonLoader` must also update `resultset_path:` to `coverage_file:` and `resolved_coverage_file:` respectively; `CoverageRepository#resultset_path` is now `#resolved_coverage_file`.
-    - `CoverageFilePathResolver`, `ResolverHelpers`, `CoverageRepository`, `CoverageJsonLoader`, and `AppConfig` are internal as of 7.0 and may change in any release.
-    - See [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md) for the full rename table.
-- **Short options `-c` and `-n` reassigned.** The coverage file option is `-c`/`--coverage-file` (6.x: `-r`/`--resultset`), and `--context-lines` is now `-n` (was `-c`).
-    - `-r` now fails with `ambiguous option: -r`. An old `-c N` for context lines is parsed as `--coverage-file N` and fails with a not-found error, so update shell aliases, `COV_LOUPE_OPTS`, and MCP server `args`.
-    - The CLI not-found tip now reads `Specify a coverage file: cov-loupe -c PATH`.
-- **Coverage percentages are truncated, not rounded, to two decimals.** Rounding could
-  report incomplete coverage as `100.0` (for example, 99,999 of 100,000 lines), so a
-  `percentage >= 100` policy passed with uncovered lines. Every `percentage` in library
-  hashes, CLI output, and MCP payloads can now be up to `0.01` lower (2 of 3 lines is
-  `66.66`, was `66.67`), so `validate` predicates with thresholds close to the value can change
-  result. `CoverageReporter.report` now shows two decimals (was one) so it cannot round
-  up to `100.0%` either. See [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#percentages-truncated-not-rounded).
-- **Only `coverage/coverage.json` is searched by default.** With no `--coverage-file`, cov-loupe looks only at `coverage/coverage.json` under the project root, where SimpleCov writes it. 6.x tried `.resultset.json`, `coverage/.resultset.json`, and `tmp/.resultset.json` in turn; use `--coverage-file` (`-c`) for any location other than the default.
-- **`--output-chars ascii` no longer changes data.** The mode exists for terminals that cannot
-  draw fancy table borders, but it used to rewrite all output: accented Latin letters and some
-  symbols were transliterated and every other non-ASCII character became `?`, altering file
-  paths, source lines and error messages. Now it changes only what cov-loupe draws itself (table
-  borders and the covered-line marker), and data is shown exactly as it is. This applies to the
-  MCP `output_chars` argument and the library's `output_chars: :ascii` too, and to `default`
-  when it picks ASCII mode for a non-UTF-8 terminal. In ASCII mode, successful JSON payloads
-  still escape non-ASCII characters as `\uXXXX`; other output is no longer guaranteed to be
-  ASCII-only. See
-  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#output-chars-ascii-no-longer-changes-data).
-- **Source and predicate files are read as UTF-8 in every locale.** They used to be read in
-  the locale's encoding, so a file in a non-UTF-8 encoding (such as ISO-8859-1) worked under a
-  matching locale. Now source display (`--source`) of such a file shows its non-ASCII bytes
-  raw in the table and escaped (such as `\xE9`) in the other text formats, and JSON or YAML
-  output fails with "Source file is not valid UTF-8"; a `validate` predicate file in such an
-  encoding fails to evaluate if it has non-ASCII characters outside comments, such as in
-  string literals. Convert such files to
-  UTF-8 (a `# encoding:` magic comment lets a predicate parse, but its non-ASCII strings then
-  do not match the UTF-8 coverage data). UTF-8 files, which are Ruby's default, are
-  unaffected. See
-  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#source-and-predicate-files-are-read-as-utf-8).
-- **`--file-globs` keeps brace patterns whole; an unclosed `{` or `[` is a usage error.**
-  The CLI split the value on every comma, so `-g 'app/{models,controllers}/**/*.rb'`
-  became two invalid globs that matched nothing, without an error. It now splits only on
-  commas outside `{...}` and `[...]` and, except on Windows, not on a backslash-escaped comma
-  (`\,`). An unclosed `{`, or an unclosed `[` outside braces, is now a usage error (exit 2)
-  for every command, including in `COV_LOUPE_OPTS` and at MCP server startup. Such a value
-  used to run with exit 0: it was split at every comma, the fragment holding the bracket
-  matched nothing on CRuby (JRuby read an unmatched `{` literally), and the other
-  fragments still applied. Empty items (`-g 'a,,b'`) are ignored; they used to make
-  project-level commands such as `list` and `totals` fail with "no implicit conversion of
-  nil into String". Other values without braces, brackets, or backslashes split as before.
-  The `-g` help now says what the option limits and reports, and how to write literal
-  brackets. See
-  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#file-globs-split-outside-braces-and-brackets).
-- **`COV_LOUPE_OPTS` must be complete on its own.** It is now parsed on its own, before the
-  command line, so an option at its end that needs a value is an error
-  (`missing argument`) instead of taking the first command-line argument as its value.
-  See
-  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#cov_loupe_opts-is-parsed-on-its-own).
 
-### Other Changes
+### Non-Breaking Changes
 
-- **Invalid option values no longer repeat "invalid argument".** An invalid value for
-  `--format`, `--sort-order`, `--source`, `--error-mode`, `--mode` or `--output-chars`,
-  given as a separate argument, was reported as
-  `Error: invalid argument: --format invalid argument: bogus`; it now reads
-  `Error: invalid argument: --format bogus`. The `--format=bogus` form was not affected.
-- **Usage errors point to `COV_LOUPE_OPTS`.** Its options were parsed in one pass with the
-  command line, so an error in one of them gave no hint that it came from the environment.
-  An option or value in `COV_LOUPE_OPTS` that fails to parse, or a final setting it makes
-  invalid (such as `--log-file stdout`), is now followed by a line saying the error is
-  there, with its value. Errors in the command line, and errors found later, such as a
-  missing coverage file, get no such line; nor does a `COV_LOUPE_OPTS` that cannot be split
-  into arguments, whose message already names it. An unknown `--path-for` name is now reported
-  like the other usage errors, with the `Error:` prefix and the `Run 'cov-loupe --help'`
-  line. See
-  [`COV_LOUPE_OPTS`](docs/user/CLI_USAGE.md#cov_loupe_opts).
-- **Invalid JSON errors no longer quote the file.** When the coverage file is not valid JSON,
-  the error now reads `Coverage file is not valid JSON: <path>` (with ` (at line L column C)`
-  before the colon when the parser reports a position) instead of including the parser's
-  message, which quoted the text where parsing failed. A wrong `-c` or MCP `coverage_file`
-  could otherwise show the start of an unrelated file, such as a token, to whoever made the
-  call.
-- **A filesystem root (`/`) works as the project root.** With `--root /` (or `root: "/"`),
-  no path counted as inside the root, so result paths were reported absolute. Paths under
-  `/` are now inside it and reported relative to it, with their casing preserved on
-  case-insensitive volumes. The wrong-root warning is unaffected: it still fires when most
-  covered files are not found under `/`.
+#### New Features
+
+- **Structured payloads now include `schema_version`.** Every library coverage hash (`list`, `summary_for`, `uncovered_for`, `detailed_for`, `raw_for`, `project_totals`), structured CLI output (all formats except `table`), and MCP tool payload now begins with an integer `schema_version` (currently `1`), separate from `CovLoupe::VERSION` and from SimpleCov's own `schema_version` in `coverage.json`. Draft 2020-12 JSON Schema files for each v1 payload shape ship under `lib/cov_loupe/schemas/v1/` and are resolvable via `CovLoupe::PayloadSchema.schema_path`. Adding a key is a compatible change and does not bump the version; see [Schema Version](docs/user/LIBRARY_API.md#schema-version) for the full compatibility rules.
+- **New `CovLoupe.execute` returns the exit code.** It runs the CLI like `CovLoupe.run`, but
+  returns the [exit code](docs/user/CLI_USAGE.md#exit-codes) instead of ending the process,
+  for Ruby code that embeds cov-loupe and needs to carry on afterwards. `CovLoupe.run` still
+  ends the process wherever it did; when it returns, it now returns `0` (it used to return an
+  unspecified value). See
+  [Running the CLI from Ruby](docs/user/ADVANCED_USAGE.md#running-the-cli-from-ruby).
 - **A wrong project root no longer goes unnoticed.** When more than half of the files with
   coverage rows are not found under the project root, the root is probably wrong, because
   coverage paths are project-relative. `list` and `totals` now warn on stderr, and the MCP
@@ -316,20 +322,6 @@
   root (`meta.root`, written by SimpleCov 1.x) that differs from the current one and is a
   directory on this machine, the warning also names it. The default root is unchanged. See
   [Troubleshooting](docs/user/TROUBLESHOOTING.md#the-project-root-may-be-wrong).
-- **New `CovLoupe.execute` returns the exit code.** It runs the CLI like `CovLoupe.run`, but
-  returns the [exit code](docs/user/CLI_USAGE.md#exit-codes) instead of ending the process,
-  for Ruby code that embeds cov-loupe and needs to carry on afterwards. `CovLoupe.run` still
-  ends the process wherever it did; when it returns, it now returns `0` (it used to return an
-  unspecified value). See
-  [Running the CLI from Ruby](docs/user/ADVANCED_USAGE.md#running-the-cli-from-ruby).
-- **A coverage file without line coverage fails clearly.** When SimpleCov ran with line
-  coverage disabled (`disable_coverage :line`), every file was skipped as corrupt, `list`
-  printed "No coverage data found", and `totals` reported `0 total`, both exiting 0. Loading
-  such a file (a non-empty coverage map where no entry has a `lines` array) now raises `CorruptCoverageDataError`,
-  the class a single file without usable lines already raised, with a message saying line
-  coverage is missing and how to re-enable it. The CLI exits non-zero and MCP tools return
-  `isError: true`. See
-  [Troubleshooting](docs/user/TROUBLESHOOTING.md#coverage-file-has-no-line-coverage).
 - **New Test Coverage Analysis prompt.** The
   [Test Coverage Analysis prompt](docs/user/prompts/test-coverage-analysis-prompt.md) has an
   AI agent use cov-loupe to report coverage by logical area (down to individual classes and
@@ -338,6 +330,56 @@
   `untracked/` if the project root has that directory, otherwise to the project root. It
   replaces the Coverage Analysis prompt (`docs/user/prompts/coverage-analysis-prompt.md`),
   which is removed.
+
+#### Error Messages and Output
+
+- **A coverage file without line coverage fails clearly.** When SimpleCov ran with line
+  coverage disabled (`disable_coverage :line`), every file was skipped as corrupt, `list`
+  printed "No coverage data found", and `totals` reported `0 total`, both exiting 0. Loading
+  such a file (a non-empty coverage map where no entry has a `lines` array) now raises `CorruptCoverageDataError`,
+  the class a single file without usable lines already raised, with a message saying line
+  coverage is missing and how to re-enable it. The CLI exits non-zero and MCP tools return
+  `isError: true`. See
+  [Troubleshooting](docs/user/TROUBLESHOOTING.md#coverage-file-has-no-line-coverage).
+- **Usage errors point to `COV_LOUPE_OPTS`.** Its options were parsed in one pass with the
+  command line, so an error in one of them gave no hint that it came from the environment.
+  An option or value in `COV_LOUPE_OPTS` that fails to parse, or a final setting it makes
+  invalid (such as `--log-file stdout`), is now followed by a line saying the error is
+  there, with its value. Errors in the command line, and errors found later, such as a
+  missing coverage file, get no such line; nor does a `COV_LOUPE_OPTS` that cannot be split
+  into arguments, whose message already names it. An unknown `--path-for` name is now reported
+  like the other usage errors, with the `Error:` prefix and the `Run 'cov-loupe --help'`
+  line. See
+  [`COV_LOUPE_OPTS`](docs/user/CLI_USAGE.md#cov_loupe_opts).
+- **Invalid option values no longer repeat "invalid argument".** An invalid value for
+  `--format`, `--sort-order`, `--source`, `--error-mode`, `--mode` or `--output-chars`,
+  given as a separate argument, was reported as
+  `Error: invalid argument: --format invalid argument: bogus`; it now reads
+  `Error: invalid argument: --format bogus`. The `--format=bogus` form was not affected.
+- **Valid-value hints for every enumerated option.** An invalid `--format`/`-f` or `--output-chars`/`-O` value, or an invalid `-e` (short for `--error-mode`), now gets the "Valid values for ..." hint that `--source`, `--sort-order`, and `--error-mode` already got.
+- **Invalid JSON errors no longer quote the file.** When the coverage file is not valid JSON,
+  the error now reads `Coverage file is not valid JSON: <path>` (with ` (at line L column C)`
+  before the colon when the parser reports a position) instead of including the parser's
+  message, which quoted the text where parsing failed. A wrong `-c` or MCP `coverage_file`
+  could otherwise show the start of an unrelated file, such as a token, to whoever made the
+  call.
+- **Quieter CLI stderr.** The `CLI parameters` line is now logged only when `--log-file` is a
+  file. With the default `stderr` target, a CLI error is printed once, as its user-facing
+  message, instead of also appearing as `ERROR` log lines; `--error-mode debug` follows it with
+  the full stack trace (also with `--log-file off`; with a log file, stderr gets the first 5 lines
+  and the log the full trace). Unknown-subcommand errors now also reach a `--log-file`.
+- **Custom CLI error handlers see an unexpected error once.** A handler passed to
+  `CoverageCLI.new(error_handler:)` now receives an unexpected (non-`CovLoupe::Error`) error
+  from a subcommand once, as the original exception with
+  `reraise: false`. Previously it was called twice: first with `reraise: true`, expected to
+  raise the converted error, then with that converted error. A handler may provide
+  `convert_standard_error` to control the conversion. As before, the handler is called for
+  every error the CLI reports except invalid options, whatever the log target. `CoverageCLI` and custom error handlers are internal as
+  of 7.0; see [Public API and Versioning](docs/user/LIBRARY_API.md#public-api-and-versioning).
+- **The MCP `help` and `version` tools describe the common arguments.** `help` now lists `output_chars` among every tool's inputs, and the `version` tool no longer says it takes no arguments.
+
+#### Bug Fixes
+
 - **Non-ASCII paths and source are read correctly under the C locale.** Under `LANG=C`:
     - Fixed: a coverage file with a non-ASCII path didn't load, in the CLI or MCP
       ("Invalid encoding in coverage data").
@@ -352,7 +394,7 @@
       `--file-globs` reported covered non-ASCII files as missing.
     - `coverage.json`, source files and predicate files are now always read as UTF-8, also
       when `Encoding.default_internal` is set. For files in another encoding, see the
-      Breaking entry "Source and predicate files are read as UTF-8 in every locale".
+      Breaking Changes entry "Source and predicate files are read as UTF-8 in every locale".
     - Under the C locale the `cov-loupe` executable sets `Encoding.default_external` to
       UTF-8, so paths from the file system are UTF-8 too, and it treats CLI arguments that
       arrive as raw bytes as UTF-8 when they are valid UTF-8.
@@ -380,42 +422,34 @@
       open them in that locale.
     - Library callers must pass non-ASCII paths as UTF-8; see
       [Quick Start](docs/user/LIBRARY_API.md#quick-start).
-- **Structured payloads now include `schema_version`.** Every library coverage hash (`list`, `summary_for`, `uncovered_for`, `detailed_for`, `raw_for`, `project_totals`), structured CLI output (all formats except `table`), and MCP tool payload now begins with an integer `schema_version` (currently `1`), separate from `CovLoupe::VERSION` and from SimpleCov's own `schema_version` in `coverage.json`. Draft 2020-12 JSON Schema files for each v1 payload shape ship under `lib/cov_loupe/schemas/v1/` and are resolvable via `CovLoupe::PayloadSchema.schema_path`. Adding a key is a compatible change and does not bump the version; see [Schema Version](docs/user/LIBRARY_API.md#schema-version) for the full compatibility rules.
-- **Quieter CLI stderr.** The `CLI parameters` line is now logged only when `--log-file` is a
-  file. With the default `stderr` target, a CLI error is printed once, as its user-facing
-  message, instead of also appearing as `ERROR` log lines; `--error-mode debug` follows it with
-  the full stack trace (also with `--log-file off`; with a log file, stderr gets the first 5 lines
-  and the log the full trace). Unknown-subcommand errors now also reach a `--log-file`.
-- **Custom CLI error handlers see an unexpected error once.** A handler passed to
-  `CoverageCLI.new(error_handler:)` now receives an unexpected (non-`CovLoupe::Error`) error
-  from a subcommand once, as the original exception with
-  `reraise: false`. Previously it was called twice: first with `reraise: true`, expected to
-  raise the converted error, then with that converted error. A handler may provide
-  `convert_standard_error` to control the conversion. As before, the handler is called for
-  every error the CLI reports except invalid options, whatever the log target. `CoverageCLI` and custom error handlers are internal as
-  of 7.0; see [Public API and Versioning](docs/user/LIBRARY_API.md#public-api-and-versioning).
+- **A filesystem root (`/`) works as the project root.** With `--root /` (or `root: "/"`),
+  no path counted as inside the root, so result paths were reported absolute. Paths under
+  `/` are now inside it and reported relative to it, with their casing preserved on
+  case-insensitive volumes. The wrong-root warning is unaffected: it still fires when most
+  covered files are not found under `/`.
+- **Fixed the MCP server ignoring `--error-mode`.** Tools always used `log` unless a call passed `error_mode`, so starting the server with `--error-mode off` still logged errors and `--error-mode debug` logged no backtraces. Tools now use the server's mode (and no longer take `error_mode`; see Breaking Changes, MCP Server). Likewise, they no longer advertise static defaults for `root`, `raise_on_stale`, and `output_chars`, which come from the server's `--root`, `--raise-on-stale`, and `--output-chars`.
 - **Fixed `uncovered` and `detailed` crashing on files with no coverable lines.** Their text output raised `TypeError` when a file's coverage percentage was `nil` (for example, a file containing only comments); it now shows `n/a`, as `summary` and `totals` already did. `detailed` and `uncovered` print `No coverable lines.` for such files. The `project_validate` tool description and the code examples in the README, docs and `examples/` now handle `nil` percentages, and the Library API docs, the MCP integration docs and the descriptions of every MCP tool that returns a `percentage` show it as nullable. In the `validate` predicate examples, per-file checks skip files with no coverable lines, and project-total checks treat a `nil` total (nothing measurable, including when every file is stale) as failing.
-- **Fixed the MCP server ignoring `--error-mode`.** Tools always used `log` unless a call passed `error_mode`, so starting the server with `--error-mode off` still logged errors and `--error-mode debug` logged no backtraces. Tools now use the server's mode (and no longer take `error_mode`; see Breaking). Likewise, they no longer advertise static defaults for `root`, `raise_on_stale`, and `output_chars`, which come from the server's `--root`, `--raise-on-stale`, and `--output-chars`.
 - **Fixed misaligned source output without color.** With `-C false` (or when stdout is not a terminal), `--source` rows were one column to the right of the header.
-- **The gem now includes `docs/QUICKSTART.md`**, which the README links to.
 - **Fixed the stale-coverage hint in `list` warnings.** The "files excluded" and "rows skipped" warnings told you to run with `--raise-on-stale`, which fails without a value; they now say `--raise-on-stale true`.
 - **Fixed project-level stale-coverage messages.** `CoverageDataProjectStaleError` (raised by `list`/`totals` with `--raise-on-stale true`) reported its class name instead of "Coverage data appears stale for project", and each file list was run together on one line; files are now listed one per line.
 - **Fixed the ambiguous `--coverage-file` hint.** When a relative path resolved under both the current directory and the project root, the error suggested `./`, which does not disambiguate; it now suggests an absolute path. The duplicate-path error also gained a missing space between its sentences.
 - **`totals` now warns about missing coverage timestamps in every format.** With `-f json` and the other structured formats it reported `timestamp_status: "missing"` but omitted the stderr warning that `list` prints; it now prints it, as the table format already did.
-- **Valid-value hints for every enumerated option.** An invalid `--format`/`-f` or `--output-chars`/`-O` value, or an invalid `-e` (short for `--error-mode`), now gets the "Valid values for ..." hint that `--source`, `--sort-order`, and `--error-mode` already got.
-- **The MCP `help` and `version` tools describe the common arguments.** `help` now lists `output_chars` among every tool's inputs, and the `version` tool no longer says it takes no arguments.
-- **Fixed `CoverageReporter.report` with an absolute `SimpleCov.coverage_dir`.** The default coverage location joined the directory onto `SimpleCov.root` even when it was absolute; it is now expanded against the root, as SimpleCov does. An explicit `root:` now also sets where that directory is looked for; it used to be looked for under `SimpleCov.root`.
-- **Documentation links work in the installed gem and on GitHub.** Links now point to real files (`README.md`, `LICENSE`, `examples/*/README.md`, ...) rather than to the documentation site's wrapper pages, and the gem now includes the developer docs (`docs/dev/`) they link to. The gem no longer includes `AGENTS.md` or `CLAUDE.md`, which are instructions for agents working in the repository.
 - **Fixed duplicate files not in coverage data.** A file matched by more than one `--file-globs` pattern (for example `lib/**/*.rb` and `lib/*.rb`) was listed twice in `not_in_coverage_files` and counted twice in the `totals` `not_in_coverage` count; it is now listed and counted once.
+- **Fixed `CoverageReporter.report` with an absolute `SimpleCov.coverage_dir`.** The default coverage location joined the directory onto `SimpleCov.root` even when it was absolute; it is now expanded against the root, as SimpleCov does. An explicit `root:` now also sets where that directory is looked for; it used to be looked for under `SimpleCov.root`.
 - **Fixed `NoMethodError` message rewriting on Ruby 3.4+.** Ruby 3.4 quotes the method name in `NoMethodError#message` as `'name'` instead of the pre-3.4 `` `name' ``, so the friendly "missing method '...' on ..." rewrite silently failed to apply on 3.4+. Both quote styles are now recognized.
+
+#### Documentation and Packaging
+
+- **Documentation links work in the installed gem and on GitHub.** Links now point to real files (`README.md`, `LICENSE`, `examples/*/README.md`, ...) rather than to the documentation site's wrapper pages, and the gem now includes the developer docs (`docs/dev/`) they link to. The gem no longer includes `AGENTS.md` or `CLAUDE.md`, which are instructions for agents working in the repository.
+- **The gem now includes `docs/QUICKSTART.md`**, which the README links to.
 
 ## v6.1.0
 
 - In gemspec, change mcp gem's constraints from `'>= 0.15', '< 1.0'` to `'>= 0.15', '< 2.0'`
 
-## v6.0.0
+## v6.0.0 (Breaking)
 
-### Breaking
+### Breaking Changes
 
 - **Stdout logging is no longer permitted.** The `--log-file` / `-l` option no longer accepts `stdout` in any mode (CLI, MCP, or library). Logs are diagnostics and must not corrupt command output on `stdout` or the MCP JSON-RPC protocol stream.
     - **Old:** `--log-file stdout` was allowed in CLI mode and rejected only in MCP mode.
@@ -458,7 +492,7 @@
 
 - **Removed Branch Coverage Support**: Removed logic that synthesized line coverage from branch-only coverage data. This feature was complex and rarely used. Users should use standard line coverage configuration in SimpleCov.
     - Removed `docs/dev/BRANCH_ONLY_COVERAGE.md`.
-- **⚠️ MCP mode now requires `-m/--mode mcp` flag**: Automatic mode detection has been removed. MCP users **must** update their MCP server configuration to include `-m mcp` or `--mode mcp` or cov-loupe will run in CLI mode, print a report, and exit. See migration guide for setup commands.
+- **MCP mode now requires `-m/--mode mcp` flag**: Automatic mode detection has been removed. MCP users **must** update their MCP server configuration to include `-m mcp` or `--mode mcp` or cov-loupe will run in CLI mode, print a report, and exit. See migration guide for setup commands.
     - **Old**: Mode was auto-detected based on TTY/stdin status, with optional `--force-mode cli|mcp|auto` override
     - **New**: Mode defaults to `cli`. Use `-m mcp` or `--mode mcp` to run as MCP server. No auto-detection.
     - **Rationale**: Auto-detection caused issues with piped input, CI environments, and CLI-only flags (e.g., `cov-loupe --format json` would hang in MCP mode)
@@ -497,7 +531,7 @@
 - **`--tracked-globs` defaults to an explicit empty array**: The CLI default is now `[]` instead of `nil`, and the Ruby API (`CoverageModel`) also defaults `tracked_globs:` to `[]`. Both behave the same as before: all files in the resultset are shown and none are flagged as missing. (A `lib/**/*.rb,app/**/*.rb,src/**/*.rb` default existed briefly during v4 development but was never released.)
     - **Important**: Files lacking any coverage at all (not loaded during tests) will not appear in the resultset and therefore won't be visible with the default empty array. To detect such files, you must set `--tracked-globs`
 
-### ✨ Enhancements
+### Enhancements
 
 - **New `-f p` shortcut for pretty-json format**: Added `-f p` as a shortcut for `--format pretty-json`. This follows the pattern of other format shortcuts (`-f j` for json, `-f y` for yaml, etc.). The previous `-f J` shortcut no longer works (use `-f p` instead).
 
@@ -539,11 +573,11 @@
 
   **Breaking change:** The JSON shape for totals has changed (the old `percentage` and `excluded_files` fields are removed).
 
-**📖 For complete migration guide, see [docs/user/migrations/MIGRATING_TO_V4.md](docs/user/migrations/MIGRATING_TO_V4.md)**
+**For complete migration guide, see [docs/user/migrations/MIGRATING_TO_V4.md](docs/user/migrations/MIGRATING_TO_V4.md)**
 
-## v3.0.0
+## v3.0.0 (Breaking)
 
-### 🚨 BREAKING CHANGE: GEM RENAMED simplecov-mcp → cov-loupe
+### Breaking Change: Gem Renamed simplecov-mcp → cov-loupe
 
 This is a **major version bump** because the gem has been completely renamed from **simplecov-mcp** to **cov-loupe**. This requires manual intervention to migrate.
 
@@ -567,11 +601,11 @@ This is a **major version bump** because the gem has been completely renamed fro
 4. Update Ruby code: Rename `SimpleCovMcp` to `CovLoupe` and update requires.
 5. Update env vars: Rename `SIMPLECOV_MCP_OPTS` to `COV_LOUPE_OPTS`
 
-**📖 For complete migration guide, see [docs/user/migrations/MIGRATING_TO_V3.md](docs/user/migrations/MIGRATING_TO_V3.md)**
+**For complete migration guide, see [docs/user/migrations/MIGRATING_TO_V3.md](docs/user/migrations/MIGRATING_TO_V3.md)**
 
 **Note**: The old `simplecov-mcp` gem (v2.0.1) will remain available on RubyGems but will not receive further updates.
 
-### ✨ Other Changes
+### Other Changes
 - Add logo and avatar images, display in readme
 
 ## v2.0.1
@@ -580,9 +614,9 @@ This is a **major version bump** because the gem has been completely renamed fro
 - Add a prompt
 
 
-## v2.0.0
+## v2.0.0 (Breaking)
 
-### 🚨 BREAKING CHANGES
+### Breaking Changes
 
 Version 2.0 introduces several breaking changes to improve consistency and align with Ruby conventions. Key changes include:
 
@@ -595,9 +629,9 @@ Version 2.0 introduces several breaking changes to improve consistency and align
 - **MCP tools**: Parameter `stale` renamed to `staleness`, error modes updated
 - **Ruby API**: `CLIConfig` renamed to `AppConfig`, field changes (`json` → `format`, `stale_mode` → `staleness`)
 
-**📖 For complete migration guide with examples, see [docs/user/migrations/MIGRATING_TO_V2.md](docs/user/migrations/MIGRATING_TO_V2.md)**
+**For complete migration guide with examples, see [docs/user/migrations/MIGRATING_TO_V2.md](docs/user/migrations/MIGRATING_TO_V2.md)**
 
-### ✨ New Features
+### New Features
 
 - **validate subcommand**: File mode (`validate <file>`) and inline mode (`validate -i <code>`)
 - **MCP support**: New `project_validate` with `code` and `file` parameters
@@ -613,13 +647,13 @@ Version 2.0 introduces several breaking changes to improve consistency and align
 
 - Make error output more helpful when a result set file is not found, esp. when the command name is run without args in a non-project directory.
 
-## v1.0.0 (2025-10-18)
+## v1.0.0 (Breaking, 2025-10-18)
 
-🎉 **Major Release: Production-Ready Coverage Analysis Tool**
+**Major Release: Production-Ready Coverage Analysis Tool**
 
 This release represents a complete maturation of simplecov-mcp from experimental proof-of-concept to production-ready tool. The v1.0.0 milestone brings comprehensive documentation, robust error handling, extensive test coverage, architectural improvements, and a polished user experience across all three interfaces (MCP server, CLI, and Ruby library).
 
-### 🌟 Major Features
+### Major Features
 
 #### Multi-Suite Coverage Merging
 - **Automatic merging** of multiple test suites from a single `.resultset.json` file (e.g., RSpec + Cucumber)
@@ -662,7 +696,7 @@ This release represents a complete maturation of simplecov-mcp from experimental
 - **User-specified defaults via environment variable** - `SIMPLECOV_MCP_OPTS` environment variable value is prepended to ARGV for option parsing
 - **Configurable logging** - `--log-file PATH` or `stdout`/`stderr` (default: `./simplecov_mcp.log`)
 
-### 🏗️ Architecture & Code Quality
+### Architecture & Code Quality
 
 #### Major Refactoring
 - **Command pattern** - CLI subcommands extracted to individual command classes (`lib/simplecov_mcp/commands/`)
@@ -695,7 +729,7 @@ This release represents a complete maturation of simplecov-mcp from experimental
 - **Edge case testing** - Exhaustive error condition coverage in `spec/errors_edge_cases_spec.rb`
 - **Test documentation** - `spec/MCP_INTEGRATION_TESTS_README.md` and `spec/TIMESTAMPS.md`
 
-### 📚 Documentation Overhaul
+### Documentation Overhaul
 
 #### Comprehensive Documentation Suite
 All documentation moved under audience-specific directories (`docs/user` for usage guides, `docs/dev` for contributor content):
@@ -738,7 +772,7 @@ All documentation moved under audience-specific directories (`docs/user` for usa
 - **Next Steps section** - Clear calls-to-action at end
 - **Reduced length** - Main README streamlined from 967 lines to 272 lines by extracting content to dedicated docs
 
-### 🔧 Developer Experience
+### Developer Experience
 
 #### Configuration Improvements
 - **Environment variable options** - `SIMPLECOV_MCP_OPTS` prepended to ARGV for option parsing
@@ -758,7 +792,7 @@ All documentation moved under audience-specific directories (`docs/user` for usa
 - **Gemspec improvements** - Tighter version constraints, correct file list
 - **Version command** - `simplecov-mcp version` for easy version checking
 
-### 🐛 Bug Fixes
+### Bug Fixes
 
 #### CLI Fixes
 - **Subcommand extraction** - Fixed `--source` flag incorrectly treated as subcommand (see the subcommand list in `lib/simplecov_mcp/constants.rb`)
@@ -783,7 +817,7 @@ All documentation moved under audience-specific directories (`docs/user` for usa
 - **Missing resultset** - Clear error messages with actionable suggestions
 - **Fallback logging** - stderr logging when primary log destination is unavailable (not in MCP mode)
 
-### 🔄 Breaking Changes
+### Breaking Changes
 
 #### Naming Consistency
 - **Module name** - Now consistently `SimpleCovMcp` (matching SimpleCov's single-word style)
@@ -803,20 +837,20 @@ All documentation moved under audience-specific directories (`docs/user` for usa
 - **Staleness return values** - Changed from boolean to letter codes (`'M'`, `'T'`, `'L'`, or `false`)
 - **Error classes** - Custom exception hierarchy replaces generic `RuntimeError`
 
-### 📊 Statistics
+### Statistics
 
 - **175 files changed** with 15,712 insertions and 2,142 deletions
 - **152 commits** since v0.3.0
 - **Comprehensive documentation** - 12 major documentation files in `docs/`, 5 ADRs, 7 example scripts
 - **Test coverage** - Self-reported coverage via SimpleCov (view with `simplecov-mcp list`)
 
-### 🙏 Acknowledgments
+### Acknowledgments
 
 This release benefited from extensive AI pair programming sessions with Codex, Claude Code, GLM-4.6 (Z-AI), Gemini, and Warp.
 
 See `CLAUDE.md`, `AGENTS.md`, and `GEMINI.md` for AI agent integration notes.
 
-### 📦 Upgrade Guide
+### Upgrade Guide
 
 #### From v0.3.0
 
@@ -865,7 +899,7 @@ See `CLAUDE.md`, `AGENTS.md`, and `GEMINI.md` for AI agent integration notes.
    rescue SimpleCovMcp::Error => e  # catch-all
    ```
 
-### 🔮 Possible Future Improvements
+### Possible Future Improvements
 
 - **Per-file staleness timestamps** in multi-suite scenarios
 - **Multiple resultset file merging** (currently only merges suites within single file)
@@ -873,7 +907,7 @@ See `CLAUDE.md`, `AGENTS.md`, and `GEMINI.md` for AI agent integration notes.
 - **Web interface** for interactive coverage exploration
 - **Additional output formats** (HTML reports, badges, etc.)
 
-### 🔗 Links
+### Links
 
 - **Changelog:** [RELEASE_NOTES.md](RELEASE_NOTES.md)
 - **GitHub:** https://github.com/keithrbennett/simplecov-mcp
