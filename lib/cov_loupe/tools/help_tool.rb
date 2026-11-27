@@ -87,9 +87,8 @@ module CovLoupe
 
       class << self
         def call(output_chars: nil, server_context:, **_unused)
-          # Resolve (and validate) output_chars for formatting the successful result
-          output_chars_sym = resolve_output_chars(output_chars, server_context)
-          with_error_handling('HelpTool', server_context: server_context) do
+          with_error_handling(error_label, server_context: server_context) do
+            output_chars_sym = resolve_output_chars(output_chars, server_context)
             entries = TOOL_GUIDE
               .select { |guide| guide[:tool].available_in?(server_context) }
               .map { |guide| format_entry(guide) }

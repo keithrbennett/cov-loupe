@@ -3,14 +3,7 @@
 require 'spec_helper'
 
 RSpec.describe 'Error Mode System' do
-  let(:test_logger) do
-    Class.new do
-      attr_reader :messages
-
-      def initialize = @messages = []
-      def error(msg) = @messages << msg
-    end.new
-  end
+  let(:test_logger) { recording_logger }
 
   let(:test_error) { StandardError.new('Test error message') }
 
@@ -88,7 +81,7 @@ RSpec.describe 'Error Mode System' do
 
         response = CovLoupe::BaseTool.handle_mcp_error(test_error, 'TestTool', error_mode: mode)
         expect_mcp_tool_error(response)
-        expect(response.content.first['text']).to include('Error:')
+        expect(response_text(response)).to include('Error:')
       end
     end
   end

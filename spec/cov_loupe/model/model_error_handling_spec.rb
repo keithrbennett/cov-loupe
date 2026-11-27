@@ -24,7 +24,7 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
         mock_json_parse_error(parse_error)
 
         expect do
-          described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH)
+          project1_model
         end.to raise_error(CovLoupe::CoverageDataError) do |error|
           expect(error.message)
             .to eq("Coverage file is not valid JSON#{location}: #{FIXTURE_PROJECT1_COVERAGE_PATH}")
@@ -36,7 +36,7 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
       mock_file_read_error(Errno::EACCES.new('Permission denied'))
 
       expect do
-        described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH)
+        project1_model
       end.to raise_error(CovLoupe::FilePermissionError) do |error|
         expect(error.message).to include('Permission denied reading coverage data')
       end
@@ -46,7 +46,7 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
       mock_coverage_data(malformed_coverage_file)
 
       expect do
-        described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH)
+        project1_model
       end.to raise_error(CovLoupe::CoverageDataError, /Not a SimpleCov coverage.json document/)
     end
 
@@ -59,7 +59,7 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
       )
 
       expect do
-        described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH)
+        project1_model
       end.to raise_error(CovLoupe::CoverageDataError) do |error|
         expect(error.message).to include('Invalid coverage data structure')
       end
@@ -76,7 +76,7 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
       )
 
       expect do
-        described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH)
+        project1_model
       end.to raise_error(CovLoupe::CoverageDataError) do |error|
         expect(error.message).to include('Invalid path in coverage data', 'null byte')
       end
@@ -88,7 +88,7 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
       mock_file_read_error(Errno::EACCES.new(coverage_file_path), path_matcher: coverage_file_path)
 
       expect do
-        described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH)
+        project1_model
       end.to raise_error(CovLoupe::FilePermissionError) do |error|
         expect(error.message).to include('Permission denied')
         expect(error.message).to include('coverage.json')
@@ -102,7 +102,7 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
       mock_file_read_error(Errno::EACCES.new(coverage_file_path), path_matcher: coverage_file_path)
 
       expect do
-        described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH)
+        project1_model
       end.to raise_error(CovLoupe::FilePermissionError) do |error|
         expect(error.message).to include(coverage_file_path)
       end
@@ -113,7 +113,7 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
         .and_raise(TypeError.new('no implicit conversion of String into Integer'))
 
       expect do
-        described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH)
+        project1_model
       end.to raise_error(CovLoupe::CoverageDataError) do |error|
         expect(error.message).to include('Invalid coverage data structure', 'no implicit conversion')
       end
@@ -155,7 +155,7 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
   describe 'list error handling' do
     let(:logger) { nil }
     let(:model) do
-      described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH, logger: logger)
+      project1_model(logger: logger)
     end
     let(:foo_path) { File.expand_path('lib/foo.rb', root) }
 
@@ -297,7 +297,7 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
     it 'allows coverage entry errors from lookup_lines to propagate with detailed message' do
       # Resolver raises coverage entry errors with detailed messages (e.g., basename collisions, not found)
       # The model should let these propagate to preserve helpful diagnostics
-      model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH)
+      model = project1_model
 
       # Mock lookup_lines to raise an ambiguity error with a detailed message
       error_message = 'Multiple coverage entries match basename foo.rb: lib/foo.rb, test/foo.rb'
@@ -316,7 +316,7 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
     %i[summary_for raw_for uncovered_for detailed_for].each do |method|
       describe 'with raise_on_stale: false (default)' do
         it "#{method} returns coverage payload for deleted files" do
-          model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH)
+          model = project1_model
 
           # Mock lookup_lines to return coverage data
           allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:lookup_lines)
@@ -355,7 +355,7 @@ RSpec.describe CovLoupe::CoverageModel, 'error handling' do
 
       describe 'with raise_on_stale: true (strict mode)' do
         it "#{method} raises FileNotFoundError for deleted files" do
-          model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH)
+          model = project1_model
 
           allow(CovLoupe::Resolvers::ResolverHelpers).to receive(:lookup_lines)
             .and_return([1, 0, 1, nil])

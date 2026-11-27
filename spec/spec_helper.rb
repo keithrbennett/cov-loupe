@@ -105,6 +105,7 @@ RSpec.configure do |config|
   config.include CLITestHelpers
   config.include MCPToolTestHelpers
   config.include MockingHelpers
+  config.include PayloadFixtures
   config.include ControlFlowHelpers
   config.include CoverageFileMockHelpers
   config.include Spec::Support::McpIntegrationHelpers

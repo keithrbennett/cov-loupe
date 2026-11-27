@@ -1,13 +1,11 @@
 # frozen_string_literal: true
 
-require_relative '../base_tool'
-require_relative '../model/model'
-require_relative '../presenters/coverage_payload_presenter'
+require_relative '../file_tool'
 
 module CovLoupe
   module Tools
     # @api private
-    class FileCoverageRawTool < BaseTool
+    class FileCoverageRawTool < FileTool
       tool_name 'file_coverage_raw'
       description <<~DESC
         Use this when you need the raw SimpleCov per-line hit counts (its `lines` array) for a file as stored on disk ("ignored" markers become null).
@@ -16,20 +14,6 @@ module CovLoupe
         Output: JSON object with "schema_version" (Integer), "file", "line_hits" (SimpleCov's `lines` array of integers/nulls, one per source line as recorded), and "stale": "ok" | "deleted" | "newer" | "length_mismatch" | "unreadable".
         Example: "Fetch the raw coverage array for spec/support/foo_helper.rb".
       DESC
-      input_schema(**input_schema_def)
-      class << self
-        def call(path:, root: nil, coverage_file: nil, raise_on_stale: nil,
-          output_chars: nil, server_context:)
-          call_with_file_payload(
-            path:           path,
-            output_chars:   output_chars,
-            server_context: server_context,
-            root:           root,
-            coverage_file:  coverage_file,
-            raise_on_stale: raise_on_stale
-          )
-        end
-      end
     end
   end
 end

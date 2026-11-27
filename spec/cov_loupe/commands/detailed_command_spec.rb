@@ -4,23 +4,14 @@ require 'spec_helper'
 require_relative '../shared_examples/formatted_command_examples'
 
 RSpec.describe CovLoupe::Commands::DetailedCommand do
-  let(:root) { (FIXTURES_DIR / 'project1').to_s }
-  let(:cli_context) { CovLoupe::CoverageCLI.new }
-  let(:command) { described_class.new(cli_context) }
-
-  before do
-    cli_context.config.root = root
-    cli_context.config.coverage_file = FIXTURE_PROJECT1_COVERAGE_PATH
-    cli_context.config.format = :table
-    cli_context.config.source_mode = nil
-  end
+  include_context 'with a project1 command'
 
   describe '#execute' do
     context 'with table format' do
       it 'prints the detailed coverage table' do
         output = capture_command_output(command, ['lib/foo.rb'])
 
-        expect(output).to include('File: lib/foo.rb', 'Coverage: 2/3 lines (66.66%)', 'Line', 'Covered')
+        expect(output).to include('File: lib/foo.rb', 'Coverage: 66.66% (2/3 lines)', 'Line', 'Covered')
       end
 
       it 'prints annotated source when source_mode is enabled' do

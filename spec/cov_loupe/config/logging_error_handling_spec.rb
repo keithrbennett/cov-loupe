@@ -238,8 +238,8 @@ RSpec.describe CovLoupe::Logger do
         end
       end
 
-      expect(response.content.first['text']).to include('business error')
-      expect(response.content.first['text']).not_to include('Unable to use log target')
+      expect(response_text(response)).to include('business error')
+      expect(response_text(response)).not_to include('Unable to use log target')
     end
 
     it 'does not propagate runtime logging failures through safe_log' do

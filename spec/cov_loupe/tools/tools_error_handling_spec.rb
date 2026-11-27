@@ -46,7 +46,7 @@ RSpec.describe CovLoupe::Tools do
       output_chars: 'ascii', server_context: server_context)
 
     expect_mcp_tool_error(response)
-    expect(response.content.first['text']).to include(message)
+    expect(response_text(response)).to include(message)
   end
 
   # NOTE: VersionTool is covered directly in version_tool_spec.rb, which now

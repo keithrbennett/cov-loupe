@@ -2,6 +2,16 @@
 
 # Helpers for mocking and stubbing objects in RSpec tests.
 module MockingHelpers
+  # A logger double that records the messages passed to #error.
+  def recording_logger
+    Class.new do
+      attr_reader :messages
+
+      def initialize = @messages = []
+      def error(msg) = @messages << msg
+    end.new
+  end
+
   # Stub staleness checking to return a specific value
   # @param value [String] The staleness value to return ("ok", "deleted", "newer", "length_mismatch", or "unreadable")
   def stub_staleness_check(value)
@@ -12,6 +22,19 @@ module MockingHelpers
     )
     allow(checker_double).to receive(:check_file!)
     allow(CovLoupe::StalenessChecker).to receive(:new).and_return(checker_double)
+  end
+
+  # A CoverageModel of the project1 fixture and its coverage.
+  def project1_model(**)
+    CovLoupe::CoverageModel.new(root: (FIXTURES_DIR / 'project1').to_s,
+      coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH, **)
+  end
+
+  # Stub File.mtime to return time for path, leaving other paths unstubbed.
+  def stub_mtime(path, time)
+    allow(File).to receive(:mtime).and_wrap_original do |original, file|
+      file.to_s == path.to_s ? time : original.call(file)
+    end
   end
 
   # Stub a presenter with specific payload data

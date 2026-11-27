@@ -62,7 +62,7 @@ RSpec.describe 'File-based MCP Tools' do
         expect(response.content.first).to have_key('text')
 
         # All should return valid JSON
-        expect { JSON.parse(response.content.first['text']) }.not_to raise_error
+        expect { response_json(response) }.not_to raise_error
       end
     end
   end
@@ -89,7 +89,7 @@ RSpec.describe 'File-based MCP Tools' do
         )
 
         response = config[:tool_class].call(path: 'lib/foo.rb', server_context: server_context)
-        data = JSON.parse(response.content.first['text'])
+        data = response_json(response)
 
         expect(data).to include('covered', 'uncovered', 'total', 'percentage')
         expect(data['percentage']).to be_a(Numeric)

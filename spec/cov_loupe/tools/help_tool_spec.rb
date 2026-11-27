@@ -25,11 +25,18 @@ RSpec.describe CovLoupe::Tools::HelpTool do
     expect(data['tools'].flat_map { |entry| entry['inputs'] }.join).not_to include('error_mode')
   end
 
+  it 'returns an error response for an invalid output_chars' do
+    response = described_class.call(output_chars: 'bogus', server_context: server_context)
+
+    expect_mcp_tool_error(response)
+    expect(response_text(response)).to include('Invalid output_chars value')
+  end
+
   [false, true].each do |allow|
     it "#{allow ? 'lists' : 'omits'} project_validate when allow_code_predicates is #{allow}" do
       context = mcp_server_context(app_config: CovLoupe::AppConfig.new(allow_code_predicates: allow))
       response = described_class.call(server_context: context)
-      tool_names = JSON.parse(response.content.first['text'])['tools'].map { |entry| entry['tool'] }
+      tool_names = response_json(response)['tools'].map { |entry| entry['tool'] }
 
       expect(tool_names.include?('project_validate')).to be(allow)
     end

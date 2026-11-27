@@ -20,6 +20,7 @@ This document describes the breaking changes introduced in version 7.0.0. Sectio
 - [Payload Keys Reshaped](#payload-keys-reshaped)
 - [Staleness Values Renamed](#staleness-values-renamed)
 - [Percentages Truncated, Not Rounded](#percentages-truncated-not-rounded)
+- [`detailed` Coverage Line Shows the Percentage First](#detailed-coverage-line-shows-the-percentage-first)
 - [Structured Output Has a Schema Version](#structured-output-has-a-schema-version)
 - [Library Results Use Project-Relative Paths](#library-results-use-project-relative-paths)
 - [Public API Declared](#public-api-declared)
@@ -422,6 +423,25 @@ This applies to every `percentage` value: library hashes, CLI output in all form
 `CoverageReporter.report` now prints two decimals instead of one (`  99.95%` rather than `100.0%`).
 
 **Migration:** check `validate` predicates and other scripts that compare a percentage to an exact or near-boundary value. For example, `percentage >= 66.67` no longer passes for 2 of 3 lines. Thresholds like `>= 100` or `>= 80` now hold only when coverage actually reaches that value.
+
+<a id="detailed-coverage-line-shows-the-percentage-first"></a>
+## `detailed` Coverage Line Shows the Percentage First
+
+The `Coverage:` line in `detailed` text output now puts the percentage first, as `uncovered` already did:
+
+```text
+# 6.x
+Coverage: 2/3 lines (66.67%)
+
+# 7.0
+Coverage: 66.66% (2/3 lines)
+```
+
+A file with no coverable lines shows `Coverage: n/a (0/0 lines)`. The percentage is also truncated rather than rounded; see [Percentages Truncated, Not Rounded](#percentages-truncated-not-rounded).
+
+Structured formats (`-f json` and the others) and the MCP `file_coverage_detailed` tool are unaffected.
+
+**Migration:** update scripts that parse the `detailed` text output to read the percentage before the line counts.
 
 ## Structured Output Has a Schema Version
 

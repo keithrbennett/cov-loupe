@@ -21,7 +21,7 @@ RSpec.describe 'running against the wrong project root' do
   end
 
   def mcp_text(tool, **args)
-    tool.call(**mcp_args, **args).content.first['text']
+    response_text(tool.call(**mcp_args, **args))
   end
 
   [[], %w[--format json]].product(%w[list totals]).each do |format_args, command|

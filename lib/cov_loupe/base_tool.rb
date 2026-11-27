@@ -5,7 +5,6 @@ require 'json'
 require_relative 'errors/errors'
 require_relative 'errors/error_handler'
 require_relative 'model/model'
-require_relative 'presenters/coverage_payload_presenter'
 require_relative 'output_chars'
 require_relative 'config/option_normalizers'
 require_relative 'payload_schema'
@@ -27,8 +26,9 @@ module CovLoupe
   #   4. Presenter computes the payload (project-relative paths from the model)
   #   5. respond_json formats the output
   #
-  # File-scope tools (summary, raw, detailed, uncovered) use call_with_file_payload
-  # which infers the model method from the tool class name.
+  # Coverage tools run through with_model, which also validates output_chars and names the
+  # tool for error reporting. File-scope tools (summary, raw, detailed, uncovered) extend
+  # CovLoupe::FileTool, whose call infers the model method from the tool class name.
   #
   # @api private
   class BaseTool < ::MCP::Tool
@@ -97,12 +97,6 @@ module CovLoupe
       schema.freeze
     end
 
-    FILE_INPUT_SCHEMA = coverage_schema(
-      additional_properties: { path: PATH_PROPERTY },
-      required:              ['path']
-    )
-    def self.input_schema_def = FILE_INPUT_SCHEMA
-
     # Tools that execute client-supplied Ruby override this to return true. The MCP server
     # registers (and help lists) them only when started with --allow-code-predicates.
     def self.executes_code? = false
@@ -111,20 +105,24 @@ module CovLoupe
       !executes_code? || server_context.app_config&.allow_code_predicates == true
     end
 
+    # The tool's class name without its namespace, used to identify it in error logs. User-facing
+    # messages name the tool by its MCP name, tool_name, instead.
+    def self.error_label = name.split('::').last
+
     # Wrap tool execution with consistent error handling.
     # Yields to the block and rescues any error, delegating to handle_mcp_error.
     # This eliminates duplicate rescue blocks across all tools.
     #
     # Errors are handled in the server's configured error mode (--error-mode).
     #
-    # @param tool_name [String] Name of the tool for error reporting
+    # @param error_label [String] Identifies the tool in error logs (see error_label)
     # @param server_context [AppContext, nil] Server context with app_config
-    def self.with_error_handling(tool_name, server_context: nil)
+    def self.with_error_handling(error_label, server_context: nil)
       CovLoupe.logger.raise_if_initialization_failed!
       yield
     rescue => e
       error_mode = server_context&.app_config&.error_mode || :log
-      handle_mcp_error(e, tool_name, error_mode: error_mode)
+      handle_mcp_error(e, error_label, error_mode: error_mode)
     end
 
     # Handle errors consistently across all MCP tools.
@@ -133,17 +131,17 @@ module CovLoupe
     # message carried in the response content.
     #
     # @param error [Exception] The error to handle
-    # @param tool_name [String] Name of the tool for error reporting
+    # @param error_label [String] Identifies the tool in error logs (see error_label)
     # @param error_mode [Symbol] Error handling mode (:off, :log, :debug), from the server config
     # @return [MCP::Tool::Response] Error response (isError: true)
-    def self.handle_mcp_error(error, tool_name, error_mode: :log)
+    def self.handle_mcp_error(error, error_label, error_mode: :log)
       error_handler = ErrorHandlerFactory.for_mcp_server(error_mode: error_mode)
 
       # Normalize to a CovLoupe::Error so we can handle/log uniformly
       normalized = error.is_a?(CovLoupe::Error) \
         ? error : error_handler.convert_standard_error(error)
       begin
-        log_mcp_error(normalized, tool_name, error_handler)
+        log_mcp_error(normalized, error_label, error_handler)
       rescue LoggingError
         # Logging failure must not replace the original tool error.
       end
@@ -156,10 +154,16 @@ module CovLoupe
       # embedding error text in a normal success response. This is the
       # tool-result-level error signal; a JSON-RPC error is reserved for
       # protocol- or dispatch-level failures such as an unknown tool.
-      ::MCP::Tool::Response.new(
-        [{ 'type' => 'text', 'text' => "Error: #{error_message}" }],
-        error: true
-      )
+      respond_text("Error: #{error_message}", error: true)
+    end
+
+    # Respond with a single text content item.
+    #
+    # @param text [String] The response text
+    # @param error [Boolean] Flag the response as a failed tool call (isError: true)
+    # @return [MCP::Tool::Response]
+    def self.respond_text(text, error: false)
+      ::MCP::Tool::Response.new([{ 'type' => 'text', 'text' => text }], error: error)
     end
 
     # Respond with the JSON payload serialized as a single text content item.
@@ -176,7 +180,7 @@ module CovLoupe
       else
         ascii_only ? JSON.generate(payload, ascii_only: true) : JSON.generate(payload)
       end
-      ::MCP::Tool::Response.new([{ 'type' => 'text', 'text' => json }])
+      respond_text(json)
     end
 
     # Determines if ASCII mode is in effect for the character mode setting.
@@ -193,9 +197,9 @@ module CovLoupe
     end
     private_class_method :ascii_mode?
 
-    def self.log_mcp_error(error, tool_name, error_handler)
+    def self.log_mcp_error(error, error_label, error_handler)
       # Use the provided error handler for logging
-      error_handler.send(:log_error, error, tool_name)
+      error_handler.send(:log_error, error, error_label)
     end
     private_class_method :log_mcp_error
 
@@ -211,17 +215,6 @@ module CovLoupe
       # Merge explicit params from JSON, removing nils
       # (nil means "not provided", so use base config)
       base.merge(model_option_overrides.compact)
-    end
-
-    # Creates and configures a CoverageModel instance.
-    # Encapsulates the common pattern of merging config and initializing the model.
-    # @param server_context [AppContext] The server context
-    # @param model_option_overrides [Hash] Tool call parameters that override model defaults
-    # @return [CoverageModel] The configured model
-    def self.create_model(server_context:, **model_option_overrides)
-      model, _config = create_configured_model(server_context: server_context,
-        **model_option_overrides)
-      model
     end
 
     # Creates and configures a CoverageModel instance, returning both the model and the configuration.
@@ -281,48 +274,30 @@ module CovLoupe
     end
     private_class_method :validated_output_chars
 
-    # Runs a file-based tool request by deriving the payload method from the tool class.
-    # @param path [String] File path to analyze
-    # @param output_chars [String, Symbol, nil] Output character mode
+    # Runs a coverage tool call with consistent error handling: resolves output_chars, creates
+    # the model, and yields it with the merged configuration and the resolved output_chars. A
+    # tool that executes code raises UsageError unless the server allows it; MCPServer#toolset
+    # already omits such tools, and this also covers servers built from TOOLSET.
+    #
     # @param server_context [AppContext] Server context
+    # @param output_chars [String, Symbol, nil] Output character mode tool parameter
     # @param model_option_overrides [Hash] Tool call parameters that override model defaults
-    # @return [MCP::Tool::Response] JSON response
-    def self.call_with_file_payload(path:, server_context:, output_chars: nil,
-      **model_option_overrides)
-      tool_name = name.split('::').last
-      output_chars_sym = resolve_output_chars(output_chars, server_context)
+    # @yieldparam model [CoverageModel]
+    # @yieldparam config [Hash] Merged model configuration
+    # @yieldparam output_chars [Symbol] Resolved output character mode
+    # @return [MCP::Tool::Response] The block's response, or an error response
+    def self.with_model(server_context:, output_chars: nil, **model_option_overrides)
+      with_error_handling(error_label, server_context: server_context) do
+        output_chars_sym = resolve_output_chars(output_chars, server_context)
+        unless available_in?(server_context)
+          raise UsageError,
+            "#{tool_name} is disabled; start the MCP server with --allow-code-predicates"
+        end
 
-      with_error_handling(tool_name, server_context: server_context) do
         model, config = create_configured_model(server_context: server_context,
           **model_option_overrides)
-        presenter = Presenters::CoveragePayloadPresenter.new(
-          model:          model,
-          path:           path,
-          payload_method: payload_method_for(tool_name),
-          raise_on_stale: config[:raise_on_stale]
-        )
-        respond_json(presenter.payload, pretty: true, output_chars: output_chars_sym)
+        yield model, config, output_chars_sym
       end
     end
-
-    # Infer CoverageModel method name from a tool class name.
-    # FileCoverageSummaryTool -> :summary_for, FileCoverageRawTool -> :raw_for,
-    # FileCoverageDetailedTool -> :detailed_for, FileUncoveredLinesTool -> :uncovered_for.
-    def self.payload_method_for(tool_name)
-      base = tool_name.sub(/Tool\z/, '')
-      underscored = underscore(base)
-        .sub(/\A(file_)?(coverage_)?/, '')
-        .sub(/_lines\z/, '')
-      :"#{underscored}_for"
-    end
-
-    # Minimal underscore helper to avoid pulling in ActiveSupport.
-    def self.underscore(value)
-      value
-        .gsub(/([A-Z]+)([A-Z][a-z])/, '\\1_\\2')
-        .gsub(/([a-z\d])([A-Z])/, '\\1_\\2')
-        .downcase
-    end
-    private_class_method :payload_method_for, :underscore
   end
 end

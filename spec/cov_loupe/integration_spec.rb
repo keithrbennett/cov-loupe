@@ -149,7 +149,7 @@ RSpec.describe 'SimpleCov MCP Integration Tests' do
         ].each do |tc|
           response = tc[:tool].call(**tc[:args], server_context: server_context)
           if tc[:is_text]
-            text = response.content.first['text']
+            text = response_text(response)
             tc[:check].call(text)
           else
             data, = expect_mcp_text_json(response, expected_keys: tc[:expected_keys])

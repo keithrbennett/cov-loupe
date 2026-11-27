@@ -178,9 +178,7 @@ RSpec.describe CovLoupe::CoverageModel do
 
       # Make coverage older than file by mocking file mtime to be newer
       current_time = Time.now
-      allow(File).to receive(:mtime).and_wrap_original do |m, path|
-        path.to_s == foo_path ? current_time : m.call(path)
-      end
+      stub_mtime(foo_path, current_time)
 
       # With raise_on_stale: true, should raise because file is newer
       expect do
@@ -213,8 +211,7 @@ RSpec.describe CovLoupe::CoverageModel do
     mock_coverage_with_timestamp(root, Time.now.to_i, coverage: {
       File.join(root, 'lib', 'bar.rb') => { 'lines' => [1, 1] }, # 2 entries vs 3 lines in source
     })
-    model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH,
-      raise_on_stale: true)
+    model = project1_model(raise_on_stale: true)
     # bar.rb has 2 coverage entries but 3 source lines in fixtures
     expect do
       model.summary_for('lib/bar.rb')
@@ -225,8 +222,7 @@ RSpec.describe CovLoupe::CoverageModel do
     mock_coverage_with_timestamp(root, Time.now.to_i, coverage: {
       File.join(root, 'lib', 'bar.rb') => { 'lines' => [1, 1] }, # 2 entries vs 3 lines in source
     })
-    model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH,
-      raise_on_stale: true)
+    model = project1_model(raise_on_stale: true)
 
     expect do
       model.list(raise_on_stale: true)
@@ -246,12 +242,9 @@ RSpec.describe CovLoupe::CoverageModel do
     })
 
     # Stub mtime to simulate file being newer than coverage
-    allow(File).to receive(:mtime).and_wrap_original do |m, path|
-      path.to_s == bar_path ? current_time : m.call(path)
-    end
+    stub_mtime(bar_path, current_time)
 
-    model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH,
-      raise_on_stale: true)
+    model = project1_model(raise_on_stale: true)
 
     expect do
       model.list(raise_on_stale: true)
@@ -272,8 +265,7 @@ RSpec.describe CovLoupe::CoverageModel do
       foo_path => { 'lines' => [nil, nil, 1, 0, nil, 2] }, # 6 lines matching foo.rb
     })
 
-    model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH,
-      raise_on_stale: true)
+    model = project1_model(raise_on_stale: true)
 
     # Should not raise - all files are current
     expect { model.list(raise_on_stale: true) }.not_to raise_error
@@ -287,8 +279,7 @@ RSpec.describe CovLoupe::CoverageModel do
       missing_path => { 'lines' => [1, 1, 1] },
     })
 
-    model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH,
-      raise_on_stale: true)
+    model = project1_model(raise_on_stale: true)
 
     expect do
       model.list(raise_on_stale: true)
@@ -308,12 +299,9 @@ RSpec.describe CovLoupe::CoverageModel do
     })
 
     # Stub mtime to simulate file being newer than coverage
-    allow(File).to receive(:mtime).and_wrap_original do |m, path|
-      path.to_s == bar_path ? current_time : m.call(path)
-    end
+    stub_mtime(bar_path, current_time)
 
-    model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH,
-      raise_on_stale: true)
+    model = project1_model(raise_on_stale: true)
 
     expect do
       model.list(raise_on_stale: true)
@@ -332,8 +320,7 @@ RSpec.describe CovLoupe::CoverageModel do
       bar_path => { 'lines' => [1, 1] }, # 2 lines vs 3 in actual file
     })
 
-    model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH,
-      raise_on_stale: true)
+    model = project1_model(raise_on_stale: true)
 
     expect do
       model.list(raise_on_stale: true)
@@ -358,12 +345,9 @@ RSpec.describe CovLoupe::CoverageModel do
     })
 
     # Stub mtime to make it newer than coverage
-    allow(File).to receive(:mtime).and_wrap_original do |m, path|
-      path.to_s == bar_path ? current_time : m.call(path)
-    end
+    stub_mtime(bar_path, current_time)
 
-    model = described_class.new(root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH,
-      raise_on_stale: true)
+    model = project1_model(raise_on_stale: true)
 
     expect do
       model.list(raise_on_stale: true)

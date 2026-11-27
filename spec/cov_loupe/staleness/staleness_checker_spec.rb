@@ -4,6 +4,11 @@ require 'tmpdir'
 require 'fileutils'
 
 RSpec.describe CovLoupe::StalenessChecker do
+  # Runs the project check over every entry in a coverage map, as CoverageModel does.
+  def project_staleness(checker, coverage_map)
+    checker.check_project_with_lines!(coverage_map, coverage_files: coverage_map.keys)
+  end
+
   let(:tmpdir) { Dir.mktmpdir('scmcp-stale') }
 
   after { FileUtils.remove_entry(tmpdir) if tmpdir && File.directory?(tmpdir) }
@@ -340,7 +345,7 @@ RSpec.describe CovLoupe::StalenessChecker do
 
         coverage_map = { external_file => [1] }
 
-        expect { checker_with_relative_root.check_project!(coverage_map) }.not_to raise_error
+        expect { project_staleness(checker_with_relative_root, coverage_map) }.not_to raise_error
       ensure
         FileUtils.remove_entry(external_dir) if external_dir && File.directory?(external_dir)
       end
@@ -359,7 +364,7 @@ RSpec.describe CovLoupe::StalenessChecker do
           file_globs: ['lib/**/*.rb'], timestamp: Time.now.to_i)
 
         expect do
-          checker.check_project!({})
+          project_staleness(checker, {})
         end.to raise_error(CovLoupe::CoverageDataProjectStaleError) { |error|
           expect(error.not_in_coverage_files).to include('lib/uncovered.rb')
         }
@@ -374,7 +379,7 @@ RSpec.describe CovLoupe::StalenessChecker do
       checker = described_class.new(root: tmpdir, coverage_file: nil, mode: :off,
         file_globs: ['lib/**/*.rb', 'lib/*.rb'], timestamp: Time.now.to_i)
 
-      expect(checker.check_project!({})[:not_in_coverage_files]).to eq(['lib/uncovered.rb'])
+      expect(project_staleness(checker, {})[:not_in_coverage_files]).to eq(['lib/uncovered.rb'])
     end
 
     it 'does not report files as newer when timestamp is 0 in project check' do
@@ -385,7 +390,7 @@ RSpec.describe CovLoupe::StalenessChecker do
       checker = described_class.new(root: tmpdir, coverage_file: nil, mode: :error,
         timestamp: 0)
 
-      details = checker.check_project!(coverage_map)
+      details = project_staleness(checker, coverage_map)
       expect(details[:newer_files]).to be_empty
       expect(details[:timestamp_status]).to eq('missing')
     end
@@ -417,7 +422,7 @@ RSpec.describe CovLoupe::StalenessChecker do
 
       allow(File).to receive(:file?).with(file2).and_raise(Errno::EACCES.new('Permission denied'))
 
-      details = checker.check_project!(coverage_map)
+      details = project_staleness(checker, coverage_map)
       expect(details[:unreadable_files]).to include('unreadable.rb')
     end
 
@@ -439,7 +444,7 @@ RSpec.describe CovLoupe::StalenessChecker do
       allow(File).to receive(:mtime).with(test_file)
         .and_raise(Errno::EPERM.new('Operation not permitted'))
 
-      details = checker_with_valid_timestamp.check_project!(coverage_map)
+      details = project_staleness(checker_with_valid_timestamp, coverage_map)
       expect(details[:unreadable_files]).to include('test.rb')
     end
 
@@ -496,6 +501,7 @@ RSpec.describe CovLoupe::StalenessChecker do
       described_class.new(root: tmpdir, coverage_file: nil, mode: :off, timestamp: timestamp)
     end
 
+    # Two lines, matching the [1, 1] coverage below, so no length mismatch hides 'newer'.
     before do
       write_file(file, %w[a b])
     end
@@ -517,7 +523,7 @@ RSpec.describe CovLoupe::StalenessChecker do
         mtime = Time.at(timestamp.to_i + tc[:offset])
         File.utime(mtime, mtime, file)
 
-        details = checker.check_project!({ file => [1, 1] })
+        details = project_staleness(checker, { file => [1, 1] })
 
         expect(details[:newer_files]).to eq(tc[:newer] ? ['lib/boundary.rb'] : [])
       end
@@ -532,6 +538,7 @@ RSpec.describe CovLoupe::StalenessChecker do
       described_class.new(root: tmpdir, coverage_file: nil, mode: :off, timestamp: Time.at(100))
     end
 
+    # Two lines, matching the [1, 1] coverage below, so no length mismatch hides 'newer'.
     before do
       write_file(file, %w[a b])
     end
@@ -577,10 +584,10 @@ RSpec.describe CovLoupe::StalenessChecker do
       checker = described_class.new(root: tmpdir, coverage_file: nil,
         mode: :error, timestamp: Time.now.to_i)
       coverage_map = {
-        File.join(tmpdir, 'lib', 'does_not_exist_anymore.rb') => { 'lines' => [1] },
+        File.join(tmpdir, 'lib', 'does_not_exist_anymore.rb') => [1],
       }
       expect do
-        checker.check_project!(coverage_map)
+        project_staleness(checker, coverage_map)
       end.to raise_error(CovLoupe::CoverageDataProjectStaleError)
     end
 
@@ -589,7 +596,7 @@ RSpec.describe CovLoupe::StalenessChecker do
         mode: :error,
         file_globs: [], timestamp: Time.now.to_i)
       expect do
-        checker.check_project!({})
+        project_staleness(checker, {})
       end.not_to raise_error
     end
   end

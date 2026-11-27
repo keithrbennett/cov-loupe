@@ -118,15 +118,16 @@ This allows:
 - `check_file!` returns nil, or in `:error` mode raises `CoverageDataStaleError` (or `FileError` for an unreadable file)
 - Used by single-file tools (summary, raw, detailed, uncovered)
 
-**Project-level** (`check_project!` and `check_project_with_lines!`):
+**Project-level** (`check_project_with_lines!`):
 
 - Checks the files in the coverage data (only those matching the file globs, when set), plus, when file globs are set, whether matching files are in the coverage data
 - Detects:
     - Files newer than coverage timestamp
     - Files deleted since coverage was collected
     - Files matching the file globs that are not in coverage data (such as newly added files)
-- Return a hash of the problem file lists (`newer_files`, `not_in_coverage_files`, `deleted_files`, `unreadable_files`, plus `length_mismatch_files` from `check_project_with_lines!`) and `timestamp_status`
-- In `:error` mode, raise `CoverageDataProjectStaleError` with those lists instead
+    - Files whose line count differs from their coverage data, and files that cannot be read
+- Returns a hash of the problem file lists (`newer_files`, `not_in_coverage_files`, `deleted_files`, `length_mismatch_files`, `unreadable_files`), per-file `file_statuses`, and `timestamp_status`
+- In `:error` mode, raises `CoverageDataProjectStaleError` with those lists instead
 - `CoverageModel` uses `check_project_with_lines!` in `list` and `project_totals` (behind the `project_coverage` and `project_coverage_totals` MCP tools), passing coverage line arrays so length mismatches and unreadable files are also reported
 
 **Totals behavior**:
@@ -145,7 +146,7 @@ This allows:
 ```ruby
 # Detects if lib/**/*.rb files exist that have no coverage data
 checker = StalenessChecker.new(root: root, coverage_file: path, file_globs: ['lib/**/*.rb'])
-checker.check_project!(coverage_map)
+checker.check_project_with_lines!(coverage_lines_by_path, coverage_files: coverage_lines_by_path.keys)
 ```
 
 This helps teams ensure new files are included in test runs.
@@ -193,7 +194,7 @@ before merging results.
 
 - Implementation: `lib/cov_loupe/staleness/staleness_checker.rb` (`StalenessChecker` class)
 - File-level checking: `StalenessChecker#check_file!` and `#file_staleness_status`
-- Project-level checking: `StalenessChecker#check_project!` and `#check_project_with_lines!`
+- Project-level checking: `StalenessChecker#check_project_with_lines!`
 - Staleness detail computation: `StalenessChecker#compute_file_staleness_details`
 - Error types: `lib/cov_loupe/errors/errors.rb` (`CoverageDataStaleError`, `CoverageDataProjectStaleError`)
 - Usage in tools: `lib/cov_loupe/tools/project_coverage_tool.rb`, `lib/cov_loupe/model/model.rb`

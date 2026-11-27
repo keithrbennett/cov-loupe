@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 require_relative 'base_command'
-require_relative '../presenters/coverage_payload_presenter'
-require_relative '../formatters/table_formatter'
 require_relative '../staleness/stale_status'
 
 module CovLoupe
@@ -10,34 +8,17 @@ module CovLoupe
     # @api private
     class SummaryCommand < BaseCommand
       def execute(args)
-        handle_with_path(args, 'summary') do |path|
-          presenter = Presenters::CoveragePayloadPresenter.new(model: model, path: path,
-            payload_method: :summary_for)
-          data = presenter.payload
-          break if emit_structured_format_with_optional_source?(data, model, path)
-
-          relative_path = presenter.relative_path
-
-          # Table format with box-drawing
-          headers = ['File', '%', 'Covered', 'Total', 'Stale']
-          stale_marker = StaleStatus.stale?(data['stale']) ? 'Yes' : ''
-
+        with_file_payload(args, 'summary', :summary_for) do |data, relative_path|
           rows = [[
             relative_path,
             format_percentage(data['percentage']),
             data['covered'].to_s,
             data['total'].to_s,
-            stale_marker,
+            StaleStatus.stale?(data['stale']) ? 'Yes' : '',
           ]]
-
-          puts TableFormatter.format(
-            headers:      headers,
-            rows:         rows,
-            alignments:   %i[left right right right center],
-            output_chars: config.output_chars
-          )
+          print_table(['File', '%', 'Covered', 'Total', 'Stale'], rows,
+            %i[left right right right center])
           puts
-          print_source_for(model, path) if config.source_mode
         end
       end
     end

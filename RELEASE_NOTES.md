@@ -171,6 +171,11 @@
   do not match the UTF-8 coverage data). UTF-8 files, which are Ruby's default, are
   unaffected. See
   [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#source-and-predicate-files-are-read-as-utf-8).
+- **`detailed` text output shows its coverage line like `uncovered`.** The heading line is
+  now `Coverage: 66.66% (2/3 lines)`, percentage first as in `uncovered`, instead of 6.x's
+  `Coverage: 2/3 lines (66.67%)` (the percentage is also truncated now; see above). A file
+  with no coverable lines shows `Coverage: n/a (0/0 lines)`. Structured formats are unchanged. See
+  [Migrating to v7](docs/user/migrations/MIGRATING_TO_V7.md#detailed-coverage-line-shows-the-percentage-first).
 
 #### Errors and Exit Codes
 

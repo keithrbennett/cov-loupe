@@ -11,6 +11,13 @@ RSpec.describe CovLoupe::Tools::VersionTool do
   end
 
   describe '.call' do
+    it 'returns an error response for an invalid output_chars' do
+      response = described_class.call(output_chars: 'bogus', server_context: null_server_context)
+
+      expect_mcp_tool_error(response)
+      expect(response_text(response)).to include('Invalid output_chars value')
+    end
+
     it 'returns a valid MCP response with the correct version string' do
       response = described_class.call(server_context: server_context)
       expect(response).to be_a(MCP::Tool::Response)

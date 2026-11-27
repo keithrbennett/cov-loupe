@@ -40,22 +40,8 @@ module CovLoupe
       class << self
         def call(code: nil, file: nil, root: nil, coverage_file: nil,
           raise_on_stale: nil, output_chars: nil, server_context:)
-          # Resolve (and validate) output_chars for formatting the successful result
-          output_chars_sym = resolve_output_chars(output_chars, server_context)
-          with_error_handling('ProjectValidateTool', server_context: server_context) do
-            # MCPServer#toolset already omits this tool; this also covers servers built from TOOLSET.
-            unless available_in?(server_context)
-              raise UsageError,
-                'project_validate is disabled; start the MCP server with --allow-code-predicates'
-            end
-
-            model, config = create_configured_model(
-              server_context: server_context,
-              root:           root,
-              coverage_file:  coverage_file,
-              raise_on_stale: raise_on_stale
-            )
-
+          with_model(server_context: server_context, output_chars: output_chars, root: root,
+            coverage_file: coverage_file, raise_on_stale: raise_on_stale) do |model, config, output_chars_sym|
             result = if code && file
               raise UsageError, "Only one of 'code' or 'file' must be provided, not both"
             elsif code

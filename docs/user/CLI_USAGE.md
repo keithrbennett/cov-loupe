@@ -306,7 +306,7 @@ clp -s full d app/models/order.rb  # -s = --source
 **Output (default format):**
 ```
 File: app/models/order.rb
-Coverage: 6/7 lines (85.71%)
+Coverage: 85.71% (6/7 lines)
 
 ┌──────┬──────┬─────────┐
 │ Line │ Hits │ Covered │

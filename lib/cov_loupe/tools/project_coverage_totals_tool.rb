@@ -32,16 +32,9 @@ module CovLoupe
       class << self
         def call(root: nil, coverage_file: nil, raise_on_stale: nil,
           file_globs: nil, output_chars: nil, server_context:)
-          output_chars_sym = resolve_output_chars(output_chars, server_context)
-          with_error_handling('ProjectCoverageTotalsTool', server_context: server_context) do
-            model, config = create_configured_model(
-              server_context: server_context,
-              root:           root,
-              coverage_file:  coverage_file,
-              raise_on_stale: raise_on_stale,
-              file_globs:     file_globs
-            )
-
+          with_model(server_context: server_context, output_chars: output_chars, root: root,
+            coverage_file: coverage_file, raise_on_stale: raise_on_stale,
+            file_globs: file_globs) do |model, config, output_chars_sym|
             presenter = Presenters::ProjectTotalsPresenter.new(
               model:          model,
               raise_on_stale: config[:raise_on_stale],

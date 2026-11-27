@@ -4,15 +4,7 @@ require 'spec_helper'
 require_relative '../shared_examples/formatted_command_examples'
 
 RSpec.describe CovLoupe::Commands::RawCommand do
-  let(:root) { (FIXTURES_DIR / 'project1').to_s }
-  let(:cli_context) { CovLoupe::CoverageCLI.new }
-  let(:command) { described_class.new(cli_context) }
-
-  before do
-    cli_context.config.root = root
-    cli_context.config.coverage_file = FIXTURE_PROJECT1_COVERAGE_PATH
-    cli_context.config.format = :table
-  end
+  include_context 'with a project1 command'
 
   describe '#execute' do
     context 'with table format' do
@@ -56,6 +48,23 @@ RSpec.describe CovLoupe::Commands::RawCommand do
         expect(payload['line_hits'][2]).to eq(1) # specific value
         expect(payload['line_hits'][3]).to eq(0) # specific value
         expect(payload['stale']).to eq('length_mismatch')
+      end
+    end
+
+    context 'with source_mode set' do
+      before { cli_context.config.source_mode = :full }
+
+      it 'ignores it in table output' do
+        with_source = capture_command_output(command, %w[lib/foo.rb])
+        cli_context.config.source_mode = nil
+
+        expect(with_source).to eq(capture_command_output(command, %w[lib/foo.rb]))
+      end
+
+      it 'does not embed source in structured output' do
+        cli_context.config.format = :json
+
+        expect(JSON.parse(capture_command_output(command, %w[lib/foo.rb]))).not_to have_key('source')
       end
     end
 

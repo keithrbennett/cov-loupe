@@ -5,14 +5,7 @@ require 'spec_helper'
 RSpec.describe CovLoupe::ErrorHandler do
   subject(:handler) { described_class.new(error_mode: :log, logger: logger) }
 
-  let(:logger) do
-    Class.new do
-      attr_reader :messages
-
-      def initialize = @messages = []
-      def error(msg) = @messages << msg
-    end.new
-  end
+  let(:logger) { recording_logger }
 
   it 'maps filesystem errors to friendly custom errors' do
     [

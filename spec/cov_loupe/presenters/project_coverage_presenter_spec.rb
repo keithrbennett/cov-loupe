@@ -130,16 +130,9 @@ RSpec.describe CovLoupe::Presenters::ProjectCoveragePresenter do
     context 'when timestamps are missing' do
       before do
         allow(model).to receive(:list).with(sort_order: sort_order, raise_on_stale: raise_on_stale,
-          file_globs: file_globs).and_return({
-            'files'                 => files,
-            'skipped_files'         => [],
-            'not_in_coverage_files' => [],
-            'newer_files'           => [],
-            'deleted_files'         => [],
-            'length_mismatch_files' => [],
-            'unreadable_files'      => [],
-            'timestamp_status'      => 'missing',
-          })
+          file_globs: file_globs).and_return(
+            empty_list_payload('files' => files, 'timestamp_status' => 'missing')
+          )
       end
 
       it 'returns "missing"' do

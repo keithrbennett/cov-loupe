@@ -4,15 +4,7 @@ require 'spec_helper'
 require_relative '../shared_examples/formatted_command_examples'
 
 RSpec.describe CovLoupe::Commands::TotalsCommand do
-  let(:root) { (FIXTURES_DIR / 'project1').to_s }
-  let(:cli_context) { CovLoupe::CoverageCLI.new }
-  let(:command) { described_class.new(cli_context) }
-
-  before do
-    cli_context.config.root = root
-    cli_context.config.coverage_file = FIXTURE_PROJECT1_COVERAGE_PATH
-    cli_context.config.format = :table
-  end
+  include_context 'with a project1 command'
 
   describe '#execute' do
     context 'with table format' do
@@ -116,35 +108,8 @@ RSpec.describe CovLoupe::Commands::TotalsCommand do
     end
 
     shared_examples 'timestamp warning display' do |timestamp_status, should_warn|
-      let(:base_payload) do
-        {
-          'total' => 0, 'covered' => 0, 'uncovered' => 0, 'percentage' => 0,
-          'file_globs' => [],
-          'file_counts' => {
-            'total'            => 0,
-            'with_coverage'    => {
-              'total' => 0,
-              'ok'    => 0,
-              'stale' => {
-                'total'   => 0,
-                'by_type' => {
-                  'deleted'         => 0,
-                  'newer'           => 0,
-                  'length_mismatch' => 0,
-                  'unreadable'      => 0,
-                },
-              },
-            },
-            'without_coverage' => {
-              'total'   => 0,
-              'by_type' => { 'not_in_coverage' => nil, 'skipped' => 0 },
-            },
-          }
-        }
-      end
-
       before do
-        payload = base_payload.merge('timestamp_status' => timestamp_status)
+        payload = empty_totals_payload('timestamp_status' => timestamp_status)
         presenter_double = instance_double(CovLoupe::Presenters::ProjectTotalsPresenter)
         allow(presenter_double).to receive_messages(
           root_warning:     nil,

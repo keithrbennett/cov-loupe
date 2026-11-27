@@ -53,16 +53,9 @@ module CovLoupe
         def call(root: nil, coverage_file: nil, sort_order: nil,
           raise_on_stale: nil, file_globs: nil, format: 'json',
           output_chars: nil, server_context:)
-          output_chars_sym = resolve_output_chars(output_chars, server_context)
-          with_error_handling('ProjectCoverageTool', server_context: server_context) do
-            model, config = create_configured_model(
-              server_context: server_context,
-              root:           root,
-              coverage_file:  coverage_file,
-              raise_on_stale: raise_on_stale,
-              file_globs:     file_globs
-            )
-
+          with_model(server_context: server_context, output_chars: output_chars, root: root,
+            coverage_file: coverage_file, raise_on_stale: raise_on_stale,
+            file_globs: file_globs) do |model, config, output_chars_sym|
             sort_order_sym = OptionNormalizers.normalize_sort_order(
               sort_order || BaseTool::DEFAULT_SORT_ORDER
             )
@@ -99,7 +92,7 @@ module CovLoupe
           table += Formatters::CoverageWarnings.skipped_rows_warning(presenter)
           table += Formatters::CoverageWarnings.root_warning(presenter)
 
-          ::MCP::Tool::Response.new([{ 'type' => 'text', 'text' => table }])
+          respond_text(table)
         end
 
         private def respond_with_formatted_payload(presenter, format_sym, output_chars_sym)
@@ -110,7 +103,7 @@ module CovLoupe
 
           formatted = Formatters.format(PayloadSchema.add(payload), format_sym,
             output_chars: output_chars_sym)
-          ::MCP::Tool::Response.new([{ 'type' => 'text', 'text' => formatted }])
+          respond_text(formatted)
         end
       end
     end

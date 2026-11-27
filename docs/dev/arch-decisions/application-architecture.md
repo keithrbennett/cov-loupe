@@ -268,7 +268,7 @@ The one exception is `validate`: when the predicate runs to completion, it raise
 
 **MCP Server Mode** (`lib/cov_loupe/base_tool.rb`):
 
-1. Each tool wraps execution in a rescue block
+1. Each tool runs inside `BaseTool.with_error_handling` (directly, or through `BaseTool.with_model`), which rescues any error
 2. Uses `for_mcp_server` handler to report errors through the configured target,
    which defaults to `stderr`
 3. Returns a `tools/call` result with `isError: true` and the friendly message in the content (matching the result shape that the MCP SDK uses for argument-validation failures; a JSON-RPC `error` is reserved for protocol- or dispatch-level failures such as unknown tools)

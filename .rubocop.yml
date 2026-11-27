@@ -55,6 +55,7 @@ Style/KeywordParametersOrder:
   Enabled: true
   Exclude:
     - 'lib/cov_loupe/tools/**/*.rb'
+    - 'lib/cov_loupe/file_tool.rb'
     - 'spec/support/mcp_runner.rb'
 
 Style/MultilineBlockChain:

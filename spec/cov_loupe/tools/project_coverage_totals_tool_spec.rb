@@ -89,31 +89,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTotalsTool do
         model = instance_double(CovLoupe::CoverageModel)
         allow(CovLoupe::CoverageModel).to receive(:new).and_return(model)
 
-        test_payload = {
-          'total' => 0, 'covered' => 0, 'uncovered' => 0, 'percentage' => 0,
-          'file_globs' => [],
-          'file_counts' => {
-            'total'            => 0,
-            'with_coverage'    => {
-              'total' => 0,
-              'ok'    => 0,
-              'stale' => {
-                'total'   => 0,
-                'by_type' => {
-                  'deleted'         => 0,
-                  'newer'           => 0,
-                  'length_mismatch' => 0,
-                  'unreadable'      => 0,
-                },
-              },
-            },
-            'without_coverage' => {
-              'total'   => 0,
-              'by_type' => { 'not_in_coverage' => nil, 'skipped' => 0 },
-            },
-          },
-          'timestamp_status' => status
-        }
+        test_payload = empty_totals_payload('timestamp_status' => status)
 
         presenter = instance_double(CovLoupe::Presenters::ProjectTotalsPresenter)
         allow(CovLoupe::Presenters::ProjectTotalsPresenter).to receive(:new).and_return(presenter)

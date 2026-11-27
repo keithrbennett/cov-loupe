@@ -5,14 +5,7 @@ require 'tmpdir'
 
 RSpec.describe CovLoupe::BaseTool do
   let(:handler) { CovLoupe::ErrorHandler.new(error_mode: :log, logger: test_logger) }
-  let(:test_logger) do
-    Class.new do
-      attr_reader :messages
-
-      def initialize = @messages = []
-      def error(msg) = @messages << msg
-    end.new
-  end
+  let(:test_logger) { recording_logger }
 
   let(:orig_handler) do
     CovLoupe.error_handler
@@ -44,7 +37,7 @@ RSpec.describe CovLoupe::BaseTool do
     it 'returns friendly text' do
       resp = described_class.handle_mcp_error(error, tool, error_mode: :log)
       expect(resp).to be_a(MCP::Tool::Response)
-      expect(resp.content.first['text']).to match(expected_pattern)
+      expect(response_text(resp)).to match(expected_pattern)
     end
 
     it 'signals the error at the tool-result level (isError)' do
@@ -55,7 +48,7 @@ RSpec.describe CovLoupe::BaseTool do
     it 'respects error_mode :off' do
       resp = described_class.handle_mcp_error(error, tool, error_mode: :off)
       expect(resp).to be_a(MCP::Tool::Response)
-      expect(resp.content.first['text']).to match(expected_pattern)
+      expect(response_text(resp)).to match(expected_pattern)
     end
 
     it 'still signals isError regardless of error_mode' do
@@ -201,19 +194,71 @@ RSpec.describe CovLoupe::BaseTool do
     end
   end
 
-  describe '.create_model' do
-    let(:context) { mcp_server_context }
+  describe '.with_model' do
+    let(:root) { (FIXTURES_DIR / 'project1').to_s }
 
-    it 'creates and returns a configured model' do
+    it 'yields the model, the merged config, and the resolved output_chars' do
+      yielded = nil
+      described_class.with_model(server_context: null_server_context, output_chars: 'a',
+        root: root, coverage_file: FIXTURE_PROJECT1_COVERAGE_PATH) do |*args|
+        yielded = args
+        described_class.respond_text('ok')
+      end
+
+      model, config, chars = yielded
+      expect(model).to be_a(CovLoupe::CoverageModel)
+      expect(config).to include(root: root, raise_on_stale: false)
+      expect(chars).to eq(:ascii)
+    end
+
+    it 'creates the model for a root that is not a directory on disk' do
       root = '/test/project'
       mock_coverage_with_timestamp(root, FIXTURE_COVERAGE_TIMESTAMP)
       coverage_file_path = File.join(root, 'coverage', 'coverage.json')
-
       mock_file_stat(coverage_file_path, mtime: Time.at(FIXTURE_COVERAGE_TIMESTAMP))
       mock_file_digest(coverage_file_path)
 
-      model = described_class.create_model(server_context: context, root: root)
+      model = nil
+      described_class.with_model(server_context: mcp_server_context, root: root) do |m, *|
+        model = m
+        described_class.respond_text('ok')
+      end
+
       expect(model).to be_a(CovLoupe::CoverageModel)
+    end
+
+    it 'returns an error response for an invalid output_chars' do
+      response = described_class.with_model(server_context: null_server_context,
+        output_chars: 'bogus', root: root) { raise 'not reached' }
+
+      expect_mcp_tool_error(response)
+      expect(response_text(response)).to include('Invalid output_chars value')
+    end
+
+    it 'returns an error response naming the MCP tool when a code tool is not allowed' do
+      response = CovLoupe::Tools::ProjectValidateTool.with_model(server_context: null_server_context,
+        root: root) { raise 'not reached' }
+
+      expect_mcp_tool_error(response)
+      expect(response_text(response)).to eq(
+        'Error: project_validate is disabled; start the MCP server with --allow-code-predicates'
+      )
+    end
+  end
+
+  describe '.error_label' do
+    it 'is the class name without its namespace' do
+      expect(CovLoupe::Tools::ProjectCoverageTool.error_label).to eq('ProjectCoverageTool')
+    end
+  end
+
+  describe '.respond_text' do
+    it 'wraps the text in one text content item, flagged as an error only when asked' do
+      response = described_class.respond_text('hello')
+
+      expect(response.content).to eq([{ 'type' => 'text', 'text' => 'hello' }])
+      expect(response).not_to be_error
+      expect(described_class.respond_text('bad', error: true)).to be_error
     end
   end
 
@@ -221,7 +266,7 @@ RSpec.describe CovLoupe::BaseTool do
     it 'puts schema_version first without changing the input' do
       payload = { 'ok' => true }
       response = described_class.respond_json(payload)
-      data = JSON.parse(response.content.first['text'])
+      data = response_json(response)
 
       expect(data.keys.first).to eq('schema_version')
       expect(data['schema_version']).to eq(CovLoupe::SCHEMA_VERSION)
@@ -242,7 +287,7 @@ RSpec.describe CovLoupe::BaseTool do
       payload = { 'name' => 'café', 'arrow' => '→' }
       response = described_class.respond_json(payload, output_chars: :ascii)
 
-      json_text = response.content.first['text']
+      json_text = response_text(response)
       expect(json_text).not_to include('é')
       expect(json_text).not_to include('→')
       expect(json_text).to include('\\u') # Unicode escape sequences
@@ -252,7 +297,7 @@ RSpec.describe CovLoupe::BaseTool do
       payload = { 'name' => 'café' }
       response = described_class.respond_json(payload, output_chars: :fancy)
 
-      json_text = response.content.first['text']
+      json_text = response_text(response)
       expect(json_text).to include('café')
     end
 
@@ -260,7 +305,7 @@ RSpec.describe CovLoupe::BaseTool do
       payload = { 'key' => 'valüe' }
       response = described_class.respond_json(payload, pretty: true, output_chars: :ascii)
 
-      json_text = response.content.first['text']
+      json_text = response_text(response)
       expect(json_text).to include("\n") # Pretty formatted
       expect(json_text).not_to include('ü')
     end
@@ -456,19 +501,6 @@ RSpec.describe CovLoupe::BaseTool do
       it 'accepts invalid symbols without validation' do
         # Symbols are returned as-is (internal use)
         expect(described_class.send(:ascii_mode?, :invalid_symbol)).to be(false)
-      end
-    end
-
-    describe '.underscore' do
-      it 'converts CamelCase, including after digits, and does not split on a letter d' do
-        {
-          'FileCoverageSummary' => 'file_coverage_summary',
-          'HTMLParser'          => 'html_parser',
-          'Utf8Tool'            => 'utf8_tool',
-          'Add'                 => 'add',
-        }.each do |input, expected|
-          expect(described_class.send(:underscore, input)).to eq(expected)
-        end
       end
     end
   end

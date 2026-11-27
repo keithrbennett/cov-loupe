@@ -17,7 +17,7 @@ RSpec.describe 'Path commands with a file that has no coverable lines' do
 
   {
     CovLoupe::Commands::UncoveredCommand => ['Coverage: n/a (0/0 lines)', 'No coverable lines.'],
-    CovLoupe::Commands::DetailedCommand  => ['Coverage: 0/0 lines (n/a)', 'No coverable lines.'],
+    CovLoupe::Commands::DetailedCommand  => ['Coverage: n/a (0/0 lines)', 'No coverable lines.'],
   }.each do |command_class, expected_lines|
     it "#{command_class.name.split('::').last} reports a file with no coverable lines" do
       output = capture_command_output(command_class.new(cli_context), ['lib/comments_only.rb'])

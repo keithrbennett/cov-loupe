@@ -52,6 +52,16 @@ module MCPToolTestHelpers
     stub_const('MCP::Tool::Response', response_class)
   end
 
+  # The text of a tool response's first content item.
+  def response_text(response)
+    response.content.first['text']
+  end
+
+  # The first content item's text parsed as JSON.
+  def response_json(response)
+    JSON.parse(response_text(response))
+  end
+
   def expect_mcp_text_json(response, expected_keys: [])
     item = response.content.first
 

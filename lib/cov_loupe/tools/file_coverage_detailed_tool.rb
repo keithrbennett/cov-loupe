@@ -1,13 +1,11 @@
 # frozen_string_literal: true
 
-require_relative '../base_tool'
-require_relative '../model/model'
-require_relative '../presenters/coverage_payload_presenter'
+require_relative '../file_tool'
 
 module CovLoupe
   module Tools
     # @api private
-    class FileCoverageDetailedTool < BaseTool
+    class FileCoverageDetailedTool < FileTool
       tool_name 'file_coverage_detailed'
       description <<~DESC
         Use this when the user needs per-line coverage data for a single file.
@@ -16,20 +14,6 @@ module CovLoupe
         Output: JSON object with "schema_version" (Integer), "file", "lines" => [{"line": 12, "hits": 0, "covered": false}], the line metrics "covered", "uncovered", "total", "percentage" (percentage is null if the file has no coverable lines), and "stale": "ok" | "deleted" | "newer" | "length_mismatch" | "unreadable".
         Example: "Show detailed coverage for lib/my_app/order.rb".
       DESC
-      input_schema(**input_schema_def)
-      class << self
-        def call(path:, root: nil, coverage_file: nil, raise_on_stale: nil,
-          output_chars: nil, server_context:)
-          call_with_file_payload(
-            path:           path,
-            output_chars:   output_chars,
-            server_context: server_context,
-            root:           root,
-            coverage_file:  coverage_file,
-            raise_on_stale: raise_on_stale
-          )
-        end
-      end
     end
   end
 end

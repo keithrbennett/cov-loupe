@@ -68,25 +68,30 @@ module CovLoupe
     class MyTool < BaseTool
       tool_name 'my_tool'
       description 'What this tool does'
-      input_schema(**input_schema_def)
+      input_schema(**coverage_schema)
 
-      def self.call(path:, root: nil, coverage_file: nil, raise_on_stale: nil,
-        output_chars: nil, server_context:)
-        output_chars_sym = resolve_output_chars(output_chars, server_context)
-        # Errors are handled in the server's --error-mode.
-        with_error_handling('MyTool', server_context: server_context) do
-          model = create_model(
-            server_context: server_context,
-            root: root,
-            coverage_file: coverage_file,
-            raise_on_stale: raise_on_stale
-          )
-          data = model.my_method_for(path)
-          respond_json(data, output_chars: output_chars_sym)
+      def self.call(root: nil, coverage_file: nil, raise_on_stale: nil, output_chars: nil,
+        server_context:)
+        # with_model resolves output_chars, merges the tool arguments over the server
+        # config, and handles errors in the server's --error-mode.
+        with_model(server_context: server_context, output_chars: output_chars, root: root,
+          coverage_file: coverage_file, raise_on_stale: raise_on_stale) do |model, _config, chars|
+          respond_json(model.my_method, output_chars: chars)
         end
       end
     end
   end
+end
+```
+
+**A tool that returns one file's `CoverageModel` payload extends `FileTool` instead,** which
+supplies the `path` schema and `call`. It derives the model method from the class name
+(`File[Coverage]<Name>[Lines]Tool` calls `<name>_for`), so `FileCoverageSummaryTool` calls
+`summary_for`:
+```ruby
+class FileCoverageSummaryTool < FileTool
+  tool_name 'file_coverage_summary'
+  description 'What this tool does'
 end
 ```
 

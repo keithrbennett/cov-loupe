@@ -1,13 +1,11 @@
 # frozen_string_literal: true
 
-require_relative '../base_tool'
-require_relative '../model/model'
-require_relative '../presenters/coverage_payload_presenter'
+require_relative '../file_tool'
 
 module CovLoupe
   module Tools
     # @api private
-    class FileUncoveredLinesTool < BaseTool
+    class FileUncoveredLinesTool < FileTool
       tool_name 'file_uncovered_lines'
       description <<~DESC
         Use this when the user wants to know which lines in a file still lack coverage.
@@ -16,20 +14,6 @@ module CovLoupe
         Output: JSON object with keys "schema_version" (Integer), "file", "uncovered_lines" (array of line numbers), the line metrics "covered", "uncovered" (a count), "total", "percentage" (percentage is null if the file has no coverable lines), and "stale": "ok" | "deleted" | "newer" | "length_mismatch" | "unreadable".
         Example: "List uncovered lines for lib/my_app/order.rb".
       DESC
-      input_schema(**input_schema_def)
-      class << self
-        def call(path:, root: nil, coverage_file: nil, raise_on_stale: nil,
-          output_chars: nil, server_context:)
-          call_with_file_payload(
-            path:           path,
-            output_chars:   output_chars,
-            server_context: server_context,
-            root:           root,
-            coverage_file:  coverage_file,
-            raise_on_stale: raise_on_stale
-          )
-        end
-      end
     end
   end
 end

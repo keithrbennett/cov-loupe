@@ -90,43 +90,6 @@ module CovLoupe
       StaleStatus::OK
     end
 
-    # Compute and return project staleness details (newer, missing, deleted files).
-    # If in error mode, raises CoverageDataProjectStaleError when issues are found.
-    # Returns a hash { newer_files: [], not_in_coverage_files: [], deleted_files: [], unreadable_files: [] }
-    #
-    # Does not check line counts. Use check_project_with_lines! for full staleness detection.
-    def check_project!(coverage_map)
-      ts = coverage_timestamp
-      coverage_files = coverage_map.keys
-
-      newer, deleted, unreadable = compute_newer_and_deleted_files(coverage_files, ts)
-      missing = compute_not_in_coverage_files(coverage_files)
-
-      staleness_details = {
-        newer_files:           newer,
-        not_in_coverage_files: missing,
-        deleted_files:         deleted,
-        unreadable_files:      unreadable,
-        timestamp_status:      ts.to_i > 0 ? 'ok' : 'missing',
-      }
-
-      if @mode == :error && (newer.any? || missing.any? || deleted.any? || unreadable.any?)
-        # Without rows, malformed entries cannot be told apart, so no wrong-root hint.
-        raise CoverageDataProjectStaleError.new(
-          nil,
-          nil,
-          cov_timestamp:         ts,
-          newer_files:           newer,
-          not_in_coverage_files: missing,
-          deleted_files:         deleted,
-          unreadable_files:      unreadable,
-          coverage_file_path:    coverage_file_path
-        )
-      end
-
-      staleness_details
-    end
-
     # Compute and return project staleness details including line-count mismatches.
     # If in error mode, raises CoverageDataProjectStaleError when issues are found.
     # Returns a hash with newer/missing/deleted/mismatched/unreadable files and per-file statuses.

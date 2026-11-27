@@ -18,11 +18,6 @@ RSpec.describe CovLoupe::Tools::ProjectValidateTool do
     described_class.call(**params, root: root, coverage_file: coverage_file, server_context: server_context)
   end
 
-  def response_text(response)
-    item = response.content.first
-    item['text']
-  end
-
   def with_predicate_file(content, dir: nil)
     Tempfile.create(%w[predicate .rb], dir) do |file|
       file.write(content)

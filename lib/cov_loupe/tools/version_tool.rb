@@ -24,11 +24,9 @@ module CovLoupe
         # NOTE: output_chars is accepted for consistency with the other tools; the version string
         # has no decoration, so it has no effect beyond being validated.
         def call(output_chars: nil, server_context: nil, **_args)
-          resolve_output_chars(output_chars, server_context) # validates the value
-          with_error_handling('VersionTool', server_context: server_context) do
-            ::MCP::Tool::Response.new([
-              { 'type' => 'text', 'text' => "CovLoupe version: #{CovLoupe::VERSION}" },
-            ])
+          with_error_handling(error_label, server_context: server_context) do
+            resolve_output_chars(output_chars, server_context) # validates the value
+            respond_text("CovLoupe version: #{CovLoupe::VERSION}")
           end
         end
       end
