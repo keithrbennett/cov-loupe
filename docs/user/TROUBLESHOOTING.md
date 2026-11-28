@@ -4,30 +4,13 @@
 
 ## Table of Contents
 
-- [Running Issues](#running-issues)
 - [Coverage Data Issues](#coverage-data-issues)
 - [Logging Target Issues](#logging-target-issues)
 - [MCP Server Issues](#mcp-server-issues)
+- [Development Environment Issues](#development-environment-issues)
 - [Diagnostic Commands](#diagnostic-commands)
 - [Getting More Help](#getting-more-help)
 - [Related Documentation](#related-documentation)
-
-## Running Issues
-
-### Running the Test Suite with RVM (Codex macOS)
-
-Codex's macOS sandbox forbids `/bin/ps`, which RVM shells need. When you run `bundle exec rspec` there, the shell falls back to macOS Ruby 2.6, and Bundler fails with `Gem::Resolver::APISet::GemParser` errors.
-
-**Workarounds:**
-
-- Run outside the macOS sandbox (Codex on Ubuntu, Gemini, Claude Code, local shells) or use a version manager that does not invoke `ps`.
-- Or execute RSpec with explicit RVM paths (replace `3.4.5` and the `cov-loupe` gemset with your own):
-  ```bash
-  PATH="$HOME/.rvm/gems/ruby-3.4.5@cov-loupe/bin:$HOME/.rvm/rubies/ruby-3.4.5/bin:$PATH" \
-    GEM_HOME="$HOME/.rvm/gems/ruby-3.4.5@cov-loupe" \
-    GEM_PATH="$HOME/.rvm/gems/ruby-3.4.5@cov-loupe:$HOME/.rvm/gems/ruby-3.4.5@global" \
-    $HOME/.rvm/rubies/ruby-3.4.5/bin/bundle exec rspec
-  ```
 
 ## Coverage Data Issues
 
@@ -288,7 +271,7 @@ Same launcher, same command, different working directory state.
    ```bash
    echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"version","arguments":{}}}' | cov-loupe -m mcp 2>/dev/null
    ```
-   Any stdout output before the JSON-RPC payload is a problem for MCP startup (stderr is discarded here, since log lines there are harmless).
+   Any stdout output before the JSON-RPC payload is a problem for MCP startup. stderr is discarded here, because log lines there are harmless; if the command prints nothing at all, run it again without `2>/dev/null` to see why the launcher failed (for example, `can't find gem cov-loupe`).
 
 **Workarounds, in order.** Step 1 fixes one project at a time; with RVM, or if you use cov-loupe in many projects, go straight to step 2.
 
@@ -296,8 +279,8 @@ Same launcher, same command, different working directory state.
    ```bash
    bundle install
    bundle check
-   cov-loupe -m mcp
    ```
+   Then repeat the manual test in step 4 of **How to confirm**.
 2. **Use a launch wrapper** that disables the `rubygems-bundler` noexec hook before the stub starts. This works in every project, and is the most reliable fix in RVM and similar environments:
    ```bash
    #!/usr/bin/env bash
@@ -309,7 +292,7 @@ Same launcher, same command, different working directory state.
    ```bash
    ruby -e 'spec = Gem::Specification.find_by_name("cov-loupe"); puts File.join(spec.full_gem_path, "exe", "cov-loupe")'
    ```
-   Then use that path, with `-m mcp`, in your MCP config.
+   Then use that path, with `-m mcp`, in your MCP config. Under RVM, the client must also pass `GEM_HOME` and `GEM_PATH` (see [Path Issues with Version Managers](#path-issues-with-version-managers)); otherwise use step 2.
 
 For local development from a checkout, point the MCP client directly at the checkout's [`exe/cov-loupe`](https://github.com/keithrbennett/cov-loupe/blob/main/exe/cov-loupe) instead of the RubyGems stub.
 
@@ -337,6 +320,23 @@ which cov-loupe
 rvm wrapper show cov-loupe
 # Example output: /home/username/.rvm/gems/ruby-3.3.8/wrappers/cov-loupe
 ```
+
+## Development Environment Issues
+
+### Running the Test Suite with RVM (Codex macOS)
+
+Codex's macOS sandbox forbids `/bin/ps`, which RVM shells need. When you run `bundle exec rspec` there, the shell falls back to macOS Ruby 2.6, and Bundler fails with `Gem::Resolver::APISet::GemParser` errors.
+
+**Workarounds:**
+
+- Run outside the macOS sandbox (Codex on Ubuntu, Gemini, Claude Code, local shells) or use a version manager that does not invoke `ps`.
+- Or execute RSpec with explicit RVM paths (replace `3.4.5` and the `cov-loupe` gemset with your own):
+  ```bash
+  PATH="$HOME/.rvm/gems/ruby-3.4.5@cov-loupe/bin:$HOME/.rvm/rubies/ruby-3.4.5/bin:$PATH" \
+    GEM_HOME="$HOME/.rvm/gems/ruby-3.4.5@cov-loupe" \
+    GEM_PATH="$HOME/.rvm/gems/ruby-3.4.5@cov-loupe:$HOME/.rvm/gems/ruby-3.4.5@global" \
+    $HOME/.rvm/rubies/ruby-3.4.5/bin/bundle exec rspec
+  ```
 
 ## Diagnostic Commands
 

@@ -2,12 +2,13 @@
 
 [Back to main README](../../../README.md)
 
-This document describes the core architectural decisions that shape how cov-loupe operates: its dual-mode design and context-aware error handling strategy.
+This document describes the core architectural decisions that shape how cov-loupe operates: its dual-mode design, shared resource identifiers, MCP response encoding, and context-aware error handling strategy.
 
 ## Table of Contents
 
 - [Dual-Mode Operation (CLI and MCP Server)](#dual-mode-operation-cli-and-mcp-server)
 - [Shared Resource Identifier Contract (CLI and MCP)](#shared-resource-identifier-contract-cli-and-mcp)
+- [MCP Responses as Text Content](#mcp-responses-as-text-content)
 - [Context-Aware Error Handling](#context-aware-error-handling)
 
 ---
@@ -152,6 +153,28 @@ Both interfaces now consume this same map:
 - CLI option: `lib/cov_loupe/config/option_parser_builder.rb`
 - MCP help response: `lib/cov_loupe/tools/help_tool.rb`
 - MCP server instructions: `lib/cov_loupe/mcp_server.rb`
+
+---
+
+## MCP Responses as Text Content
+
+### Status
+
+Accepted
+
+### Context
+
+MCP tool results carry a list of content parts. Structured data could be returned as a `resource` part with `mimeType: "application/json"`, which describes it more precisely than plain text.
+
+### Decision
+
+Every tool returns a single `text` part (`BaseTool.respond_text` in `lib/cov_loupe/base_tool.rb`). Structured payloads are serialized to a JSON string inside it.
+
+### Consequences
+
+- Works across clients: major MCP clients, including Gemini and Claude, rejected `resource` parts that had no `uri` with validation errors.
+- Clients must parse the JSON string themselves, after checking `result.isError`.
+- User-facing description: [JSON Response Format](../../user/MCP_INTEGRATION.md#json-response-format).
 
 ---
 

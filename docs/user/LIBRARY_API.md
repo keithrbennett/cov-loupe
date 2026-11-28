@@ -11,9 +11,9 @@ Use this gem programmatically to inspect coverage without running the CLI or MCP
 - [Schema Version](#schema-version)
 - [Method Reference](#method-reference)
 - [Return Types](#return-types)
+- [Staleness Detection](#staleness-detection)
 - [Error Handling](#error-handling)
 - [Advanced Recipes](#advanced-recipes)
-- [Staleness Detection](#staleness-detection)
 - [Related Documentation](#related-documentation)
 
 ## Public API and Versioning
@@ -81,7 +81,7 @@ model = CovLoupe::CoverageModel.new(
   root: File.join(Dir.home, 'project'),   # non-default project root
   coverage_file: "build/coverage",        # coverage.json file, or its directory
   raise_on_stale: true,                   # enable strict staleness checks (raise on stale)
-  file_globs: ["lib/my_app/**/*.rb"]      # for 'list' staleness: flag files not in coverage data
+  file_globs: ["lib/my_app/**/*.rb"]      # limit project queries; flag matching files not in coverage data
 )
 
 # List all files with coverage summary
@@ -519,6 +519,18 @@ Returns `Hash`:
 
 Note: `without_coverage.by_type.not_in_coverage` is `nil` when `file_globs` is empty, since there is then no list of files to check; the other counts are always integers.
 
+## Staleness Detection
+
+The `list` rows and the per-file methods (`summary_for`, `uncovered_for`, `detailed_for`, `raw_for`) return a `'stale'` field with one of these values:
+
+- `"ok"` - Coverage data is current
+- `"deleted"` - File no longer exists on disk
+- `"newer"` - File modified more recently than coverage data
+- `"length_mismatch"` - Source file line count differs from coverage data
+- `"unreadable"` - Source file could not be read, or its staleness check failed
+
+When `raise_on_stale: true` is enabled in `CoverageModel.new`, the model raises `CovLoupe::CoverageDataStaleError` from per-file methods and `CovLoupe::CoverageDataProjectStaleError` from project-level methods (`list`, `project_totals`, and `format_table` when it builds its own rows) when stale files are detected, or, with file globs set, when a matching file is not in the coverage data; file globs also limit the staleness check to matching files. Per-file methods ignore file globs. A project-level method also raises, instead of skipping, a coverage row with invalid data; that error is the `CoverageDataError` recorded for the row, such as `CorruptCoverageDataError`. A per-file method raises `CovLoupe::FileNotFoundError` instead for a deleted file and `CovLoupe::FileError` for an unreadable one.
+
 ## Error Handling
 
 ### Exception Types
@@ -585,8 +597,9 @@ end
 begin
   model = CovLoupe::CoverageModel.new(raise_on_stale: true)
   files = model.list['files']
-rescue CovLoupe::CoverageDataStaleError, CovLoupe::CoverageDataProjectStaleError => e
-  puts "Stale coverage detected: #{e.message}"
+rescue CovLoupe::CoverageDataError => e
+  # CoverageDataProjectStaleError, or the error for a coverage row that would have been skipped
+  puts "Coverage problem: #{e.user_friendly_message}"
   puts "Re-run tests: bundle exec rspec"
   exit 1
 end
@@ -595,6 +608,8 @@ end
 ### Graceful Degradation
 
 ```ruby
+model = CovLoupe::CoverageModel.new
+
 # Try multiple file paths
 def find_coverage(model, possible_paths)
   possible_paths.each do |path|
@@ -953,18 +968,6 @@ CovLoupe.default_log_file = 'coverage_analysis.log'
 # Models created afterwards log there
 model = CovLoupe::CoverageModel.new
 ```
-
-## Staleness Detection
-
-The `list` rows and the per-file methods (`summary_for`, `uncovered_for`, `detailed_for`, `raw_for`) return a `'stale'` field with one of these values:
-
-- `"ok"` - Coverage data is current
-- `"deleted"` - File no longer exists on disk
-- `"newer"` - File modified more recently than coverage data
-- `"length_mismatch"` - Source file line count differs from coverage data
-- `"unreadable"` - Source file could not be read, or its staleness check failed
-
-When `raise_on_stale: true` is enabled in `CoverageModel.new`, the model raises `CovLoupe::CoverageDataStaleError` from per-file methods and `CovLoupe::CoverageDataProjectStaleError` from project-level methods (`list`, `project_totals`) when stale files are detected. A per-file method raises `CovLoupe::FileNotFoundError` instead for a deleted file and `CovLoupe::FileError` for an unreadable one.
 
 ## Related Documentation
 

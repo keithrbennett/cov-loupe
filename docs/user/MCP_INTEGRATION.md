@@ -307,9 +307,9 @@ For root-cause details, diagnostic commands, and the upstream RVM tracking issue
 
 If startup prints text before the handshake, try these in order. Step 1 fixes one project at a time; with RVM, or if you use cov-loupe in many projects, go straight to step 2.
 
-1. **Settle the project's bundle.** Run `bundle install` in the project, confirm that `Gemfile.lock` exists and `bundle check` succeeds, then retry the normal `cov-loupe -m mcp` startup. This fixes one project.
+1. **Settle the project's bundle.** Run `bundle install` in the project, confirm that `Gemfile.lock` exists and `bundle check` succeeds, then restart the client, or run the manual test in [Testing Your Setup](#manual-testing-via-command-line). This fixes one project.
 2. **Use the launch wrapper.** A small shell script that exports `NOEXEC_DISABLE=1` before calling `cov-loupe -m mcp` works in every project, whatever the state of its bundle. This is the most reliable fix for RVM and similar environments. See [Step by Step: The Launch Wrapper](#step-by-step-the-launch-wrapper).
-3. **Bypass the RubyGems wrapper.** Invoke the real executable directly instead.
+3. **Bypass the RubyGems wrapper.** Invoke the gem's real executable directly; [Troubleshooting](TROUBLESHOOTING.md#rubygems-wrapper-prints-to-stdout-before-mcp-startup) shows how to find its path, and why under RVM it also needs `GEM_HOME` and `GEM_PATH`.
 
 For local development from a checkout, point the MCP client directly at the checkout's [`exe/cov-loupe`](https://github.com/keithrbennett/cov-loupe/blob/main/exe/cov-loupe).
 
@@ -392,14 +392,7 @@ Successful structured payloads begin with integer `schema_version`. Library cove
 }
 ```
 
-Whitespace varies by tool. The file tools, `project_coverage_totals`, and `project_validate` return indented JSON. `help` and `project_coverage` with the default `format: json` return it on one line, and `project_coverage` with `format: pretty_json` returns it indented. Parse the JSON rather than relying on its layout.
-
-**Why a `text` part:** A `resource` part with `mimeType: "application/json"` would describe the content more precisely, but major MCP clients (including Gemini and Claude) rejected it with validation errors, because they expect a `resource` part to contain a `uri`. A plain `text` part works reliably across clients.
-
-These AI-model conversations informed the decision:
-
-- [Perplexity AI Discussion](https://www.perplexity.ai/search/title-resolving-a-model-contex-IfpFWU1FR5WQXQ8HcQctyg#0)
-- [ChatGPT Discussion](https://chatgpt.com/share/68e4d7e1-cad4-800f-80c2-58b33bfc31cb)
+Whitespace varies by tool. The file tools, `project_coverage_totals`, and `project_validate` return indented JSON. `help` and `project_coverage` with the default `format: json` return it on one line, and `project_coverage` with `format: pretty_json` returns it indented. Parse the JSON rather than relying on its layout. For why the JSON is sent as text rather than as a `resource` part, see the [architecture decision](../dev/arch-decisions/application-architecture.md#mcp-responses-as-text-content).
 
 ### Error Responses
 
@@ -733,20 +726,19 @@ If `cov-loupe -m mcp` works in one repo but fails in another, especially with te
 
 ### Enable Debug Logging
 
-For troubleshooting, add `--error-mode debug` to the server's arguments:
+For troubleshooting, add `--error-mode debug` to the server's arguments. How you change an existing entry depends on the client:
 
-```sh
-# Claude Code
-claude mcp add cov-loupe cov-loupe -- -m mcp --error-mode debug
+- **Claude Code** refuses to add a name that is already registered in the same scope, so remove the entry first, then add it again. Pass the entry's scope (`local`, `user`, or `project`, as `claude mcp get cov-loupe` shows) to both commands; without `--scope`, `add` creates a `local` entry, so a user-wide or shared project server would become visible only in the current project:
+  ```sh
+  claude mcp get cov-loupe   # note the Scope line
+  claude mcp remove --scope user cov-loupe
+  claude mcp add --scope user cov-loupe cov-loupe -- -m mcp --error-mode debug
+  ```
+- **Codex:** edit `~/.codex/config.toml` and add the option to `args`, for example `args = ["-m", "mcp", "--error-mode", "debug"]`. Don't re-run `codex mcp add`: it replaces the entry and drops the `env_vars` line described in the [Codex](#codex) section.
+- **Antigravity:** `agy mcp add cov-loupe cov-loupe -- -m mcp --error-mode debug` updates the entry in place, but drops any `--env` values it had. Pass them again, before the name: `agy mcp add --env NAME=value cov-loupe cov-loupe -- -m mcp --error-mode debug`.
+- **Every other client:** edit the server's entry in its config file and add `"--error-mode", "debug"` to the `args` array, or to the `command` array where the command is an array. The files are named in each client's section above; Gemini CLI uses `.gemini/settings.json` (project) or `~/.gemini/settings.json` (user). For VS Code servers added with `code --add-mcp`, open the user file with the `MCP: Open User Configuration` command. Cursor resets its approval when an entry changes, so run `cursor-agent mcp enable cov-loupe` again afterward.
 
-# Codex
-codex mcp add cov-loupe -- cov-loupe -m mcp --error-mode debug
-
-# Antigravity
-agy mcp add cov-loupe cov-loupe -- -m mcp --error-mode debug
-```
-
-For Kimi Code, OpenCode, and Pi, add `"--error-mode", "debug"` to the `args` (or `command`) array in the config file.
+If you use the [launch wrapper](#step-by-step-the-launch-wrapper), add the option to the wrapper's arguments the same way; it forwards them to `cov-loupe`.
 
 ## Next Steps
 

@@ -589,31 +589,6 @@ files in the coverage data are not found under it; see
 clp -R /path/to/project list  # -R = --root
 ```
 
-### `-p`, `--path-for NAME`
-
-Print a canonical resource path or URL to stdout and exit immediately.
-
-Supported names:
-
-- `repo` - public GitHub repository URL
-- `docs` - public documentation site URL
-- `docs-local` - absolute path to local `README.md` (the MCP `help` payload names this resource `docs_local`)
-
-```sh
-clp -p repo
-clp --path-for repo
-clp --path-for docs
-clp --path-for docs-local
-```
-
-An unknown name is a usage error (exit 2) that lists the valid names.
-
-This option is designed for shell composition and prints only the value:
-
-```sh
-open "$(clp --path-for docs)"
-```
-
 ### `-f, --format FORMAT`
 
 Selects the output format. Short codes are case-sensitive.
@@ -689,7 +664,7 @@ clp -s u -n 3 uncovered lib/api/client.rb  # -s u = uncovered, -n = --context-li
 
 **Default:** 2 lines
 
-### Boolean Flags (`--color` / `-C`, `--raise-on-stale`)
+### Boolean Flags (`-C`/`--color`, `-S`/`--raise-on-stale`)
 
 These options require explicit boolean values. Recognized literals (case-insensitive):
 
@@ -948,6 +923,31 @@ clp -m mcp --allow-code-predicates     # enable project_validate
 clp -m mcp --no-allow-code-predicates  # disable it, overriding COV_LOUPE_OPTS
 ```
 
+### `-p`, `--path-for NAME`
+
+Print a canonical resource path or URL to stdout and exit immediately.
+
+Supported names:
+
+- `repo` - public GitHub repository URL
+- `docs` - public documentation site URL
+- `docs-local` - absolute path to local `README.md` (the MCP `help` payload names this resource `docs_local`)
+
+```sh
+clp -p repo
+clp --path-for repo
+clp --path-for docs
+clp --path-for docs-local
+```
+
+An unknown name is a usage error (exit 2) that lists the valid names.
+
+This option is designed for shell composition and prints only the value:
+
+```sh
+open "$(clp --path-for docs)"
+```
+
 ## Output Formats
 
 ### Table Format
@@ -1158,7 +1158,7 @@ clp -s full --color false uncovered lib/api/client.rb
 
 ```sh
 # Fail build if coverage is stale
-clp -S true list || exit 1
+clp -S true list || exit 1  # exits 1 when stale; || exit 1 stops a script that lacks set -e
 
 # Generate JSON report for artifact
 mkdir -p artifacts
