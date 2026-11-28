@@ -70,22 +70,15 @@ module CovLoupe
             )
 
             if format_sym == :table
-              respond_with_table(presenter, model, sort_order_sym, config, output_chars_sym)
+              respond_with_table(presenter, output_chars_sym)
             else
               respond_with_formatted_payload(presenter, format_sym, output_chars_sym)
             end
           end
         end
 
-        private def respond_with_table(presenter, model, sort_order_sym, config, output_chars_sym)
-          file_summaries = presenter.relative_files
-          table = model.format_table(
-            file_summaries,
-            sort_order:     sort_order_sym,
-            raise_on_stale: config[:raise_on_stale],
-            file_globs:     nil,
-            output_chars:   output_chars_sym
-          )
+        private def respond_with_table(presenter, output_chars_sym)
+          table = presenter.format_table(output_chars: output_chars_sym)
 
           table += Formatters::CoverageWarnings.exclusions_summary(presenter)
           table += Formatters::CoverageWarnings.timestamp_warning(presenter)
@@ -96,11 +89,7 @@ module CovLoupe
         end
 
         private def respond_with_formatted_payload(presenter, format_sym, output_chars_sym)
-          payload = presenter.payload
-
-          warnings = Formatters::CoverageWarnings.payload_warnings(presenter)
-          payload['warnings'] = warnings if warnings.any?
-
+          payload = Formatters::CoverageWarnings.payload_with_warnings(presenter)
           formatted = Formatters.format(PayloadSchema.add(payload), format_sym,
             output_chars: output_chars_sym)
           respond_text(formatted)

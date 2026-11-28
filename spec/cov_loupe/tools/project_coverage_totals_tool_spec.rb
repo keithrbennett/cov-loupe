@@ -48,7 +48,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTotalsTool do
 
     presenter = instance_double(CovLoupe::Presenters::ProjectTotalsPresenter)
     allow(CovLoupe::Presenters::ProjectTotalsPresenter).to receive(:new).and_return(presenter)
-    allow(presenter).to receive(:payload).and_return(payload)
+    allow(presenter).to receive_messages(payload: payload, timestamp_status: payload['timestamp_status'])
     allow(presenter).to receive(:root_warning)
   end
 
@@ -93,7 +93,7 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTotalsTool do
 
         presenter = instance_double(CovLoupe::Presenters::ProjectTotalsPresenter)
         allow(CovLoupe::Presenters::ProjectTotalsPresenter).to receive(:new).and_return(presenter)
-        allow(presenter).to receive(:payload).and_return(test_payload)
+        allow(presenter).to receive_messages(payload: test_payload, timestamp_status: status)
         allow(presenter).to receive(:root_warning)
       end
     end

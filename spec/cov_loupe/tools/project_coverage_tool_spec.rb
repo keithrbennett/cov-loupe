@@ -34,11 +34,10 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
 
   # Calls the tool for table output from a ProjectCoveragePresenter double with these stubs.
   def table_output_with(overrides)
-    model = instance_double(CovLoupe::CoverageModel, format_table: "Mock\nTable")
-    allow(CovLoupe::CoverageModel).to receive(:new).and_return(model)
+    allow(CovLoupe::CoverageModel).to receive(:new).and_return(instance_double(CovLoupe::CoverageModel))
 
     presenter = instance_double(CovLoupe::Presenters::ProjectCoveragePresenter,
-      presenter_stubs.merge(overrides))
+      format_table: "Mock\nTable", **presenter_stubs, **overrides)
     allow(CovLoupe::Presenters::ProjectCoveragePresenter).to receive(:new).and_return(presenter)
 
     output_for(format: 'table')
@@ -47,8 +46,9 @@ RSpec.describe CovLoupe::Tools::ProjectCoverageTool do
   # Stubs the model and a ProjectCoveragePresenter double returning an empty list payload.
   def stub_list_presenter(payload_overrides = {})
     allow(CovLoupe::CoverageModel).to receive(:new).and_return(instance_double(CovLoupe::CoverageModel))
+    payload = empty_list_payload(payload_overrides)
     presenter = instance_double(CovLoupe::Presenters::ProjectCoveragePresenter,
-      payload: empty_list_payload(payload_overrides), root_warning: nil)
+      payload: payload, timestamp_status: payload['timestamp_status'], root_warning: nil)
     allow(CovLoupe::Presenters::ProjectCoveragePresenter).to receive(:new).and_return(presenter)
   end
 

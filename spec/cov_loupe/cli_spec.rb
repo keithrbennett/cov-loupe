@@ -394,7 +394,8 @@ RSpec.describe CovLoupe::CoverageCLI do
         relative_skipped_files:         [],
         relative_files:                 [],
         timestamp_status:               'ok',
-        payload:                        { 'files' => [] }
+        payload:                        { 'files' => [] },
+        format_table:                   "Coverage Table\n"
       )
       allow(CovLoupe::Presenters::ProjectCoveragePresenter)
         .to receive(:new).and_return(presenter_double)
@@ -413,7 +414,7 @@ RSpec.describe CovLoupe::CoverageCLI do
   end
 
   describe 'timestamp warning' do
-    def stub_presenter_with_timestamp_status(status, include_model: false)
+    def stub_presenter_with_timestamp_status(status)
       presenter_double = instance_double(
         CovLoupe::Presenters::ProjectCoveragePresenter,
         relative_newer_files:           [],
@@ -425,23 +426,15 @@ RSpec.describe CovLoupe::CoverageCLI do
         relative_skipped_files:         [],
         relative_files:                 [],
         timestamp_status:               status,
-        payload:                        { 'files' => [] }
+        payload:                        { 'files' => [] },
+        format_table:                   "Coverage Table\n"
       )
       allow(CovLoupe::Presenters::ProjectCoveragePresenter)
         .to receive(:new).and_return(presenter_double)
-
-      return unless include_model
-
-      model_double = instance_double(
-        CovLoupe::CoverageModel,
-        format_table: "Coverage Table\n",
-        list:         { 'files' => [], 'timestamp_status' => status }
-      )
-      allow(CovLoupe::CoverageModel).to receive(:new).and_return(model_double)
     end
 
     it 'outputs warning to stderr when timestamps are missing' do
-      stub_presenter_with_timestamp_status('missing', include_model: true)
+      stub_presenter_with_timestamp_status('missing')
 
       [%w[list], %w[--format json list]].each do |args|
         _stdout, stderr, _status = run_fixture_cli_with_status(*args)

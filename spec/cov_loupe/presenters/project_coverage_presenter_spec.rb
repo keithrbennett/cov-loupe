@@ -122,6 +122,15 @@ RSpec.describe CovLoupe::Presenters::ProjectCoveragePresenter do
     end
   end
 
+  describe '#format_table' do
+    it 'renders the payload rows in its sort order, without refiltering' do
+      allow(model).to receive(:format_table).with(files, sort_order: sort_order, file_globs: nil,
+        output_chars: :ascii).and_return('table')
+
+      expect(presenter.format_table(output_chars: :ascii)).to eq('table')
+    end
+  end
+
   describe '#timestamp_status' do
     it 'returns the timestamp status from the model' do
       expect(presenter.timestamp_status).to eq('ok')

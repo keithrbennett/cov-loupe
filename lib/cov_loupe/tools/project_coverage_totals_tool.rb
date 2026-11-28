@@ -40,12 +40,8 @@ module CovLoupe
               raise_on_stale: config[:raise_on_stale],
               file_globs:     config[:file_globs]
             )
-            payload = presenter.payload
-
-            warnings = Formatters::CoverageWarnings.payload_warnings(presenter)
-            payload['warnings'] = warnings if warnings.any?
-
-            respond_json(payload, pretty: true, output_chars: output_chars_sym)
+            respond_json(Formatters::CoverageWarnings.payload_with_warnings(presenter),
+              pretty: true, output_chars: output_chars_sym)
           end
         end
       end

@@ -111,18 +111,14 @@ RSpec.describe CovLoupe::Commands::ListCommand do
           root_warning:                   nil,
           relative_skipped_files:         [],
           timestamp_status:               'ok',
-          payload:                        { 'files' => [] }
+          payload:                        { 'files' => [] },
+          format_table:                   "table\n"
         )
       end
 
       before do
         cli_context.config.format = :table
-        # Allow the model to be created naturally, only mock the presenter
-        allow(CovLoupe::Presenters::ProjectCoveragePresenter).to receive(:new) do |model:, **_opts|
-          # Stub the model method that ListCommand calls
-          allow(model).to receive(:format_table).and_return("table\n")
-          presenter
-        end
+        allow(CovLoupe::Presenters::ProjectCoveragePresenter).to receive(:new).and_return(presenter)
       end
 
       it 'prints the deleted files section in the exclusions summary on stderr' do

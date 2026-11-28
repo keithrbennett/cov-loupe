@@ -5,8 +5,8 @@ module CovLoupe
     # Text renderings of project-coverage exclusions and warnings, shared by the CLI
     # (written to stderr) and the MCP project_coverage tool (appended to table output).
     # Each method takes a ProjectCoveragePresenter (skipped_row_lines takes the skipped rows)
-    # and returns a String ('' when there is nothing to report), except payload_warnings,
-    # which returns an Array of lines.
+    # and returns a String ('' when there is nothing to report), except payload_with_warnings,
+    # which takes a ProjectCoveragePresenter or ProjectTotalsPresenter and returns a Hash.
     #
     # @api private
     module CoverageWarnings
@@ -57,10 +57,12 @@ module CovLoupe
         message ? "\nWARNING: #{message}\n" : ''
       end
 
-      # The lines for a structured payload's optional warnings array.
-      module_function def payload_warnings(presenter)
-        timestamp_lines = presenter.payload['timestamp_status'] == 'missing' ? TIMESTAMP_WARNING_LINES : []
-        [*timestamp_lines, presenter.root_warning].compact
+      # A copy of the presenter's payload, with a 'warnings' array of lines when there are
+      # warnings. The presenter's cached payload is not changed.
+      module_function def payload_with_warnings(presenter)
+        timestamp_lines = presenter.timestamp_status == 'missing' ? TIMESTAMP_WARNING_LINES : []
+        warnings = [*timestamp_lines, presenter.root_warning].compact
+        warnings.empty? ? presenter.payload.dup : presenter.payload.merge('warnings' => warnings)
       end
 
       module_function def skipped_rows_warning(presenter)

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'payload_caching'
+require_relative 'project_presenter'
 
 require_relative '../staleness/stale_status'
 require_relative '../staleness/root_mismatch'
@@ -13,16 +13,20 @@ module CovLoupe
     # CLI and MCP renderers.
     #
     # @api private
-    class ProjectCoveragePresenter
-      include PayloadCaching
-
-      attr_reader :model, :sort_order, :raise_on_stale, :file_globs
+    class ProjectCoveragePresenter < ProjectPresenter
+      attr_reader :sort_order
 
       def initialize(model:, sort_order:, raise_on_stale:, file_globs:)
-        @model = model
+        super(model: model, raise_on_stale: raise_on_stale, file_globs: file_globs)
         @sort_order = sort_order
-        @raise_on_stale = raise_on_stale
-        @file_globs = file_globs
+      end
+
+      # Returns the file rows rendered as the coverage table.
+      def format_table(output_chars:)
+        # The rows are already filtered by file_globs, so the table does not filter again.
+        # (format_table uses raise_on_stale only when it builds the rows itself.)
+        model.format_table(relative_files, sort_order: sort_order, file_globs: nil,
+          output_chars: output_chars)
       end
 
       # Returns the project-relative file rows.
@@ -58,12 +62,6 @@ module CovLoupe
       # Returns the project-relative unreadable files.
       def relative_unreadable_files
         payload['unreadable_files']
-      end
-
-      # Returns the timestamp status indicating whether coverage timestamps are available.
-      # Can be 'ok' (timestamps available) or 'missing' (no timestamps, staleness checks skipped).
-      def timestamp_status
-        payload['timestamp_status']
       end
 
       # Returns a warning when most files were not found under the project root, otherwise nil.

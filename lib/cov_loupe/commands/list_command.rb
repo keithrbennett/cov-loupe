@@ -21,13 +21,7 @@ module CovLoupe
         if maybe_output_structured_format?(presenter.payload)
           warn_nonempty(Formatters::CoverageWarnings.skipped_rows_warning(presenter))
         else
-          puts model.format_table(
-            presenter.relative_files,
-            sort_order:     config.sort_order,
-            raise_on_stale: config.raise_on_stale,
-            file_globs:     nil,
-            output_chars:   config.output_chars
-          )
+          puts presenter.format_table(output_chars: config.output_chars)
           # The exclusions summary already lists skipped rows.
           warn_nonempty(Formatters::CoverageWarnings.exclusions_summary(presenter))
         end
