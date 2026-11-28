@@ -23,6 +23,8 @@ $ cov-loupe --error-mode debug summary nonexistent.rb
 $ cov-loupe --error-mode debug s nonexistent.rb
 ```
 
+`--error-mode off` stops error logging (the message is still printed); `log`, the default, also logs errors to the log target. See `--error-mode` in [Global Options](CLI_USAGE.md#global-options) and [Logging](LOGGING.md). To run the CLI from Ruby and get its exit code, see [Running the CLI from Ruby](ADVANCED_USAGE.md#running-the-cli-from-ruby).
+
 ## Library Mode
 
 Calls to `CovLoupe::CoverageModel` raise custom exceptions (subclasses of `CovLoupe::Error`) rather than printing or logging them; rescue them in your code.

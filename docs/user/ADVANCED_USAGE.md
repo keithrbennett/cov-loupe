@@ -15,46 +15,16 @@
 > timestamps, even on a fresh clone. Runs that also pass `-g` with globs matching fixture files that are not in
 > the coverage data do fail, by design. Timestamps and absolute paths in some messages vary by machine and time zone.
 
+For how each interface reports errors (CLI messages and `--error-mode`, library exceptions, MCP `isError` results), see [Error Handling](ERROR_HANDLING.md). For MCP logging and smoke tests, see [MCP Integration](MCP_INTEGRATION.md#testing-your-setup).
+
 ## Table of Contents
 
-- [Advanced MCP Integration](#advanced-mcp-integration)
 - [Sorting Coverage Lists with n/a Entries](#sorting-coverage-lists-with-na-entries)
 - [Staleness Detection & Validation](#staleness-detection-validation)
 - [Advanced Path Resolution](#advanced-path-resolution)
-- [Error Handling Strategies](#error-handling-strategies)
 - [Custom Ruby Integration](#custom-ruby-integration)
 - [CI/CD Integration](#cicd-integration)
 - [Advanced Filtering & Glob Patterns](#advanced-filtering-glob-patterns)
-
----
-
-## Advanced MCP Integration
-
-### MCP Error Handling
-
-The MCP server signals tool-call failures by returning a `tools/call` **result** with `isError: true` (the MCP-spec mechanism for tool errors), carrying the user-friendly message in the response content:
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "content": [
-      {
-        "type": "text",
-        "text": "Error: File error: Could not find coverage.json under \"/path/to/project\"; run tests or set --coverage-file option"
-      }
-    ],
-    "isError": true
-  }
-}
-```
-
-This lets MCP clients programmatically distinguish a failed tool call from a successful one. Argument-validation failures also return `isError: true`; a JSON-RPC `error` response is reserved for protocol- and dispatch-level failures such as an unknown tool.
-
-### MCP Server Logging and Manual Testing
-
-The MCP server logs to `stderr` by default; [Checking Logs](MCP_INTEGRATION.md#checking-logs) covers log files, `-l off`, and rotation. To confirm that the server launches and answers JSON-RPC over stdio, use the smoke tests in [Manual Testing via Command Line](MCP_INTEGRATION.md#manual-testing-via-command-line).
 
 ---
 
@@ -254,88 +224,6 @@ coverage_b = model_b.list
 
 ---
 
-## Error Handling Strategies
-
-### Context-Aware Error Handling
-
-**CLI Mode:** user-facing messages, exit codes, optional debug mode
-
-**Library Mode:** typed exceptions with full details
-
-**MCP Server Mode:** argument-validation and tool-execution failures return a `tools/call` result with `isError: true` (execution failures are logged to the configured log target, `stderr` by default); JSON-RPC errors are reserved for protocol- or dispatch-level failures such as malformed JSON-RPC requests, unknown methods, and unknown tools
-
-### Error Modes
-
-**CLI Error Modes:**
-```sh
-# No error logging (the error message is still printed)
-clp --error-mode off summary app/models/order.rb
-
-# Standard mode (the default) - user-friendly errors, also logged when --log-file names a file
-clp --error-mode log summary app/models/order.rb
-
-# Verbose mode - stack traces (only the first 5 lines on stderr when --log-file names a file,
-# which gets the full trace)
-clp --error-mode debug summary app/models/order.rb
-```
-
-**Ruby API Error Handling:**
-```ruby
-require 'cov_loupe'
-
-begin
-  model = CovLoupe::CoverageModel.new(
-    root: '/path/to/project',
-    coverage_file: '/nonexistent/coverage.json'
-  )
-rescue CovLoupe::FileError => e
-  # Handle missing coverage file
-  puts "Coverage file not found: #{e.message}"
-rescue CovLoupe::CoverageDataError => e
-  # Handle corrupt/invalid coverage data
-  puts "Invalid coverage data: #{e.message}"
-end
-```
-
-### Running the CLI from Ruby
-
-To run the CLI from Ruby, call `CovLoupe.run` or `CovLoupe.execute` with the same arguments
-you would pass on the command line. Control error logging and stack traces with `--error-mode`
-and `--log-file` in those arguments or in `COV_LOUPE_OPTS`.
-
-- `CovLoupe.run` behaves like the executable. In CLI mode it ends the process with an
-  [exit code](CLI_USAGE.md#exit-codes) when a command fails or an option is invalid, after
-  `--help`, `--version`, or `--path-for`, and after `validate`, whether it passes or fails.
-  Otherwise, including when an MCP server shuts down, it returns `0`.
-- `CovLoupe.execute` runs the same way but returns the exit code instead of ending the
-  process. An `exit` that does not come from cov-loupe, such as one in a `validate`
-  predicate, still ends it.
-
-```ruby
-status = CovLoupe.execute(%w[validate coverage_policy.rb])
-warn 'Coverage policy failed' unless status.zero?
-```
-
-Unlike the `cov-loupe` executable, neither method:
-
-- installs `INT`/`TERM` signal handlers
-- checks the Ruby version (the executable handles a first `-v`/`--version` argument before that check, so it works under an unsupported Ruby)
-- sets `Encoding.default_external` to UTF-8 under the C locale (see [Library API](LIBRARY_API.md#quick-start) for why that matters for non-ASCII paths)
-
-Like the executable, both print the version for `-v` anywhere among the options before the subcommand.
-
-```ruby
-CovLoupe.run(%w[--error-mode debug --log-file cov_loupe.log list])
-```
-
-`CovLoupe::CoverageCLI` is internal, and the error handler protocol (`handle_error` and
-`convert_standard_error`) is not public API, so a handler class you write may stop working
-in any release. See [Public API and Versioning](LIBRARY_API.md#public-api-and-versioning). To act on
-errors in your own code, use the library API and rescue the
-[exception types](LIBRARY_API.md#exception-types).
-
----
-
 ## Custom Ruby Integration
 
 ### Building Custom Coverage Policies
@@ -429,6 +317,43 @@ data = model.summary_for('app/models/order.rb')
 File.expand_path(data['file'], model.root)
 # => "/path/to/project/app/models/order.rb"
 ```
+
+### Running the CLI from Ruby
+
+To run the CLI from Ruby, call `CovLoupe.run` or `CovLoupe.execute` with the same arguments
+you would pass on the command line. Control error logging and stack traces with `--error-mode`
+and `--log-file` in those arguments or in `COV_LOUPE_OPTS`.
+
+- `CovLoupe.run` behaves like the executable. In CLI mode it ends the process with an
+  [exit code](CLI_USAGE.md#exit-codes) when a command fails or an option is invalid, after
+  `--help`, `--version`, or `--path-for`, and after `validate`, whether it passes or fails.
+  Otherwise, including when an MCP server shuts down, it returns `0`.
+- `CovLoupe.execute` runs the same way but returns the exit code instead of ending the
+  process. An `exit` that does not come from cov-loupe, such as one in a `validate`
+  predicate, still ends it.
+
+```ruby
+status = CovLoupe.execute(%w[validate coverage_policy.rb])
+warn 'Coverage policy failed' unless status.zero?
+```
+
+Unlike the `cov-loupe` executable, neither method:
+
+- installs `INT`/`TERM` signal handlers
+- checks the Ruby version (the executable handles a first `-v`/`--version` argument before that check, so it works under an unsupported Ruby)
+- sets `Encoding.default_external` to UTF-8 under the C locale (see [Library API](LIBRARY_API.md#quick-start) for why that matters for non-ASCII paths)
+
+Like the executable, both print the version for `-v` anywhere among the options before the subcommand.
+
+```ruby
+CovLoupe.run(%w[--error-mode debug --log-file cov_loupe.log list])
+```
+
+`CovLoupe::CoverageCLI` is internal, and the error handler protocol (`handle_error` and
+`convert_standard_error`) is not public API, so a handler class you write may stop working
+in any release. See [Public API and Versioning](LIBRARY_API.md#public-api-and-versioning). To act on
+errors in your own code, use the library API and rescue the
+[exception types](LIBRARY_API.md#exception-types).
 
 ---
 
